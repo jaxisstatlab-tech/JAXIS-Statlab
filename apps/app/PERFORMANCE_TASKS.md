@@ -251,6 +251,14 @@
 - [x] **Admin Proposals Pre-Loading**: Converted `app/dashboard/admin/quotations/page.tsx` to an async Server Component pre-loading `getQuotationsRoster()` and `getCommercialCatalog()`, rendering `AdminQuotationsClient.tsx` immediately.
 - [x] **DefenseLab & Disputes Pre-Loading**: Converted `app/dashboard/client/defenselab/page.tsx` and `app/dashboard/client/disputes/page.tsx` to async Server Components with `ClientDefenseLabClient.tsx` and `ClientDisputesClient.tsx`, eliminating spinner wait platform-wide.
 
+### Task 6.12 — Monorepo Sidebar Fast Navigation & Universal RSC Pre-Loading
+- [x] **Eliminated 1.5s–2.0s Consultation Delay**: Converted `/dashboard/client/messages`, `/dashboard/statistician/messages`, and `/dashboard/qa/messages` into async Server Components. Enhanced `MessageThread.tsx` with `initialThreadData` to pre-seed messages, project info, and user state directly from the server, eliminating the *"Loading Conversation..."* card spinner.
+- [x] **Eliminated "Verifying profile..." Intake Flash**: In `/dashboard/client/projects/new`, extracted `NewProjectIntakeClient.tsx` and converted `page.tsx` into an async Server Component that prefetches `getClientProfile()`. `isProfileLoaded` starts as `true`, completely removing the blocking profile verification spinner.
+- [x] **Admin Intake & Triage Pre-Loading**: Converted `/dashboard/admin/intake` to an async Server Component pre-loading `getProjects()` and `getCommercialCatalog()`, rendering `AdminIntakeClient.tsx` at 0ms and eliminating *"Loading Intake Queue..."*.
+- [x] **Staff & Capacity Pre-Loading**: Converted `/dashboard/admin/staff` to an async Server Component pre-loading `getStaffRoster()` and `getStaffSelfProfile()`, rendering `StaffRosterClient.tsx` with zero initial loading delay.
+- [x] **Communications Firewall Pre-Loading**: Converted `/dashboard/admin/messages` to an async Server Component pre-loading blocked messages into `AdminFirewallMessagesClient.tsx`.
+- [x] **Finance Queue Pre-Loading**: Converted `/dashboard/finance/payments`, `/dashboard/finance/payouts`, and `/dashboard/finance/disputes` into async Server Components with `FinancePaymentsQueueClient.tsx`, `FinancePayoutsClient.tsx`, and `FinanceDisputesClient.tsx`, eliminating all queue loading spinners.
+
 ---
 
 ## 🔒 Verification & Quality Gate Checklist

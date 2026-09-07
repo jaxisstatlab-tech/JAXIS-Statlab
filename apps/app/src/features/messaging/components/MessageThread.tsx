@@ -26,21 +26,42 @@ import {
   broadcastProjectMessage,
 } from "@/lib/messaging/realtime";
 
+export interface InitialThreadData {
+  messages?: MessageDTO[];
+  projectInfo?: {
+    id: string;
+    intakeId: string;
+    researchTitle: string;
+    masterStatus: string;
+    clientName: string;
+    statisticianName: string | null;
+    qaLeadName: string | null;
+  } | null;
+  hasMore?: boolean;
+  nextCursor?: string | null;
+  currentUserId?: string | null;
+}
+
 interface MessageThreadProps {
   projectId: string;
   className?: string;
   onBack?: () => void;
+  initialThreadData?: InitialThreadData | null;
 }
 
 export const MessageThread: React.FC<MessageThreadProps> = ({
   projectId,
   className = "",
   onBack,
+  initialThreadData,
 }) => {
   const CACHE_KEY = `jaxis_chat_cache_${projectId}`;
 
   // Read initial cache synchronously if available
   const [messages, setMessages] = useState<MessageDTO[]>(() => {
+    if (initialThreadData?.messages && initialThreadData.messages.length > 0) {
+      return initialThreadData.messages;
+    }
     if (typeof window !== "undefined") {
       try {
         const cached = sessionStorage.getItem(CACHE_KEY);
@@ -55,8 +76,8 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     return [];
   });
 
-  const [hasMore, setHasMore] = useState<boolean>(false);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState<boolean>(initialThreadData?.hasMore ?? false);
+  const [nextCursor, setNextCursor] = useState<string | null>(initialThreadData?.nextCursor ?? null);
   const [isLoadingOlder, setIsLoadingOlder] = useState<boolean>(false);
   const [projectInfo, setProjectInfo] = useState<{
     id: string;
@@ -67,6 +88,9 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     statisticianName: string | null;
     qaLeadName: string | null;
   } | null>(() => {
+    if (initialThreadData?.projectInfo) {
+      return initialThreadData.projectInfo;
+    }
     if (typeof window !== "undefined") {
       try {
         const cached = sessionStorage.getItem(`jaxis_chat_cache_${projectId}`);
@@ -82,6 +106,9 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   });
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
+    if (initialThreadData?.currentUserId) {
+      return initialThreadData.currentUserId;
+    }
     if (typeof window !== "undefined") {
       try {
         const cached = sessionStorage.getItem(`jaxis_chat_cache_${projectId}`);
@@ -100,8 +127,11 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 
   const [presetPrompt, setPresetPrompt] = useState<string>("");
 
-  // Only show skeleton if we have zero cached messages & zero projectInfo
+  // Only show skeleton if we have zero cached messages & zero projectInfo and no initial data
   const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (initialThreadData?.projectInfo || (initialThreadData?.messages && initialThreadData.messages.length > 0)) {
+      return false;
+    }
     if (typeof window !== "undefined") {
       try {
         const cached = sessionStorage.getItem(`jaxis_chat_cache_${projectId}`);
@@ -143,9 +173,29 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     }
   }, []);
 
+  // Warm sessionStorage cache immediately when initialThreadData is provided
+  useEffect(() => {
+    if (initialThreadData?.projectInfo && typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(
+          `jaxis_chat_cache_${projectId}`,
+          JSON.stringify({
+            project: initialThreadData.projectInfo,
+            messages: initialThreadData.messages || [],
+            hasMore: initialThreadData.hasMore ?? false,
+            nextCursor: initialThreadData.nextCursor ?? null,
+            currentUserId: initialThreadData.currentUserId || currentUserIdRef.current,
+          })
+        );
+      } catch {
+        // ignore
+      }
+    }
+  }, [initialThreadData, projectId]);
+
   const loadInitialMessages = useCallback(async () => {
-    // If no cache, mark loading
-    if (messagesRef.current.length === 0 && !projectInfoRef.current) {
+    // If no cache and no initial data, mark loading
+    if (messagesRef.current.length === 0 && !projectInfoRef.current && !initialThreadData?.projectInfo) {
       setIsLoading(true);
     }
     isInitialScrollDone.current = false;
