@@ -177,8 +177,8 @@ export function ClientProjectsListClient({
       setIsProfileComplete(true);
     }
     setToastMessage({
-      message: "Institutional Affiliation Verified",
-      description: "Your academic credentials have been saved. Intake desk unlocked.",
+      message: "School Profile Saved",
+      description: "Your academic and contact details have been saved. Intake desk unlocked.",
       variant: "success",
     });
   };
@@ -199,7 +199,7 @@ export function ClientProjectsListClient({
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-20 w-full animate-content-fade">
       <PageHeader
         title="My Research Projects & Active Studies"
-        description="Monitor statistical consultation workflows, track peer review gates, and inspect analytical deliverables."
+        description="Track your research studies, review methodology updates, and download defense-ready statistical packages."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "Client Portal", href: "/dashboard/client" },
@@ -286,7 +286,7 @@ export function ClientProjectsListClient({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-                    ACTION REQUIRED: Additional Files or Information Needed
+                    Action Required: Additional Files or Information Needed
                   </span>
                   <span className="text-xs font-mono font-bold text-white bg-amber-500/20 px-2 py-0.5 rounded-[2px]">
                     {p.intakeId}
@@ -296,9 +296,9 @@ export function ClientProjectsListClient({
                   <Button
                     variant="primary"
                     size="sm"
-                    className="py-1.5 px-3.5 h-auto font-mono text-xs font-bold tracking-wider"
+                    className="py-1.5 px-3.5 h-auto font-sans text-xs font-semibold tracking-wide active:scale-[0.97] transition-transform min-h-[36px]"
                   >
-                    VIEW &amp; UPLOAD FILES →
+                    View &amp; Upload Files →
                   </Button>
                 </Link>
               </div>
@@ -323,10 +323,7 @@ export function ClientProjectsListClient({
       )}
 
       {/* ── Main Projects List & Filter Table ── */}
-      <Card
-        className="p-0 border-white/[0.08] overflow-hidden bg-gradient-to-b from-[#01142B]/90 via-[#010E20]/95 to-[#010A17] shadow-2xl"
-        style={{ padding: 0 }}
-      >
+      <Card className="p-0 border border-white/10 overflow-hidden bg-[#01142B]/90 shadow-2xl -mx-4 sm:mx-0">
         {/* Filter Toolbar */}
         <FilterToolbar
           searchQuery={searchQuery}
@@ -361,7 +358,7 @@ export function ClientProjectsListClient({
         />
 
         {/* ── Table Container ── */}
-        <div style={{ padding: "1.25rem 1.75rem 1.75rem 1.75rem" }}>
+        <div className="p-4 sm:p-6">
           <div className="w-full overflow-x-auto rounded-[3px] border border-white/[0.08]">
             <table className="data-table">
               <thead>
@@ -393,8 +390,8 @@ export function ClientProjectsListClient({
                         action={
                           !searchQuery && statusFilter === "ALL" ? (
                             <Link href="/dashboard/client/projects/new">
-                              <Button variant="primary" size="sm" className="font-mono text-xs font-bold tracking-wider">
-                                + SUBMIT YOUR FIRST INTAKE →
+                              <Button variant="primary" size="sm" className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] active:scale-[0.97] transition-transform">
+                                + Submit Study Request →
                               </Button>
                             </Link>
                           ) : undefined
@@ -502,17 +499,17 @@ export function ClientProjectsListClient({
                               variant="outline"
                               size="sm"
                               onClick={() => setSelectedStudyForInspect(p)}
-                              className="font-mono text-[0.6875rem] tracking-wider"
+                              className="font-sans text-xs font-semibold px-3 py-1.5 active:scale-[0.97] transition-transform min-h-[36px]"
                             >
-                              DETAILS
+                              Details
                             </Button>
                             <Link href={`/dashboard/client/projects/${p.id}`}>
                               <Button
                                 variant={isAwaiting ? "primary" : "secondary"}
                                 size="sm"
-                                className="font-mono text-[0.6875rem] tracking-wider"
+                                className="font-sans text-xs font-semibold px-3 py-1.5 active:scale-[0.97] transition-transform min-h-[36px]"
                               >
-                                {isAwaiting ? "RESOLVE →" : "DESK →"}
+                                {isAwaiting ? "Resolve →" : "Open Desk →"}
                               </Button>
                             </Link>
                           </div>
@@ -552,12 +549,17 @@ export function ClientProjectsListClient({
                 variant="secondary"
                 size="sm"
                 onClick={() => setSelectedStudyForInspect(null)}
+                className="font-sans text-xs font-semibold px-4 py-2 active:scale-[0.97] transition-transform"
               >
-                CLOSE
+                Close
               </Button>
               <Link href={`/dashboard/client/projects/${selectedStudyForInspect.id}`}>
-                <Button variant="primary" size="sm">
-                  OPEN FULL PROJECT DESK →
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] active:scale-[0.97] transition-transform"
+                >
+                  Open Project Desk →
                 </Button>
               </Link>
             </div>
@@ -565,10 +567,7 @@ export function ClientProjectsListClient({
         >
           <div className="flex flex-col gap-5 text-xs font-sans text-white/90">
             {/* Status & Deadline Header Banner */}
-            <div
-              className="rounded-[2px] bg-[#011C38] border border-white/[0.08] flex items-center justify-between flex-wrap gap-4"
-              style={{ padding: "1rem" }}
-            >
+            <div className="p-4 rounded-[2px] bg-[#011C38] border border-white/[0.08] flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
                 <span className="font-mono text-xs text-white/50 uppercase">Current Gate:</span>
                 {(() => {
@@ -593,10 +592,7 @@ export function ClientProjectsListClient({
             {/* Missing Information Note if applicable */}
             {selectedStudyForInspect.masterStatus === "AWAITING_INFORMATION" &&
               selectedStudyForInspect.missingInfoReason && (
-                <div
-                  className="rounded-[2px] bg-amber-500/10 border border-amber-500/30 flex flex-col gap-1 text-amber-200"
-                  style={{ padding: "1rem" }}
-                >
+                <div className="p-4 rounded-[2px] bg-amber-500/10 border border-amber-500/30 flex flex-col gap-1 text-amber-200">
                   <strong className="font-mono text-amber-400 text-[0.6875rem] uppercase">
                     Admin Missing Information Request:
                   </strong>
@@ -611,10 +607,7 @@ export function ClientProjectsListClient({
               <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
                 Core Research Objectives
               </span>
-              <p
-                className="text-xs text-slate-300 bg-white/[0.02] rounded-[3px] border border-white/10 leading-relaxed whitespace-pre-wrap"
-                style={{ padding: "1rem" }}
-              >
+              <p className="p-4 text-xs text-slate-300 bg-white/[0.02] rounded-[3px] border border-white/10 leading-relaxed whitespace-pre-wrap">
                 {selectedStudyForInspect.researchObjectives}
               </p>
             </div>
@@ -624,10 +617,7 @@ export function ClientProjectsListClient({
               <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
                 Key Research Questions
               </span>
-              <p
-                className="text-xs text-slate-300 bg-white/[0.02] rounded-[3px] border border-white/10 leading-relaxed whitespace-pre-wrap"
-                style={{ padding: "1rem" }}
-              >
+              <p className="p-4 text-xs text-slate-300 bg-white/[0.02] rounded-[3px] border border-white/10 leading-relaxed whitespace-pre-wrap">
                 {selectedStudyForInspect.researchQuestions}
               </p>
             </div>
@@ -638,10 +628,7 @@ export function ClientProjectsListClient({
                 <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
                   Theoretical Hypotheses
                 </span>
-                <p
-                  className="text-xs text-slate-300 bg-white/[0.02] rounded-[3px] border border-white/10 leading-relaxed whitespace-pre-wrap"
-                  style={{ padding: "1rem" }}
-                >
+                <p className="p-4 text-xs text-slate-300 bg-white/[0.02] rounded-[3px] border border-white/10 leading-relaxed whitespace-pre-wrap">
                   {selectedStudyForInspect.hypotheses}
                 </p>
               </div>
@@ -653,10 +640,7 @@ export function ClientProjectsListClient({
                 Submitted Artifacts ({selectedStudyForInspect.files.length})
               </span>
               {selectedStudyForInspect.files.length === 0 ? (
-                <div
-                  className="text-xs text-white/40 italic bg-white/[0.02] border border-white/10 rounded-[3px]"
-                  style={{ padding: "1rem" }}
-                >
+                <div className="p-4 text-xs text-white/40 italic bg-white/[0.02] border border-white/10 rounded-[3px]">
                   No files or dataset packages attached to this intake record.
                 </div>
               ) : (
@@ -704,10 +688,10 @@ export function ClientProjectsListClient({
                               variant: "info",
                             });
                           }}
-                          className="px-5 py-2 rounded-[2px] bg-[#CC6600]/20 hover:bg-[#CC6600]/35 text-white border border-[#CC6600]/80 hover:border-[#CC6600] text-xs font-mono font-bold tracking-wider uppercase transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer"
+                          className="px-4 py-2 rounded-[2px] bg-[#CC6600]/20 hover:bg-[#CC6600]/35 text-white border border-[#CC6600]/60 hover:border-[#CC6600] text-xs font-sans font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer active:scale-[0.97] min-h-[36px]"
                         >
-                          <IconDownload size={14} stroke={1.5} className="text-[#FFA040]" />
-                          <span>DOWNLOAD</span>
+                          <IconDownload size={14} stroke={1.5} className="text-[#FFA040]" aria-hidden="true" />
+                          <span>Download</span>
                         </button>
                       </div>
                     );

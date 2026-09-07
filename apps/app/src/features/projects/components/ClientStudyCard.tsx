@@ -148,7 +148,14 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
 
       {/* ── Visual Milestone Pipeline (Shopee/Grab Order Tracker Style) ── */}
       <div className="pt-2 pb-1 border-y border-white/[0.06]">
-        <div className="hidden md:flex items-center justify-between relative py-2">
+        <div
+          className="hidden md:flex items-center justify-between relative py-2"
+          role="progressbar"
+          aria-label="Research study progress pipeline"
+          aria-valuenow={currentStageIndex + 1}
+          aria-valuemin={1}
+          aria-valuemax={5}
+        >
           {MILESTONE_STAGES.map((stage, idx) => {
             const isPassed = currentStageIndex > idx;
             const isCurrent = currentStageIndex === idx;
@@ -175,7 +182,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
                     isPassed
                       ? "bg-[#10B981] text-black shadow-sm"
                       : isCurrent
-                      ? "bg-[#CC6600] text-white ring-4 ring-[#CC6600]/25 shadow-md"
+                      ? "bg-[#CC6600] text-white ring-2 ring-[#CC6600] border-2 border-white/60"
                       : "bg-[#01142B] border border-white/20 text-white/30"
                   }`}
                 >
@@ -188,7 +195,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
 
                 {/* Stage Label */}
                 <span
-                  className={`text-[0.688rem] mt-2 font-sans font-medium text-center tracking-normal ${
+                  className={`text-xs mt-2 font-sans font-medium text-center tracking-normal ${
                     isCurrent
                       ? "text-amber-300 font-semibold"
                       : isPassed
@@ -204,7 +211,14 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
         </div>
 
         {/* Mobile Condensed Pipeline Tracker */}
-        <div className="flex md:hidden flex-col gap-2 py-1">
+        <div
+          className="flex md:hidden flex-col gap-2 py-1"
+          role="progressbar"
+          aria-label="Research study progress pipeline"
+          aria-valuenow={currentStageIndex + 1}
+          aria-valuemin={1}
+          aria-valuemax={5}
+        >
           <div className="flex items-center justify-between text-xs font-sans">
             <span className="text-white/50">Current Stage:</span>
             <span className="font-semibold text-amber-300">
@@ -238,7 +252,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
             <Button
               variant="primary"
               size="sm"
-              className="font-sans text-xs font-semibold px-3.5 py-1.5 whitespace-nowrap"
+              className="font-sans text-xs font-semibold px-3.5 py-1.5 whitespace-nowrap active:scale-[0.97] transition-transform min-h-[36px]"
             >
               Upload Files →
             </Button>
@@ -261,7 +275,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
             <Button
               variant="primary"
               size="sm"
-              className="font-sans text-xs font-semibold px-3.5 py-1.5 whitespace-nowrap bg-[#CC6600] hover:bg-[#E67300] text-white"
+              className="font-sans text-xs font-semibold px-3.5 py-1.5 whitespace-nowrap bg-[#CC6600] hover:bg-[#E67300] text-white active:scale-[0.97] transition-transform min-h-[36px]"
             >
               Review &amp; Accept Quote →
             </Button>
@@ -277,7 +291,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
             <Button
               variant="outline"
               size="sm"
-              className="font-sans text-xs font-semibold px-3.5 py-2 flex items-center gap-2 border-white/15 hover:bg-white/[0.06] text-white/90 transition-colors"
+              className="font-sans text-xs font-semibold px-3.5 py-2 flex items-center gap-2 border-white/15 hover:bg-white/[0.06] text-white/90 active:scale-[0.97] transition-transform min-h-[36px]"
             >
               <IconMessages size={16} stroke={1.5} className="text-sky-400" />
               <span>{hasAssignedSpecialist ? "Message Statistician" : "Message Desk"}</span>
@@ -292,7 +306,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
               variant="primary"
               size="sm"
               onClick={() => onDownloadDeliverable(study)}
-              className="font-sans text-xs font-semibold px-4 py-2 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+              className="font-sans text-xs font-semibold px-4 py-2 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white active:scale-[0.97] transition-transform min-h-[36px]"
             >
               <IconDownload size={16} stroke={1.5} />
               <span>Download Deliverables</span>
@@ -304,7 +318,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
             <Button
               variant="secondary"
               size="sm"
-              className="font-sans text-xs font-semibold px-4 py-2 flex items-center gap-1.5 transition-colors"
+              className="font-sans text-xs font-semibold px-4 py-2 flex items-center gap-1.5 active:scale-[0.97] transition-transform min-h-[36px]"
             >
               <span>View Details</span>
               <IconArrowRight size={14} />

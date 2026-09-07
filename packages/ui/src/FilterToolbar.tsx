@@ -171,6 +171,7 @@ export const FilterToolbar = React.forwardRef<HTMLDivElement, FilterToolbarProps
             <SearchIcon />
             <input
               type="text"
+              aria-label={searchPlaceholder}
               placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
@@ -181,7 +182,7 @@ export const FilterToolbar = React.forwardRef<HTMLDivElement, FilterToolbarProps
                 border: "none",
                 backgroundColor: "transparent",
               }}
-              className="flex-1 bg-transparent border-0 outline-none shadow-none text-xs font-sans text-white placeholder-white/30 p-0 focus:outline-none focus:ring-0 focus:border-0"
+              className="flex-1 bg-transparent border-0 outline-none shadow-none text-base sm:text-xs font-sans text-white placeholder-white/30 p-0 focus:outline-none focus:ring-0 focus:border-0"
             />
             {searchQuery ? (
               <button
@@ -189,6 +190,7 @@ export const FilterToolbar = React.forwardRef<HTMLDivElement, FilterToolbarProps
                 onClick={() => onSearchChange("")}
                 className="text-white/40 hover:text-white cursor-pointer"
                 title="Clear search text"
+                aria-label="Clear search text"
               >
                 <ClearIcon />
               </button>

@@ -146,5 +146,12 @@ All AI coding assistants and developers MUST strictly follow the design system a
   2. **0ms Optimistic Transitions**: Interactive duty changes (Clock In, Clock Out) update local state, local cache (`jaxis_active_shift`), and global event dispatchers (`shift-status-updated`) **immediately (0ms)** before server mutations complete. On validation or network failure, state reverts gracefully with an error toast.
   3. **Wall-Clock High-Precision Timers**: Active shift timers must compute elapsed seconds via wall-clock math (`Date.now() - clockInMs`) rather than naive interval incrementation. This prevents time drift caused by background tab throttling, minimized windows, or laptop sleep.
 
+---
 
-
+## 13. System-First UI Upgrade & Anti-AI-Slop Standard (CRITICAL)
+- **Mandatory Policy**:
+  1. All page and view upgrades must strictly follow [apps/app/docs/ui-design-upgrade.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/docs/ui-design-upgrade.md) and [.agents/skills/ui-design-upgrade/SKILL.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/.agents/skills/ui-design-upgrade/SKILL.md).
+  2. **Hard Constraint — Frontend Only**: Zero modifications to backend schemas, database queries, server actions, API routes, authentication logic, or business workflows. Present existing data with peak elegance and clarity.
+  3. **Current Theme Grounding**: Anchor strictly to Master Canvas (`#010114`), Surface Cards (`rgba(1, 22, 46, 0.75)` / `#01142B`), Enterprise Orange (`#CC6600`, 5–10% max visual weight), and crisp 1px borders (`border-white/10`).
+  4. **Anti-AI-Slop Mandate**: Zero awkward multi-stop gradients, zero blurry box-shadow glows, zero robotic buzzwords, zero double slashes (`//`), zero broken text truncations (`...`), and zero ALL-CAPS shouting buttons.
+  5. **Tactile Motion (Emil Kowalski)**: Buttons scale to `0.97` on `:active`, entrances start from `scale(0.95)` with opacity `0`, fast durations under `250ms`, and custom cubic-bezier easing.

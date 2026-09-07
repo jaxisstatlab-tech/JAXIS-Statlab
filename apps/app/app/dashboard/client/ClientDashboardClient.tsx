@@ -274,12 +274,12 @@ export function ClientDashboardClient({
           { label: "Client Portal" },
         ]}
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <Button
               variant="outline"
               size="md"
               onClick={() => setIsHowToUseModalOpen(true)}
-              className="font-sans text-xs sm:text-sm font-semibold flex items-center gap-2 border-white/20 hover:bg-white/[0.08] text-white"
+              className="font-sans text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 border-white/20 hover:bg-white/[0.08] text-white active:scale-[0.97] transition-transform"
               title="How to Use JAXIS Guide"
             >
               <IconHelp size={16} className="text-sky-400" />
@@ -300,16 +300,16 @@ export function ClientDashboardClient({
                 variant="primary"
                 size="md"
                 onClick={() => setIsProfileModalOpen(true)}
-                className="font-bold tracking-wider font-sans text-xs sm:text-sm animate-content-fade bg-[#CC6600] hover:bg-[#E67300] text-white"
+                className="font-bold tracking-wider font-sans text-xs sm:text-sm animate-content-fade bg-[#CC6600] hover:bg-[#E67300] text-white active:scale-[0.97] transition-transform"
               >
                 1. Setup School First →
               </Button>
             ) : (
-              <Link href="/dashboard/client/projects/new" className="animate-content-fade">
+              <Link href="/dashboard/client/projects/new" className="animate-content-fade w-full sm:w-auto">
                 <Button
                   variant="primary"
                   size="md"
-                  className="font-bold tracking-wider font-sans text-xs sm:text-sm flex items-center gap-2 bg-[#CC6600] hover:bg-[#E67300]"
+                  className="w-full font-bold tracking-wider font-sans text-xs sm:text-sm flex items-center justify-center gap-2 bg-[#CC6600] hover:bg-[#E67300] active:scale-[0.97] transition-transform"
                 >
                   <IconPlus size={16} stroke={2.5} />
                   <span>Submit New Study Request</span>
@@ -474,36 +474,41 @@ export function ClientDashboardClient({
               size="sm"
               onClick={() => loadData(false)}
               disabled={isRefreshing}
-              className="flex items-center gap-1.5 font-mono text-xs font-semibold py-1.5 px-3 h-auto"
+              aria-label="Refresh studies list"
+              className="flex items-center gap-1.5 font-mono text-xs font-semibold py-1.5 px-3 h-auto active:scale-[0.97] transition-transform"
             >
-              <IconRefresh size={14} className={isRefreshing ? "animate-spin" : ""} stroke={2} />
+              <IconRefresh size={14} className={isRefreshing ? "animate-spin" : ""} stroke={2} aria-hidden="true" />
               <span>Refresh</span>
             </Button>
             <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-[2px] p-0.5">
               <button
                 type="button"
                 onClick={() => setViewMode("cards")}
-                className={`px-3 py-1.5 rounded-[2px] text-xs font-sans font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                aria-label="Switch to card view"
+                aria-pressed={viewMode === "cards"}
+                className={`px-3 py-1.5 rounded-[2px] text-xs font-sans font-medium flex items-center gap-1.5 transition-all cursor-pointer active:scale-[0.97] ${
                   viewMode === "cards"
                     ? "bg-[#CC6600] text-white"
                     : "text-white/60 hover:text-white"
                 }`}
-                title="Card View (Familiar Social / Feed Style)"
+                title="Card View (Familiar Feed Style)"
               >
-                <IconLayoutList size={15} />
+                <IconLayoutList size={15} aria-hidden="true" />
                 <span>Cards</span>
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode("table")}
-                className={`px-3 py-1.5 rounded-[2px] text-xs font-sans font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                aria-label="Switch to table view"
+                aria-pressed={viewMode === "table"}
+                className={`px-3 py-1.5 rounded-[2px] text-xs font-sans font-medium flex items-center gap-1.5 transition-all cursor-pointer active:scale-[0.97] ${
                   viewMode === "table"
                     ? "bg-[#CC6600] text-white"
                     : "text-white/60 hover:text-white"
                 }`}
                 title="Table View (Compact Spreadsheet Style)"
               >
-                <IconTable size={15} />
+                <IconTable size={15} aria-hidden="true" />
                 <span>Table</span>
               </button>
             </div>
@@ -513,11 +518,17 @@ export function ClientDashboardClient({
         {/* Filters & Search Toolbar */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          <div
+            role="tablist"
+            aria-label="Filter research studies by status"
+            className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none"
+          >
             <button
               type="button"
+              role="tab"
+              aria-selected={statusFilter === "ALL"}
               onClick={() => setStatusFilter("ALL")}
-              className={`px-3 py-1.5 rounded-[2px] text-xs font-sans whitespace-nowrap transition-colors cursor-pointer border ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-sans whitespace-nowrap transition-all cursor-pointer border active:scale-[0.97] outline-none focus-visible:ring-2 focus-visible:ring-[#CC6600] ${
                 statusFilter === "ALL"
                   ? "bg-white/[0.12] border-white/20 text-white font-semibold"
                   : "bg-transparent border-white/10 text-white/60 hover:text-white hover:bg-white/[0.04]"
@@ -527,22 +538,26 @@ export function ClientDashboardClient({
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={statusFilter === "ACTION_REQUIRED"}
               onClick={() => setStatusFilter("ACTION_REQUIRED")}
-              className={`px-3 py-1.5 rounded-[2px] text-xs font-sans whitespace-nowrap transition-colors cursor-pointer border flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-sans whitespace-nowrap transition-all cursor-pointer border flex items-center gap-1.5 active:scale-[0.97] outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
                 statusFilter === "ACTION_REQUIRED"
                   ? "bg-amber-500/20 border-amber-500/40 text-amber-300 font-semibold"
                   : "bg-transparent border-white/10 text-white/60 hover:text-white hover:bg-white/[0.04]"
               }`}
             >
               {kpis.actionRequired > 0 && (
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" aria-hidden="true" />
               )}
               <span>Action Needed ({kpis.actionRequired})</span>
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={statusFilter === "IN_PROGRESS"}
               onClick={() => setStatusFilter("IN_PROGRESS")}
-              className={`px-3 py-1.5 rounded-[2px] text-xs font-sans whitespace-nowrap transition-colors cursor-pointer border ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-sans whitespace-nowrap transition-all cursor-pointer border active:scale-[0.97] outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
                 statusFilter === "IN_PROGRESS"
                   ? "bg-sky-500/20 border-sky-500/40 text-sky-300 font-semibold"
                   : "bg-transparent border-white/10 text-white/60 hover:text-white hover:bg-white/[0.04]"
@@ -552,8 +567,10 @@ export function ClientDashboardClient({
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={statusFilter === "COMPLETED"}
               onClick={() => setStatusFilter("COMPLETED")}
-              className={`px-3 py-1.5 rounded-[2px] text-xs font-sans whitespace-nowrap transition-colors cursor-pointer border ${
+              className={`px-3 py-1.5 rounded-[2px] text-xs font-sans whitespace-nowrap transition-all cursor-pointer border active:scale-[0.97] outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
                 statusFilter === "COMPLETED"
                   ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300 font-semibold"
                   : "bg-transparent border-white/10 text-white/60 hover:text-white hover:bg-white/[0.04]"
@@ -565,16 +582,21 @@ export function ClientDashboardClient({
 
           {/* Search Input */}
           <div className="relative w-full md:w-64 shrink-0">
+            <label htmlFor="client-dashboard-search" className="sr-only">
+              Search research study title or ID
+            </label>
             <IconSearch
               size={15}
+              aria-hidden="true"
               className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none"
             />
             <input
+              id="client-dashboard-search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search title or ID..."
-              className="w-full bg-[#010915] border border-white/10 rounded-[2px] pl-9 pr-3 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#CC6600] transition-colors font-sans"
+              className="w-full bg-[#010915] border border-white/10 rounded-[2px] pl-9 pr-3 py-2 sm:py-1.5 text-base sm:text-xs text-white placeholder-white/40 outline-none focus:border-[#CC6600] focus-visible:ring-2 focus-visible:ring-[#CC6600] focus-visible:ring-offset-2 focus-visible:ring-offset-[#010114] transition-all font-sans"
             />
           </div>
         </div>
@@ -641,7 +663,7 @@ export function ClientDashboardClient({
           </div>
         ) : (
           /* ── Compact Table View ── */
-          <Card className="p-0 overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[4px] shadow-2xl">
+          <Card className="p-0 overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[4px] shadow-2xl -mx-4 sm:mx-0">
             <div className="w-full overflow-x-auto">
               <table className="data-table">
                 <thead>
@@ -721,7 +743,7 @@ export function ClientDashboardClient({
                                 : "outline"
                             }
                             size="sm"
-                            className="whitespace-nowrap font-sans text-xs font-semibold px-3 py-1.5"
+                            className="whitespace-nowrap font-sans text-xs font-semibold px-3 py-1.5 active:scale-[0.97] transition-transform min-h-[36px]"
                           >
                             {study.masterStatus === "AWAITING_INFORMATION"
                               ? "Resolve →"
