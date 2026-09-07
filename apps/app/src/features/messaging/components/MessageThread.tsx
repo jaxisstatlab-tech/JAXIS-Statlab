@@ -21,7 +21,10 @@ import {
   IconReportAnalytics,
   IconArrowRight,
 } from "@tabler/icons-react";
-import { subscribeToProjectMessages } from "@/lib/messaging/realtime";
+import {
+  subscribeToProjectMessages,
+  broadcastProjectMessage,
+} from "@/lib/messaging/realtime";
 
 interface MessageThreadProps {
   projectId: string;
@@ -78,6 +81,23 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     return null;
   });
 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = sessionStorage.getItem(`jaxis_chat_cache_${projectId}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.currentUserId) return parsed.currentUserId;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return null;
+  });
+  const currentUserIdRef = useRef<string | null>(currentUserId);
+  currentUserIdRef.current = currentUserId;
+
   const [presetPrompt, setPresetPrompt] = useState<string>("");
 
   // Only show skeleton if we have zero cached messages & zero projectInfo
@@ -133,6 +153,9 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     try {
       const res = await getProjectMessages(projectId, { limit: 20 });
       if (res.success && res.data) {
+        if (res.data.currentUserId) {
+          setCurrentUserId(res.data.currentUserId);
+        }
         setProjectInfo(res.data.project);
         setMessages(res.data.messages);
         setHasMore(res.data.hasMore);
@@ -148,6 +171,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                 messages: res.data.messages,
                 hasMore: res.data.hasMore,
                 nextCursor: res.data.nextCursor,
+                currentUserId: res.data.currentUserId || currentUserIdRef.current,
               })
             );
           } catch {
@@ -273,22 +297,83 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     }
   }, [projectId, scrollToBottom]);
 
-  // 3. Real-time Subscription via Supabase Realtime Channels + Adaptive 4-second Polling Safety Net
+  // Immediate Realtime message handler (0ms UI update on incoming WebSocket push)
+  const handleIncomingRealtimeMessage = useCallback(
+    (incoming: MessageDTO) => {
+      if (!incoming || !incoming.id) return;
+
+      setMessages((prev) => {
+        // Prevent duplicate messages
+        const existingIdx = prev.findIndex((m) => m.id === incoming.id);
+        if (existingIdx !== -1) {
+          return prev;
+        }
+
+        // Check if there is a matching optimistic bubble from the current sender
+        const isMine = Boolean(
+          currentUserIdRef.current && incoming.senderId === currentUserIdRef.current
+        );
+        const optimisticIdx = prev.findIndex(
+          (m) =>
+            m.id.startsWith("optimistic_") &&
+            m.content === incoming.content &&
+            isMine
+        );
+
+        const calibratedMessage: MessageDTO = {
+          ...incoming,
+          isMine,
+        };
+
+        let updated: MessageDTO[];
+        if (optimisticIdx !== -1) {
+          updated = [...prev];
+          updated[optimisticIdx] = calibratedMessage;
+        } else {
+          updated = [...prev, calibratedMessage];
+        }
+
+        if (typeof window !== "undefined") {
+          try {
+            sessionStorage.setItem(
+              `jaxis_chat_cache_${projectId}`,
+              JSON.stringify({
+                project: projectInfoRef.current,
+                messages: updated,
+                hasMore: hasMoreRef.current,
+                nextCursor: nextCursorRef.current,
+                currentUserId: currentUserIdRef.current,
+              })
+            );
+          } catch {
+            // ignore
+          }
+        }
+
+        return updated;
+      });
+
+      scrollToBottom(true);
+    },
+    [projectId, scrollToBottom]
+  );
+
+  // 3. Real-time Subscription via Supabase Phoenix Channels + Adaptive 2-second Polling Safety Net
   useEffect(() => {
     if (!projectId) return;
 
-    // WebSocket push trigger for instant (0ms) delivery
-    const cleanup = subscribeToProjectMessages(projectId, () => {
-      syncDelta();
+    // Instant WebSocket push trigger for sub-50ms peer-to-peer delivery
+    const cleanup = subscribeToProjectMessages(projectId, (incomingMessage) => {
+      handleIncomingRealtimeMessage(incomingMessage);
     });
 
-    // Adaptive 4-second polling safety net (ensures delivery even if WebSocket drops or is blocked)
+    // Adaptive 2-second polling safety net (catches edge cases if socket drops)
     const pollInterval = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "hidden") {
         return; // sleep when tab is hidden
       }
       syncDelta();
-    }, 4000);
+    }, 2000);
 
     // Instant sync when user tabs back into the consultation
     const handleVisibility = () => {
@@ -303,7 +388,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       clearInterval(pollInterval);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [projectId, syncDelta]);
+  }, [projectId, handleIncomingRealtimeMessage, syncDelta]);
 
   // Optimistic Message Sender (0ms instant bubble display)
   const handleSendMessage = async (content: string) => {
@@ -314,7 +399,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     const optimisticMessage: MessageDTO = {
       id: tempId,
       projectId,
-      senderId: "current_user",
+      senderId: currentUserIdRef.current || "current_user",
       senderName: "You",
       senderRole: "CLIENT",
       content: trimmed,
@@ -335,9 +420,11 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       const res = await sendMessage({ projectId, content: trimmed });
 
       if (res.success && res.data) {
+        const confirmedMsg = res.data;
+
         // Swap temporary optimistic bubble with confirmed server record
         setMessages((prev) => {
-          const updated = prev.map((m) => (m.id === tempId ? res.data! : m));
+          const updated = prev.map((m) => (m.id === tempId ? confirmedMsg : m));
           if (typeof window !== "undefined") {
             try {
               sessionStorage.setItem(
@@ -347,6 +434,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                   messages: updated,
                   hasMore,
                   nextCursor,
+                  currentUserId: currentUserIdRef.current,
                 })
               );
             } catch {
@@ -356,6 +444,12 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
           return updated;
         });
         scrollToBottom(true);
+
+        // Immediate Client-to-Client WebSocket Broadcast (sub-10ms delivery to all peers)
+        broadcastProjectMessage(projectId, confirmedMsg).catch((err) => {
+          console.warn("[Realtime Client Broadcast Warning]", err);
+        });
+
         return { success: true };
       }
 

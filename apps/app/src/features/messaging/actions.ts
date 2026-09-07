@@ -180,24 +180,31 @@ export async function sendMessage(
         readByCount: 1,
       };
 
-      // Server-side broadcast push to connected WebSocket peers (WhatsApp/Telegram event model)
+      // Server-side broadcast push to Supabase Realtime REST API (WhatsApp/Telegram event model)
       try {
-        const { supabaseAdmin } = await import("@/lib/supabase");
-        const channel = supabaseAdmin.channel(`project-messages:${project.id}`);
-        channel.subscribe((status) => {
-          if (status === "SUBSCRIBED") {
-            channel
-              .send({
-                type: "broadcast",
-                event: "new_message",
-                payload: messageDTO,
-              })
-              .catch(() => {})
-              .finally(() => {
-                supabaseAdmin.removeChannel(channel);
-              });
-          }
-        });
+        const { supabaseUrl, supabaseServiceRoleKey } = await import("@/lib/supabase");
+        if (supabaseUrl && supabaseServiceRoleKey) {
+          fetch(`${supabaseUrl}/realtime/v1/api/broadcast`, {
+            method: "POST",
+            headers: {
+              apikey: supabaseServiceRoleKey,
+              Authorization: `Bearer ${supabaseServiceRoleKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              messages: [
+                {
+                  topic: `project-messages:${project.id}`,
+                  event: "new_message",
+                  payload: messageDTO,
+                },
+              ],
+            }),
+            signal: AbortSignal.timeout(2000),
+          }).catch((fetchErr) => {
+            console.warn("[Realtime Server REST Broadcast Warning]", fetchErr);
+          });
+        }
       } catch (err) {
         // Non-blocking fallback
         console.warn("[Realtime Broadcast Error]", err);
@@ -345,6 +352,7 @@ export async function getProjectMessages(
     hasMore: boolean;
     nextCursor: string | null;
     totalCount: number;
+    currentUserId?: string | null;
   }>
 > {
   const session = await auth();
@@ -510,6 +518,7 @@ export async function getProjectMessages(
           hasMore,
           nextCursor,
           totalCount,
+          currentUserId: userId || null,
         },
       };
     })());
