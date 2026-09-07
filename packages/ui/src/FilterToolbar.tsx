@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useRef, useEffect } from "react";
 import { IconSearch, IconX, IconChevronDown, IconRefresh } from "@tabler/icons-react";
 
 /* ─── Types ─── */
@@ -137,6 +137,36 @@ export const FilterToolbar = React.forwardRef<HTMLDivElement, FilterToolbarProps
     },
     ref,
   ) => {
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    /* Keyboard shortcut: Press '/' anywhere to focus search, 'Escape' to clear and blur */
+    useEffect(() => {
+      const handleGlobalKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          const target = e.target as HTMLElement | null;
+          const isInput =
+            target &&
+            (target.tagName === "INPUT" ||
+              target.tagName === "TEXTAREA" ||
+              target.isContentEditable);
+          if (!isInput) {
+            e.preventDefault();
+            searchInputRef.current?.focus();
+            searchInputRef.current?.select();
+          }
+        } else if (e.key === "Escape") {
+          if (document.activeElement === searchInputRef.current) {
+            e.preventDefault();
+            onSearchChange("");
+            searchInputRef.current?.blur();
+          }
+        }
+      };
+
+      window.addEventListener("keydown", handleGlobalKeyDown);
+      return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+    }, [onSearchChange]);
+
     /* Determine if any filter is active (non-default) */
     const hasActiveFilters = useMemo(() => {
       const hasSearch = searchQuery.trim().length > 0;
@@ -170,6 +200,7 @@ export const FilterToolbar = React.forwardRef<HTMLDivElement, FilterToolbarProps
           >
             <SearchIcon />
             <input
+              ref={searchInputRef}
               type="text"
               aria-label={searchPlaceholder}
               placeholder={searchPlaceholder}

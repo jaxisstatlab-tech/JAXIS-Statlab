@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Card, Button, StatusBadge } from "@repo/ui";
+import { Card, Button, StatusBadge, CopyButton } from "@repo/ui";
 import {
   IconMessages,
   IconDownload,
@@ -18,11 +18,11 @@ import { getProjectDisplayStatus } from "@/lib/project-rules";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 
 const MILESTONE_STAGES = [
-  { id: "submitted", label: "Request Submitted" },
-  { id: "quote", label: "Quote & Agreement" },
-  { id: "analysis", label: "Statistical Analysis" },
-  { id: "qa", label: "Quality Review" },
-  { id: "delivered", label: "Completed" },
+  { id: "proposal", label: "Proposal & Quote" },
+  { id: "sow", label: "Contract (SOW)" },
+  { id: "deposit", label: "Downpayment" },
+  { id: "analysis", label: "Analysis & QA" },
+  { id: "deliverables", label: "Final Outputs" },
 ];
 
 function getStageIndex(status: string): number {
@@ -30,13 +30,14 @@ function getStageIndex(status: string): number {
     case "NEW_REQUEST":
     case "AWAITING_INFORMATION":
     case "UNDER_EVALUATION":
-      return 0;
     case "QUOTE_SENT":
+      return 0;
     case "CLIENT_APPROVED":
     case "SOW_PENDING":
+      return 1;
     case "SOW_SIGNED":
     case "AWAITING_PAYMENT":
-      return 1;
+      return 2;
     case "ACTIVE":
     case "EXPERT_ASSIGNED":
     case "IN_PROGRESS":
@@ -44,7 +45,6 @@ function getStageIndex(status: string): number {
     case "SCOPE_CREEP_HALTED":
     case "REASSIGNMENT_NEEDED":
     case "REVISION_REQUESTED":
-      return 2;
     case "FOR_QA":
     case "QA_REVISION":
       return 3;
@@ -91,9 +91,11 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="flex flex-col gap-2 min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-xs text-[#FF9433] font-bold bg-[#CC6600]/15 border border-[#CC6600]/30 px-2.5 py-0.5 rounded-[2px]">
-              {study.intakeId}
-            </span>
+            <CopyButton
+              variant="badge"
+              value={study.intakeId}
+              label={study.intakeId}
+            />
             {institutionSchool && (
               <span className="flex items-center gap-1 text-xs text-white/60 font-sans bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-[2px] truncate max-w-[260px]">
                 <IconSchool size={13} className="text-sky-400 shrink-0" />

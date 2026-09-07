@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   IconX,
@@ -534,11 +534,15 @@ function getDocContent(fileName: string, category: string): DocContentModel {
 
 export interface DocumentViewerLightboxProps {
   file: ProjectFileItem | null;
+  files?: ProjectFileItem[];
+  onNavigateFile?: (file: ProjectFileItem) => void;
   onClose: () => void;
 }
 
 export function DocumentViewerLightbox({
   file,
+  files,
+  onNavigateFile,
   onClose,
 }: DocumentViewerLightboxProps) {
   const [mounted, setMounted] = useState(false);
@@ -549,6 +553,25 @@ export function DocumentViewerLightbox({
   const scrollContainerRef = useRef<HTMLElement | null>(null);
 
   const totalPages = 3;
+
+  const currentFileIndex = useMemo(() => {
+    if (!file || !files || files.length === 0) return -1;
+    return files.findIndex((f) => f.id === file.id);
+  }, [file, files]);
+
+  const hasMultipleFiles = Boolean(files && files.length > 1 && currentFileIndex !== -1);
+
+  const handlePrevDocument = useCallback(() => {
+    if (!hasMultipleFiles || !files || !onNavigateFile) return;
+    const prevIndex = currentFileIndex > 0 ? currentFileIndex - 1 : files.length - 1;
+    onNavigateFile(files[prevIndex]!);
+  }, [hasMultipleFiles, files, onNavigateFile, currentFileIndex]);
+
+  const handleNextDocument = useCallback(() => {
+    if (!hasMultipleFiles || !files || !onNavigateFile) return;
+    const nextIndex = currentFileIndex < files.length - 1 ? currentFileIndex + 1 : 0;
+    onNavigateFile(files[nextIndex]!);
+  }, [hasMultipleFiles, files, onNavigateFile, currentFileIndex]);
 
   useEffect(() => {
     setMounted(true);
@@ -568,17 +591,44 @@ export function DocumentViewerLightbox({
   }, [currentPage]);
 
   // Keyboard navigation & body scroll locking
+  const isPdfOrDoc = Boolean(
+    file &&
+      (file.fileName.toLowerCase().endsWith(".pdf") ||
+        file.fileName.toLowerCase().endsWith(".docx") ||
+        file.fileName.toLowerCase().endsWith(".doc") ||
+        file.fileCategory === "RESEARCH_DOCUMENT")
+  );
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        e.preventDefault();
         onClose();
+      } else if (e.key === "[" || (e.altKey && e.key === "ArrowLeft")) {
+        if (hasMultipleFiles) {
+          e.preventDefault();
+          handlePrevDocument();
+        }
+      } else if (e.key === "]" || (e.altKey && e.key === "ArrowRight")) {
+        if (hasMultipleFiles) {
+          e.preventDefault();
+          handleNextDocument();
+        }
       } else if (e.key === "ArrowRight" || e.key === "PageDown") {
-        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+        if (isPdfOrDoc && currentPage < totalPages) {
+          setCurrentPage((prev) => prev + 1);
+        } else if (hasMultipleFiles) {
+          handleNextDocument();
+        }
       } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
-        setCurrentPage((prev) => Math.max(prev - 1, 1));
+        if (isPdfOrDoc && currentPage > 1) {
+          setCurrentPage((prev) => prev - 1);
+        } else if (hasMultipleFiles) {
+          handlePrevDocument();
+        }
       }
     },
-    [onClose, totalPages]
+    [onClose, totalPages, isPdfOrDoc, currentPage, hasMultipleFiles, handlePrevDocument, handleNextDocument]
   );
 
   useEffect(() => {
@@ -597,9 +647,6 @@ export function DocumentViewerLightbox({
   const meta = getFileMeta(file.fileName, file.fileType);
   const category = formatFileCategory(file.fileCategory);
   const isPdf = file.fileName.toLowerCase().endsWith(".pdf");
-  const isDoc =
-    file.fileName.toLowerCase().endsWith(".docx") ||
-    file.fileName.toLowerCase().endsWith(".doc");
 
   const R2_PUBLIC_DEV_URL = "https://pub-70de33883ce54230863841fbf74f07b3.r2.dev";
   const realFileUrl =
@@ -610,7 +657,6 @@ export function DocumentViewerLightbox({
       : null;
 
   const isRealPdf = isPdf && Boolean(realFileUrl);
-  const isPdfOrDoc = isPdf || isDoc || file.fileCategory === "RESEARCH_DOCUMENT";
 
   const isCsv =
     file.fileName.toLowerCase().endsWith(".csv") ||
@@ -666,16 +712,43 @@ export function DocumentViewerLightbox({
             </span>
             <div className="flex items-center gap-2 text-xs font-mono text-white/50">
               <span className="text-sky-300 font-semibold">{category.label}</span>
-              <span>·</span>
-              <span>
-                {new Date(file.uploadedAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </span>
+              {hasMultipleFiles && (
+                <>
+                  <span>·</span>
+                  <span className="text-[#FFA040] font-semibold">
+                    Doc {currentFileIndex + 1} of {files!.length}
+                  </span>
+                </>
+              )}
             </div>
           </div>
+
+          {/* Document Stepper Buttons */}
+          {hasMultipleFiles && (
+            <div className="hidden sm:flex items-center gap-1 bg-[#01142B] border border-white/15 p-0.5 rounded-[2px] ml-1 shrink-0">
+              <button
+                type="button"
+                onClick={handlePrevDocument}
+                className="p-1 rounded-[2px] text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer active:scale-[0.97]"
+                title="Previous Document (← or [)"
+                aria-label="Previous Document"
+              >
+                <IconChevronLeft size={15} stroke={2} />
+              </button>
+              <span className="text-[10px] font-mono text-white/40 px-1">
+                {currentFileIndex + 1}/{files!.length}
+              </span>
+              <button
+                type="button"
+                onClick={handleNextDocument}
+                className="p-1 rounded-[2px] text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer active:scale-[0.97]"
+                title="Next Document (→ or ])"
+                aria-label="Next Document"
+              >
+                <IconChevronRight size={15} stroke={2} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Center: Pagination & Zoom Controls (for Simulated Documents) */}

@@ -12,6 +12,7 @@ import {
   Modal,
   ModalFooter,
   LoadingState,
+  CopyButton,
 } from "@repo/ui";
 import {
   IconReceipt,
@@ -56,6 +57,7 @@ export function PaymentLedgerCard({
           value={<MoneyDisplay amount={summary.totalAmount} />}
           description="Agreed in Statement of Work"
           variant="default"
+          className="animate-card-reveal stagger-2"
         />
 
         <KpiCard
@@ -65,6 +67,7 @@ export function PaymentLedgerCard({
           variant={summary.isDownpaymentCleared ? "emerald" : "default"}
           badge={summary.isDownpaymentCleared ? "CLEARED" : "REQUIRED"}
           badgeColor={summary.isDownpaymentCleared ? "emerald" : "amber"}
+          className="animate-card-reveal stagger-3"
         />
 
         <KpiCard
@@ -80,6 +83,7 @@ export function PaymentLedgerCard({
             )
           }
           variant="default"
+          className="animate-card-reveal stagger-4"
         />
 
         <KpiCard
@@ -91,11 +95,12 @@ export function PaymentLedgerCard({
               : "Due when deliverables are ready"
           }
           variant="default"
+          className="animate-card-reveal stagger-5"
         />
       </div>
 
       {/* ── Progress Towards Milestone Activation ── */}
-      <Card className="p-6 border-white/10 bg-[#01162E]/70 flex flex-col gap-4">
+      <Card className="p-6 border-white/10 bg-[#01162E]/70 flex flex-col gap-4 animate-card-reveal stagger-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h3 className="font-sans text-sm font-semibold text-white">
@@ -142,7 +147,7 @@ export function PaymentLedgerCard({
       </Card>
 
       {/* ── Itemized Payment Transactions Ledger ── */}
-      <Card className="p-0 border-white/10 overflow-hidden bg-[#01142B]/90">
+      <Card className="p-0 border-white/10 overflow-hidden bg-[#01142B]/90 animate-card-reveal stagger-7">
         <div className="p-5 border-b border-white/10 flex items-center justify-between flex-wrap gap-3">
           <div>
             <h3 className="font-sans text-sm font-semibold text-white">
@@ -227,9 +232,15 @@ export function PaymentLedgerCard({
                       </td>
 
                       <td className="py-4 px-5 whitespace-nowrap">
-                        <span className="font-mono text-xs text-white/90 bg-white/[0.04] px-2 py-0.5 rounded-[2px] border border-white/10">
-                          {payment.referenceNumber || "N/A"}
-                        </span>
+                        {payment.referenceNumber ? (
+                          <CopyButton
+                            value={payment.referenceNumber}
+                            label={payment.referenceNumber}
+                            className="bg-white/[0.04] border-white/10 text-white/90 hover:bg-white/[0.08]"
+                          />
+                        ) : (
+                          <span className="font-mono text-xs text-white/30">N/A</span>
+                        )}
                       </td>
 
                       <td className="py-4 px-5 whitespace-nowrap">
@@ -304,9 +315,18 @@ export function PaymentLedgerCard({
                 <span className="font-sans text-xs text-white font-medium">
                   {viewingReceiptPayment.paymentMethod === "GCASH" ? "GCash" : "Bank Transfer"} · {viewingReceiptPayment.paymentType}
                 </span>
-                <span className="font-mono text-[0.688rem] text-white/40">
-                  Ref: {viewingReceiptPayment.referenceNumber || "N/A"}
-                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="font-mono text-[0.688rem] text-white/40">Ref:</span>
+                  {viewingReceiptPayment.referenceNumber ? (
+                    <CopyButton
+                      value={viewingReceiptPayment.referenceNumber}
+                      label={viewingReceiptPayment.referenceNumber}
+                      className="bg-white/[0.04] border-white/10 text-white/90 text-[0.688rem] py-0 px-1.5"
+                    />
+                  ) : (
+                    <span className="font-mono text-[0.688rem] text-white/40">N/A</span>
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-col gap-1">

@@ -132,6 +132,24 @@ Apply micro-interactions that make software feel alive, responsive, and tactile:
    UI animations must stay under **250ms**. Use custom cubic-bezier curves (e.g. `cubic-bezier(0.23, 1, 0.32, 1)` for snappy ease-out). Never use `ease-in` on UI elements.
 5. **No Layout Thrashing**:
    Only animate `transform` and `opacity`. Never animate `padding`, `margin`, or `height`.
+6. **Micro-Staggered Page & Card Intro Transitions**:
+   Use `.animate-card-reveal` paired with rapid `.stagger-1` through `.stagger-8` utility classes (30ms step intervals) on top-level cards, KPI blocks, and page containers:
+   ```css
+   @keyframes cardReveal {
+     0% {
+       opacity: 0;
+       transform: translateY(8px) scale(0.99);
+     }
+     100% {
+       opacity: 1;
+       transform: translateY(0) scale(1);
+     }
+   }
+   ```
+   - Micro-distance: Only 8px translation and 1% scale difference (`0.99`). Elements feel like they are gently settling into place rather than flying across the screen.
+   - Total window: All elements must finish animating within 300ms.
+   - Container-level only: Never stagger 50 table rows individually; animate the outer table container as a single unit.
+   - Accessible reset: Always include `@media (prefers-reduced-motion: reduce)` to disable animations immediately for sensitive users.
 
 ---
 

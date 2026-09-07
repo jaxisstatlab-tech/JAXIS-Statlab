@@ -14,9 +14,10 @@ import {
   EmptyState,
   Pagination,
   Peso,
+  CopyButton,
+  MoneyDisplay,
 } from "@repo/ui";
 import {
-  IconCopy,
   IconSparkles,
   IconArrowRight,
   IconReceiptOff,
@@ -24,7 +25,6 @@ import {
 import { getProjects } from "@/features/projects/actions";
 import { getQuotationByProject } from "@/features/quotations/actions";
 import { PACKAGES_CATALOG } from "@/lib/pricing-rules";
-import { copyTextToClipboard } from "@/lib/clipboard";
 import type { PackageName } from "@prisma/client";
 import type { ClientQuoteEntry } from "@/features/quotations/schemas";
 
@@ -137,16 +137,6 @@ export function ClientQuotationsClient({
     return { id: "JX", name: pkgName.replace(/_/g, " "), badge: "STANDARD" };
   };
 
-  const handleCopyId = async (intakeId?: string) => {
-    const textToCopy = intakeId || "JAXIS-202608-1533";
-    await copyTextToClipboard(textToCopy);
-    setToastMessage({
-      message: "Copied to Clipboard",
-      description: `Intake ID "${textToCopy}" has been copied to your clipboard.`,
-      variant: "info",
-    });
-  };
-
   if (isLoading && entries.length === 0) {
     return (
       <div className="flex-1 w-full min-h-full flex items-center justify-center animate-content-fade my-auto font-sans">
@@ -202,7 +192,7 @@ export function ClientQuotationsClient({
 
         <KpiCard
           label="TOTAL VALUE"
-          value={`₱${stats.totalCommitted.toLocaleString()}`}
+          value={<MoneyDisplay amount={stats.totalCommitted} />}
           variant="default"
           description="Total value of accepted studies"
           className="animate-card-reveal stagger-4"
@@ -286,15 +276,18 @@ export function ClientQuotationsClient({
                         <td className="max-w-[420px] min-w-0">
                           <div className="flex flex-col gap-1 min-w-0 pr-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={() => handleCopyId(project.intakeId)}
-                                title="Click to copy Intake ID"
-                                className="text-xs font-mono font-bold text-[#FF9433] bg-[#CC6600]/15 hover:bg-[#CC6600]/25 border border-[#CC6600]/30 hover:border-[#CC6600] px-2 py-0.5 rounded-[2px] whitespace-nowrap cursor-pointer transition-all inline-flex items-center gap-1 group/btn"
-                              >
-                                <span>{project.intakeId}</span>
-                                <IconCopy size={11} stroke={1.5} className="opacity-40 group-hover/btn:opacity-100 transition-opacity" />
-                              </button>
+                              <CopyButton
+                                variant="badge"
+                                value={project.intakeId}
+                                label={project.intakeId}
+                                onCopy={() =>
+                                  setToastMessage({
+                                    message: "Study ID Copied",
+                                    description: `"${project.intakeId}" has been copied to your clipboard.`,
+                                    variant: "info",
+                                  })
+                                }
+                              />
 
                               <span className="text-[0.6875rem] font-mono text-white/40 whitespace-nowrap">
                                 Target: {new Date(project.deadlineRequested).toLocaleDateString("en-US", {

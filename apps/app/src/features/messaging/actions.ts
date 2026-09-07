@@ -698,6 +698,64 @@ export async function getMyProjectThreads(): Promise<
 }
 
 /**
+ * 3.1 Retrieve total unread messages count for the current session user.
+ * Returns the count of clean, delivered messages sent by others that have
+ * no read receipt for the caller across all accessible project threads.
+ */
+export async function getUnreadMessagesCount(): Promise<number> {
+  const session = await auth();
+  if (!session?.user?.id && !session?.user?.email) {
+    return 0;
+  }
+
+  const callerRole = (session.user as { role?: RoleName }).role || "CLIENT";
+  let resolvedUserId: string | undefined = session.user.id;
+
+  try {
+    return await withDbTimeout((async () => {
+      if (!resolvedUserId && session.user.email) {
+        const u = await db.user.findUnique({
+          where: { email: session.user.email },
+          select: { id: true },
+        });
+        resolvedUserId = u?.id;
+      }
+      if (!resolvedUserId) return 0;
+
+      let projectFilter: Prisma.ProjectWhereInput = {};
+      if (callerRole === "CLIENT") {
+        projectFilter = { clientId: resolvedUserId };
+      } else if (callerRole === "STATISTICIAN") {
+        projectFilter = { assignment: { statisticianId: resolvedUserId } };
+      } else if (callerRole === "SENIOR_QA_LEAD") {
+        projectFilter = { assignment: { qaLeadId: resolvedUserId } };
+      } else {
+        // Other roles do not participate in direct consultation channels
+        return 0;
+      }
+
+      const unreadCount = await db.message.count({
+        where: {
+          isBlocked: false,
+          senderId: { not: resolvedUserId },
+          readReceipts: {
+            none: {
+              userId: resolvedUserId,
+            },
+          },
+          project: projectFilter,
+        },
+      });
+
+      return unreadCount;
+    })());
+  } catch (err) {
+    console.error("[getUnreadMessagesCount] Error:", err);
+    return 0;
+  }
+}
+
+/**
  * 4. Retrieve all blocked messages across projects for Admin & CEO review.
  */
 export async function getBlockedMessages(

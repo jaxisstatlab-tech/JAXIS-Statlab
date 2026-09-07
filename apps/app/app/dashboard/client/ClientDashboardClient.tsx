@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -14,7 +14,7 @@ import {
   LoadingState,
   EmptyState,
   Pagination,
-  AreaChart,
+  CopyButton,
 } from "@repo/ui";
 import {
   IconPlus,
@@ -23,7 +23,9 @@ import {
   IconSearch,
   IconHelp,
   IconRefresh,
-  IconActivity,
+  IconGitCommit,
+  IconCheck,
+  IconX,
 } from "@tabler/icons-react";
 import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
@@ -34,6 +36,90 @@ import { ClientStudyCard } from "@/features/projects/components/ClientStudyCard"
 import { HowToUseModal } from "@/features/client-onboarding/components/HowToUseModal";
 import { ClientWelcomeBanner } from "@/features/client-onboarding/components/ClientWelcomeBanner";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
+
+const RESEARCH_STAGES = [
+  { id: "quote", title: "1. Proposal & Quote", desc: "Scope & pricing review" },
+  { id: "sow", title: "2. Contract (SOW)", desc: "Signed agreement" },
+  { id: "deposit", title: "3. Downpayment", desc: "Deposit to start" },
+  { id: "analysis", title: "4. Analysis & QA", desc: "Statistical modeling" },
+  { id: "deliverables", title: "5. Final Outputs", desc: "Reports & data tables" },
+];
+
+function getStudyStage(status: string) {
+  switch (status) {
+    case "NEW_REQUEST":
+    case "UNDER_EVALUATION":
+      return {
+        stageIndex: 0,
+        statusLabel: "Proposal Under Review",
+        actionText: "Open Study",
+        actionPath: "",
+      };
+    case "AWAITING_INFORMATION":
+      return {
+        stageIndex: 0,
+        statusLabel: "Information Needed",
+        actionText: "Upload Files",
+        actionPath: "",
+      };
+    case "QUOTE_SENT":
+      return {
+        stageIndex: 0,
+        statusLabel: "Price Quote Ready",
+        actionText: "Review Quote",
+        actionPath: "/quote",
+      };
+    case "CLIENT_APPROVED":
+    case "SOW_PENDING":
+      return {
+        stageIndex: 1,
+        statusLabel: "Contract Ready to Sign",
+        actionText: "Sign Contract",
+        actionPath: "/sow",
+      };
+    case "SOW_SIGNED":
+    case "AWAITING_PAYMENT":
+      return {
+        stageIndex: 2,
+        statusLabel: "Downpayment Required",
+        actionText: "Submit Deposit",
+        actionPath: "/payment",
+      };
+    case "ACTIVE":
+    case "EXPERT_ASSIGNED":
+    case "IN_PROGRESS":
+      return {
+        stageIndex: 3,
+        statusLabel: "Analysis in Progress",
+        actionText: "View Study Desk",
+        actionPath: "",
+      };
+    case "FOR_QA":
+    case "QA_REVISION":
+      return {
+        stageIndex: 3,
+        statusLabel: "Senior QA Review",
+        actionText: "View Study Desk",
+        actionPath: "",
+      };
+    case "DELIVERED":
+    case "REVISION_REQUESTED":
+    case "CLOSED":
+      return {
+        stageIndex: 4,
+        statusLabel: "Deliverables Ready",
+        actionText: "Download Outputs",
+        actionPath: "/deliverables",
+      };
+    default:
+      return {
+        stageIndex: 0,
+        statusLabel: "Active Study",
+        actionText: "View Study",
+        actionPath: "",
+      };
+  }
+}
 
 interface ClientDashboardClientProps {
   initialProjects: ProjectDetailItem[];
@@ -154,6 +240,36 @@ export function ClientDashboardClient({
     };
   }, [loadData]);
 
+  // Keyboard shortcut: Press '/' anywhere to focus search, 'Escape' to clear and blur
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const target = e.target as HTMLElement | null;
+        const isInput =
+          target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable);
+        if (!isInput) {
+          e.preventDefault();
+          searchInputRef.current?.focus();
+          searchInputRef.current?.select();
+        }
+      } else if (e.key === "Escape") {
+        if (document.activeElement === searchInputRef.current) {
+          e.preventDefault();
+          setSearchQuery("");
+          searchInputRef.current?.blur();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
+
   // Filter out any projects with pending missing info
   const awaitingInfoProjects = useMemo(() => {
     return projects.filter((p) => p.masterStatus === "AWAITING_INFORMATION");
@@ -240,21 +356,37 @@ export function ClientDashboardClient({
     return filteredProjects.slice(start, start + pageSize);
   }, [filteredProjects, currentPage, pageSize]);
 
-  // Analytical Telemetry: 6-Month Research Milestones & Progress Activity
-  const chartData = useMemo(() => {
-    const months = ["Apr", "May", "Jun", "Jul", "Aug", "Sep"];
-    const activeCount = kpis.inProgress + kpis.actionRequired;
-    const completedCount = kpis.delivered;
+  // Live Research Journey: Select primary active study for milestone progress tracker
+  const primaryStudy = useMemo(() => {
+    // 1. Priority: Action required
+    const actionStudy = projects.find(
+      (p) =>
+        p.masterStatus === "QUOTE_SENT" ||
+        p.masterStatus === "SOW_PENDING" ||
+        p.masterStatus === "AWAITING_PAYMENT" ||
+        p.masterStatus === "AWAITING_INFORMATION"
+    );
+    if (actionStudy) return actionStudy;
 
-    return months.map((m, idx) => {
-      const factor = (idx + 1) / months.length;
-      return {
-        month: m,
-        "Active Studies": Math.max(0, Math.round(activeCount * factor)),
-        "Completed Milestones": Math.max(0, Math.round(completedCount * factor + (idx > 3 ? 1 : 0))),
-      };
-    });
-  }, [kpis]);
+    // 2. Secondary: Currently in progress
+    const activeStudy = projects.find(
+      (p) =>
+        p.masterStatus === "ACTIVE" ||
+        p.masterStatus === "EXPERT_ASSIGNED" ||
+        p.masterStatus === "IN_PROGRESS" ||
+        p.masterStatus === "FOR_QA" ||
+        p.masterStatus === "QA_REVISION"
+    );
+    if (activeStudy) return activeStudy;
+
+    // 3. Fallback: Most recent study
+    return projects[0] || null;
+  }, [projects]);
+
+  const stageInfo = useMemo(() => {
+    if (!primaryStudy) return null;
+    return getStudyStage(primaryStudy.masterStatus);
+  }, [primaryStudy]);
 
   const handleProfileSuccess = async () => {
     await loadData();
@@ -478,33 +610,117 @@ export function ClientDashboardClient({
         />
       </div>
 
-      {/* ── Research Milestone Progression & Activity Chart ── */}
-      <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-4 animate-card-reveal stagger-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
-          <div className="flex items-center gap-2">
-            <IconActivity size={18} stroke={2} className="text-[#CC6600]" />
-            <h3 className="text-sm font-bold text-white font-sans">
-              Research Pipeline &amp; Milestone Activity
-            </h3>
-          </div>
-          <span className="text-xs text-white/50 font-mono">
-            6-Month Telemetry Overview
-          </span>
-        </div>
+      {/* ── Live Research Journey & Milestone Progress Tracker ── */}
+      {primaryStudy && stageInfo && (
+        <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-5 animate-card-reveal stagger-5">
+          {/* Top Bar: Study Metadata & Direct Action */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-4">
+            <div className="flex items-start sm:items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] shrink-0">
+                <IconGitCommit size={17} stroke={2} />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-xs font-bold text-[#FFA040]">
+                    {primaryStudy.intakeId}
+                  </span>
+                  <span className="text-white/30 text-xs font-mono">·</span>
+                  <span className="text-xs font-sans text-white/50">
+                    Target: {new Date(primaryStudy.deadlineRequested).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                </div>
+                <h3 className="text-sm font-bold text-white font-sans truncate mt-0.5" title={primaryStudy.researchTitle}>
+                  {primaryStudy.researchTitle}
+                </h3>
+              </div>
+            </div>
 
-        <AreaChart
-          data={chartData}
-          index="month"
-          categories={["Active Studies", "Completed Milestones"]}
-          colors={["#CC6600", "#38BDF8"]}
-          height={220}
-          valueFormatter={(val, cat) =>
-            cat?.includes("Milestone")
-              ? `${val} ${val === 1 ? "Milestone" : "Milestones"}`
-              : `${val} ${val === 1 ? "Study" : "Studies"}`
-          }
-        />
-      </Card>
+            <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+              <Link href={`/dashboard/client/projects/${primaryStudy.id}${stageInfo.actionPath}`}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="font-sans text-xs font-semibold px-3.5 py-1.5 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md"
+                >
+                  <span>{stageInfo.actionText} →</span>
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* 5-Stage Visual Stepper */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            {RESEARCH_STAGES.map((stg, i) => {
+              const isCompleted = i < stageInfo.stageIndex;
+              const isCurrent = i === stageInfo.stageIndex;
+
+              return (
+                <div
+                  key={stg.id}
+                  className={`p-3 rounded-[2px] border transition-all flex flex-col justify-between gap-2 ${
+                    isCurrent
+                      ? "bg-[#011C38] border-[#CC6600]/80 shadow-md ring-1 ring-[#CC6600]/40"
+                      : isCompleted
+                      ? "bg-emerald-500/[0.04] border-emerald-500/25 text-white/80"
+                      : "bg-white/[0.01] border-white/[0.06] text-white/40"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`w-5 h-5 rounded-full text-[10px] font-mono font-bold flex items-center justify-center ${
+                        isCurrent
+                          ? "bg-[#CC6600] text-white"
+                          : isCompleted
+                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                          : "bg-white/[0.05] text-white/40 border border-white/10"
+                      }`}
+                    >
+                      {isCompleted ? <IconCheck size={12} stroke={2.5} /> : i + 1}
+                    </span>
+
+                    <span className="text-[9px] font-mono tracking-wider uppercase font-semibold">
+                      {isCompleted ? (
+                        <span className="text-emerald-400">Done</span>
+                      ) : isCurrent ? (
+                        <span className="text-[#FFA040] animate-pulse">Active</span>
+                      ) : (
+                        <span className="text-white/30">Next</span>
+                      )}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4
+                      className={`text-xs font-sans font-semibold leading-snug ${
+                        isCurrent ? "text-white" : isCompleted ? "text-white/90" : "text-white/40"
+                      }`}
+                    >
+                      {stg.title}
+                    </h4>
+                    <p className="text-[10px] font-sans text-white/50 mt-0.5 line-clamp-1">
+                      {stg.desc}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Subtitle / Context Note */}
+          <div className="flex items-center justify-between text-xs text-white/50 font-sans pt-1 border-t border-white/[0.06] flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#CC6600] animate-pulse" />
+              <span>Current Status: <strong className="text-white font-medium">{stageInfo.statusLabel}</strong></span>
+            </div>
+            <Link
+              href={`/dashboard/client/projects/${primaryStudy.id}`}
+              className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs"
+            >
+              View Full Study Details →
+            </Link>
+          </div>
+        </Card>
+      )}
 
       {/* ── Studies Header, Filter Tabs, and View Switcher ── */}
       <div className="flex flex-col gap-4 animate-card-reveal stagger-6">
@@ -643,13 +859,32 @@ export function ClientDashboardClient({
               className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none"
             />
             <input
+              ref={searchInputRef}
               id="client-dashboard-search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search title or ID..."
-              className="w-full bg-[#010915] border border-white/10 rounded-[2px] pl-9 pr-3 py-2 sm:py-1.5 text-base sm:text-xs text-white placeholder-white/40 outline-none focus:border-[#CC6600] focus-visible:ring-2 focus-visible:ring-[#CC6600] focus-visible:ring-offset-2 focus-visible:ring-offset-[#010114] transition-all font-sans"
+              className="w-full bg-[#010915] border border-white/10 rounded-[2px] pl-9 pr-8 py-2 sm:py-1.5 text-base sm:text-xs text-white placeholder-white/40 outline-none focus:border-[#CC6600] focus-visible:ring-2 focus-visible:ring-[#CC6600] focus-visible:ring-offset-2 focus-visible:ring-offset-[#010114] transition-all font-sans"
             />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  searchInputRef.current?.focus();
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors cursor-pointer p-0.5 rounded-[2px] active:scale-[0.97]"
+                title="Clear search"
+                aria-label="Clear search"
+              >
+                <IconX size={13} stroke={2} />
+              </button>
+            ) : (
+              <kbd className="hidden sm:inline-flex absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono text-white/30 bg-white/[0.06] border border-white/10 rounded-[2px] pointer-events-none leading-none select-none">
+                /
+              </kbd>
+            )}
           </div>
         </div>
 
@@ -737,10 +972,19 @@ export function ClientDashboardClient({
                       }
                       className="group hover:bg-white/[0.02] transition-colors virtual-row"
                     >
-                      <td className="font-mono text-xs text-[#FF9433] font-bold whitespace-nowrap">
-                        <span className="bg-[#CC6600]/15 border border-[#CC6600]/35 px-2.5 py-1 rounded-[2px]">
-                          {study.intakeId}
-                        </span>
+                      <td className="font-mono text-xs whitespace-nowrap">
+                        <CopyButton
+                          variant="badge"
+                          value={study.intakeId}
+                          label={study.intakeId}
+                          onCopy={() =>
+                            setToast({
+                              message: "Study ID Copied",
+                              description: `"${study.intakeId}" has been copied to your clipboard.`,
+                              variant: "info",
+                            })
+                          }
+                        />
                       </td>
                       <td className="max-w-[440px] min-w-0">
                         <div className="flex flex-col gap-1 pr-2 min-w-0">

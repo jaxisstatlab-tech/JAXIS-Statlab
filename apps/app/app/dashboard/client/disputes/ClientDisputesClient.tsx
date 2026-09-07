@@ -10,6 +10,8 @@ import {
   Peso,
   Pagination,
   Toast,
+  CopyButton,
+  MoneyDisplay,
 } from "@repo/ui";
 import {
   getClientEligibleDisputesAction,
@@ -395,8 +397,19 @@ export function ClientDisputesClient({
                 {paginatedDisputes.map((d) => (
                   <tr key={d.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="py-3.5 px-4">
-                      <span className="font-mono text-white font-semibold block">{d.projectIntakeId}</span>
-                      <span className="text-[0.688rem] text-white/50 line-clamp-1 max-w-[220px] mt-0.5">
+                      <CopyButton
+                        variant="badge"
+                        value={d.projectIntakeId}
+                        label={d.projectIntakeId}
+                        onCopy={() =>
+                          setToast({
+                            variant: "info",
+                            message: "Study ID Copied",
+                            description: `"${d.projectIntakeId}" has been copied to your clipboard.`,
+                          })
+                        }
+                      />
+                      <span className="text-[0.688rem] text-white/50 line-clamp-1 max-w-[220px] mt-1 block">
                         {d.projectTitle}
                       </span>
                     </td>
@@ -404,7 +417,7 @@ export function ClientDisputesClient({
                       {getGroundsLabel(d.grounds)}
                     </td>
                     <td className="py-3.5 px-4 font-mono font-semibold text-white/90">
-                      <Peso />{d.grossAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      <MoneyDisplay amount={d.grossAmount} />
                     </td>
                     <td className="py-3.5 px-4">
                       {getStatusBadge(d.status)}

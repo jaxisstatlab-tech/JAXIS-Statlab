@@ -11,6 +11,7 @@ export interface CopyButtonProps
   copiedLabel?: string;
   iconOnly?: boolean;
   timeout?: number;
+  variant?: "default" | "badge" | "ghost";
   onCopy?: (value: string) => void;
 }
 
@@ -20,6 +21,7 @@ export function CopyButton({
   copiedLabel = "Copied",
   iconOnly = false,
   timeout = 2000,
+  variant = "default",
   className = "",
   onCopy,
   onClick,
@@ -56,28 +58,42 @@ export function CopyButton({
     }
   };
 
+  const getVariantClasses = () => {
+    if (variant === "badge") {
+      return hasCopied
+        ? "border-[#10B981]/50 bg-[#10B981]/20 text-[#10B981] font-bold"
+        : "border-[#CC6600]/30 bg-[#CC6600]/15 text-[#FF9433] hover:border-[#CC6600] hover:bg-[#CC6600]/25 font-bold";
+    }
+    if (variant === "ghost") {
+      return hasCopied
+        ? "border-transparent bg-[#10B981]/15 text-[#10B981]"
+        : "border-transparent bg-transparent text-white/60 hover:text-white hover:bg-white/[0.06]";
+    }
+    return hasCopied
+      ? "border-[#10B981]/50 bg-[#10B981]/15 text-[#10B981]"
+      : "border-white/15 bg-white/[0.04] text-white/70 hover:bg-white/[0.08] hover:text-white";
+  };
+
   return (
     <button
       type="button"
       onClick={handleCopy}
       title={hasCopied ? copiedLabel : label}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-[2px] border px-2 py-1 font-mono text-xs font-medium transition-all select-none",
-        hasCopied
-          ? "border-[#10B981]/50 bg-[#10B981]/15 text-[#10B981]"
-          : "border-white/15 bg-white/[0.04] text-white/70 hover:bg-white/[0.08] hover:text-white",
-        iconOnly && "px-1.5 py-1",
+        "inline-flex items-center gap-1.5 rounded-[2px] border px-2 py-0.5 font-mono text-xs transition-all select-none cursor-pointer active:scale-[0.97]",
+        getVariantClasses(),
+        iconOnly && "px-1.5 py-0.5",
         className
       )}
       {...props}
     >
       {hasCopied ? (
-        <IconCheck size={14} stroke={2} className="text-[#10B981]" />
+        <IconCheck size={13} stroke={2.5} className="text-[#10B981] shrink-0" />
       ) : (
-        <IconCopy size={14} stroke={1.5} className="text-white/60" />
+        <IconCopy size={12} stroke={1.5} className="opacity-60 hover:opacity-100 shrink-0 transition-opacity" />
       )}
       {!iconOnly && (
-        <span className="text-[0.6875rem] uppercase tracking-wider">
+        <span className="leading-none">
           {hasCopied ? copiedLabel : label}
         </span>
       )}

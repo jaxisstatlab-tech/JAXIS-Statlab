@@ -513,7 +513,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
           ]}
         />
 
-        <Card className="p-8 border-l-4 border-l-[#CC6600] flex flex-col justify-between min-h-[220px] gap-5 bg-[#011B38]/40 border-white/[0.08]">
+        <Card className="p-8 border-l-4 border-l-[#CC6600] flex flex-col justify-between min-h-[220px] gap-5 bg-[#011B38]/40 border-white/[0.08] animate-card-reveal stagger-1">
           <div className="flex flex-col gap-3">
             <h2 className="text-base font-bold text-white uppercase tracking-wider font-sans">
               Institutional Profile Verification Required
@@ -597,7 +597,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
       {/* ── STEP 1: Research Information ── */}
       {currentStep === 1 && (
-        <Card className="p-8 md:p-10" style={{ padding: "2rem", display: "flex", flexDirection: "column" }}>
+        <Card className="p-8 md:p-10 animate-card-reveal stagger-1" style={{ padding: "2rem", display: "flex", flexDirection: "column" }}>
           <form onSubmit={handleProceedToStep2} className="flex flex-col gap-8">
             <div className="border-b border-white/[0.08] pb-5">
               <h2 className="text-base font-bold text-white font-sans">
@@ -684,7 +684,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
       {/* ── STEP 2: Document Attachments ── */}
       {currentStep === 2 && (
-        <Card className="p-8 md:p-10 flex flex-col gap-8" style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
+        <Card className="p-8 md:p-10 flex flex-col gap-8 animate-card-reveal stagger-1" style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
           <div className="border-b border-white/[0.08] pb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h2 className="text-base font-bold text-white font-sans">
@@ -1216,7 +1216,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
       {/* ── STEP 3: Review & Submit ── */}
       {currentStep === 3 && (
-        <Card className="p-8 md:p-10 flex flex-col gap-8" style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
+        <Card className="p-8 md:p-10 flex flex-col gap-8 animate-card-reveal stagger-1" style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
           <div className="border-b border-white/[0.08] pb-5" style={{ paddingBottom: "1.25rem", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
             <h2 className="text-base font-bold text-white font-sans">
               Summary Review & Submission

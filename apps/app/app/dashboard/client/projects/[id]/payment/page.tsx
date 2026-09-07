@@ -152,7 +152,7 @@ export default function ClientProjectPaymentPage() {
       />
 
       {/* ── SOW Agreement Status Banner ── */}
-      <div className="p-4 rounded-[2px] bg-[#011B38]/80 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-4 rounded-[2px] bg-[#011B38]/80 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-card-reveal stagger-1">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-[2px] bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
             <IconShieldCheck size={20} stroke={2} className="text-emerald-400" />

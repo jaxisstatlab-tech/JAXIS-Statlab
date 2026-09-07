@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import type { RoleName } from "@prisma/client";
+import { getUnreadMessagesCount } from "@/features/messaging/actions";
 import {
   IconLayoutDashboard,
   IconFiles,
@@ -59,6 +60,7 @@ export interface SidebarProps {
   userFullName?: string;
   userEmail?: string;
   clientProfileIncomplete?: boolean;
+  initialUnreadMessagesCount?: number;
   className?: string;
   isOpen?: boolean;
   onClose?: () => void;
@@ -546,6 +548,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   userFullName = "User",
   userEmail = "",
   clientProfileIncomplete = false,
+  initialUnreadMessagesCount = 0,
   className = "",
   isOpen = false,
   onClose,
@@ -553,6 +556,70 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const pathname = usePathname();
   const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(
+    initialUnreadMessagesCount ?? 0
+  );
+
+  // Synchronize state when server preloaded count changes
+  useEffect(() => {
+    if (typeof initialUnreadMessagesCount === "number") {
+      setUnreadMessagesCount(initialUnreadMessagesCount);
+    }
+  }, [initialUnreadMessagesCount]);
+
+  // Client-side fetcher to refresh unread messages count
+  const refreshUnreadCount = useCallback(async () => {
+    try {
+      const count = await getUnreadMessagesCount();
+      setUnreadMessagesCount(count);
+    } catch {
+      // silent fallback
+    }
+  }, []);
+
+  // When visiting any messages desk, refresh unread count after receipts settle
+  useEffect(() => {
+    if (pathname.includes("/messages")) {
+      const timer = setTimeout(() => {
+        refreshUnreadCount();
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [pathname, refreshUnreadCount]);
+
+  // Listen to global messaging events, tab focus, and background pulse
+  useEffect(() => {
+    const handleUnreadUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ count?: number }>;
+      if (typeof customEvent.detail?.count === "number") {
+        setUnreadMessagesCount(customEvent.detail.count);
+      } else {
+        refreshUnreadCount();
+      }
+    };
+
+    window.addEventListener("jaxis:unread-count-updated", handleUnreadUpdate);
+    window.addEventListener("jaxis:message-read", refreshUnreadCount);
+    window.addEventListener("jaxis:new-message", refreshUnreadCount);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refreshUnreadCount();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    // Periodic 25-second background refresh
+    const interval = setInterval(refreshUnreadCount, 25000);
+
+    return () => {
+      window.removeEventListener("jaxis:unread-count-updated", handleUnreadUpdate);
+      window.removeEventListener("jaxis:message-read", refreshUnreadCount);
+      window.removeEventListener("jaxis:new-message", refreshUnreadCount);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(interval);
+    };
+  }, [refreshUnreadCount]);
 
   const handleLogout = async () => {
     try {
@@ -834,6 +901,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   );
                 }
 
+                const isMessagesLink =
+                  item.label === "Messages" || item.href.endsWith("/messages");
+                const hasNewMessages = isMessagesLink && unreadMessagesCount > 0;
+
                 return (
                   <Link
                     key={`${item.href}-${item.label}`}
@@ -843,9 +914,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       router.prefetch(item.href);
                     }}
                     onClick={(e) => handleNavClick(e, item.href)}
-                    className={`flex items-center justify-between px-3 py-1.5 text-xs font-medium rounded-r-[3px] rounded-l-[1px] transition-all duration-150 ease-out group border-l-2 ${
+                    className={`flex items-center justify-between px-3 py-1.5 text-xs font-medium rounded-r-[3px] rounded-l-[1px] transition-all duration-150 ease-out group border-l-2 active:scale-[0.98] ${
                       effectivelyActive
                         ? "bg-[#CC6600]/12 text-white font-semibold border-[#CC6600]"
+                        : hasNewMessages
+                        ? "border-[#CC6600] bg-[#CC6600]/[0.08] text-white hover:bg-[#CC6600]/[0.14]"
                         : "border-transparent text-white/65 hover:text-white hover:bg-white/[0.04]"
                     }`}
                     style={{
@@ -858,11 +931,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }}
                   >
                     <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
-                      <span className={`${effectivelyActive ? "text-[#CC6600]" : "text-white/40 group-hover:text-white/80"} transition-colors flex-shrink-0`}>
+                      <span
+                        className={`${
+                          effectivelyActive
+                            ? "text-[#CC6600]"
+                            : hasNewMessages
+                            ? "text-[#FFA040]"
+                            : "text-white/40 group-hover:text-white/80"
+                        } transition-colors flex-shrink-0`}
+                      >
                         {item.icon}
                       </span>
                       <span
-                        className={`font-sans text-[0.8125rem] truncate ${effectivelyActive ? "font-semibold text-white" : "font-normal text-white/70 group-hover:text-white"}`}
+                        className={`font-sans text-[0.8125rem] truncate ${
+                          effectivelyActive
+                            ? "font-semibold text-white"
+                            : hasNewMessages
+                            ? "font-semibold text-white"
+                            : "font-normal text-white/70 group-hover:text-white"
+                        }`}
                         title={item.label}
                       >
                         {item.label}
@@ -877,17 +964,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           title="Navigating..."
                         />
                       )}
-                      {item.count !== undefined && item.count > 0 && (
-                        <span
-                          className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full flex-shrink-0 border leading-none ${
-                            effectivelyActive
-                              ? "bg-[#CC6600]/25 text-[#FFA040] border-[#CC6600]/40 font-bold"
-                              : "bg-white/[0.06] text-white/60 border-white/10 group-hover:text-white"
-                          }`}
-                        >
-                          {item.count}
-                        </span>
+
+                      {/* Tactile New Messages Indicator (Live Pulse + High-Contrast Count Chip) */}
+                      {hasNewMessages ? (
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <span
+                            className="relative flex h-2 w-2 items-center justify-center flex-shrink-0"
+                            aria-label="New unread message activity"
+                          >
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-80" />
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC6600]" />
+                          </span>
+                          <span
+                            className="text-[10px] font-mono px-1.5 py-0.5 rounded-[2px] bg-[#CC6600] text-white font-bold leading-none shadow-sm transition-transform duration-150 active:scale-90 select-none flex-shrink-0 tracking-tight"
+                            title={`${unreadMessagesCount} unread message${unreadMessagesCount > 1 ? "s" : ""}`}
+                          >
+                            {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount} NEW
+                          </span>
+                        </div>
+                      ) : (
+                        item.count !== undefined && item.count > 0 && (
+                          <span
+                            className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full flex-shrink-0 border leading-none ${
+                              effectivelyActive
+                                ? "bg-[#CC6600]/25 text-[#FFA040] border-[#CC6600]/40 font-bold"
+                                : "bg-white/[0.06] text-white/60 border-white/10 group-hover:text-white"
+                            }`}
+                          >
+                            {item.count}
+                          </span>
+                        )
                       )}
+
                       {item.badge && (
                         <span
                           className={`text-[10px] font-sans px-1.5 py-0.5 rounded-[2px] border font-semibold flex-shrink-0 tracking-wide uppercase ${

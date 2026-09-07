@@ -266,6 +266,7 @@ export function ClientDefenseLabClient({
               unit="HOURS"
               description="Mock defense hours purchased in approved quotes"
               variant="default"
+              className="animate-card-reveal stagger-1"
             />
             <KpiCard
               label="AVAILABLE TO SCHEDULE"
@@ -273,6 +274,7 @@ export function ClientDefenseLabClient({
               unit="HOURS"
               description="Remaining unbooked rehearsal hours"
               variant="default"
+              className="animate-card-reveal stagger-2"
             />
             <KpiCard
               label="UPCOMING REHEARSALS"
@@ -280,6 +282,7 @@ export function ClientDefenseLabClient({
               unit="SESSIONS"
               description="Active scheduled rehearsal appointments"
               variant="default"
+              className="animate-card-reveal stagger-3"
             />
             <KpiCard
               label="COMPLETED REHEARSALS"
@@ -287,11 +290,12 @@ export function ClientDefenseLabClient({
               unit="SESSIONS"
               description="Completed sessions with recordings available"
               variant="default"
+              className="animate-card-reveal stagger-4"
             />
           </div>
 
           {/* 12-HOUR RESCHEDULING POLICY BANNER */}
-          <div className="p-4 bg-[#01142B] border border-sky-500/30 rounded-[2px] flex items-start gap-3 text-xs text-sky-200">
+          <div className="p-4 bg-[#01142B] border border-sky-500/30 rounded-[2px] flex items-start gap-3 text-xs text-sky-200 animate-card-reveal stagger-5">
             <IconInfoCircle size={18} stroke={2} className="text-sky-400 shrink-0 mt-0.5" />
             <div className="flex flex-col gap-1">
               <span className="font-semibold text-white">
@@ -305,7 +309,7 @@ export function ClientDefenseLabClient({
           </div>
 
           {/* ENTITLED STUDIES OVERVIEW */}
-          <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-4">
+          <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-4 animate-card-reveal stagger-6">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div className="flex items-center gap-2">
                 <IconShieldCheck size={18} stroke={2} className="text-emerald-400" />
@@ -385,7 +389,7 @@ export function ClientDefenseLabClient({
           </Card>
 
           {/* ACTIVE & UPCOMING REHEARSAL SESSIONS */}
-          <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-4">
+          <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-4 animate-card-reveal stagger-7">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div className="flex items-center gap-2">
                 <IconCalendarEvent size={18} stroke={2} className="text-[#CC6600]" />
@@ -501,7 +505,7 @@ export function ClientDefenseLabClient({
           </Card>
 
           {/* COMPLETED REHEARSALS & RECORDING VAULT */}
-          <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-4">
+          <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-4 animate-card-reveal stagger-8">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div className="flex items-center gap-2">
                 <IconDownload size={18} stroke={2} className="text-emerald-400" />

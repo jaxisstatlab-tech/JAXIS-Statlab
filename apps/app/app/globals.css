@@ -253,6 +253,31 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
   animation: contentFadeIn 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* ── Emil Kowalski Staggered Component Reveal ── */
+@keyframes cardReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-card-reveal {
+  animation: cardReveal 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.stagger-1 { animation-delay: 30ms; }
+.stagger-2 { animation-delay: 60ms; }
+.stagger-3 { animation-delay: 90ms; }
+.stagger-4 { animation-delay: 120ms; }
+.stagger-5 { animation-delay: 150ms; }
+.stagger-6 { animation-delay: 180ms; }
+.stagger-7 { animation-delay: 210ms; }
+.stagger-8 { animation-delay: 240ms; }
+
 .font-signature {
   font-family: var(--font-signature), 'Mrs Saint Delafield', cursive !important;
 }
@@ -369,11 +394,14 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
   .animate-modal-backdrop-in,
   .animate-modal-backdrop-out,
   .animate-modal-dialog-in,
-  .animate-modal-dialog-out {
+  .animate-modal-dialog-out,
+  [class*="stagger-"] {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
     transform: none !important;
+    opacity: 1 !important;
   }
 }
 

@@ -242,6 +242,8 @@ export function ProjectFilesCard({
       {previewFile && (
         <DocumentViewerLightbox
           file={previewFile}
+          files={files}
+          onNavigateFile={(file) => setPreviewFile(file)}
           onClose={() => setPreviewFile(null)}
         />
       )}

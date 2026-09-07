@@ -103,6 +103,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
             unit="FILES"
             description="Verified research deliverables"
             variant="emerald"
+            className="animate-card-reveal stagger-1"
           />
 
           <KpiCard
@@ -114,6 +115,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
                 : "3-day post-delivery window concluded"
             }
             variant={revisionWindow.isActive ? "sky" : "default"}
+            className="animate-card-reveal stagger-2"
           />
 
           <KpiCard
@@ -125,13 +127,14 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
                 : "Active cloud retention"
             }
             variant="default"
+            className="animate-card-reveal stagger-3"
           />
         </div>
       ) : null}
 
       {/* Payment Lock Notice */}
       {!isReleased && paymentLock?.isLocked && (
-        <Card className="p-8 sm:p-12 text-center bg-[#01142B] border border-amber-500/30">
+        <Card className="p-8 sm:p-12 text-center bg-[#01142B] border border-amber-500/30 animate-card-reveal stagger-1">
           <div className="mx-auto w-16 h-16 rounded-[2px] bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-4">
             <IconReceipt size={36} stroke={1.5} />
           </div>
@@ -157,7 +160,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
 
       {/* Unreleased Under Packaging Notice */}
       {!isReleased && !paymentLock?.isLocked && (
-        <Card className="p-8 sm:p-12 text-center bg-[#01142B] border border-sky-500/20">
+        <Card className="p-8 sm:p-12 text-center bg-[#01142B] border border-sky-500/20 animate-card-reveal stagger-1">
           <div className="mx-auto w-16 h-16 rounded-[2px] bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mb-4">
             <IconShieldCheck size={36} />
           </div>
@@ -181,7 +184,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
 
       {/* Active Revision Window Banner */}
       {isReleased && revisionWindow.isActive && (
-        <Card className="p-6 bg-[#011B38] border border-sky-500/30">
+        <Card className="p-6 bg-[#011B38] border border-sky-500/30 animate-card-reveal stagger-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="p-2.5 rounded-[2px] bg-sky-500/10 text-sky-400 border border-sky-500/20">
@@ -217,7 +220,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
 
       {/* Deliverables Download Grid */}
       {isReleased && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-card-reveal stagger-5">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-sans font-bold text-lg text-white">Download Final Outputs</h2>

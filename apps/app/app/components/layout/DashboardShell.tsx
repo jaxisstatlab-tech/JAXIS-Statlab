@@ -12,6 +12,7 @@ export interface DashboardShellProps {
   userEmail: string;
   clientProfileIncomplete?: boolean;
   initialActiveShift?: ActiveShiftStatus | null;
+  initialUnreadMessagesCount?: number;
   children: React.ReactNode;
 }
 
@@ -21,6 +22,7 @@ export function DashboardShell({
   userEmail,
   clientProfileIncomplete = false,
   initialActiveShift,
+  initialUnreadMessagesCount = 0,
   children,
 }: DashboardShellProps) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -61,6 +63,7 @@ export function DashboardShell({
             userFullName={userFullName}
             userEmail={userEmail}
             clientProfileIncomplete={clientProfileIncomplete}
+            initialUnreadMessagesCount={initialUnreadMessagesCount}
             isOpen={isMobileSidebarOpen}
             onClose={() => setIsMobileSidebarOpen(false)}
           />

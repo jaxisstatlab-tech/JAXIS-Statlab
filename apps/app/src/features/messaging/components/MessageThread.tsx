@@ -251,6 +251,10 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             res.data.currentUserId,
             res.data.currentUserName || undefined
           ).catch(() => {});
+
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("jaxis:unread-count-updated"));
+          }
         }
 
         // Cache snapshot to browser sessionStorage for instant 0ms reload

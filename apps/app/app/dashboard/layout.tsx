@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import type { RoleName } from "@prisma/client";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { getActiveShift } from "@/features/attendance/actions";
+import { getUnreadMessagesCount } from "@/features/messaging/actions";
 
 export default async function DashboardLayout({
   children,
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
 
   const isInternal = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO"].includes(userRole);
   const initialActiveShift = isInternal ? await getActiveShift() : null;
+  const initialUnreadMessagesCount = await getUnreadMessagesCount();
 
   return (
     <DashboardShell
@@ -34,6 +36,7 @@ export default async function DashboardLayout({
       userEmail={userEmail}
       clientProfileIncomplete={clientProfileIncomplete}
       initialActiveShift={initialActiveShift}
+      initialUnreadMessagesCount={initialUnreadMessagesCount}
     >
       {children}
     </DashboardShell>

@@ -82,6 +82,45 @@ const CATEGORY_OPTIONS: {
   },
 ];
 
+const PIPELINE_STAGES = [
+  { id: "proposal", title: "1. Proposal & Quote", desc: "Pricing & scope" },
+  { id: "sow", title: "2. Contract (SOW)", desc: "Signed agreement" },
+  { id: "deposit", title: "3. Downpayment", desc: "Deposit to start" },
+  { id: "analysis", title: "4. Analysis & QA", desc: "Statistical compute" },
+  { id: "deliverables", title: "5. Deliverables", desc: "Final defense package" },
+];
+
+function getPipelineStageIndex(status: string): number {
+  switch (status) {
+    case "NEW_REQUEST":
+    case "AWAITING_INFORMATION":
+    case "UNDER_EVALUATION":
+    case "QUOTE_SENT":
+      return 0;
+    case "CLIENT_APPROVED":
+    case "SOW_PENDING":
+      return 1;
+    case "SOW_SIGNED":
+    case "AWAITING_PAYMENT":
+      return 2;
+    case "ACTIVE":
+    case "EXPERT_ASSIGNED":
+    case "IN_PROGRESS":
+    case "SLA_PAUSED":
+    case "SCOPE_CREEP_HALTED":
+    case "REASSIGNMENT_NEEDED":
+    case "REVISION_REQUESTED":
+    case "FOR_QA":
+    case "QA_REVISION":
+      return 3;
+    case "DELIVERED":
+    case "CLOSED":
+      return 4;
+    default:
+      return 0;
+  }
+}
+
 function formatRegion(regionCode?: string | null): string {
   if (!regionCode) return "Not Specified";
   const map: Record<string, string> = {
@@ -457,150 +496,213 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
         />
       )}
 
-      {/* ── Status Action Bar ── */}
-      <Card
-        className="overflow-hidden border border-white/10 bg-[#01142B] rounded-[2px] shadow-lg"
-        style={{ padding: "0.875rem 1.5rem" }}
-      >
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3 sm:gap-6">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-xs font-sans text-white/60 font-semibold tracking-wider uppercase">
-                Status:
-              </span>
-              {(() => {
-                const displayStatus = getProjectDisplayStatus(project);
-                return (
-                  <StatusBadge
-                    status={displayStatus.status}
-                    label={displayStatus.label}
-                    pulse={displayStatus.pulse}
+      {/* ── Status Action Bar with 5-Stage Study Pipeline ── */}
+      {(() => {
+        const currentPipelineStage = getPipelineStageIndex(project.masterStatus);
+
+        return (
+          <Card
+            className="overflow-hidden border border-white/10 bg-[#01142B] rounded-[2px] shadow-lg flex flex-col gap-4 p-5 sm:p-6 animate-card-reveal stagger-1"
+          >
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-6">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="text-xs font-sans text-white/60 font-semibold tracking-wider uppercase">
+                    Status:
+                  </span>
+                  {(() => {
+                    const displayStatus = getProjectDisplayStatus(project);
+                    return (
+                      <StatusBadge
+                        status={displayStatus.status}
+                        label={displayStatus.label}
+                        pulse={displayStatus.pulse}
+                      />
+                    );
+                  })()}
+                  <CopyButton
+                    variant="badge"
+                    value={project.intakeId}
+                    label={project.intakeId}
+                    onCopy={() =>
+                      setToastMessage({
+                        message: "Copied to Clipboard",
+                        description: `Study ID "${project.intakeId}" has been copied to your clipboard.`,
+                        variant: "info",
+                      })
+                    }
                   />
-                );
-              })()}
-              <CopyButton
-                value={project.intakeId}
-                label={project.intakeId}
-                onCopy={() =>
-                  setToastMessage({
-                    message: "Copied to Clipboard",
-                    description: `Study ID "${project.intakeId}" has been copied to your clipboard.`,
-                    variant: "info",
-                  })
-                }
-                className="ml-1 text-[#FF9433] bg-[#CC6600]/15 border-[#CC6600]/30 hover:border-[#CC6600] hover:bg-[#CC6600]/25 rounded-[2px] active:scale-[0.97] transition-transform"
-              />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {project.masterStatus === "QUOTE_SENT" && (
+                  <Link href={`/dashboard/client/projects/${project.id}/quote`}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
+                    >
+                      <IconReceipt size={14} stroke={1.5} />
+                      <span>Review Quote →</span>
+                    </Button>
+                  </Link>
+                )}
+
+                {project.masterStatus === "CLIENT_APPROVED" && (
+                  <Link href={`/dashboard/client/projects/${project.id}/quote`}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
+                    >
+                      <IconFileText size={14} stroke={1.5} />
+                      <span>View Quote</span>
+                    </Button>
+                  </Link>
+                )}
+
+                {project.masterStatus === "SOW_PENDING" && (
+                  <Link href={`/dashboard/client/projects/${project.id}/sow`}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
+                    >
+                      <IconFileText size={14} stroke={2} />
+                      <span>Review &amp; Sign Contract →</span>
+                    </Button>
+                  </Link>
+                )}
+
+                {(project.masterStatus === "SOW_SIGNED" ||
+                  project.masterStatus === "AWAITING_PAYMENT" ||
+                  project.masterStatus === "ACTIVE" ||
+                  project.masterStatus === "EXPERT_ASSIGNED" ||
+                  project.masterStatus === "IN_PROGRESS") && (
+                  <Link href={`/dashboard/client/projects/${project.id}/sow`}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 rounded-[2px] active:scale-[0.97] transition-transform"
+                    >
+                      <IconShieldCheck size={14} stroke={1.5} />
+                      <span>View Signed Contract</span>
+                    </Button>
+                  </Link>
+                )}
+
+                {(project.masterStatus === "SOW_SIGNED" ||
+                  project.masterStatus === "AWAITING_PAYMENT") && (
+                  <Link href={`/dashboard/client/projects/${project.id}/payment`}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
+                    >
+                      <IconReceipt size={14} stroke={2} />
+                      <span>Proceed to Payment →</span>
+                    </Button>
+                  </Link>
+                )}
+
+                {(project.masterStatus === "ACTIVE" ||
+                  project.masterStatus === "EXPERT_ASSIGNED" ||
+                  project.masterStatus === "IN_PROGRESS") && (
+                  <Link href={`/dashboard/client/projects/${project.id}/payment`}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
+                    >
+                      <IconReceipt size={14} stroke={1.5} />
+                      <span>Payment History</span>
+                    </Button>
+                  </Link>
+                )}
+
+                {isPreSow && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedUploadFile(null);
+                      setUploadError(null);
+                      setIsUploadModalOpen(true);
+                    }}
+                    className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
+                  >
+                    <IconUpload size={14} stroke={1.5} />
+                    <span>Attach File</span>
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {project.masterStatus === "QUOTE_SENT" && (
-              <Link href={`/dashboard/client/projects/${project.id}/quote`}>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
-                >
-                  <IconReceipt size={14} stroke={1.5} />
-                  <span>Review Quote →</span>
-                </Button>
-              </Link>
-            )}
+            {/* ── 5-Stage Visual Study Pipeline Stepper ── */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-3 border-t border-white/[0.06]">
+              {PIPELINE_STAGES.map((stg, i) => {
+                const isCompleted = i < currentPipelineStage;
+                const isCurrent = i === currentPipelineStage;
 
-            {project.masterStatus === "CLIENT_APPROVED" && (
-              <Link href={`/dashboard/client/projects/${project.id}/quote`}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
-                >
-                  <IconFileText size={14} stroke={1.5} />
-                  <span>View Quote</span>
-                </Button>
-              </Link>
-            )}
+                return (
+                  <div
+                    key={stg.id}
+                    className={`p-3 rounded-[2px] border transition-all flex flex-col justify-between gap-1.5 ${
+                      isCurrent
+                        ? "bg-[#011C38] border-[#CC6600]/80 shadow-md ring-1 ring-[#CC6600]/40"
+                        : isCompleted
+                        ? "bg-emerald-500/[0.04] border-emerald-500/25 text-white/80"
+                        : "bg-white/[0.01] border-white/[0.06] text-white/40"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`w-5 h-5 rounded-full text-[10px] font-mono font-bold flex items-center justify-center ${
+                          isCurrent
+                            ? "bg-[#CC6600] text-white"
+                            : isCompleted
+                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                            : "bg-white/[0.05] text-white/40 border border-white/10"
+                        }`}
+                      >
+                        {isCompleted ? <IconCheck size={12} stroke={2.5} /> : i + 1}
+                      </span>
 
-            {project.masterStatus === "SOW_PENDING" && (
-              <Link href={`/dashboard/client/projects/${project.id}/sow`}>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
-                >
-                  <IconFileText size={14} stroke={2} />
-                  <span>Review &amp; Sign Contract →</span>
-                </Button>
-              </Link>
-            )}
+                      <span className="text-[9px] font-mono tracking-wider uppercase font-semibold">
+                        {isCompleted ? (
+                          <span className="text-emerald-400">Done</span>
+                        ) : isCurrent ? (
+                          <span className="text-[#FFA040] animate-pulse">Active</span>
+                        ) : (
+                          <span className="text-white/30">Next</span>
+                        )}
+                      </span>
+                    </div>
 
-            {(project.masterStatus === "SOW_SIGNED" ||
-              project.masterStatus === "AWAITING_PAYMENT" ||
-              project.masterStatus === "ACTIVE" ||
-              project.masterStatus === "EXPERT_ASSIGNED" ||
-              project.masterStatus === "IN_PROGRESS") && (
-              <Link href={`/dashboard/client/projects/${project.id}/sow`}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 rounded-[2px] active:scale-[0.97] transition-transform"
-                >
-                  <IconShieldCheck size={14} stroke={1.5} />
-                  <span>View Signed Contract</span>
-                </Button>
-              </Link>
-            )}
-
-            {(project.masterStatus === "SOW_SIGNED" ||
-              project.masterStatus === "AWAITING_PAYMENT") && (
-              <Link href={`/dashboard/client/projects/${project.id}/payment`}>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
-                >
-                  <IconReceipt size={14} stroke={2} />
-                  <span>Proceed to Payment →</span>
-                </Button>
-              </Link>
-            )}
-
-            {(project.masterStatus === "ACTIVE" ||
-              project.masterStatus === "EXPERT_ASSIGNED" ||
-              project.masterStatus === "IN_PROGRESS") && (
-              <Link href={`/dashboard/client/projects/${project.id}/payment`}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
-                >
-                  <IconReceipt size={14} stroke={1.5} />
-                  <span>Payment History</span>
-                </Button>
-              </Link>
-            )}
-
-            {isPreSow && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedUploadFile(null);
-                  setUploadError(null);
-                  setIsUploadModalOpen(true);
-                }}
-                className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
-              >
-                <IconUpload size={14} stroke={1.5} />
-                <span>Attach File</span>
-              </Button>
-            )}
-          </div>
-        </div>
-      </Card>
+                    <div>
+                      <h4
+                        className={`text-xs font-sans font-semibold leading-snug ${
+                          isCurrent ? "text-white" : isCompleted ? "text-white/90" : "text-white/40"
+                        }`}
+                      >
+                        {stg.title}
+                      </h4>
+                      <p className="text-[10px] font-sans text-white/50 mt-0.5 line-clamp-1">
+                        {stg.desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* ── SOW Pending Execution Banner (if SOW_PENDING) ── */}
       {project.masterStatus === "SOW_PENDING" && (
-        <Card className="p-6 sm:p-7 bg-[#01142B] border border-amber-500/30 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
+        <Card className="p-6 sm:p-7 bg-[#01142B] border border-amber-500/30 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-[2px] bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
               <IconFileCertificate size={20} stroke={1.5} className="text-amber-400" />
@@ -629,7 +731,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
       {/* ── Awaiting Payment Deposit Banner (if SOW_SIGNED or AWAITING_PAYMENT) ── */}
       {(project.masterStatus === "SOW_SIGNED" || project.masterStatus === "AWAITING_PAYMENT") && (
         project.hasPendingPaymentVerification || project.latestPaymentStatus === "PROOF_SUBMITTED" ? (
-          <Card className="p-6 sm:p-7 bg-[#01142B] border border-sky-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
+          <Card className="p-6 sm:p-7 bg-[#01142B] border border-sky-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0">
                 <IconClock size={20} stroke={1.5} className="text-sky-400" />
@@ -654,7 +756,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
             </Link>
           </Card>
         ) : (
-          <Card className="p-6 sm:p-7 bg-[#01142B] border border-[#CC6600]/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
+          <Card className="p-6 sm:p-7 bg-[#01142B] border border-[#CC6600]/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center shrink-0">
                 <IconReceipt size={20} stroke={1.5} className="text-[#FFA040]" />
@@ -790,7 +892,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
       )}
 
       {/* ── Main Inspection Layout ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-card-reveal stagger-3">
         {/* Left 2 Cols: Research Content, Quote & Scope, & Datasets */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           {/* Price Quote & Scope Card */}

@@ -14,8 +14,9 @@ import {
   LoadingState,
   EmptyState,
   Pagination,
+  CopyButton,
 } from "@repo/ui";
-import { IconDownload, IconCopy, IconFolderOff, IconFileSearch, IconPlus, IconArrowRight } from "@tabler/icons-react";
+import { IconDownload, IconFolderOff, IconFileSearch, IconPlus, IconArrowRight } from "@tabler/icons-react";
 import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { QuickProfileModal } from "@/features/client-profile/components/QuickProfileModal";
@@ -160,17 +161,6 @@ export function ClientProjectsListClient({
     return projects.filter((p) => p.masterStatus === "AWAITING_INFORMATION");
   }, [projects]);
 
-  const handleCopyId = (e: React.MouseEvent, intakeId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    navigator.clipboard.writeText(intakeId);
-    setToastMessage({
-      message: "Copied to Clipboard",
-      description: `Study ID "${intakeId}" has been copied to your clipboard.`,
-      variant: "info",
-    });
-  };
-
   const handleProfileSuccess = async () => {
     const profile = await getClientProfile();
     if (profile && profile.institutionSchool && profile.contactNumber) {
@@ -243,6 +233,7 @@ export function ClientProjectsListClient({
           value={kpis.total}
           variant="default"
           description="All client submitted research scopes"
+          className="animate-card-reveal stagger-1"
         />
 
         <KpiCard
@@ -256,6 +247,7 @@ export function ClientProjectsListClient({
               ? "Clarification or dataset needed"
               : "No pending information requests"
           }
+          className="animate-card-reveal stagger-2"
         />
 
         <KpiCard
@@ -263,6 +255,7 @@ export function ClientProjectsListClient({
           value={kpis.underEvaluation}
           variant="default"
           description="Methodology & pricing assessment"
+          className="animate-card-reveal stagger-3"
         />
 
         <KpiCard
@@ -270,6 +263,7 @@ export function ClientProjectsListClient({
           value={kpis.active + kpis.delivered}
           variant="default"
           description={`${kpis.active} running · ${kpis.delivered} delivered`}
+          className="animate-card-reveal stagger-4"
         />
       </div>
 
@@ -321,7 +315,7 @@ export function ClientProjectsListClient({
       )}
 
       {/* ── Main Projects List & Filter Table ── */}
-      <Card className="p-0 border border-white/10 overflow-hidden bg-[#01142B]/90 shadow-2xl -mx-4 sm:mx-0">
+      <Card className="p-0 border border-white/10 overflow-hidden bg-[#01142B]/90 shadow-2xl -mx-4 sm:mx-0 animate-card-reveal stagger-5">
         {/* Filter Toolbar */}
         <FilterToolbar
           searchQuery={searchQuery}
@@ -392,7 +386,20 @@ export function ClientProjectsListClient({
                                 + Submit Study Request →
                               </Button>
                             </Link>
-                          ) : undefined
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setStatusFilter("ALL");
+                                setSearchQuery("");
+                                setCurrentPage(1);
+                              }}
+                              className="font-sans text-xs font-semibold px-4 py-2 active:scale-[0.97] transition-transform"
+                            >
+                              Clear Filters
+                            </Button>
+                          )
                         }
                       />
                     </td>
@@ -412,15 +419,18 @@ export function ClientProjectsListClient({
                         <td className="max-w-[440px] min-w-0">
                           <div className="flex flex-col gap-1.5 py-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={(e) => handleCopyId(e, p.intakeId)}
-                                title="Click to copy Study ID"
-                                className="font-mono text-xs font-bold text-[#FF9433] bg-[#CC6600]/15 hover:bg-[#CC6600]/25 border border-[#CC6600]/30 hover:border-[#CC6600] px-2 py-0.5 rounded-[2px] whitespace-nowrap cursor-pointer transition-all inline-flex items-center gap-1 group/btn"
-                              >
-                                <span>{p.intakeId}</span>
-                                <IconCopy size={11} stroke={1.5} className="opacity-40 group-hover/btn:opacity-100 transition-opacity" />
-                              </button>
+                              <CopyButton
+                                variant="badge"
+                                value={p.intakeId}
+                                label={p.intakeId}
+                                onCopy={() =>
+                                  setToastMessage({
+                                    message: "Study ID Copied",
+                                    description: `"${p.intakeId}" has been copied to your clipboard.`,
+                                    variant: "info",
+                                  })
+                                }
+                              />
                               <span className="font-mono text-[0.65rem] text-sky-300 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-[2px] whitespace-nowrap">
                                 {p.files.length} {p.files.length === 1 ? "doc" : "docs"}
                               </span>

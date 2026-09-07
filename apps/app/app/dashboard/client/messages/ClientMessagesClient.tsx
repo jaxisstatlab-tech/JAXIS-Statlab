@@ -99,7 +99,7 @@ export function ClientMessagesClient({
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
         {/* Left Column: Studies Selector */}
         <div
-          className={`lg:col-span-4 h-full min-h-0 flex flex-col gap-2.5 overflow-hidden ${
+          className={`lg:col-span-4 h-full min-h-0 flex flex-col gap-2.5 overflow-hidden animate-card-reveal stagger-1 ${
             mobileView === "chat" ? "hidden lg:flex" : "flex"
           }`}
         >
@@ -272,7 +272,7 @@ export function ClientMessagesClient({
 
         {/* Right Column: Live Message Thread */}
         <div
-          className={`lg:col-span-8 h-full min-h-0 flex flex-col overflow-hidden ${
+          className={`lg:col-span-8 h-full min-h-0 flex flex-col overflow-hidden animate-card-reveal stagger-2 ${
             mobileView === "list" ? "hidden lg:flex" : "flex"
           }`}
         >

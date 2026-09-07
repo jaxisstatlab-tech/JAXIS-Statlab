@@ -24,7 +24,7 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
   onOpenHowToUseModal,
 }) => {
   return (
-    <Card className="p-6 sm:p-8 border border-white/15 bg-gradient-to-b from-[#011B38]/90 to-[#01142B]/90 rounded-[4px] shadow-2xl flex flex-col gap-6">
+    <Card className="p-6 sm:p-8 border border-white/15 bg-gradient-to-b from-[#011B38]/90 to-[#01142B]/90 rounded-[4px] shadow-2xl flex flex-col gap-6 animate-card-reveal">
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5">
