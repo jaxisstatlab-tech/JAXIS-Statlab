@@ -557,7 +557,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       <PageHeader
         title="New Research Project Intake"
-        description="Formal submission desk for academic theses, quantitative dissertations, and institutional statistical consultations."
+        description="Submit your thesis or research study for review, statistical planning, and pricing."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "Client Portal", href: "/dashboard/client" },
@@ -577,17 +577,20 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
           {
             id: "scope",
             title: "01. Scope & Details",
+            shortTitle: "Scope",
             subtitle: "Study title, research questions, objectives, and target deadline",
           },
           {
             id: "uploads",
             title: "02. Document Uploads",
+            shortTitle: "Uploads",
             subtitle: "Draft chapters, raw datasets, and survey questionnaires",
           },
           {
             id: "review",
             title: "03. Review & Submit",
-            subtitle: "Institutional verification and final submission",
+            shortTitle: "Review",
+            subtitle: "Summary check and final submission",
           },
         ]}
       />
@@ -601,7 +604,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 Research Project Specifications
               </h2>
               <p className="text-xs text-white/50 mt-1 font-sans leading-relaxed">
-                Provide foundational details about your thesis or research study for statistical evaluation.
+                Provide the basic details about your thesis or research study so we can understand your statistical needs.
               </p>
             </div>
 
@@ -609,7 +612,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               <FormInput
                 label="Research Study Title"
                 required
-                placeholder="e.g. Impact of Micro-credentials on Tech Sector Employability in Metro Manila"
+                placeholder="e.g. Social Media Use and Academic Performance of Students"
                 value={researchTitle}
                 onChange={(e) => setResearchTitle(e.target.value)}
                 error={fieldErrors.researchTitle?.[0]}
@@ -619,7 +622,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 label="Statement of the Problem / Key Research Questions"
                 required
                 rows={4}
-                placeholder="1. What is the demographic profile of the respondents?&#10;2. Is there a significant difference in diagnostic speed between traditional and blended learning models?"
+                placeholder="1. What is the profile of the respondents?&#10;2. Is there a significant relationship between study habits and exam scores?"
                 value={researchQuestions}
                 onChange={(e) => setResearchQuestions(e.target.value)}
                 error={fieldErrors.researchQuestions?.[0]}
@@ -629,7 +632,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 label="Core Research Objectives"
                 required
                 rows={3}
-                placeholder="Describe the primary scientific and analytical goals of this statistical consultation..."
+                placeholder="Briefly describe what you want to achieve or find out in this study..."
                 value={researchObjectives}
                 onChange={(e) => setResearchObjectives(e.target.value)}
                 error={fieldErrors.researchObjectives?.[0]}
@@ -639,7 +642,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 <FormTextarea
                   label="Theoretical Hypotheses (Optional)"
                   rows={4}
-                  placeholder="H0: There is no significant relationship between variable X and variable Y..."
+                  placeholder="e.g. There is no significant relationship between study habits and exam scores (optional)..."
                   value={hypotheses}
                   onChange={(e) => setHypotheses(e.target.value)}
                   className="min-h-[110px]"
@@ -658,7 +661,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   <div className="p-3.5 rounded-[4px] bg-white/[0.03] border border-white/10 text-xs text-white/60 font-sans leading-relaxed flex items-start gap-2.5">
                     <IconCalendarEvent size={16} stroke={1.5} className="text-[#CC6600] shrink-0 mt-0.5" />
                     <span>
-                      Allows our statisticians to evaluate timeline feasibility and calculate SLA delivery tiers.
+                      Helps our team make sure your statistical analysis is completed on time for your defense.
                     </span>
                   </div>
                 </div>
@@ -672,7 +675,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 size="sm"
                 className="w-full sm:w-auto font-bold tracking-wider"
               >
-                PROCEED TO ATTACHMENTS →
+                Proceed to Attachments →
               </Button>
             </FormFooter>
           </form>
@@ -1196,7 +1199,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               onClick={() => setCurrentStep(1)}
               className="w-full sm:w-auto font-bold tracking-wider"
             >
-              ← BACK TO SCOPE
+              ← Back to Scope
             </Button>
             <Button
               type="button"
@@ -1205,7 +1208,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               onClick={handleProceedToStep3}
               className="w-full sm:w-auto font-bold tracking-wider"
             >
-              PROCEED TO REVIEW →
+              Proceed to Review →
             </Button>
           </FormFooter>
         </Card>
@@ -1400,7 +1403,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               disabled={isPending}
               className="w-full sm:w-auto font-bold tracking-wider"
             >
-              ← BACK TO ATTACHMENTS
+              ← Back to Attachments
             </Button>
             <Button
               type="button"
@@ -1411,7 +1414,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               disabled={!integrityAgreed || isPending}
               className="w-full sm:w-auto font-bold tracking-wider"
             >
-              SUBMIT INTAKE →
+              Submit Study Request →
             </Button>
           </FormFooter>
         </Card>
