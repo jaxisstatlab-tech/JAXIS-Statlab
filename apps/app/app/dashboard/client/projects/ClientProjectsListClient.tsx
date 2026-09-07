@@ -557,7 +557,7 @@ export function ClientProjectsListClient({
                   size="sm"
                   className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] active:scale-[0.97] transition-transform"
                 >
-                  Open Project Desk →
+                  Open Study →
                 </Button>
               </Link>
             </div>
@@ -567,7 +567,7 @@ export function ClientProjectsListClient({
             {/* Status & Deadline Header Banner */}
             <div className="p-4 rounded-[2px] bg-[#011C38] border border-white/[0.08] flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-xs text-white/50 uppercase">Current Gate:</span>
+                <span className="font-mono text-xs text-white/50 uppercase">Status:</span>
                 {(() => {
                   const displayStatus = getProjectDisplayStatus(selectedStudyForInspect);
                   return (
@@ -592,9 +592,9 @@ export function ClientProjectsListClient({
               selectedStudyForInspect.missingInfoReason && (
                 <div className="p-4 rounded-[2px] bg-amber-500/10 border border-amber-500/30 flex flex-col gap-1 text-amber-200">
                   <strong className="font-mono text-amber-400 text-[0.6875rem] uppercase">
-                    Admin Missing Information Request:
+                    Information Needed:
                   </strong>
-                  <p className="text-xs leading-relaxed">
+                  <p className="text-xs leading-relaxed font-sans">
                     &ldquo;{selectedStudyForInspect.missingInfoReason}&rdquo;
                   </p>
                 </div>
@@ -605,7 +605,7 @@ export function ClientProjectsListClient({
               <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
                 Core Research Objectives
               </span>
-              <p className="p-4 text-xs text-slate-300 bg-white/[0.02] rounded-[3px] border border-white/10 leading-relaxed whitespace-pre-wrap">
+              <p className="p-4 text-xs text-slate-300 bg-white/[0.02] rounded-[2px] border border-white/10 leading-relaxed whitespace-pre-wrap font-sans">
                 {selectedStudyForInspect.researchObjectives}
               </p>
             </div>
@@ -615,7 +615,7 @@ export function ClientProjectsListClient({
               <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
                 Key Research Questions
               </span>
-              <p className="p-4 text-xs text-slate-300 bg-white/[0.02] rounded-[3px] border border-white/10 leading-relaxed whitespace-pre-wrap">
+              <p className="p-4 text-xs text-slate-300 bg-white/[0.02] rounded-[2px] border border-white/10 leading-relaxed whitespace-pre-wrap font-sans">
                 {selectedStudyForInspect.researchQuestions}
               </p>
             </div>
@@ -626,7 +626,7 @@ export function ClientProjectsListClient({
                 <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
                   Theoretical Hypotheses
                 </span>
-                <p className="p-4 text-xs text-slate-300 bg-white/[0.02] rounded-[3px] border border-white/10 leading-relaxed whitespace-pre-wrap">
+                <p className="p-4 text-xs text-slate-300 bg-white/[0.02] rounded-[2px] border border-white/10 leading-relaxed whitespace-pre-wrap font-sans">
                   {selectedStudyForInspect.hypotheses}
                 </p>
               </div>
@@ -635,11 +635,11 @@ export function ClientProjectsListClient({
             {/* Uploaded Artifacts */}
             <div className="flex flex-col gap-2">
               <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
-                Submitted Artifacts ({selectedStudyForInspect.files.length})
+                Attached Files ({selectedStudyForInspect.files.length})
               </span>
               {selectedStudyForInspect.files.length === 0 ? (
-                <div className="p-4 text-xs text-white/40 italic bg-white/[0.02] border border-white/10 rounded-[3px]">
-                  No files or dataset packages attached to this intake record.
+                <div className="p-4 text-xs text-white/40 italic bg-white/[0.02] border border-white/10 rounded-[2px]">
+                  No files uploaded with this study yet.
                 </div>
               ) : (
                 <div className="flex flex-col gap-3 max-h-64 overflow-y-auto pr-1">
@@ -661,7 +661,7 @@ export function ClientProjectsListClient({
                           </div>
                           <div className="flex flex-col gap-0.5 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold text-white truncate max-w-[200px] sm:max-w-xs md:max-w-sm">
+                              <span className="text-xs font-semibold text-white truncate max-w-[200px] sm:max-w-xs md:max-w-sm font-sans">
                                 {file.fileName}
                               </span>
                               <span
@@ -681,8 +681,8 @@ export function ClientProjectsListClient({
                           onClick={() => {
                             triggerFileDownload(file.filePath, file.fileName);
                             setToastMessage({
-                              message: "Download Initiated",
-                              description: `Transferring "${file.fileName}" to your local device.`,
+                              message: "Download Started",
+                              description: `Downloading "${file.fileName}" to your device.`,
                               variant: "info",
                             });
                           }}

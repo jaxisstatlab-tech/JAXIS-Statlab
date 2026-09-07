@@ -882,32 +882,32 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
       <Modal
         isOpen={isAcceptModalOpen}
         onClose={() => setIsAcceptModalOpen(false)}
-        title="Accept Commercial Proposal"
+        title="Accept Quote & Scope"
         size="md"
       >
-        <div className="space-y-5 text-sm font-sans text-white/80 p-2">
+        <div className="space-y-5 text-sm font-sans text-white/80 p-1">
           <p className="leading-relaxed">
-            By accepting this commercial proposal for study{" "}
+            By accepting this quote for study{" "}
             <strong className="text-white font-mono">{project.intakeId}</strong>, you approve the{" "}
-            <strong className="text-emerald-400">{pkgDef?.name || quotation.packageName}</strong> scope and total contract sum of{" "}
-            <strong className="text-[#38BDF8] font-mono"><Peso />{currentPricing.totalAmount.toLocaleString()}</strong>.
+            <strong className="text-white font-semibold">{pkgDef?.name || quotation.packageName}</strong> scope and total price of{" "}
+            <strong className="text-white font-mono font-bold"><Peso />{currentPricing.totalAmount.toLocaleString()}</strong>.
           </p>
 
-          <div className="p-4 rounded-[4px] bg-[#011735]/60 border border-white/10 space-y-3 font-sans text-sm">
+          <div className="p-4 rounded-[2px] bg-[#01142B] border border-white/10 space-y-3 font-sans text-sm shadow-sm">
             <div className="text-xs uppercase font-semibold text-white/50 tracking-wider">
               Selected Services &amp; Scope:
             </div>
             <div className="space-y-1.5 pl-1">
               <div className="text-xs text-white/90 flex items-center justify-between">
                 <span>{pkgDef?.name || quotation.packageName} (Base Package)</span>
-                <span className="font-mono text-white/70"><Peso />{quotation.basePrice.toLocaleString()}</span>
+                <span className="font-mono text-white/80"><Peso />{quotation.basePrice.toLocaleString()}</span>
               </div>
               {availableAddOns
                 .filter((a) => selectedAddOnCodes.includes(a.code))
                 .map((a) => (
-                  <div key={a.code} className="text-xs text-amber-300 flex items-center justify-between">
-                    <span>+ {a.name}</span>
-                    <span className="font-mono text-amber-300/90">+<Peso />{a.amount.toLocaleString()}</span>
+                  <div key={a.code} className="text-xs text-white/80 flex items-center justify-between">
+                    <span className="text-white/70">+ {a.name}</span>
+                    <span className="font-mono text-white/90">+<Peso />{a.amount.toLocaleString()}</span>
                   </div>
                 ))}
               {selectedAddOnCodes.length === 0 && (
@@ -919,44 +919,45 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
 
             <div className="border-t border-white/10 pt-2.5 space-y-2">
               <div className="flex justify-between font-semibold">
-                <span className="text-white/80">Total Contract Sum:</span>
-                <span className="text-[#38BDF8] font-mono font-bold"><Peso />{currentPricing.totalAmount.toLocaleString()}</span>
+                <span className="text-white/80">Total Amount:</span>
+                <span className="text-white font-mono font-bold"><Peso />{currentPricing.totalAmount.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-white/50">Initial Downpayment ({currentPricing.downpaymentPercentage}%):</span>
-                <span className="text-emerald-400 font-mono font-bold"><Peso />{currentPricing.downpaymentRequired.toLocaleString()}</span>
+                <span className="text-white font-mono font-bold"><Peso />{currentPricing.downpaymentRequired.toLocaleString()}</span>
               </div>
               {!quotation.isUpfrontEnforced && currentPricing.releaseBalance > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-white/50">Final Deliverable Balance:</span>
-                  <span className="text-[#38BDF8] font-mono font-bold"><Peso />{currentPricing.releaseBalance.toLocaleString()}</span>
+                  <span className="text-white/50">Final Balance:</span>
+                  <span className="text-white/80 font-mono font-bold"><Peso />{currentPricing.releaseBalance.toLocaleString()}</span>
                 </div>
               )}
             </div>
           </div>
 
-          <p className="text-xs text-white/50 italic leading-relaxed">
-            Upon confirmation, our operations admin will prepare your formal Statement of Work (SOW) agreement.
+          <p className="text-xs text-white/50 leading-relaxed">
+            Once confirmed, our team will prepare your formal Statement of Work agreement for digital signature.
           </p>
 
           <ModalFooter>
             <Button
-              variant="ghost"
-              size="md"
+              variant="outline"
+              size="sm"
               onClick={() => setIsAcceptModalOpen(false)}
               disabled={isPending}
+              className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-sans"
             >
               Cancel
             </Button>
             <Button
               variant="primary"
-              size="md"
+              size="sm"
               onClick={handleAcceptProposal}
               disabled={isPending}
-              className="gap-2 bg-[#CC6600] text-white hover:bg-[#FFA040] font-sans font-semibold"
+              className="gap-2 bg-[#CC6600] text-white hover:bg-[#E67300] font-sans text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
             >
               <IconCheck size={16} stroke={2.5} />
-              <span>{isPending ? "Approving..." : "Confirm & Accept Proposal"}</span>
+              <span>{isPending ? "Approving..." : "Confirm & Accept Quote"}</span>
             </Button>
           </ModalFooter>
         </div>
@@ -966,12 +967,12 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
       <Modal
         isOpen={isDeclineModalOpen}
         onClose={() => setIsDeclineModalOpen(false)}
-        title="Decline Commercial Proposal"
+        title="Decline Quote"
         size="md"
       >
-        <div className="space-y-5 text-sm font-sans text-white/80 p-2">
+        <div className="space-y-5 text-sm font-sans text-white/80 p-1">
           <p className="leading-relaxed">
-            Please let our statistical team know why this proposal does not meet your requirements so we can adjust the scope or pricing.
+            Please let our statistical team know why this quote does not meet your requirements so we can adjust the scope or pricing for you.
           </p>
 
           <div className="space-y-2">
@@ -983,24 +984,26 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
               onChange={(e) => setDeclineReason(e.target.value)}
               placeholder="e.g., I only need Chapter 4 descriptive tables, or my deadline is 1 week later..."
               rows={4}
-              className="w-full bg-[#010114] border border-white/15 rounded-[4px] p-4 text-sm font-sans text-white placeholder:text-white/30 focus:outline-none focus:border-amber-500 transition-colors resize-none leading-relaxed"
+              className="w-full bg-[#01142B] border border-white/15 rounded-[2px] p-4 text-sm font-sans text-white placeholder:text-white/30 focus:outline-none focus:border-[#CC6600] transition-colors resize-none leading-relaxed"
             />
           </div>
 
           <ModalFooter>
             <Button
-              variant="ghost"
-              size="md"
+              variant="outline"
+              size="sm"
               onClick={() => setIsDeclineModalOpen(false)}
               disabled={isPending}
+              className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-sans"
             >
               Back
             </Button>
             <Button
               variant="danger"
-              size="md"
+              size="sm"
               onClick={handleDeclineProposal}
               disabled={isPending}
+              className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-semibold"
             >
               {isPending ? "Submitting..." : "Submit Decline"}
             </Button>

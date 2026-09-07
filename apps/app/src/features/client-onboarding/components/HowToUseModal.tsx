@@ -94,7 +94,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
         variant="secondary"
         size="sm"
         onClick={onClose}
-        className="w-full sm:w-auto font-sans text-xs px-4 py-2"
+        className="w-full sm:w-auto font-sans text-xs px-4 py-2 rounded-[2px] active:scale-[0.97] transition-transform"
       >
         Close Guide
       </Button>
@@ -108,7 +108,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
               onClose();
               onSetupProfile();
             }}
-            className="w-full sm:w-auto font-sans text-xs font-bold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] text-white"
+            className="w-full sm:w-auto font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
           >
             1. Save Your School First →
           </Button>
@@ -120,7 +120,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
               onClose();
               onStartRequest();
             }}
-            className="w-full sm:w-auto font-sans text-xs font-bold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] text-white"
+            className="w-full sm:w-auto font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
           >
             2. Start New Study Request →
           </Button>
@@ -140,29 +140,29 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
     >
       <div className="flex flex-col gap-5 font-sans">
         {/* Navigation Tabs */}
-        <div className="sticky top-0 z-10 bg-[#01162E] -mt-1 pt-1 pb-3 border-b border-white/10 flex items-center gap-2">
+        <div className="sticky top-0 z-10 bg-[#01142B] -mt-1 pt-1 pb-3 border-b border-white/10 flex items-center gap-2">
           <button
             type="button"
             onClick={() => setActiveTab("steps")}
-            className={`px-4 py-2 rounded-[2px] text-xs font-semibold transition-colors cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-[2px] text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 active:scale-[0.97] ${
               activeTab === "steps"
-                ? "bg-[#CC6600] text-white"
+                ? "bg-[#CC6600] text-white shadow-sm"
                 : "text-white/60 hover:text-white hover:bg-white/[0.04]"
             }`}
           >
-            <IconCheck size={15} />
+            <IconCheck size={15} stroke={2} />
             <span>4 Simple Steps</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("faqs")}
-            className={`px-4 py-2 rounded-[2px] text-xs font-semibold transition-colors cursor-pointer flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-[2px] text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 active:scale-[0.97] ${
               activeTab === "faqs"
-                ? "bg-[#CC6600] text-white"
+                ? "bg-[#CC6600] text-white shadow-sm"
                 : "text-white/60 hover:text-white hover:bg-white/[0.04]"
             }`}
           >
-            <IconHelp size={15} />
+            <IconHelp size={15} stroke={2} />
             <span>Common Questions</span>
           </button>
         </div>
@@ -173,9 +173,9 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
             {STEPS.map((step) => (
               <div
                 key={step.number}
-                className="p-4 sm:p-5 rounded-[4px] bg-[#011B38]/50 border border-white/10 hover:border-white/20 transition-all flex flex-col sm:flex-row items-start gap-4"
+                className="p-4 sm:p-5 rounded-[2px] bg-[#01142B] border border-white/10 hover:border-white/20 transition-all flex flex-col sm:flex-row items-start gap-4 shadow-sm"
               >
-                <div className="w-10 h-10 rounded-[4px] bg-white/[0.06] border border-white/10 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-[2px] bg-white/[0.04] border border-white/10 flex items-center justify-center shrink-0">
                   {step.icon}
                 </div>
                 <div className="flex flex-col gap-1.5 flex-1">
@@ -183,11 +183,11 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
                     <span className="font-mono text-xs font-bold text-[#FF9433] bg-[#CC6600]/15 border border-[#CC6600]/30 px-2 py-0.5 rounded-[2px]">
                       STEP {step.number}
                     </span>
-                    <h3 className="text-sm sm:text-base font-bold text-white">
+                    <h3 className="text-sm sm:text-base font-bold text-white font-sans">
                       {step.title}
                     </h3>
                   </div>
-                  <p className="text-xs text-white/70 leading-relaxed">
+                  <p className="text-xs text-white/75 font-sans leading-relaxed">
                     {step.summary}
                   </p>
                   <span className="text-[0.688rem] font-mono text-amber-300/90 flex items-center gap-1.5 mt-0.5">
@@ -208,22 +208,22 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
               return (
                 <div
                   key={faq.question}
-                  className="rounded-[4px] border border-white/10 bg-[#011B38]/40 overflow-hidden transition-colors"
+                  className="rounded-[2px] border border-white/10 bg-[#01142B] overflow-hidden transition-colors shadow-sm"
                 >
                   <button
                     type="button"
                     onClick={() => setExpandedFaq(isExpanded ? null : idx)}
                     className="w-full p-4 text-left flex items-center justify-between gap-3 hover:bg-white/[0.04] transition-colors cursor-pointer"
                   >
-                    <span className="text-xs sm:text-sm font-semibold text-white">
+                    <span className="text-xs sm:text-sm font-semibold text-white font-sans">
                       {faq.question}
                     </span>
-                    <span className="text-xs font-mono text-white/40 shrink-0">
+                    <span className="text-xs font-mono text-white/50 shrink-0 font-bold">
                       {isExpanded ? "−" : "+"}
                     </span>
                   </button>
                   {isExpanded && (
-                    <div className="px-4 pb-4 text-xs text-white/70 leading-relaxed border-t border-white/[0.06] pt-3">
+                    <div className="px-4 pb-4 text-xs text-white/75 font-sans leading-relaxed border-t border-white/[0.06] pt-3">
                       {faq.answer}
                     </div>
                   )}

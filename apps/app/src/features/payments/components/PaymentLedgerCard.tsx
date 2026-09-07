@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Card,
+  KpiCard,
   MoneyDisplay,
   StatusBadge,
   Button,
@@ -14,9 +15,6 @@ import {
 } from "@repo/ui";
 import {
   IconReceipt,
-  IconClock,
-  IconCheck,
-  IconAlertCircle,
   IconFileText,
   IconPlus,
   IconDownload,
@@ -53,91 +51,47 @@ export function PaymentLedgerCard({
     <div className="flex flex-col gap-6 w-full">
       {/* ── Financial Milestone Metric Ribbon ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 flex flex-col justify-between border-white/10 bg-[#01142B]/80">
-          <div className="flex items-center justify-between">
-            <span className="font-sans text-xs font-semibold text-white/50 uppercase tracking-wider">
-              Total Contract Fee
-            </span>
-            <IconFileText size={16} stroke={1.5} className="text-white/40" />
-          </div>
-          <div className="mt-3">
-            <div className="text-xl sm:text-2xl font-sans font-bold text-white tracking-tight">
-              <MoneyDisplay amount={summary.totalAmount} />
-            </div>
-            <p className="font-sans text-xs text-white/50 mt-1">
-              Agreed in Statement of Work
-            </p>
-          </div>
-        </Card>
+        <KpiCard
+          label="TOTAL CONTRACT FEE"
+          value={<MoneyDisplay amount={summary.totalAmount} />}
+          description="Agreed in Statement of Work"
+          variant="default"
+        />
 
-        <Card className="p-5 flex flex-col justify-between border-white/10 bg-[#01142B]/80">
-          <div className="flex items-center justify-between">
-            <span className="font-sans text-xs font-semibold text-white/50 uppercase tracking-wider">
-              Downpayment Threshold
-            </span>
-            {summary.isDownpaymentCleared ? (
-              <span className="px-2 py-0.5 rounded-[2px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-sans text-[0.688rem] font-semibold flex items-center gap-1">
-                <IconCheck size={12} stroke={2.5} />
-                CLEARED
+        <KpiCard
+          label="DOWNPAYMENT REQUIRED"
+          value={<MoneyDisplay amount={summary.downpaymentRequired} />}
+          description={summary.isDownpaymentCleared ? "Cleared · Research active" : "Required to start research"}
+          variant={summary.isDownpaymentCleared ? "emerald" : "default"}
+          badge={summary.isDownpaymentCleared ? "CLEARED" : "REQUIRED"}
+          badgeColor={summary.isDownpaymentCleared ? "emerald" : "amber"}
+        />
+
+        <KpiCard
+          label="VERIFIED PAID"
+          value={<MoneyDisplay amount={summary.verifiedPaid} />}
+          description={
+            summary.pendingVerification > 0 ? (
+              <span className="inline-flex items-baseline">
+                + <Peso className="text-white/50" />{summary.pendingVerification.toLocaleString("en-PH", { minimumFractionDigits: 2 })} pending verification
               </span>
             ) : (
-              <span className="px-2 py-0.5 rounded-[2px] bg-amber-500/10 border border-amber-500/30 text-amber-400 font-sans text-[0.688rem] font-semibold flex items-center gap-1">
-                <IconClock size={12} stroke={2} />
-                REQUIRED
-              </span>
-            )}
-          </div>
-          <div className="mt-3">
-            <div className="text-xl sm:text-2xl font-sans font-bold text-[#FFA040] tracking-tight">
-              <MoneyDisplay amount={summary.downpaymentRequired} />
-            </div>
-            <p className="font-sans text-xs text-white/50 mt-1">
-              Unlocks statistician assignment
-            </p>
-          </div>
-        </Card>
+              "All submitted deposits cleared"
+            )
+          }
+          variant="default"
+        />
 
-        <Card className="p-5 flex flex-col justify-between border-white/10 bg-[#01142B]/80">
-          <div className="flex items-center justify-between">
-            <span className="font-sans text-xs font-semibold text-white/50 uppercase tracking-wider">
-              Verified Paid Balance
-            </span>
-            <IconReceipt size={16} stroke={1.5} className="text-emerald-400" />
-          </div>
-          <div className="mt-3">
-            <div className="text-xl sm:text-2xl font-sans font-bold text-emerald-400 tracking-tight">
-              <MoneyDisplay amount={summary.verifiedPaid} />
-            </div>
-            <p className="font-sans text-xs text-white/50 mt-1">
-              {summary.pendingVerification > 0 ? (
-                <span className="inline-flex items-baseline">
-                  + <Peso className="text-white/50" />{summary.pendingVerification.toLocaleString("en-PH", { minimumFractionDigits: 2 })} pending verification
-                </span>
-              ) : (
-                "All submitted deposits cleared"
-              )}
-            </p>
-          </div>
-        </Card>
-
-        <Card className="p-5 flex flex-col justify-between border-white/10 bg-[#01142B]/80">
-          <div className="flex items-center justify-between">
-            <span className="font-sans text-xs font-semibold text-white/50 uppercase tracking-wider">
-              Remaining Release Balance
-            </span>
-            <IconAlertCircle size={16} stroke={1.5} className="text-white/40" />
-          </div>
-          <div className="mt-3">
-            <div className="text-xl sm:text-2xl font-sans font-bold text-white tracking-tight">
-              <MoneyDisplay amount={summary.remainingBalance} />
-            </div>
-            <p className="font-sans text-xs text-white/50 mt-1">
-              {summary.remainingBalance === 0
-                ? "Fully paid — release unlocked"
-                : "Payable upon deliverable inspection"}
-            </p>
-          </div>
-        </Card>
+        <KpiCard
+          label="REMAINING BALANCE"
+          value={<MoneyDisplay amount={summary.remainingBalance} />}
+          description={
+            summary.remainingBalance === 0
+              ? "Fully paid · Release unlocked"
+              : "Due when deliverables are ready"
+          }
+          variant="default"
+        />
       </div>
 
       {/* ── Progress Towards Milestone Activation ── */}
@@ -328,11 +282,11 @@ export function PaymentLedgerCard({
             setImageError(false);
           }}
           title="Deposit Receipt & Payment Proof"
-          description={`Official payment receipt audit record for Reference #${viewingReceiptPayment.referenceNumber || viewingReceiptPayment.id}`}
+          description={`Payment receipt details for Reference #${viewingReceiptPayment.referenceNumber || viewingReceiptPayment.id}`}
           size="2xl"
         >
           <div className="flex flex-col gap-5 w-full">
-            {/* Transaction Details Dossier */}
+            {/* Transaction Details */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 p-4 rounded-[2px] bg-[#01142B] border border-white/10">
               <div className="flex flex-col gap-1">
                 <span className="font-mono text-xs text-white/50 uppercase tracking-wider">
@@ -473,7 +427,7 @@ export function PaymentLedgerCard({
                             setIsDownloading(false);
                           }
                         }}
-                        className="gap-1.5 font-sans text-xs font-semibold bg-[#CC6600] hover:bg-[#FFA040] text-white"
+                        className="gap-1.5 font-sans text-xs font-semibold bg-[#CC6600] hover:bg-[#FFA040] text-white rounded-[2px] active:scale-[0.97] transition-all"
                       >
                         <IconDownload size={14} stroke={2} />
                         <span>Download Receipt</span>
@@ -485,7 +439,7 @@ export function PaymentLedgerCard({
                         onClick={() => {
                           window.open(getFilePreviewUrl(proof.filePath), "_blank", "noopener,noreferrer");
                         }}
-                        className="gap-1.5 font-sans text-xs"
+                        className="gap-1.5 font-sans text-xs rounded-[2px] active:scale-[0.97] transition-all"
                       >
                         <IconExternalLink size={14} stroke={1.5} />
                         <span>Open in New Tab</span>
@@ -499,7 +453,7 @@ export function PaymentLedgerCard({
                         setViewingReceiptPayment(null);
                         setImageError(false);
                       }}
-                      className="font-sans text-xs"
+                      className="font-sans text-xs rounded-[2px] active:scale-[0.97] transition-all"
                     >
                       Close
                     </Button>

@@ -348,7 +348,7 @@ export default function ClientSowPage() {
                     className="font-sans font-bold text-xs sm:text-sm tracking-wider bg-[#CC6600] hover:bg-[#FFA040] text-white px-6 py-3 flex items-center gap-2"
                   >
                     <IconShieldCheck size={18} stroke={2} />
-                    <span>SIGN STATEMENT OF WORK</span>
+                    <span>Sign Statement of Work</span>
                   </Button>
                 </div>
               </div>
@@ -360,9 +360,9 @@ export default function ClientSowPage() {
             <ConfirmDialog
               open={isConfirmModalOpen}
               onCancel={() => setIsConfirmModalOpen(false)}
-              title="Confirm Legally-Binding Execution"
-              description={`You are digitally executing the Statement of Work as "${typedName.trim()}". Once submitted, this contract and its scope are permanently locked and cannot be edited. Do you wish to proceed?`}
-              confirmLabel="Confirm & Sign SOW"
+              title="Sign Statement of Work"
+              description={`You are digitally signing this Statement of Work as "${typedName.trim()}". Once signed, your scope of work will be confirmed and you can proceed to the deposit desk. Do you want to proceed?`}
+              confirmLabel="Confirm & Sign Agreement"
               confirmVariant="default"
               loading={isPending}
               onConfirm={handleConfirmSign}

@@ -7,6 +7,7 @@ import {
   IconCheck,
   IconEye,
   IconTrash,
+  IconLoader2,
 } from "@tabler/icons-react";
 import {
   getFileMeta,
@@ -49,8 +50,8 @@ export function ProjectFilesCard({
   const handleDownload = async (file: ProjectFileItem) => {
     setDownloadingId(file.id);
     setToastMessage({
-      message: "Download Initiated",
-      description: `Transferring "${file.fileName}" to your local device.`,
+      message: "Download Started",
+      description: `Downloading "${file.fileName}" to your device.`,
       variant: "info",
     });
     try {
@@ -68,8 +69,8 @@ export function ProjectFilesCard({
     if (files.length === 0 || isBatchDownloading) return;
     setIsBatchDownloading(true);
     setToastMessage({
-      message: "Batch Download Initiated",
-      description: `Transferring ${files.length} study artifact files to your local device.`,
+      message: "Download Started",
+      description: `Downloading ${files.length} files to your device.`,
       variant: "info",
     });
     for (let i = 0; i < files.length; i++) {
@@ -191,7 +192,7 @@ export function ProjectFilesCard({
                     onClick={() => setPreviewFile(file)}
                     title={`Preview "${file.fileName}"`}
                     aria-label={`Preview ${file.fileName}`}
-                    className="inline-flex items-center justify-center h-9 w-9 rounded-[2px] bg-white/[0.04] hover:bg-white/[0.09] text-sky-400 hover:text-white border border-white/15 hover:border-sky-400/50 transition-colors cursor-pointer select-none shadow-sm"
+                    className="inline-flex items-center justify-center h-9 w-9 rounded-[2px] bg-white/[0.04] hover:bg-white/[0.09] active:scale-[0.95] text-sky-400 hover:text-white border border-white/15 hover:border-sky-400/50 transition-all cursor-pointer select-none shadow-sm"
                   >
                     <IconEye size={17} stroke={1.5} />
                   </button>
@@ -203,21 +204,14 @@ export function ProjectFilesCard({
                     disabled={isDownloading}
                     title={isSuccess ? `Saved "${file.fileName}"` : `Download "${file.fileName}"`}
                     aria-label={`Download ${file.fileName}`}
-                    className={`inline-flex items-center justify-center h-9 w-9 rounded-[2px] transition-colors cursor-pointer select-none shadow-sm ${
+                    className={`inline-flex items-center justify-center h-9 w-9 rounded-[2px] transition-all cursor-pointer select-none shadow-sm active:scale-[0.95] ${
                       isSuccess
                         ? "bg-emerald-600/20 text-emerald-300 border border-emerald-500/40"
                         : "bg-[#CC6600]/15 hover:bg-[#CC6600]/30 active:bg-[#CC6600]/40 text-[#FFA040] hover:text-white border border-[#CC6600]/60 hover:border-[#FFA040]"
                     }`}
                   >
                     {isDownloading ? (
-                      <svg className="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
+                      <IconLoader2 size={16} stroke={2.5} className="animate-spin text-white" />
                     ) : isSuccess ? (
                       <IconCheck size={17} stroke={2.5} className="text-emerald-400" />
                     ) : (
@@ -232,7 +226,7 @@ export function ProjectFilesCard({
                       onClick={() => onDeleteFile(file)}
                       title={`Remove "${file.fileName}"`}
                       aria-label={`Remove ${file.fileName}`}
-                      className="inline-flex items-center justify-center h-9 w-9 rounded-[2px] text-rose-400 bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/30 hover:border-rose-400 transition-colors cursor-pointer select-none shadow-sm"
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-[2px] text-rose-400 bg-rose-500/10 hover:bg-rose-500/25 active:scale-[0.95] border border-rose-500/30 hover:border-rose-400 transition-all cursor-pointer select-none shadow-sm"
                     >
                       <IconTrash size={16} stroke={1.5} />
                     </button>

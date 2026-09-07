@@ -95,15 +95,15 @@ export function QuickProfileModal({
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 pt-2">
         {/* Information Callout */}
-        <div className="p-3.5 bg-sky-500/[0.06] border border-sky-500/20 rounded-[4px] flex items-start gap-3">
+        <div className="p-3.5 bg-[#01142B] border border-sky-500/25 rounded-[2px] flex items-start gap-3 shadow-sm">
           <IconShieldCheck size={18} stroke={1.5} className="text-[#38BDF8] flex-shrink-0 mt-0.5" />
-          <div className="text-xs text-white/70 font-sans leading-relaxed">
+          <div className="text-xs text-white/80 font-sans leading-relaxed">
             Your university details ensure your assigned statistician follows your school&apos;s specific Chapter 4 table formatting and defense criteria.
           </div>
         </div>
 
         {errorMsg && (
-          <div className="p-3.5 bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-sans rounded-[4px]">
+          <div className="p-3.5 bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-sans rounded-[2px]">
             {errorMsg}
           </div>
         )}
@@ -154,6 +154,7 @@ export function QuickProfileModal({
             size="sm"
             onClick={onClose}
             disabled={isPending}
+            className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-sans"
           >
             Cancel
           </Button>
@@ -162,7 +163,7 @@ export function QuickProfileModal({
             variant="primary"
             size="sm"
             disabled={isPending}
-            className="bg-[#CC6600] text-white hover:bg-[#E67300] font-sans text-xs font-bold tracking-wider"
+            className="bg-[#CC6600] text-white hover:bg-[#E67300] font-sans text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
           >
             {isPending ? "Saving..." : "Save & Continue →"}
           </Button>

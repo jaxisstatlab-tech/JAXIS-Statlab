@@ -70,7 +70,7 @@ export default function ClientProjectPaymentPage() {
   const handleUploadSuccess = (payment: PaymentItem) => {
     setToastMessage({
       message: "Payment Proof Submitted",
-      description: `Reference #${payment.referenceNumber || payment.id} registered. Our finance desk will verify cleared funds shortly.`,
+      description: `Reference #${payment.referenceNumber || payment.id} received. Our finance team will verify your payment shortly.`,
       variant: "success",
     });
     setPaymentsData((prev) => {
@@ -88,8 +88,8 @@ export default function ClientProjectPaymentPage() {
       <div className="flex-1 w-full min-h-full flex items-center justify-center animate-content-fade my-auto">
         <LoadingState
           variant="page"
-          label="Loading project financial ledger..."
-          description="Retrieving milestone payments, verified deposits, and SOW balance."
+          label="Loading payments..."
+          description="Retrieving payment history and contract balance."
         />
       </div>
     );
@@ -99,12 +99,12 @@ export default function ClientProjectPaymentPage() {
     return (
       <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
         <div className="p-8 text-center bg-[#01142B] border border-white/10 rounded-[2px]">
-          <h2 className="text-base font-sans font-bold text-white">Project Financial Ledger Unavailable</h2>
+          <h2 className="text-base font-sans font-bold text-white">Payment Records Unavailable</h2>
           <p className="text-xs text-white/50 mt-1 mb-4 font-sans">
             Unable to locate project or quotation terms for ID: {projectId}.
           </p>
           <Link href="/dashboard/client/projects">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="rounded-[2px] active:scale-[0.97] transition-all">
               ← Return to Active Studies
             </Button>
           </Link>
@@ -120,21 +120,20 @@ export default function ClientProjectPaymentPage() {
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {/* ── Page Header & Navigation ── */}
       <PageHeader
-        title={`Payment & Milestone Escrow: ${project.intakeId}`}
-        description="Submit official GCash or bank transfer deposit receipts to unlock research assignment and track contract balances."
+        title={`Payments & Receipts: ${project.intakeId}`}
+        description="Submit GCash or bank transfer deposit receipts to activate research and track your contract balance."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Client Portal", href: "/dashboard/client" },
-          { label: "Projects", href: "/dashboard/client/projects" },
+          { label: "MY STUDIES", href: "/dashboard/client/projects" },
           { label: project.intakeId, href: `/dashboard/client/projects/${project.id}` },
-          { label: "Payment & Escrow" },
+          { label: "PAYMENTS" },
         ]}
         actions={
           <div className="flex items-center gap-2.5">
             <Link href={`/dashboard/client/projects/${project.id}`}>
-              <Button variant="outline" size="sm" className="gap-1.5 font-sans">
+              <Button variant="outline" size="sm" className="gap-1.5 font-sans rounded-[2px] active:scale-[0.97] transition-all">
                 <IconArrowLeft size={14} stroke={2} />
-                <span>Return to Study Desk</span>
+                <span>Return to Study</span>
               </Button>
             </Link>
             {!summary.isFullyPaid && (
@@ -142,7 +141,7 @@ export default function ClientProjectPaymentPage() {
                 variant="primary"
                 size="sm"
                 onClick={() => setIsUploadModalOpen(true)}
-                className="gap-1.5 font-sans"
+                className="gap-1.5 font-sans rounded-[2px] active:scale-[0.97] transition-all bg-[#CC6600] hover:bg-[#E67300] text-white"
               >
                 <IconPlus size={14} stroke={2.5} />
                 <span>Submit Deposit Proof</span>
@@ -170,8 +169,8 @@ export default function ClientProjectPaymentPage() {
         </div>
 
         <Link href={`/dashboard/client/projects/${project.id}/sow`}>
-          <Button variant="secondary" size="sm" className="whitespace-nowrap font-sans text-xs">
-            Inspect Executed SOW Document →
+          <Button variant="secondary" size="sm" className="whitespace-nowrap font-sans text-xs rounded-[2px] active:scale-[0.97] transition-all">
+            View Signed Contract →
           </Button>
         </Link>
       </div>

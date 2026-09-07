@@ -498,7 +498,11 @@ export function ClientDashboardClient({
           categories={["Active Studies", "Completed Milestones"]}
           colors={["#CC6600", "#38BDF8"]}
           height={220}
-          valueFormatter={(val) => `${val} ${val === 1 ? "Study" : "Studies"}`}
+          valueFormatter={(val, cat) =>
+            cat?.includes("Milestone")
+              ? `${val} ${val === 1 ? "Milestone" : "Milestones"}`
+              : `${val} ${val === 1 ? "Study" : "Studies"}`
+          }
         />
       </Card>
 
@@ -823,6 +827,7 @@ export function ClientDashboardClient({
       </div>
 
       {/* ── Modal for Selected Study Quick Inspection ── */}
+      {/* ── Study Quick Details Modal ── */}
       {selectedStudy && (
         <Modal
           open={!!selectedStudy}
@@ -832,41 +837,68 @@ export function ClientDashboardClient({
           size="md"
           footer={
             <div className="flex items-center justify-between w-full">
-              <Button variant="secondary" onClick={() => setSelectedStudy(null)}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setSelectedStudy(null)}
+                className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-sans"
+              >
                 Close
               </Button>
               <Link href={`/dashboard/client/projects/${selectedStudy.id}`}>
-                <Button variant="primary">Open Project Desk →</Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-semibold bg-[#CC6600] hover:bg-[#E67300] text-white shadow-md"
+                >
+                  Open Study Desk →
+                </Button>
               </Link>
             </div>
           }
         >
-          <div className="flex flex-col gap-4 text-xs font-sans text-white/80">
+          <div className="flex flex-col gap-4 text-xs font-sans text-white/85">
+            {/* Status & ID Ribbon */}
+            <div className="flex items-center justify-between p-3 rounded-[2px] bg-[#01142B] border border-white/10">
+              <span className="text-white/50 font-sans text-xs">Current Status:</span>
+              {(() => {
+                const displayStatus = getProjectDisplayStatus(selectedStudy, "CLIENT");
+                return (
+                  <StatusBadge
+                    status={displayStatus.status}
+                    label={displayStatus.label}
+                    pulse={displayStatus.pulse}
+                  />
+                );
+              })()}
+            </div>
+
             {selectedStudy.missingInfoReason &&
               selectedStudy.masterStatus === "AWAITING_INFORMATION" && (
-                <div className="p-4 rounded-[2px] bg-amber-500/10 border border-amber-500/30 text-amber-200">
+                <div className="p-3.5 rounded-[2px] bg-amber-500/10 border border-amber-500/30 text-amber-200">
                   <strong className="text-amber-400 font-mono text-[0.6875rem] uppercase block mb-1">
                     Missing Information Requested:
                   </strong>
                   &ldquo;{selectedStudy.missingInfoReason}&rdquo;
                 </div>
               )}
-            <div className="p-4 rounded-[2px] bg-white/[0.03] border border-white/[0.08] flex flex-col gap-3.5">
-              <div className="flex flex-col gap-0.5">
-                <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
+
+            <div className="p-4 rounded-[2px] bg-[#01142B] border border-white/10 flex flex-col gap-3.5 shadow-sm">
+              <div className="flex flex-col gap-1">
+                <span className="font-mono text-[0.6875rem] text-white/45 uppercase tracking-wider font-semibold">
                   Core Objectives:
                 </span>
-                <p className="text-xs text-white leading-relaxed">
+                <p className="text-xs text-white/90 leading-relaxed font-sans">
                   {selectedStudy.researchObjectives}
                 </p>
               </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
-                  Submitted Files:
+              <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
+                <span className="font-mono text-[0.6875rem] text-white/45 uppercase tracking-wider font-semibold">
+                  Attached Documents:
                 </span>
-                <p className="text-xs font-mono text-sky-300">
+                <span className="text-xs font-mono text-sky-400 font-medium">
                   {selectedStudy.files.length} attached document(s)
-                </p>
+                </span>
               </div>
             </div>
           </div>

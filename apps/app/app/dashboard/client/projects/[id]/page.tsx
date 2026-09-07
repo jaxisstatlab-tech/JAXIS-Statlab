@@ -13,6 +13,7 @@ import {
   ConfirmDialog,
   CopyButton,
   LoadingState,
+  Peso,
 } from "@repo/ui";
 import {
   IconCheck,
@@ -39,8 +40,6 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-
-
 const CATEGORY_OPTIONS: {
   id: string;
   label: string;
@@ -59,9 +58,9 @@ const CATEGORY_OPTIONS: {
   },
   {
     id: "DATASET",
-    label: "Raw Dataset Matrix",
+    label: "Raw Dataset",
     value: "DATASET",
-    desc: "Excel (.xlsx), CSV, or SPSS data matrix",
+    desc: "Excel (.xlsx), CSV, or SPSS data file",
     accept: ".xlsx,.xls,.csv,.sav,.dta",
     formatLabel: "XLSX, CSV, SPSS (.SAV) (Max 15MB)",
   },
@@ -75,9 +74,9 @@ const CATEGORY_OPTIONS: {
   },
   {
     id: "SUPPLEMENTARY",
-    label: "Supplementary Dossier",
+    label: "Supplementary Materials",
     value: "RESEARCH_DOCUMENT",
-    desc: "Institutional approval or supplementary data",
+    desc: "Adviser notes, ethics approvals, or reference papers",
     accept: ".pdf,.docx,.doc,.xlsx,.csv,.zip",
     formatLabel: "PDF, DOCX, XLSX, ZIP (Max 15MB)",
   },
@@ -187,14 +186,14 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
             : null
         );
         setToastMessage({
-          message: "Document Removed",
-          description: `Document "${fileToDelete.fileName}" was removed from the study registry.`,
+          message: "File Removed",
+          description: `"${fileToDelete.fileName}" was removed from your study.`,
           variant: "success",
         });
         setFileToDelete(null);
       } else {
         setToastMessage({
-          message: "Failed to Remove Document",
+          message: "Failed to Remove File",
           description: res.error.message,
           variant: "danger",
         });
@@ -333,8 +332,8 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
             : null
         );
         setToastMessage({
-          message: "Document Uploaded to Cloudflare R2",
-          description: `"${selectedUploadFile.name}" stored securely in Cloudflare bucket.`,
+          message: "File Uploaded",
+          description: `"${selectedUploadFile.name}" has been added to your study.`,
           variant: "success",
         });
         setSelectedUploadFile(null);
@@ -353,8 +352,8 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
       if (res.success) {
         setProject(res.data);
         setToastMessage({
-          message: "Files Submitted Successfully",
-          description: "Your study has been resubmitted to the statistical team for review.",
+          message: "Information Submitted",
+          description: "Your files have been sent to the research team for review.",
           variant: "success",
         });
       } else {
@@ -426,14 +425,22 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
         actions={
           <div className="flex items-center gap-2">
             <Link href={`/dashboard/client/projects/${project.id}/messages`}>
-              <Button variant="primary" size="sm" className="cursor-pointer text-xs font-semibold rounded-[2px]">
+              <Button
+                variant="primary"
+                size="sm"
+                className="cursor-pointer text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-transform bg-[#CC6600] hover:bg-[#E67300] text-white shadow-sm"
+              >
                 <IconMessages size={15} stroke={2} className="mr-1.5" />
                 <span>Messages & Chat</span>
               </Button>
             </Link>
             <Link href="/dashboard/client/projects">
-              <Button variant="secondary" size="sm">
-                ← BACK TO MY STUDIES
+              <Button
+                variant="secondary"
+                size="sm"
+                className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-sans"
+              >
+                ← Back to My Studies
               </Button>
             </Link>
           </div>
@@ -450,16 +457,16 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
         />
       )}
 
-      {/* ── Governance Status Action Bar ── */}
+      {/* ── Status Action Bar ── */}
       <Card
-        className="overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[4px] shadow-lg"
+        className="overflow-hidden border border-white/10 bg-[#01142B] rounded-[2px] shadow-lg"
         style={{ padding: "0.875rem 1.5rem" }}
       >
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3 sm:gap-6">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-xs font-sans text-white/60 uppercase font-semibold tracking-wider">
-                Current Master Status:
+              <span className="text-xs font-sans text-white/60 font-semibold tracking-wider uppercase">
+                Status:
               </span>
               {(() => {
                 const displayStatus = getProjectDisplayStatus(project);
@@ -481,7 +488,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                     variant: "info",
                   })
                 }
-                className="ml-1 text-[#FF9433] bg-[#CC6600]/15 border-[#CC6600]/30 hover:border-[#CC6600] hover:bg-[#CC6600]/25"
+                className="ml-1 text-[#FF9433] bg-[#CC6600]/15 border-[#CC6600]/30 hover:border-[#CC6600] hover:bg-[#CC6600]/25 rounded-[2px] active:scale-[0.97] transition-transform"
               />
             </div>
           </div>
@@ -492,10 +499,10 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                 <Button
                   variant="primary"
                   size="sm"
-                  className="text-xs font-mono font-bold tracking-wider whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300]"
+                  className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
                 >
                   <IconReceipt size={14} stroke={1.5} />
-                  <span>REVIEW COMMERCIAL PROPOSAL →</span>
+                  <span>Review Quote →</span>
                 </Button>
               </Link>
             )}
@@ -505,10 +512,10 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="text-xs font-mono tracking-wider whitespace-nowrap flex items-center gap-1.5"
+                  className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
                 >
                   <IconFileText size={14} stroke={1.5} />
-                  <span>VIEW QUOTE DETAILS</span>
+                  <span>View Quote</span>
                 </Button>
               </Link>
             )}
@@ -518,10 +525,10 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                 <Button
                   variant="primary"
                   size="sm"
-                  className="text-xs font-mono font-bold tracking-wider whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#FFA040]"
+                  className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
                 >
                   <IconFileText size={14} stroke={2} />
-                  <span>REVIEW &amp; SIGN SOW →</span>
+                  <span>Review &amp; Sign Contract →</span>
                 </Button>
               </Link>
             )}
@@ -535,10 +542,10 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                  className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 rounded-[2px] active:scale-[0.97] transition-transform"
                 >
                   <IconShieldCheck size={14} stroke={1.5} />
-                  <span>View Signed SOW</span>
+                  <span>View Signed Contract</span>
                 </Button>
               </Link>
             )}
@@ -549,10 +556,10 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                 <Button
                   variant="primary"
                   size="sm"
-                  className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#FFA040]"
+                  className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
                 >
                   <IconReceipt size={14} stroke={2} />
-                  <span>Proceed to Payment Desk →</span>
+                  <span>Proceed to Payment →</span>
                 </Button>
               </Link>
             )}
@@ -564,10 +571,10 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5"
+                  className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
                 >
                   <IconReceipt size={14} stroke={1.5} />
-                  <span>Payment Ledger</span>
+                  <span>Payment History</span>
                 </Button>
               </Link>
             )}
@@ -581,10 +588,10 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                   setUploadError(null);
                   setIsUploadModalOpen(true);
                 }}
-                className="text-xs font-mono tracking-wider whitespace-nowrap flex items-center gap-1.5"
+                className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
               >
                 <IconUpload size={14} stroke={1.5} />
-                <span>ATTACH DOCUMENT</span>
+                <span>Attach File</span>
               </Button>
             )}
           </div>
@@ -593,7 +600,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
 
       {/* ── SOW Pending Execution Banner (if SOW_PENDING) ── */}
       {project.masterStatus === "SOW_PENDING" && (
-        <Card className="p-6 sm:p-7 bg-[#01142B] border border-amber-500/30 rounded-[4px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
+        <Card className="p-6 sm:p-7 bg-[#01142B] border border-amber-500/30 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-[2px] bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
               <IconFileCertificate size={20} stroke={1.5} className="text-amber-400" />
@@ -603,7 +610,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                 Action Required · Statement of Work Ready for Signature
               </span>
               <p className="text-xs sm:text-sm text-white/75 font-sans leading-relaxed">
-                Your formal Statement of Work contract has been prepared. Review the empirical objectives, turnaround days, and payment milestones to digitally sign.
+                Your formal Statement of Work contract has been prepared. Review the research objectives, turnaround days, and payment milestones to digitally sign.
               </p>
             </div>
           </div>
@@ -611,7 +618,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
             <Button
               variant="primary"
               size="md"
-              className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#E67300] text-white whitespace-nowrap px-5 py-2 rounded-[2px]"
+              className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#E67300] text-white whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
             >
               Review &amp; Sign Contract →
             </Button>
@@ -622,14 +629,14 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
       {/* ── Awaiting Payment Deposit Banner (if SOW_SIGNED or AWAITING_PAYMENT) ── */}
       {(project.masterStatus === "SOW_SIGNED" || project.masterStatus === "AWAITING_PAYMENT") && (
         project.hasPendingPaymentVerification || project.latestPaymentStatus === "PROOF_SUBMITTED" ? (
-          <Card className="p-6 sm:p-7 bg-[#01142B] border border-sky-500/40 rounded-[4px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
+          <Card className="p-6 sm:p-7 bg-[#01142B] border border-sky-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0">
                 <IconClock size={20} stroke={1.5} className="text-sky-400" />
               </div>
               <div className="space-y-0.5">
                 <span className="text-xs font-sans text-sky-400 font-semibold uppercase tracking-wider block">
-                  Deposit Proof Submitted · Awaiting Finance Confirmation
+                  Deposit Proof Submitted · Awaiting Verification
                 </span>
                 <p className="text-xs sm:text-sm text-white/75 font-sans leading-relaxed">
                   Your payment receipt has been submitted and is currently being verified by our finance team. Once confirmed, research assignment will activate automatically.
@@ -640,24 +647,24 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
               <Button
                 variant="secondary"
                 size="md"
-                className="font-sans font-semibold text-xs min-h-[38px] whitespace-nowrap px-5 py-2 rounded-[2px]"
+                className="font-sans font-semibold text-xs min-h-[38px] whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform"
               >
                 Inspect Payment Desk →
               </Button>
             </Link>
           </Card>
         ) : (
-          <Card className="p-6 sm:p-7 bg-[#01142B] border border-[#CC6600]/40 rounded-[4px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
+          <Card className="p-6 sm:p-7 bg-[#01142B] border border-[#CC6600]/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center shrink-0">
                 <IconReceipt size={20} stroke={1.5} className="text-[#FFA040]" />
               </div>
               <div className="space-y-0.5">
                 <span className="text-xs font-sans text-[#FFA040] font-semibold uppercase tracking-wider block">
-                  Milestone Deposit Required · Downpayment Verification
+                  Deposit Required · Downpayment Verification
                 </span>
                 <p className="text-xs sm:text-sm text-white/75 font-sans leading-relaxed">
-                  Your Statement of Work is executed. Transfer your agreed downpayment via GCash or Bank Deposit and submit the receipt to activate computational modeling.
+                  Your Statement of Work is signed. Transfer your agreed downpayment via GCash or Bank Deposit and submit the receipt to begin data analysis.
                 </p>
               </div>
             </div>
@@ -665,9 +672,9 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
               <Button
                 variant="primary"
                 size="md"
-                className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#FFA040] text-white whitespace-nowrap px-5 py-2 rounded-[2px]"
+                className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#FFA040] text-white whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
               >
-                Proceed to Payment Desk →
+                Proceed to Payment →
               </Button>
             </Link>
           </Card>
@@ -676,7 +683,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
 
       {/* ── Pending Assignment Banner (if ACTIVE) ── */}
       {project.masterStatus === "ACTIVE" && (
-        <Card className="p-6 sm:p-7 bg-[#01142B] border border-sky-500/40 rounded-[4px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
+        <Card className="p-6 sm:p-7 bg-[#01142B] border border-sky-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-[2px] bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0">
               <IconClock size={20} stroke={1.5} className="text-sky-400" />
@@ -694,9 +701,9 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
             <Button
               variant="secondary"
               size="md"
-              className="font-sans font-semibold text-xs min-h-[38px] whitespace-nowrap px-5 py-2 rounded-[2px]"
+              className="font-sans font-semibold text-xs min-h-[38px] whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform"
             >
-              View Payment Ledger →
+              View Payment History →
             </Button>
           </Link>
         </Card>
@@ -705,7 +712,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
       {/* ── Deliverables Released or Payment Locked Banner (if DELIVERED or REVISION_REQUESTED) ── */}
       {(project.masterStatus === "DELIVERED" || project.masterStatus === "REVISION_REQUESTED") && (
         project.financialSummary && !project.financialSummary.isFullyPaid && project.financialSummary.remainingBalance > 0 ? (
-          <Card className="p-6 sm:p-7 bg-[#01142B] border border-amber-500/40 rounded-[4px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-content-fade">
+          <Card className="p-6 sm:p-7 bg-[#01142B] border border-amber-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-content-fade">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
                 <IconReceipt size={20} stroke={1.5} className="text-amber-400" />
@@ -715,7 +722,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                   Outputs Verified by QA · Final Payment Required to Unlock Deliverables
                 </span>
                 <p className="text-xs sm:text-sm text-white/75 font-sans leading-relaxed">
-                  Your statistical findings and official reports have been verified by our Senior QA Lead. Please settle your remaining balance of ₱{project.financialSummary.remainingBalance.toLocaleString("en-PH", { minimumFractionDigits: 2 })} to immediately unlock your download links.
+                  Your statistical findings and official reports have been verified by our Senior QA Lead. Settle your remaining balance of <span className="font-mono font-bold text-white"><Peso />{project.financialSummary.remainingBalance.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</span> to immediately unlock your download links.
                 </p>
               </div>
             </div>
@@ -723,15 +730,15 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
               <Button
                 variant="primary"
                 size="md"
-                className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#E67300] text-white whitespace-nowrap px-5 py-2 rounded-[2px] cursor-pointer"
+                className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#E67300] text-white whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform cursor-pointer shadow-md"
               >
                 <IconReceipt size={15} stroke={2} className="mr-1.5" />
-                <span>Proceed to Payment Desk →</span>
+                <span>Proceed to Payment →</span>
               </Button>
             </Link>
           </Card>
         ) : (
-          <Card className="p-6 sm:p-7 bg-[#011B38] border border-emerald-500/40 rounded-[4px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-content-fade">
+          <Card className="p-6 sm:p-7 bg-[#01142B] border border-emerald-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-content-fade">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
                 <IconShieldCheck size={20} stroke={1.5} className="text-emerald-400" />
@@ -749,7 +756,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
               <Button
                 variant="primary"
                 size="md"
-                className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#E67300] text-white whitespace-nowrap px-5 py-2 rounded-[2px] cursor-pointer"
+                className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#E67300] text-white whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform cursor-pointer shadow-md"
               >
                 <IconDownload size={15} stroke={2} className="mr-1.5" />
                 <span>Download Deliverables →</span>
@@ -761,19 +768,19 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
 
       {/* ── Missing Information Banner (if AWAITING_INFORMATION) ── */}
       {project.masterStatus === "AWAITING_INFORMATION" && (
-        <Card className="p-5 bg-amber-500/[0.04] border-l-4 border-l-amber-500 flex flex-col gap-3">
+        <Card className="p-5 bg-amber-500/[0.04] border-l-4 border-l-amber-500 rounded-[2px] flex flex-col gap-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <span className="text-xs font-mono text-amber-400 font-bold uppercase">
-              Active Missing Information Request:
+              Action Needed · Missing Information:
             </span>
             <Button
               variant="primary"
               size="sm"
               onClick={handleResolveMissingInfo}
               loading={isResolving}
-              className="text-xs font-mono font-bold tracking-wider"
+              className="text-xs font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform bg-[#CC6600] hover:bg-[#E67300] text-white shadow-sm"
             >
-              SUBMIT FILES &amp; CONTINUE REVIEW →
+              Submit Files &amp; Continue →
             </Button>
           </div>
           <p className="text-xs text-white/90 leading-relaxed font-sans bg-black/30 p-4 rounded-[2px] border border-white/[0.08]">
@@ -784,35 +791,35 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
 
       {/* ── Main Inspection Layout ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left 2 Cols: Research Content, Commercial Proposal, & Datasets */}
+        {/* Left 2 Cols: Research Content, Quote & Scope, & Datasets */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Commercial Proposal & Quotation Card */}
+          {/* Price Quote & Scope Card */}
           {(project.masterStatus === "QUOTE_SENT" || project.masterStatus === "CLIENT_APPROVED") && (
-            <Card className="p-6 bg-[#01142B] border border-white/[0.08] flex flex-col gap-4">
+            <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-4 shadow-sm">
               <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <IconReceipt size={18} stroke={1.5} className="text-[#CC6600]" />
                   <h3 className="text-sm font-bold text-white font-sans">
-                    Commercial Proposal &amp; Quotation
+                    Price Quote &amp; Scope
                   </h3>
                 </div>
                 <span className="text-[0.625rem] font-mono px-2 py-0.5 rounded-[2px] bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold uppercase">
-                  {project.masterStatus === "CLIENT_APPROVED" ? "ACCEPTED & CONFIRMED" : "READY FOR REVIEW"}
+                  {project.masterStatus === "CLIENT_APPROVED" ? "Accepted" : "Ready for Review"}
                 </span>
               </div>
-              <p className="text-xs text-white/70 font-sans leading-relaxed">
+              <p className="text-xs text-white/75 font-sans leading-relaxed">
                 {project.masterStatus === "CLIENT_APPROVED"
-                  ? "Your commercial terms have been confirmed. You will be notified when your formal SOW contract is ready for digital signature."
-                  : "Our statistical team has prepared your customized analytical scope and deliverables schedule. Review and accept your quote to lock your dedicated statistician."}
+                  ? "Your quote has been accepted. You will be notified when your formal Statement of Work contract is ready for digital signature."
+                  : "Our team has prepared your customized analytical scope and schedule. Review and accept your quote to assign your dedicated statistician."}
               </p>
               <div className="pt-1">
                 <Link href={`/dashboard/client/projects/${project.id}/quote`}>
                   <Button
                     variant="primary"
                     size="sm"
-                    className="font-mono text-xs font-bold tracking-wider bg-[#CC6600] text-white hover:bg-[#E67300]"
+                    className="font-sans text-xs font-semibold bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
                   >
-                    {project.masterStatus === "CLIENT_APPROVED" ? "VIEW QUOTE DETAILS →" : "REVIEW & APPROVE PROPOSAL →"}
+                    {project.masterStatus === "CLIENT_APPROVED" ? "View Quote Details →" : "Review & Accept Quote →"}
                   </Button>
                 </Link>
               </div>
@@ -883,7 +890,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
         <div className="flex flex-col gap-6">
           <Card className="p-6 flex flex-col gap-4">
             <h3 className="text-xs font-mono uppercase tracking-wider text-sky-400 font-bold border-b border-white/[0.08] pb-2">
-              Client &amp; Institutional Profile
+              Client &amp; Academic Profile
             </h3>
 
             <div className="flex flex-col gap-3 text-xs">
@@ -900,7 +907,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
               {project.client.clientProfile ? (
                 <>
                   <div>
-                    <span className="text-white/40 block">University / Institution</span>
+                    <span className="text-white/40 block">University / School</span>
                     <span className="text-white font-semibold font-sans">
                       {project.client.clientProfile.institutionSchool}
                     </span>
@@ -925,8 +932,8 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                   </div>
                 </>
               ) : (
-                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-[2px] text-amber-300 text-xs">
-                  Institutional profile not registered.
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-[2px] text-amber-300 text-xs font-sans">
+                  Academic profile details not registered yet.
                 </div>
               )}
             </div>
@@ -995,15 +1002,15 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
           open={Boolean(fileToDelete)}
           onCancel={() => setFileToDelete(null)}
           title="Remove Attached Document"
-          description={`Are you sure you want to remove ${fileToDelete.fileName} from this study?`}
-          confirmLabel="Confirm Delete"
+          description={`Are you sure you want to remove "${fileToDelete.fileName}" from this study?`}
+          confirmLabel="Remove File"
           confirmVariant="destructive"
           loading={isDeleting}
           onConfirm={handleDeleteFile}
         />
       )}
 
-      {/* File Upload Modal (Tactical Ingestion Console) */}
+      {/* File Upload Modal */}
       {isUploadModalOpen && (
         <Modal
           open={isUploadModalOpen}
@@ -1015,7 +1022,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
             }
           }}
           title="Upload Research Document or Dataset"
-          description="Attach updated proposal manuscripts, questionnaires, or raw dataset matrices to your study registry."
+          description="Attach manuscripts, questionnaires, or raw datasets to your study."
           size="lg"
           footer={
             <div className="flex items-center justify-end gap-3 w-full">
@@ -1024,8 +1031,9 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                 size="sm"
                 onClick={() => setIsUploadModalOpen(false)}
                 disabled={isUploading}
+                className="font-sans text-xs rounded-[2px] active:scale-[0.97] transition-all"
               >
-                CANCEL
+                Cancel
               </Button>
               <Button
                 variant="primary"
@@ -1033,9 +1041,9 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                 onClick={handleUploadFile}
                 loading={isUploading}
                 disabled={!selectedUploadFile || isUploading}
-                className="font-mono text-xs font-bold tracking-wider"
+                className="font-sans text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-all bg-[#CC6600] hover:bg-[#E67300] text-white shadow-md"
               >
-                CONFIRM &amp; ATTACH FILE →
+                Upload &amp; Attach File →
               </Button>
             </div>
           }
@@ -1047,14 +1055,14 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded-[2px] bg-white/[0.08] text-white font-mono text-[0.625rem] font-bold">
-                    01
+                  <span className="px-1.5 py-0.5 rounded-[2px] bg-white/[0.08] text-white font-mono text-[0.625rem] font-semibold">
+                    1
                   </span>
-                  <label className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                    Classification Category
+                  <label className="text-xs font-mono font-semibold text-white uppercase tracking-wider">
+                    Document Type
                   </label>
                 </div>
-                <span className="text-[0.625rem] font-mono uppercase text-white/40 font-semibold">REQUIRED</span>
+                <span className="text-[0.625rem] font-mono uppercase text-white/40 font-medium">Required</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1067,7 +1075,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                       key={opt.id}
                       type="button"
                       onClick={() => handleCategorySelect(opt.id, opt.value)}
-                      className={`p-3.5 sm:p-4 rounded-[2px] border text-left transition-all flex items-start gap-3.5 cursor-pointer group ${
+                      className={`p-3.5 sm:p-4 rounded-[2px] border text-left transition-all flex items-start gap-3.5 cursor-pointer group active:scale-[0.98] ${
                         isSelected
                           ? "bg-[#CC6600]/15 border-[#CC6600] text-white shadow-sm ring-1 ring-[#CC6600]/50"
                           : "bg-white/[0.02] border-white/[0.08] text-white/70 hover:bg-white/[0.05] hover:border-white/20 hover:text-white"
@@ -1102,22 +1110,22 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Step 2: File Payload Selector */}
+            {/* Step 2: File Selector */}
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded-[2px] bg-white/[0.08] text-white font-mono text-[0.625rem] font-bold">
-                    02
+                  <span className="px-1.5 py-0.5 rounded-[2px] bg-white/[0.08] text-white font-mono text-[0.625rem] font-semibold">
+                    2
                   </span>
-                  <label className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                    File Payload Attachment
+                  <label className="text-xs font-mono font-semibold text-white uppercase tracking-wider">
+                    Choose File
                   </label>
                 </div>
-                <span className="text-[0.625rem] font-mono uppercase text-white/40 font-semibold">MAX 15MB</span>
+                <span className="text-[0.625rem] font-mono uppercase text-white/40 font-medium">Max 15MB</span>
               </div>
 
               {selectedUploadFile ? (
-                /* Staged File Progress Card (Photo 2 Telemetry Standard) */
+                /* Staged File Progress Card */
                 <div className="p-4 sm:p-5 rounded-[2px] bg-[#01142B] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
                   {/* Top Row: File Icon + Name + 100% Badge */}
                   <div className="flex items-center justify-between gap-3">
@@ -1155,14 +1163,14 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                       <div className="flex items-center gap-1.5 text-emerald-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                         <span className="font-semibold text-emerald-300 text-[0.6875rem]">
-                          {isUploading ? "Uploading..." : "Ready for attachment"}
+                          {isUploading ? "Uploading..." : "Ready to upload"}
                         </span>
                       </div>
                       {!isUploading && (
                         <button
                           type="button"
                           onClick={() => setSelectedUploadFile(null)}
-                          className="px-2.5 py-0.5 rounded-[2px] text-[0.6875rem] font-mono font-bold text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 transition-all cursor-pointer"
+                          className="px-2.5 py-0.5 rounded-[2px] text-[0.6875rem] font-sans font-medium text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 transition-all cursor-pointer active:scale-[0.97]"
                         >
                           Change
                         </button>
@@ -1171,14 +1179,14 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                   </div>
                 </div>
               ) : (
-                /* Interactive Drag & Drop Box based on inspiration design (Dynamic format per category) */
+                /* Interactive Drag & Drop Box */
                 <div
                   onDragEnter={handleDragOver}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`border border-dashed transition-all py-14 sm:py-16 px-6 min-h-[220px] rounded-[2px] flex flex-col items-center justify-center gap-4 cursor-pointer text-center group select-none ${
+                  className={`border border-dashed transition-all py-12 sm:py-14 px-6 min-h-[200px] rounded-[2px] flex flex-col items-center justify-center gap-4 cursor-pointer text-center group select-none active:scale-[0.99] ${
                     isDragging
                       ? "border-[#CC6600] bg-[#CC6600]/10 ring-2 ring-[#CC6600]/40 scale-[1.01]"
                       : "border-white/20 hover:border-white/40 bg-white/[0.01] hover:bg-white/[0.03]"
@@ -1224,14 +1232,14 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                     <IconCloudUpload size={22} stroke={1.5} />
                   </div>
 
-                  {/* Heading & Subtitle (Dynamic based on selected category) */}
+                  {/* Heading & Subtitle */}
                   <div className="flex flex-col items-center gap-1.5">
                     <span
-                      className={`font-mono text-sm sm:text-base font-bold tracking-wide transition-colors ${
+                      className={`font-sans text-sm sm:text-base font-semibold tracking-wide transition-colors ${
                         isDragging ? "text-[#FFA040]" : "text-white"
                       }`}
                     >
-                      {isDragging ? "Drop file to attach" : "Click to browse or drop file"}
+                      {isDragging ? "Drop file to attach" : "Click to choose file or drag and drop"}
                     </span>
                     <span className="font-mono text-xs text-white/50">
                       {CATEGORY_OPTIONS.find((c) => c.id === selectedCategoryId)?.formatLabel ||

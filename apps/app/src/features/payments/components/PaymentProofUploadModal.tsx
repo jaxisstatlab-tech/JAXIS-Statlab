@@ -189,11 +189,11 @@ export function PaymentProofUploadModal({
       description={`Submit your verified payment proof for study ${projectIntakeId}. Once verified by our finance desk, your research assignment activates.`}
       size="xl"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
-        {/* ── Official Institutional Payment Channels (Tabs) ── */}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full font-sans">
+        {/* ── Official Payment Channels (Tabs) ── */}
         <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs text-white/60 uppercase tracking-wider">
-            1. Select Institutional Payment Channel
+          <label className="font-mono text-xs text-white/60 uppercase tracking-wider font-semibold">
+            1. Select Payment Method
           </label>
 
           <Tabs
@@ -204,11 +204,11 @@ export function PaymentProofUploadModal({
             <TabsList className="w-full grid grid-cols-2">
               <TabsTrigger value="GCASH" className="gap-2">
                 <IconDeviceMobile size={16} stroke={1.5} />
-                <span>GCash Corporate</span>
+                <span>GCash (QR Ph)</span>
               </TabsTrigger>
               <TabsTrigger value="BANK_TRANSFER" className="gap-2">
                 <IconBuildingBank size={16} stroke={1.5} />
-                <span>Bank Direct Deposit</span>
+                <span>Bank Deposit</span>
               </TabsTrigger>
             </TabsList>
 
@@ -473,6 +473,7 @@ export function PaymentProofUploadModal({
             size="sm"
             onClick={onClose}
             disabled={isSubmitting}
+            className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-sans"
           >
             Cancel
           </Button>
@@ -481,7 +482,7 @@ export function PaymentProofUploadModal({
             variant="primary"
             size="sm"
             disabled={isSubmitting}
-            className="gap-2"
+            className="gap-2 rounded-[2px] active:scale-[0.97] transition-transform text-xs font-semibold bg-[#CC6600] hover:bg-[#E67300] text-white shadow-md"
           >
             {isSubmitting ? (
               <>
