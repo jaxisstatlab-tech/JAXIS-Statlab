@@ -159,7 +159,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isInitialScrollDone = useRef<boolean>(false);
+  const isNearBottomRef = useRef<boolean>(true);
   const messagesRef = useRef<MessageDTO[]>([]);
   messagesRef.current = messages;
   const projectInfoRef = useRef(projectInfo);
@@ -169,17 +169,31 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   const nextCursorRef = useRef(nextCursor);
   nextCursorRef.current = nextCursor;
 
+  // Checks whether the user's viewport is at or near the bottom (within 150px)
+  const checkIfNearBottom = useCallback(() => {
+    if (!chatContainerRef.current) return true;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    return scrollHeight - scrollTop - clientHeight < 150;
+  }, []);
+
+  // Multi-frame robust scroll-to-bottom that guarantees sticking to the bottom-most pixel
   const scrollToBottom = useCallback((smooth = false) => {
-    if (chatContainerRef.current) {
-      if (smooth) {
-        chatContainerRef.current.scrollTo({
-          top: chatContainerRef.current.scrollHeight,
-          behavior: "smooth",
-        });
-      } else {
-        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    const doScroll = () => {
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight + 10000;
       }
-    }
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({
+          behavior: smooth ? "smooth" : "auto",
+          block: "end",
+        });
+      }
+    };
+
+    doScroll();
+    requestAnimationFrame(doScroll);
+    setTimeout(doScroll, 40);
+    setTimeout(doScroll, 120);
   }, []);
 
   // Warm sessionStorage cache immediately when initialThreadData is provided
@@ -207,7 +221,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     if (messagesRef.current.length === 0 && !projectInfoRef.current && !initialThreadData?.projectInfo) {
       setIsLoading(true);
     }
-    isInitialScrollDone.current = false;
+    isNearBottomRef.current = true;
 
     try {
       const res = await getProjectMessages(projectId, { limit: 20 });
@@ -253,13 +267,16 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             // ignore quota errors
           }
         }
+
+        // Stick to bottom-most once initial server messages arrive
+        scrollToBottom(false);
       }
     } catch (err) {
       console.error("Failed to load initial project messages:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, scrollToBottom]);
 
   const loadOlderMessages = useCallback(async () => {
     if (!hasMore || isLoadingOlder || !nextCursor) return;
@@ -311,9 +328,10 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     }
   }, [hasMore, isLoadingOlder, nextCursor, projectId]);
 
-  // Scroll listener for top reverse cursor pagination
+  // Scroll listener for top reverse cursor pagination & near-bottom tracking
   const handleScroll = () => {
     if (chatContainerRef.current) {
+      isNearBottomRef.current = checkIfNearBottom();
       if (chatContainerRef.current.scrollTop <= 40 && hasMore && !isLoadingOlder) {
         loadOlderMessages();
       }
@@ -324,13 +342,42 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     loadInitialMessages();
   }, [loadInitialMessages]);
 
-  // Scroll down on initial mount
+  // Always scroll to bottom-most when opening or switching projects
   useEffect(() => {
-    if (!isLoading && messages.length > 0 && !isInitialScrollDone.current) {
+    isNearBottomRef.current = true;
+    scrollToBottom(false);
+  }, [projectId, scrollToBottom]);
+
+  // Stick to bottom-most whenever loading finishes or initial messages render
+  useEffect(() => {
+    if (!isLoading && messages.length > 0 && isNearBottomRef.current) {
       scrollToBottom(false);
-      isInitialScrollDone.current = true;
     }
   }, [isLoading, messages.length, scrollToBottom]);
+
+  // Automatic resize observer: if layout expands or font loads, remain stuck to bottom
+  useEffect(() => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+
+    let timer: NodeJS.Timeout;
+    const observer = new ResizeObserver(() => {
+      if (isNearBottomRef.current && chatContainerRef.current) {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight + 10000;
+          }
+        }, 20);
+      }
+    });
+
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+      clearTimeout(timer);
+    };
+  }, []);
 
   // Delta Sync: Fetches new incoming messages since the last known timestamp
   const syncDelta = useCallback(async () => {
