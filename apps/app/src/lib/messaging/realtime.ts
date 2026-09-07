@@ -5,19 +5,31 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 // Cache active project channels so sender can broadcast over the same established WebSocket connection
 const activeChannels = new Map<string, RealtimeChannel>();
 
+export interface RealtimeMessageListeners {
+  onMessage: (message: MessageDTO) => void;
+  onDelivered?: (payload: { messageId: string }) => void;
+  onSeen?: (payload: { messageIds: string[]; readerId: string; readerName?: string }) => void;
+  onStatus?: (status: string) => void;
+}
+
 /**
  * Subscribes to Supabase Realtime Phoenix WebSocket channel for a specific project.
- * Receives broadcast messages from both peer browsers and server REST broadcasts.
+ * Receives broadcast messages, delivery confirmations, and read receipts.
  * Returns an unsubscribe teardown function for useEffect cleanup.
  */
 export function subscribeToProjectMessages(
   projectId: string,
-  onMessage: (message: MessageDTO) => void,
-  onStatus?: (status: string) => void
+  onMessageOrListeners: ((message: MessageDTO) => void) | RealtimeMessageListeners,
+  legacyOnStatus?: (status: string) => void
 ): () => void {
   if (!projectId || typeof window === "undefined" || !supabaseClient) {
     return () => {};
   }
+
+  const listeners: RealtimeMessageListeners =
+    typeof onMessageOrListeners === "function"
+      ? { onMessage: onMessageOrListeners, onStatus: legacyOnStatus }
+      : onMessageOrListeners;
 
   try {
     const channelName = `project-messages:${projectId}`;
@@ -36,11 +48,21 @@ export function subscribeToProjectMessages(
     channel
       .on("broadcast", { event: "new_message" }, ({ payload }) => {
         if (payload && (payload as MessageDTO).id) {
-          onMessage(payload as MessageDTO);
+          listeners.onMessage(payload as MessageDTO);
+        }
+      })
+      .on("broadcast", { event: "message_delivered" }, ({ payload }) => {
+        if (payload && payload.messageId && listeners.onDelivered) {
+          listeners.onDelivered(payload);
+        }
+      })
+      .on("broadcast", { event: "messages_seen" }, ({ payload }) => {
+        if (payload && payload.messageIds && listeners.onSeen) {
+          listeners.onSeen(payload);
         }
       })
       .subscribe((status) => {
-        if (onStatus) onStatus(status);
+        if (listeners.onStatus) listeners.onStatus(status);
         if (status === "CHANNEL_ERROR") {
           console.warn(`[Realtime] Channel error for project ${projectId}. Adaptive polling active.`);
         }
@@ -88,6 +110,70 @@ export async function broadcastProjectMessage(
     return result === "ok";
   } catch (err) {
     console.warn("[Realtime Client Broadcast Error]", err);
+    return false;
+  }
+}
+
+/**
+ * Broadcasts an instant delivery receipt when a peer's browser receives a message.
+ */
+export async function broadcastMessageDelivered(
+  projectId: string,
+  messageId: string
+): Promise<boolean> {
+  if (!projectId || !messageId || typeof window === "undefined" || !supabaseClient) {
+    return false;
+  }
+
+  try {
+    let channel = activeChannels.get(projectId);
+    if (!channel) {
+      channel = supabaseClient.channel(`project-messages:${projectId}`);
+      activeChannels.set(projectId, channel);
+    }
+
+    const result = await channel.send({
+      type: "broadcast",
+      event: "message_delivered",
+      payload: { messageId },
+    });
+
+    return result === "ok";
+  } catch (err) {
+    console.warn("[Realtime Delivery Acknowledgment Error]", err);
+    return false;
+  }
+}
+
+/**
+ * Broadcasts an instant seen / read receipt when a participant views new messages.
+ */
+export async function broadcastMessagesSeen(
+  projectId: string,
+  messageIds: string[],
+  readerId: string,
+  readerName?: string
+): Promise<boolean> {
+  if (!projectId || !messageIds.length || typeof window === "undefined" || !supabaseClient) {
+    return false;
+  }
+
+  try {
+    let channel = activeChannels.get(projectId);
+    if (!channel) {
+      channel = supabaseClient.channel(`project-messages:${projectId}`);
+      activeChannels.set(projectId, channel);
+    }
+
+    const result = await channel.send({
+      type: "broadcast",
+      event: "messages_seen",
+      payload: { messageIds, readerId, readerName },
+    });
+
+    return result === "ok";
+  } catch (err) {
+    console.warn("[Realtime Seen Acknowledgment Error]", err);
     return false;
   }
 }

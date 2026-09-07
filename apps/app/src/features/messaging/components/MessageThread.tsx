@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import type { MessageDTO } from "../schemas";
-import { getProjectMessages, syncNewMessages, sendMessage } from "../actions";
+import { getProjectMessages, syncNewMessages, sendMessage, markMessagesAsRead } from "../actions";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { LoadingState, Badge } from "@repo/ui";
@@ -24,6 +24,8 @@ import {
 import {
   subscribeToProjectMessages,
   broadcastProjectMessage,
+  broadcastMessageDelivered,
+  broadcastMessagesSeen,
 } from "@/lib/messaging/realtime";
 
 export interface InitialThreadData {
@@ -40,6 +42,7 @@ export interface InitialThreadData {
   hasMore?: boolean;
   nextCursor?: string | null;
   currentUserId?: string | null;
+  currentUserName?: string | null;
 }
 
 interface MessageThreadProps {
@@ -125,6 +128,12 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   const currentUserIdRef = useRef<string | null>(currentUserId);
   currentUserIdRef.current = currentUserId;
 
+  const [currentUserName, setCurrentUserName] = useState<string | null>(() => {
+    return initialThreadData?.currentUserName || null;
+  });
+  const currentUserNameRef = useRef<string | null>(currentUserName);
+  currentUserNameRef.current = currentUserName;
+
   const [presetPrompt, setPresetPrompt] = useState<string>("");
 
   // Only show skeleton if we have zero cached messages & zero projectInfo and no initial data
@@ -206,10 +215,26 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
         if (res.data.currentUserId) {
           setCurrentUserId(res.data.currentUserId);
         }
+        if (res.data.currentUserName) {
+          setCurrentUserName(res.data.currentUserName);
+        }
         setProjectInfo(res.data.project);
         setMessages(res.data.messages);
         setHasMore(res.data.hasMore);
         setNextCursor(res.data.nextCursor);
+
+        // Broadcast seen receipt to peers for any unread messages from others
+        const unreadFromOthers = res.data.messages
+          .filter((m) => !m.isMine && m.status !== "seen")
+          .map((m) => m.id);
+        if (unreadFromOthers.length > 0 && res.data.currentUserId) {
+          broadcastMessagesSeen(
+            projectId,
+            unreadFromOthers,
+            res.data.currentUserId,
+            res.data.currentUserName || undefined
+          ).catch(() => {});
+        }
 
         // Cache snapshot to browser sessionStorage for instant 0ms reload
         if (typeof window !== "undefined") {
@@ -373,6 +398,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
         const calibratedMessage: MessageDTO = {
           ...incoming,
           isMine,
+          status: isMine ? (incoming.status || "sent") : "delivered",
         };
 
         let updated: MessageDTO[];
@@ -413,8 +439,53 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     if (!projectId) return;
 
     // Instant WebSocket push trigger for sub-50ms peer-to-peer delivery
-    const cleanup = subscribeToProjectMessages(projectId, (incomingMessage) => {
-      handleIncomingRealtimeMessage(incomingMessage);
+    const cleanup = subscribeToProjectMessages(projectId, {
+      onMessage: (incomingMessage) => {
+        handleIncomingRealtimeMessage(incomingMessage);
+
+        // Immediate acknowledgment: notify sender that their message was delivered
+        if (currentUserIdRef.current && incomingMessage.senderId !== currentUserIdRef.current) {
+          broadcastMessageDelivered(projectId, incomingMessage.id).catch(() => {});
+
+          // If current tab is active and visible, also acknowledge seen
+          if (typeof document !== "undefined" && document.visibilityState === "visible") {
+            markMessagesAsRead(projectId, [incomingMessage.id]).catch(() => {});
+            broadcastMessagesSeen(
+              projectId,
+              [incomingMessage.id],
+              currentUserIdRef.current,
+              currentUserNameRef.current || undefined
+            ).catch(() => {});
+          }
+        }
+      },
+      onDelivered: ({ messageId }) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId && m.status === "sent"
+              ? { ...m, status: "delivered" }
+              : m
+          )
+        );
+      },
+      onSeen: ({ messageIds, readerName }) => {
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (messageIds.includes(m.id)) {
+              const updatedNames = readerName
+                ? Array.from(new Set([...(m.seenByNames || []), readerName]))
+                : m.seenByNames || [];
+              return {
+                ...m,
+                status: "seen",
+                isRead: true,
+                seenByNames: updatedNames,
+              };
+            }
+            return m;
+          })
+        );
+      },
     });
 
     // Adaptive 2-second polling safety net (catches edge cases if socket drops)
@@ -429,6 +500,19 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     const handleVisibility = () => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
         syncDelta();
+        const unreadFromOthers = messagesRef.current
+          .filter((m) => !m.isMine && m.status !== "seen")
+          .map((m) => m.id);
+
+        if (unreadFromOthers.length > 0 && currentUserIdRef.current) {
+          markMessagesAsRead(projectId, unreadFromOthers).catch(() => {});
+          broadcastMessagesSeen(
+            projectId,
+            unreadFromOthers,
+            currentUserIdRef.current,
+            currentUserNameRef.current || undefined
+          ).catch(() => {});
+        }
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
@@ -459,6 +543,8 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       isMine: true,
       isRead: false,
       readByCount: 0,
+      status: "sending",
+      seenByNames: [],
     };
 
     // 1. Paint optimistic bubble immediately on screen (0ms delay)
@@ -470,7 +556,11 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       const res = await sendMessage({ projectId, content: trimmed });
 
       if (res.success && res.data) {
-        const confirmedMsg = res.data;
+        const confirmedMsg: MessageDTO = {
+          ...res.data,
+          isMine: true,
+          status: "sent",
+        };
 
         // Swap temporary optimistic bubble with confirmed server record
         setMessages((prev) => {

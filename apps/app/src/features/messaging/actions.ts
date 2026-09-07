@@ -13,6 +13,7 @@ import {
   type ReviewBlockedMessageInput,
   type FilterBlockedMessagesInput,
   type MessageDTO,
+  type MessageDeliveryStatus,
   type BlockedMessageLogDTO,
   type ProjectThreadSummaryDTO,
   type MessagingActionResult,
@@ -159,11 +160,6 @@ export async function sendMessage(
           senderRole: callerRole,
           content: content.trim(),
           isBlocked: false,
-          readReceipts: {
-            create: {
-              userId: user.id,
-            },
-          },
         },
       });
 
@@ -178,8 +174,10 @@ export async function sendMessage(
         blockedReason: null,
         sentAt: newMsg.sentAt.toISOString(),
         isMine: true,
-        isRead: true,
-        readByCount: 1,
+        isRead: false,
+        readByCount: 0,
+        status: "sent",
+        seenByNames: [],
       };
 
       // Server-side broadcast push to Supabase Realtime REST API (WhatsApp/Telegram event model)
@@ -269,7 +267,14 @@ export async function syncNewMessages(
           sender: {
             select: { id: true, fullName: true, email: true },
           },
-          readReceipts: true,
+          readReceipts: {
+            select: {
+              userId: true,
+              user: {
+                select: { fullName: true },
+              },
+            },
+          },
         },
         orderBy: { sentAt: "asc" },
         take: 50,
@@ -279,10 +284,10 @@ export async function syncNewMessages(
         return { success: true, data: [] };
       }
 
-      // Mark delivered unread messages as read for this caller
+      // Mark delivered unread messages from other senders as read for this caller
       if (user) {
         const unreadMsgIds = rawMessages
-          .filter((m) => !m.readReceipts.some((r) => r.userId === user.id))
+          .filter((m) => m.senderId !== user.id && !m.readReceipts.some((r) => r.userId === user.id))
           .map((m) => m.id);
 
         if (unreadMsgIds.length > 0) {
@@ -300,20 +305,38 @@ export async function syncNewMessages(
         }
       }
 
-      const messages: MessageDTO[] = rawMessages.map((m) => ({
-        id: m.id,
-        projectId: m.projectId,
-        senderId: m.senderId,
-        senderName: m.sender.fullName,
-        senderRole: m.senderRole,
-        content: m.content,
-        isBlocked: m.isBlocked,
-        blockedReason: m.blockedReason,
-        sentAt: m.sentAt.toISOString(),
-        isMine: Boolean(user && m.senderId === user.id),
-        isRead: Boolean(user && m.readReceipts.some((r) => r.userId === user.id)),
-        readByCount: m.readReceipts.length,
-      }));
+      const messages: MessageDTO[] = rawMessages.map((m) => {
+        const isMine = Boolean(user && m.senderId === user.id);
+        const otherReceipts = m.readReceipts.filter((r) => r.userId !== m.senderId);
+        const isSeen = otherReceipts.length > 0;
+        const seenNames = otherReceipts
+          .map((r) => r.user?.fullName)
+          .filter(Boolean) as string[];
+
+        let status: MessageDeliveryStatus;
+        if (isMine) {
+          status = isSeen ? "seen" : "delivered";
+        } else {
+          status = m.readReceipts.some((r) => r.userId === user?.id) ? "seen" : "delivered";
+        }
+
+        return {
+          id: m.id,
+          projectId: m.projectId,
+          senderId: m.senderId,
+          senderName: m.sender.fullName,
+          senderRole: m.senderRole,
+          content: m.content,
+          isBlocked: m.isBlocked,
+          blockedReason: m.blockedReason,
+          sentAt: m.sentAt.toISOString(),
+          isMine,
+          isRead: isSeen,
+          readByCount: otherReceipts.length,
+          status,
+          seenByNames: seenNames,
+        };
+      });
 
       return {
         success: true,
@@ -326,6 +349,54 @@ export async function syncNewMessages(
       success: false,
       error: { code: "SERVER_ERROR", message: (err as Error).message },
     };
+  }
+}
+
+/**
+ * Mark specific messages as read by the current user.
+ */
+export async function markMessagesAsRead(
+  projectId: string,
+  messageIds: string[]
+): Promise<MessagingActionResult<{ readCount: number }>> {
+  const session = await auth();
+  if (!session?.user?.id && !session?.user?.email) {
+    return { success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized." } };
+  }
+
+  const userId = session.user.id;
+  if (!messageIds || messageIds.length === 0 || !userId) {
+    return { success: true, data: { readCount: 0 } };
+  }
+
+  try {
+    return await withDbTimeout((async () => {
+      const validMessages = await db.message.findMany({
+        where: {
+          id: { in: messageIds },
+          projectId,
+          senderId: { not: userId },
+        },
+        select: { id: true },
+      });
+
+      if (validMessages.length === 0) {
+        return { success: true, data: { readCount: 0 } };
+      }
+
+      await db.messageReadReceipt.createMany({
+        data: validMessages.map((m) => ({
+          messageId: m.id,
+          userId,
+        })),
+        skipDuplicates: true,
+      });
+
+      return { success: true, data: { readCount: validMessages.length } };
+    })());
+  } catch (err: unknown) {
+    console.error("[markMessagesAsRead] Error:", err);
+    return { success: false, error: { code: "SERVER_ERROR", message: (err as Error).message } };
   }
 }
 
@@ -355,6 +426,7 @@ export async function getProjectMessages(
     nextCursor: string | null;
     totalCount: number;
     currentUserId?: string | null;
+    currentUserName?: string | null;
   }>
 > {
   const session = await auth();
@@ -433,7 +505,12 @@ export async function getProjectMessages(
               select: { id: true, fullName: true, email: true },
             },
             readReceipts: {
-              select: { userId: true },
+              select: {
+                userId: true,
+                user: {
+                  select: { fullName: true },
+                },
+              },
             },
           },
           orderBy: { sentAt: "desc" },
@@ -467,9 +544,9 @@ export async function getProjectMessages(
       // Reverse to chronological order [oldest -> newest]
       const chronological = [...paginatedRawDesc].reverse();
 
-      // Mark unread messages as read non-blocking in the background
+      // Mark unread messages from OTHER participants as read non-blocking in the background
       const unreadMsgIds = chronological
-        .filter((m) => !m.readReceipts.some((r) => r.userId === userId))
+        .filter((m) => m.senderId !== userId && !m.readReceipts.some((r) => r.userId === userId))
         .map((m) => m.id);
 
       if (unreadMsgIds.length > 0 && userId) {
@@ -486,7 +563,18 @@ export async function getProjectMessages(
 
       const messages: MessageDTO[] = chronological.map((m) => {
         const isMine = Boolean(userId && m.senderId === userId);
-        const isReadByMe = Boolean(userId && m.readReceipts.some((r) => r.userId === userId));
+        const otherReceipts = m.readReceipts.filter((r) => r.userId !== m.senderId);
+        const isSeen = otherReceipts.length > 0;
+        const seenNames = otherReceipts
+          .map((r) => r.user?.fullName)
+          .filter(Boolean) as string[];
+
+        let status: MessageDeliveryStatus;
+        if (isMine) {
+          status = isSeen ? "seen" : "delivered";
+        } else {
+          status = m.readReceipts.some((r) => r.userId === userId) ? "seen" : "delivered";
+        }
 
         return {
           id: m.id,
@@ -499,8 +587,10 @@ export async function getProjectMessages(
           blockedReason: m.blockedReason,
           sentAt: m.sentAt.toISOString(),
           isMine,
-          isRead: isReadByMe,
-          readByCount: m.readReceipts.length,
+          isRead: isSeen,
+          readByCount: otherReceipts.length,
+          status,
+          seenByNames: seenNames,
         };
       });
 
@@ -521,6 +611,7 @@ export async function getProjectMessages(
           nextCursor,
           totalCount,
           currentUserId: userId || null,
+          currentUserName: (session.user as { name?: string; fullName?: string }).fullName || session.user.name || null,
         },
       };
     })());

@@ -7,6 +7,7 @@ import {
   IconAlertTriangle,
   IconCheck,
   IconChecks,
+  IconClock,
   IconShieldCheck,
 } from "@tabler/icons-react";
 
@@ -102,18 +103,50 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
       {/* Footer Delivery & Read Receipts */}
       {isMine && (
-        <div className="flex items-center gap-1.5 text-[0.625rem] font-mono text-white/35 px-1 justify-end">
-          {isRead ? (
-            <>
-              <IconChecks size={13} stroke={2} className="text-white/60" />
-              <span>Read</span>
-            </>
-          ) : (
-            <>
-              <IconCheck size={13} stroke={1.5} className="text-white/35" />
+        <div className="flex items-center gap-1.5 text-[0.625rem] font-mono text-white/35 px-1 justify-end select-none">
+          {message.status === "sending" ? (
+            <span className="flex items-center gap-1 text-white/40">
+              <IconClock size={12} stroke={1.5} className="animate-pulse text-white/40" />
+              <span>Sending...</span>
+            </span>
+          ) : message.status === "sent" ? (
+            <span className="flex items-center gap-1 text-white/40" title="Sent to server">
+              <IconCheck size={13} stroke={2} className="text-white/40" />
               <span>Sent</span>
-            </>
+            </span>
+          ) : message.status === "delivered" ? (
+            <span className="flex items-center gap-1 text-white/55" title="Delivered to recipients">
+              <IconChecks size={13} stroke={2} className="text-white/50" />
+              <span>Delivered</span>
+            </span>
+          ) : message.status === "seen" ? (
+            <span
+              className="flex items-center gap-1 text-[#38BDF8]"
+              title={
+                message.seenByNames && message.seenByNames.length > 0
+                  ? `Seen by ${message.seenByNames.join(", ")}`
+                  : "Seen"
+              }
+            >
+              <IconChecks size={13} stroke={2.5} className="text-[#38BDF8]" />
+              <span className="text-[#38BDF8] font-medium">
+                {message.seenByNames && message.seenByNames.length > 0
+                  ? `Seen by ${message.seenByNames[0]}`
+                  : "Seen"}
+              </span>
+            </span>
+          ) : isRead ? (
+            <span className="flex items-center gap-1 text-[#38BDF8]">
+              <IconChecks size={13} stroke={2.5} className="text-[#38BDF8]" />
+              <span className="text-[#38BDF8] font-medium">Seen</span>
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-white/40">
+              <IconCheck size={13} stroke={2} className="text-white/40" />
+              <span>Sent</span>
+            </span>
           )}
+
           <span className="text-white/20">•</span>
           <span className="flex items-center gap-0.5 text-white/30">
             <IconShieldCheck size={11} stroke={1.5} />

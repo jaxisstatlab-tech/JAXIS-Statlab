@@ -28,6 +28,8 @@ export const FilterBlockedMessagesSchema = z.object({
 
 export type FilterBlockedMessagesInput = z.infer<typeof FilterBlockedMessagesSchema>;
 
+export type MessageDeliveryStatus = "sending" | "sent" | "delivered" | "seen";
+
 export interface MessageDTO {
   id: string;
   projectId: string;
@@ -41,6 +43,9 @@ export interface MessageDTO {
   isMine: boolean;
   isRead: boolean;
   readByCount: number;
+  status: MessageDeliveryStatus;
+  seenByNames?: string[];
+  seenAt?: string | null;
 }
 
 export interface BlockedMessageLogDTO {
