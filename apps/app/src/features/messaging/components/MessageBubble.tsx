@@ -146,12 +146,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               <span>Sent</span>
             </span>
           )}
-
-          <span className="text-white/20">•</span>
-          <span className="flex items-center gap-0.5 text-white/30">
-            <IconShieldCheck size={11} stroke={1.5} />
-            <span>Encrypted</span>
-          </span>
         </div>
       )}
     </div>

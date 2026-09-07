@@ -74,7 +74,7 @@ export function StatisticianMessagesClient({
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 gap-3 w-full animate-content-fade font-sans overflow-hidden">
       {/* Standardized PageHeader (Compact & Responsive) */}
-      <div className="flex-shrink-0">
+      <div className={`flex-shrink-0 ${mobileView === "chat" ? "hidden lg:block" : "block"}`}>
         <PageHeader
           breadcrumbs={[
             { label: "WORKSPACE", href: "/dashboard" },
@@ -83,6 +83,7 @@ export function StatisticianMessagesClient({
           ]}
           title="Study Messages & Consultation"
           description="Direct communication with assigned lead researchers for active statistical computations and analysis requirements."
+          className="pb-3 sm:pb-6"
           actions={
             <div className="flex items-center gap-2">
               <Badge variant="emerald" className="text-[0.688rem] font-mono flex items-center gap-1">

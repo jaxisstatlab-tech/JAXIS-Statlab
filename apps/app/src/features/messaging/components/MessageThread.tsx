@@ -634,10 +634,10 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   return (
     <div className={`h-full min-h-0 flex flex-col bg-[#01142B] border border-white/10 rounded-[4px] overflow-hidden shadow-2xl ${className}`}>
       {/* Thread Header — STATIC FIXED HEIGHT (Zero layout shift & Clean Minimalist Palette) */}
-      <div className="flex-shrink-0 px-4 py-3 border-b border-white/10 bg-[#010114]/90 flex flex-col gap-2 font-sans">
-        {/* Top Row: Study Identity & Security Badge */}
-        <div className="flex items-center justify-between gap-3 min-w-0">
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+      <div className="flex-shrink-0 px-3 sm:px-4 py-2 sm:py-3 border-b border-white/10 bg-[#010114]/90 flex flex-col gap-1.5 sm:gap-2 font-sans">
+        {/* Top Row: Navigation, Study ID, Status & Security Indicator */}
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             {onBack && (
               <button
                 type="button"
@@ -648,40 +648,71 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                 <IconArrowLeft size={16} stroke={2} />
               </button>
             )}
-            <div className="p-1.5 rounded-[2px] bg-white/[0.04] border border-white/10 text-white/50 shrink-0">
-              <IconMessages size={16} stroke={1.5} />
+            <div className="hidden xs:flex p-1.5 rounded-[2px] bg-white/[0.04] border border-white/10 text-white/50 shrink-0">
+              <IconMessages size={15} stroke={1.5} />
             </div>
 
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className="text-xs font-mono font-semibold text-white/80 tracking-wider shrink-0 whitespace-nowrap select-all">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+              <span className="text-xs font-mono font-semibold text-white/90 tracking-wider shrink-0 select-all">
                 {projectInfo?.intakeId || "STUDY THREAD"}
               </span>
 
-              <div className="shrink-0 whitespace-nowrap">
-                <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-white/10 text-white/50 bg-white/[0.02]">
-                  {!isAssigned || projectInfo?.masterStatus === "ACTIVE"
-                    ? "PENDING ASSIGNMENT"
-                    : projectInfo?.masterStatus.replace(/_/g, " ") || "ACTIVE"}
-                </Badge>
-              </div>
+              <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-white/10 text-white/60 bg-white/[0.02] shrink-0">
+                {!isAssigned || projectInfo?.masterStatus === "ACTIVE"
+                  ? "ACTIVE"
+                  : projectInfo?.masterStatus.replace(/_/g, " ") || "ACTIVE"}
+              </Badge>
 
-              <span className="text-white/20 hidden sm:inline select-none">&bull;</span>
-
-              <h2 className="text-xs sm:text-sm font-semibold text-white/90 tracking-tight truncate min-w-0">
+              {/* Desktop Study Title */}
+              <span className="text-white/20 hidden md:inline select-none">&bull;</span>
+              <h2 className="hidden md:block text-xs sm:text-sm font-semibold text-white/90 tracking-tight truncate min-w-0">
                 {projectInfo?.researchTitle || "Research Study Discussion"}
               </h2>
             </div>
           </div>
 
           {/* Security Status Pill */}
-          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[2px] bg-white/[0.02] border border-white/10 text-white/40 text-[0.688rem] font-sans select-none shrink-0">
-            <IconShieldCheck size={13} stroke={1.5} className="text-white/40 shrink-0" />
-            <span>Encrypted Consultation</span>
+          <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-[2px] bg-white/[0.02] border border-white/10 text-white/50 text-[0.688rem] font-sans select-none shrink-0">
+            <IconShieldCheck size={13} stroke={1.5} className="text-emerald-400 shrink-0" />
+            <span className="hidden sm:inline">Encrypted Consultation</span>
+            <span className="sm:hidden text-[0.625rem] font-mono text-emerald-400/80">ENCRYPTED</span>
           </div>
         </div>
 
-        {/* Bottom Row: Team Participant Chips */}
-        <div className="flex items-center gap-2 flex-wrap min-w-0 pt-0.5">
+        {/* Mobile Study Title (Single Line Truncated) */}
+        {projectInfo?.researchTitle && (
+          <div className="md:hidden min-w-0 -mt-0.5">
+            <h2 className="text-xs font-medium text-white/70 tracking-tight truncate">
+              {projectInfo.researchTitle}
+            </h2>
+          </div>
+        )}
+
+        {/* Mobile Team Summary: Single clean line */}
+        {isAssigned ? (
+          <div className="flex sm:hidden items-center gap-1.5 text-[0.688rem] text-white/55 min-w-0 truncate">
+            <span className="text-[0.625rem] font-mono text-white/40 uppercase tracking-wider shrink-0 select-none">
+              Team:
+            </span>
+            <span className="truncate text-white/75 font-sans">
+              {[
+                projectInfo?.clientName,
+                projectInfo?.statisticianName,
+                projectInfo?.qaLeadName,
+              ]
+                .filter(Boolean)
+                .join(" • ")}
+            </span>
+          </div>
+        ) : (
+          <div className="flex sm:hidden items-center gap-1 text-[0.688rem] text-white/40 font-mono">
+            <IconLock size={11} stroke={1.5} className="text-white/30 shrink-0" />
+            <span>Awaiting Specialist Assignment</span>
+          </div>
+        )}
+
+        {/* Tablet & Desktop: Rich Team Participant Chips */}
+        <div className="hidden sm:flex items-center gap-2 flex-wrap min-w-0 pt-0.5">
           {!isAssigned ? (
             <div className="flex items-center gap-1.5 text-xs text-white/50 bg-white/[0.02] px-2.5 py-0.5 rounded-[2px] border border-white/10">
               <IconLock size={12} stroke={1.5} className="text-white/40 shrink-0" />
@@ -869,7 +900,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       </div>
 
       {/* Message Input Footer — PINNED AT BOTTOM */}
-      <div className="flex-shrink-0 p-3 sm:p-4 border-t border-white/10 bg-[#010114]/80">
+      <div className="flex-shrink-0 p-2.5 sm:p-4 border-t border-white/10 bg-[#010114]/80">
         <MessageInput
           onSendMessage={handleSendMessage}
           disabled={!isAssigned}

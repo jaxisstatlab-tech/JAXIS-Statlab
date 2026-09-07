@@ -112,16 +112,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             placeholder={
               disabled
                 ? placeholder || disabledReason || "Consultation channel is locked until specialists are assigned..."
-                : placeholder || "Type your message here... (Press Enter to send, Shift+Enter for new line)"
+                : placeholder || "Type your message..."
             }
             disabled={disabled}
             maxLength={5000}
-            rows={3}
-            className="w-full p-3.5 sm:p-4 bg-transparent border-0 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-0 ring-0 resize-none font-sans leading-relaxed"
+            rows={2}
+            className="w-full p-2.5 sm:p-3.5 bg-transparent border-0 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-0 ring-0 resize-none font-sans leading-relaxed"
           />
 
           {/* Integrated Composer Action Toolbar */}
-          <div className="flex items-center justify-between px-3.5 py-2.5 border-t border-white/[0.06] bg-[#010B18]/70 flex-wrap gap-2">
+          <div className="flex items-center justify-between px-3 py-1.5 sm:px-3.5 sm:py-2.5 border-t border-white/[0.06] bg-[#010B18]/70 gap-2">
             {disabled && disabledReason ? (
               <div className="flex items-center gap-1.5 text-xs text-white/40 font-mono">
                 <IconLock size={13} stroke={1.5} className="text-white/30" />
@@ -136,21 +136,21 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                   <kbd className="px-1.5 py-0.5 rounded-[2px] bg-white/[0.06] border border-white/10 text-[0.625rem] font-mono text-white/50">Shift+Enter</kbd>
                   <span>new line</span>
                 </span>
-                <span className="sm:hidden flex items-center gap-1 text-[0.688rem]">
-                  <IconShieldLock size={13} stroke={1.5} className="text-white/40" />
-                  <span>Protected</span>
+                <span className="sm:hidden flex items-center gap-1 text-[0.688rem] text-white/40">
+                  <IconShieldLock size={13} stroke={1.5} className="text-emerald-400/70" />
+                  <span className="hidden xs:inline">Protected</span>
                 </span>
               </div>
             )}
 
-            <div className="flex items-center gap-3 ml-auto">
+            <div className="flex items-center gap-2.5 sm:gap-3 ml-auto">
               <span
-                className={`text-xs font-mono transition-colors ${
+                className={`text-[0.688rem] sm:text-xs font-mono transition-colors ${
                   content.length > 4500
                     ? "text-amber-400 font-semibold"
-                    : content.length > 0
+                    : content.length > 3000
                     ? "text-white/60"
-                    : "text-white/30"
+                    : "text-white/30 hidden sm:inline"
                 }`}
               >
                 {content.length.toLocaleString()} / 5,000
@@ -161,7 +161,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 variant={disabled ? "secondary" : "primary"}
                 size="sm"
                 disabled={!content.trim() || disabled}
-                className={`text-xs font-medium rounded-[2px] px-4 py-2 gap-1.5 transition-all ${
+                className={`text-xs font-medium rounded-[2px] px-3.5 py-1.5 sm:px-4 sm:py-2 gap-1.5 transition-all ${
                   disabled
                     ? "bg-white/[0.04] text-white/30 border border-white/10 cursor-not-allowed hover:bg-white/[0.04]"
                     : "bg-[#CC6600] hover:bg-[#FFA040] text-white cursor-pointer shadow-sm"
