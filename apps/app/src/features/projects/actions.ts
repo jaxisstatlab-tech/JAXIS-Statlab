@@ -84,6 +84,59 @@ function revalidateProjectCaches(projectId?: string): void {
 }
 
 /**
+ * Canonical Project Detail Select projection.
+ * Eliminates duplication and ensures consistent retrieval of relations.
+ */
+export const PROJECT_DETAIL_SELECT = {
+  id: true,
+  intakeId: true,
+  clientId: true,
+  researchTitle: true,
+  researchQuestions: true,
+  researchObjectives: true,
+  hypotheses: true,
+  deadlineRequested: true,
+  chapters13: true,
+  questionnaire: true,
+  masterStatus: true,
+  packageName: true,
+  missingInfoReason: true,
+  deliveredAt: true,
+  filesPurgeAt: true,
+  filesPurged: true,
+  hasActiveDispute: true,
+  hasPendingRefund: true,
+  createdAt: true,
+  updatedAt: true,
+  client: {
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      clientProfile: {
+        select: {
+          institutionSchool: true,
+          academicProgram: true,
+          contactNumber: true,
+          region: true,
+        },
+      },
+    },
+  },
+  files: {
+    select: {
+      id: true,
+      projectId: true,
+      fileName: true,
+      filePath: true,
+      fileType: true,
+      fileCategory: true,
+      uploadedAt: true,
+    },
+  },
+} as const satisfies Prisma.ProjectSelect;
+
+/**
  * 1. Create a new research project intake submission.
  * Enforces client profile completion gate (INT-F04 / CLT-F01).
  */
@@ -98,8 +151,21 @@ export async function createProject(
     };
   }
 
+  // 1. Concurrently fetch client profile gate and resolve DB user
+  const [profile, userInDb] = await Promise.all([
+    getClientProfile(),
+    withDbTimeout(
+      db.user.findUnique({
+        where: { id: session.user.id },
+        select: { id: true },
+      })
+    ).catch((userResolveErr) => {
+      console.warn("[createProject] User ID resolution warning:", userResolveErr);
+      return null;
+    }),
+  ]);
+
   // Enforce server-side profile gate
-  const profile = await getClientProfile();
   if (!profile || !profile.institutionSchool || !profile.contactNumber) {
     return {
       success: false,
@@ -112,14 +178,8 @@ export async function createProject(
 
   // Resolve valid user in DB (heal if session has mismatched or dev ID)
   let resolvedUserId = session.user.id;
-  try {
-    const userInDb = await withDbTimeout(
-      db.user.findUnique({
-        where: { id: session.user.id },
-        select: { id: true },
-      })
-    );
-    if (!userInDb && session.user.email) {
+  if (!userInDb && session.user.email) {
+    try {
       const userByEmail = await withDbTimeout(
         db.user.findUnique({
           where: { email: session.user.email.toLowerCase().trim() },
@@ -129,9 +189,9 @@ export async function createProject(
       if (userByEmail) {
         resolvedUserId = userByEmail.id;
       }
+    } catch (userResolveErr) {
+      console.warn("[createProject] User email resolution warning:", userResolveErr);
     }
-  } catch (userResolveErr) {
-    console.warn("[createProject] User ID resolution warning:", userResolveErr);
   }
 
   // Ensure client profile is safely stored in PostgreSQL if it was only mirrored in cookies
@@ -200,54 +260,7 @@ export async function createProject(
           researchTitle: researchTitle.trim(),
           createdAt: { gte: new Date(Date.now() - 15000) },
         },
-        select: {
-          id: true,
-          intakeId: true,
-          clientId: true,
-          researchTitle: true,
-          researchQuestions: true,
-          researchObjectives: true,
-          hypotheses: true,
-          deadlineRequested: true,
-          chapters13: true,
-          questionnaire: true,
-          masterStatus: true,
-          packageName: true,
-          missingInfoReason: true,
-          deliveredAt: true,
-          filesPurgeAt: true,
-          filesPurged: true,
-          hasActiveDispute: true,
-          hasPendingRefund: true,
-          createdAt: true,
-          updatedAt: true,
-          client: {
-            select: {
-              id: true,
-              fullName: true,
-              email: true,
-              clientProfile: {
-                select: {
-                  institutionSchool: true,
-                  academicProgram: true,
-                  contactNumber: true,
-                  region: true,
-                },
-              },
-            },
-          },
-          files: {
-            select: {
-              id: true,
-              projectId: true,
-              fileName: true,
-              filePath: true,
-              fileType: true,
-              fileCategory: true,
-              uploadedAt: true,
-            },
-          },
-        },
+        select: PROJECT_DETAIL_SELECT,
       })
     );
     if (recentDuplicate) {
@@ -286,54 +299,7 @@ export async function createProject(
               }
             : undefined,
         },
-        select: {
-          id: true,
-          intakeId: true,
-          clientId: true,
-          researchTitle: true,
-          researchQuestions: true,
-          researchObjectives: true,
-          hypotheses: true,
-          deadlineRequested: true,
-          chapters13: true,
-          questionnaire: true,
-          masterStatus: true,
-          packageName: true,
-          missingInfoReason: true,
-          deliveredAt: true,
-          filesPurgeAt: true,
-          filesPurged: true,
-          hasActiveDispute: true,
-          hasPendingRefund: true,
-          createdAt: true,
-          updatedAt: true,
-          client: {
-            select: {
-              id: true,
-              fullName: true,
-              email: true,
-              clientProfile: {
-                select: {
-                  institutionSchool: true,
-                  academicProgram: true,
-                  contactNumber: true,
-                  region: true,
-                },
-              },
-            },
-          },
-          files: {
-            select: {
-              id: true,
-              projectId: true,
-              fileName: true,
-              filePath: true,
-              fileType: true,
-              fileCategory: true,
-              uploadedAt: true,
-            },
-          },
-        },
+        select: PROJECT_DETAIL_SELECT,
       })
     );
   } catch (dbError) {
@@ -1572,18 +1538,61 @@ export async function getProjectAuditTrail(
         where: {
           OR: [{ id }, { intakeId: id }],
         },
-        include: {
-          client: true,
+        select: {
+          id: true,
+          intakeId: true,
+          researchTitle: true,
+          createdAt: true,
+          client: {
+            select: {
+              fullName: true,
+            },
+          },
           files: {
+            select: {
+              id: true,
+              fileName: true,
+              fileCategory: true,
+              uploadedAt: true,
+            },
             orderBy: { uploadedAt: "asc" },
           },
           quotations: {
+            select: {
+              id: true,
+              packageName: true,
+              totalAmount: true,
+              status: true,
+              respondedAt: true,
+              declineReason: true,
+              createdAt: true,
+            },
             orderBy: { createdAt: "asc" },
           },
           sows: {
+            select: {
+              id: true,
+              turnaroundDays: true,
+              isLocked: true,
+              signedAt: true,
+              signedByName: true,
+              generatedAt: true,
+            },
             orderBy: { generatedAt: "asc" },
           },
           payments: {
+            select: {
+              id: true,
+              paymentType: true,
+              amountSubmitted: true,
+              paymentMethod: true,
+              referenceNumber: true,
+              paymentStatus: true,
+              verifiedAt: true,
+              updatedAt: true,
+              rejectionReason: true,
+              createdAt: true,
+            },
             orderBy: { createdAt: "asc" },
           },
         },

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useOptimistic, startTransition } from "react";
+import React, { useState, useEffect, useCallback, useOptimistic, startTransition, useRef } from "react";
 import Link from "next/link";
 import {
   LoadingState,
@@ -28,14 +28,14 @@ import {
   IconUserCheck,
 } from "@tabler/icons-react";
 
+type NotificationState = {
+  alerts: InAppAlertDTO[];
+  unreadCount: number;
+};
+
 type OptimisticAction =
   | { type: "MARK_READ"; alertId: string }
   | { type: "MARK_ALL_READ" };
-
-interface NotificationState {
-  alerts: InAppAlertDTO[];
-  unreadCount: number;
-}
 
 export function NotificationDrawer() {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,6 +49,7 @@ export function NotificationDrawer() {
     variant: "info" | "success" | "warning" | "danger";
   } | null>(null);
   const [isRinging, setIsRinging] = useState<boolean>(false);
+  const sseConnectedRef = useRef(false);
 
   const [optimisticState, setOptimisticState] = useOptimistic(
     { alerts, unreadCount },
@@ -102,6 +103,14 @@ export function NotificationDrawer() {
       try {
         eventSource = new EventSource("/api/v1/notifications/stream");
 
+        eventSource.onopen = () => {
+          sseConnectedRef.current = true;
+        };
+
+        eventSource.addEventListener("connected", () => {
+          sseConnectedRef.current = true;
+        });
+
         eventSource.addEventListener("notification", (e: MessageEvent) => {
           try {
             const newAlert = JSON.parse(e.data) as InAppAlertDTO & { title?: string };
@@ -135,6 +144,7 @@ export function NotificationDrawer() {
         });
 
         eventSource.onerror = () => {
+          sseConnectedRef.current = false;
           if (eventSource) {
             eventSource.close();
             eventSource = null;
@@ -145,6 +155,7 @@ export function NotificationDrawer() {
         };
       } catch (err) {
         console.warn("[SSE] Failed to establish EventSource:", err);
+        sseConnectedRef.current = false;
         if (isMounted) {
           reconnectTimer = setTimeout(connectStream, 10000);
         }
@@ -155,6 +166,7 @@ export function NotificationDrawer() {
 
     return () => {
       isMounted = false;
+      sseConnectedRef.current = false;
       if (eventSource) eventSource.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
     };
@@ -164,6 +176,10 @@ export function NotificationDrawer() {
     loadAlerts(true);
 
     const poll = () => {
+      // If SSE is healthy and connected, skip background poll
+      if (sseConnectedRef.current) {
+        return;
+      }
       // Sleep background poll if tab is hidden/minimized
       if (typeof document !== "undefined" && document.visibilityState === "hidden") {
         return;
@@ -171,7 +187,7 @@ export function NotificationDrawer() {
       loadAlerts(false);
     };
 
-    // Silent background poll fallback (every 25 seconds)
+    // Silent background poll fallback (every 25 seconds when SSE is disconnected)
     const interval = setInterval(poll, 25000);
 
     // Refresh immediately when user returns to tab
@@ -316,7 +332,9 @@ export function NotificationDrawer() {
         <IconBell
           size={17}
           stroke={1.75}
-          className="transition-transform duration-200 group-hover:scale-105"
+          className={`transition-transform duration-200 group-hover:scale-105 ${
+            isRinging ? "animate-bounce text-[#CC6600]" : ""
+          }`}
         />
         {optimisticState.unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[17px] h-4 px-1 rounded-[2px] bg-[#CC6600] text-white font-mono text-[0.625rem] font-bold tracking-tight shadow-sm border border-[#010114]">

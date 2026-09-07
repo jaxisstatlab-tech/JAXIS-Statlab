@@ -131,23 +131,24 @@ export function ClientDashboardClient({
     }
   }, [searchParams, loadData]);
 
-  // Listen to SSE updates and background polling (silent sync without flashing loading screen)
+  // Listen to SSE updates and tab visibility (silent sync without flashing loading screen)
   useEffect(() => {
     const handleStudyUpdated = () => {
       loadData(false);
     };
 
-    window.addEventListener("jaxis:study-updated", handleStudyUpdated);
-
-    const interval = setInterval(() => {
+    const handleVisibilityChange = () => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
         loadData(false);
       }
-    }, 30000);
+    };
+
+    window.addEventListener("jaxis:study-updated", handleStudyUpdated);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("jaxis:study-updated", handleStudyUpdated);
-      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [loadData]);
 

@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: false,
+  reactStrictMode: true,
   experimental: {
     optimizePackageImports: [
       "@tabler/icons-react",
@@ -12,8 +12,8 @@ const nextConfig = {
     ],
   },
   onDemandEntries: {
-    maxInactiveAge: 60 * 1000,
-    pagesBufferLength: 2,
+    maxInactiveAge: 120 * 1000,
+    pagesBufferLength: 5,
   },
 };
 

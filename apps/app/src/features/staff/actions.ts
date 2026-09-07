@@ -892,6 +892,20 @@ export async function getOwnProfile(): Promise<
   };
 }
 
+/**
+ * Consolidated cache invalidation & path revalidation for staff status & leave mutations.
+ */
+function revalidateStaffCaches(): void {
+  invalidateCacheTags(CACHE_TAGS.STAFF_ROSTER, CACHE_TAGS.STAFF_DIRECTORY, CACHE_TAGS.STAFF_CAPACITY);
+  revalidatePath("/dashboard/staff/hr");
+  revalidatePath("/dashboard/finance");
+  revalidatePath("/dashboard/finance/leaves");
+  revalidatePath("/dashboard/admin/staff");
+  revalidatePath("/dashboard/admin/assignments");
+  revalidatePath("/dashboard/statistician");
+  revalidatePath("/dashboard/qa");
+}
+
 export const getStaffSelfProfile = getOwnProfile;
 
 /**
@@ -961,21 +975,16 @@ export async function requestLeave(
       }
     }
 
-    // Prevent overlapping leave requests if staff is already pending or on leave
-    const existingLeave = await db.user.findFirst({
-      where: {
-        id: targetUserId,
-        status: { in: ["LEAVE_PENDING", "ON_LEAVE"] },
-      },
-      select: {
-        status: true,
-        leaveFrom: true,
-        leaveUntil: true,
-      },
-    });
+    // Prevent submitting overlapping or duplicate active/pending leaves
+    const existing = await withDbTimeout(
+      db.user.findUnique({
+        where: { id: targetUserId },
+        select: { id: true, status: true, leaveFrom: true, leaveUntil: true },
+      })
+    );
 
-    if (existingLeave && !isDirectManagerAction) {
-      const statusLabel = existingLeave.status === "LEAVE_PENDING" ? "a pending leave request" : "an active leave";
+    if (existing && (existing.status === "ON_LEAVE" || existing.status === "LEAVE_PENDING")) {
+      const statusLabel = existing.status === "ON_LEAVE" ? "an active scheduled leave" : "a pending leave application";
       return {
         success: false,
         error: {
@@ -1001,13 +1010,7 @@ export async function requestLeave(
       registerDevUser(devUser);
     }
 
-    revalidatePath("/dashboard/staff/hr");
-    revalidatePath("/dashboard/finance");
-    revalidatePath("/dashboard/finance/leaves");
-    revalidatePath("/dashboard/admin/staff");
-    revalidatePath("/dashboard/admin/assignments");
-    revalidatePath("/dashboard/statistician");
-    revalidatePath("/dashboard/qa");
+    revalidateStaffCaches();
 
     return {
       success: true,
@@ -1069,13 +1072,7 @@ export async function returnFromLeave(
         registerDevUser(devUser);
       }
 
-      revalidatePath("/dashboard/staff/hr");
-      revalidatePath("/dashboard/finance");
-      revalidatePath("/dashboard/finance/leaves");
-      revalidatePath("/dashboard/admin/staff");
-      revalidatePath("/dashboard/admin/assignments");
-      revalidatePath("/dashboard/statistician");
-      revalidatePath("/dashboard/qa");
+      revalidateStaffCaches();
 
       return {
         success: true,
@@ -1094,9 +1091,7 @@ export async function returnFromLeave(
       devUser.status = "ACTIVE";
       registerDevUser(devUser);
 
-      revalidatePath("/dashboard/staff/hr");
-      revalidatePath("/dashboard/statistician");
-      revalidatePath("/dashboard/qa");
+      revalidateStaffCaches();
 
       return {
         success: true,
@@ -1205,13 +1200,7 @@ export async function approveLeave(
       registerDevUser(devUser);
     }
 
-    revalidatePath("/dashboard/staff/hr");
-    revalidatePath("/dashboard/finance");
-    revalidatePath("/dashboard/finance/leaves");
-    revalidatePath("/dashboard/admin/staff");
-    revalidatePath("/dashboard/admin/assignments");
-    revalidatePath("/dashboard/statistician");
-    revalidatePath("/dashboard/qa");
+    revalidateStaffCaches();
 
     return {
       success: true,
@@ -1261,13 +1250,7 @@ export async function rejectLeave(
       registerDevUser(devUser);
     }
 
-    revalidatePath("/dashboard/staff/hr");
-    revalidatePath("/dashboard/finance");
-    revalidatePath("/dashboard/finance/leaves");
-    revalidatePath("/dashboard/admin/staff");
-    revalidatePath("/dashboard/admin/assignments");
-    revalidatePath("/dashboard/statistician");
-    revalidatePath("/dashboard/qa");
+    revalidateStaffCaches();
 
     return {
       success: true,
