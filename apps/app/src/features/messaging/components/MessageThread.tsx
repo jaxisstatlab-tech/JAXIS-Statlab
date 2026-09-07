@@ -20,6 +20,7 @@ import {
   IconDatabase,
   IconReportAnalytics,
   IconArrowRight,
+  IconArrowDown,
 } from "@tabler/icons-react";
 import {
   subscribeToProjectMessages,
@@ -135,6 +136,8 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   currentUserNameRef.current = currentUserName;
 
   const [presetPrompt, setPresetPrompt] = useState<string>("");
+  const [newIncomingIds, setNewIncomingIds] = useState<Set<string>>(new Set());
+  const [unreadBelowCount, setUnreadBelowCount] = useState<number>(0);
 
   // Only show skeleton if we have zero cached messages & zero projectInfo and no initial data
   const [isLoading, setIsLoading] = useState<boolean>(() => {
@@ -276,7 +279,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [projectId, scrollToBottom]);
+  }, [initialThreadData?.projectInfo, projectId, scrollToBottom]);
 
   const loadOlderMessages = useCallback(async () => {
     if (!hasMore || isLoadingOlder || !nextCursor) return;
@@ -331,7 +334,11 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   // Scroll listener for top reverse cursor pagination & near-bottom tracking
   const handleScroll = () => {
     if (chatContainerRef.current) {
-      isNearBottomRef.current = checkIfNearBottom();
+      const nearBottom = checkIfNearBottom();
+      isNearBottomRef.current = nearBottom;
+      if (nearBottom) {
+        setUnreadBelowCount(0);
+      }
       if (chatContainerRef.current.scrollTop <= 40 && hasMore && !isLoadingOlder) {
         loadOlderMessages();
       }
@@ -476,7 +483,28 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
         return updated;
       });
 
-      scrollToBottom(true);
+      const isMine = Boolean(
+        currentUserIdRef.current && incoming.senderId === currentUserIdRef.current
+      );
+
+      if (!isMine) {
+        setNewIncomingIds((prev) => new Set([...prev, incoming.id]));
+        setTimeout(() => {
+          setNewIncomingIds((prev) => {
+            const next = new Set(prev);
+            next.delete(incoming.id);
+            return next;
+          });
+        }, 2500);
+
+        if (!isNearBottomRef.current) {
+          setUnreadBelowCount((prev) => prev + 1);
+        } else {
+          scrollToBottom(true);
+        }
+      } else {
+        scrollToBottom(true);
+      }
     },
     [projectId, scrollToBottom]
   );
@@ -682,7 +710,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   const isAssigned = Boolean(projectInfo?.statisticianName || projectInfo?.qaLeadName);
 
   return (
-    <div className={`h-full min-h-0 flex flex-col bg-[#01142B] border border-white/10 rounded-[4px] overflow-hidden shadow-2xl ${className}`}>
+    <div className={`relative h-full min-h-0 flex flex-col bg-[#01142B] border border-white/10 rounded-[4px] overflow-hidden shadow-2xl ${className}`}>
       {/* Thread Header — STATIC FIXED HEIGHT (Zero layout shift & Clean Minimalist Palette) */}
       <div className="flex-shrink-0 px-3 sm:px-4 py-2 sm:py-3 border-b border-white/10 bg-[#010114]/90 flex flex-col gap-1.5 sm:gap-2 font-sans">
         {/* Top Row: Navigation, Study ID, Status & Security Indicator */}
@@ -943,11 +971,38 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             </div>
           </div>
         ) : (
-          messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
+          messages.map((msg) => (
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              isNew={newIncomingIds.has(msg.id)}
+            />
+          ))
         )}
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Floating "New Message" Jump Pill when user is scrolled up */}
+      {unreadBelowCount > 0 && (
+        <div className="absolute bottom-16 sm:bottom-20 left-1/2 -translate-x-1/2 z-30 animate-content-fade pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => {
+              isNearBottomRef.current = true;
+              scrollToBottom(true);
+              setUnreadBelowCount(0);
+            }}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-[2px] bg-[#01142B]/95 hover:bg-[#011B38] border border-[#38BDF8]/60 hover:border-[#38BDF8] text-xs font-sans text-white shadow-2xl backdrop-blur-md transition-all cursor-pointer select-none group"
+          >
+            <span className="h-2 w-2 rounded-full bg-[#38BDF8] animate-pulse" />
+            <span className="font-medium">
+              {unreadBelowCount === 1 ? "New message received" : `${unreadBelowCount} new messages`}
+            </span>
+            <IconArrowDown size={13} stroke={2} className="text-[#38BDF8] group-hover:translate-y-0.5 transition-transform" />
+          </button>
+        </div>
+      )}
 
       {/* Message Input Footer — PINNED AT BOTTOM */}
       <div className="flex-shrink-0 p-2.5 sm:p-4 border-t border-white/10 bg-[#010114]/80">

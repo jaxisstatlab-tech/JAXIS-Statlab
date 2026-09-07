@@ -7,15 +7,14 @@ import {
   IconAlertTriangle,
   IconCheck,
   IconChecks,
-  IconClock,
-  IconShieldCheck,
 } from "@tabler/icons-react";
 
 interface MessageBubbleProps {
   message: MessageDTO;
+  isNew?: boolean;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isNew }) => {
   const { isMine, senderName, senderRole, content, sentAt, isBlocked, blockedReason, isRead } = message;
 
   const timeFormatted = new Date(sentAt).toLocaleTimeString("en-PH", {
@@ -38,17 +37,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       case "SENIOR_QA_LEAD":
         return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-white/10 text-white/60 bg-white/[0.03]">QA Lead</Badge>;
       case "ADMIN":
-        return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-white/10 text-white/60 bg-white/[0.03]">Manager</Badge>;
+        return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-amber-500/20 text-amber-300/80 bg-amber-500/[0.04]">Admin</Badge>;
       case "CEO":
-        return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-white/10 text-white/60 bg-white/[0.03]">CEO</Badge>;
+        return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-emerald-500/20 text-emerald-300/80 bg-emerald-500/[0.04]">Director</Badge>;
       default:
-        return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-white/10 text-white/50 bg-white/[0.02]">{role}</Badge>;
+        return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-white/10 text-white/50 bg-white/[0.02]">{role.replace(/_/g, " ")}</Badge>;
     }
   };
 
   if (isBlocked) {
     return (
-      <div className={`flex flex-col gap-1 max-w-xl my-1.5 ${isMine ? "ml-auto items-end" : "mr-auto items-start"}`}>
+      <div className={`flex flex-col gap-1 max-w-xl my-1.5 animate-message-pop ${isMine ? "ml-auto items-end" : "mr-auto items-start"}`}>
         <div className="flex items-center gap-1.5 text-xs font-sans text-white/50">
           <span className="font-semibold text-white/80">{isMine ? "You" : senderName}</span>
           {!isMine && getRoleBadge(senderRole)}
@@ -73,8 +72,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
   return (
     <div
-      className={`flex flex-col gap-1 max-w-[85%] sm:max-w-xl my-1.5 ${
-        isMine ? "ml-auto items-end" : "mr-auto items-start"
+      className={`flex flex-col gap-1 max-w-[85%] sm:max-w-xl my-1.5 animate-message-pop transition-all ${
+        isMine ? "ml-auto items-end origin-bottom-right" : "mr-auto items-start origin-bottom-left"
       }`}
     >
       {/* Sender Header */}
@@ -92,10 +91,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
       {/* Bubble Container */}
       <div
-        className={`px-3.5 py-2.5 rounded-[2px] border text-sm font-sans leading-relaxed whitespace-pre-wrap break-words ${
+        className={`px-3.5 py-2.5 rounded-[2px] border text-sm font-sans leading-relaxed whitespace-pre-wrap break-words transition-all duration-300 ${
           isMine
             ? "bg-[#011E3D] border-white/15 text-white"
-            : "bg-[#01142B] border-white/10 text-white/90"
+            : `bg-[#01142B] text-white/90 ${
+                isNew ? "border-[#38BDF8]/60 animate-message-highlight" : "border-white/10"
+              }`
         }`}
       >
         {content}
