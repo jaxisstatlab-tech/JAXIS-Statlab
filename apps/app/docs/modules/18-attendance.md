@@ -20,7 +20,7 @@
 
 | Feature ID | Feature |
 |---|---|
-| `ATT-F01` | **Topbar Duty Tracker & Clock Widget** — Persistent header action widget showing active shift status, live timer, and 1-click Clock-In / Clock-Out for internal staff roles |
+| `ATT-F01` | **Topbar Duty Tracker & Clock Widget** — Persistent header action widget with Server Component (RSC) pre-loading (0ms first-paint), 0ms optimistic visual transitions on Clock-In / Clock-Out, browser cache fallback, wall-clock precise timer (`Date.now() - clockInMs`), and silent background server synchronization |
 | `ATT-F02` | **Tamper-Proof Punch Logging** — Server-side timestamping (immune to client device clock tampering), client IP address capture, and browser user-agent auditing |
 | `ATT-F03` | **Runaway Session Auto-Cap (`AUTO_CLOSED`)** — System automatically flags and caps open shifts exceeding 14 hours at the 14-hour boundary to prevent multi-day payroll inflation |
 | `ATT-F04` | **Missed Punch / Adjustment Filing** — Staff can file attendance corrections for: (1) Forgot Clock-In, (2) Forgot Clock-Out, (3) Missed Full Shift, or (4) Overtime / Extra Duty Claim |

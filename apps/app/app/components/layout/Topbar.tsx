@@ -14,25 +14,62 @@ import {
 } from "@repo/ui";
 import {
   IconChevronDown,
-  IconSettings,
+  IconUser,
+  IconCalendarTime,
   IconLogout,
   IconMenu2,
 } from "@tabler/icons-react";
 import { DutyClockWidget } from "@/features/attendance/components/DutyClockWidget";
+import type { ActiveShiftStatus } from "@/features/attendance/schemas";
 import { NotificationDrawer } from "../notifications/NotificationDrawer";
 
 export interface TopbarProps {
   userFullName?: string;
   userRole?: string;
   userEmail?: string;
+  initialActiveShift?: ActiveShiftStatus | null;
   className?: string;
   onToggleMobileSidebar?: () => void;
+}
+
+function getProfileHref(role?: string): string {
+  const normalized = role?.toUpperCase() || "";
+  if (normalized === "CLIENT") return "/dashboard/client/profile";
+  if (normalized === "STATISTICIAN") return "/dashboard/statistician/profile";
+  if (normalized === "SENIOR_QA_LEAD" || normalized === "QA") return "/dashboard/qa/profile";
+  if (normalized === "FINANCE_OFFICER" || normalized === "FINANCE") return "/dashboard/finance/profile";
+  if (normalized === "CEO") return "/dashboard/ceo/profile";
+  return "/dashboard/admin/profile";
+}
+
+function getRoleDisplayLabel(role?: string): string {
+  const normalized = role?.toUpperCase() || "";
+  switch (normalized) {
+    case "CLIENT":
+      return "Client";
+    case "STATISTICIAN":
+      return "Lead Statistician";
+    case "SENIOR_QA_LEAD":
+    case "QA":
+      return "Senior QA Lead";
+    case "FINANCE_OFFICER":
+    case "FINANCE":
+      return "Finance Officer";
+    case "CEO":
+      return "Chief Executive";
+    case "ADMIN":
+    case "OPERATIONS_MANAGER":
+      return "Operations Admin";
+    default:
+      return role ? role.replace(/_/g, " ") : "Staff";
+  }
 }
 
 export const Topbar: React.FC<TopbarProps> = ({
   userFullName = "Developer Account",
   userRole = "ADMIN",
   userEmail = "dev@jaxis.local",
+  initialActiveShift,
   className = "",
   onToggleMobileSidebar,
 }) => {
@@ -86,7 +123,7 @@ export const Topbar: React.FC<TopbarProps> = ({
         <NotificationDrawer />
 
         {/* Topbar Duty Clock Widget for internal staff */}
-        <DutyClockWidget userRole={userRole} />
+        <DutyClockWidget userRole={userRole} initialActiveShift={initialActiveShift} />
 
         {/* Radix / Shadcn Dropdown Menu */}
         <DropdownMenuRoot>
@@ -118,10 +155,15 @@ export const Topbar: React.FC<TopbarProps> = ({
             className="w-64 p-2 bg-[#01142B] border border-white/15 shadow-2xl rounded-[2px] backdrop-blur-xl"
           >
             {/* Header User Identity */}
-            <div className="px-3 py-2 mb-1 flex flex-col gap-0.5">
-              <span className="text-sm font-semibold text-white truncate font-sans">
-                {userFullName}
-              </span>
+            <div className="px-3 py-2.5 mb-1 flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-white truncate font-sans">
+                  {userFullName}
+                </span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 tracking-wider shrink-0">
+                  {getRoleDisplayLabel(userRole)}
+                </span>
+              </div>
               <span className="text-xs font-sans font-normal text-white/50 truncate">
                 {userEmail}
               </span>
@@ -132,13 +174,25 @@ export const Topbar: React.FC<TopbarProps> = ({
             {/* Menu Options */}
             <DropdownMenuItem asChild>
               <Link
-                href="/dashboard#settings"
+                href={getProfileHref(userRole)}
                 className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
               >
-                <IconSettings size={18} stroke={1.5} className="text-white/60 shrink-0" />
-                <span>Account Settings</span>
+                <IconUser size={18} stroke={1.5} className="text-white/60 shrink-0" />
+                <span>My Profile</span>
               </Link>
             </DropdownMenuItem>
+
+            {userRole?.toUpperCase() !== "CLIENT" && (
+              <DropdownMenuItem asChild>
+                <Link
+                  href="/dashboard/staff/hr"
+                  className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
+                >
+                  <IconCalendarTime size={18} stroke={1.5} className="text-white/60 shrink-0" />
+                  <span>My HR & Timeclock</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
 
             <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
 
@@ -149,11 +203,11 @@ export const Topbar: React.FC<TopbarProps> = ({
               className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-semibold text-red-400 px-3 py-2.5 rounded-[2px] hover:bg-red-500/10 hover:text-red-300 transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
             >
               {isLoggingOut ? (
-                <span className="h-4 w-4 border-2 border-white/20 border-t-red-400 rounded-full animate-spin mr-1" />
+                <span className="h-4 w-4 border-2 border-white/20 border-t-red-400 rounded-full animate-spin mr-1 shrink-0" />
               ) : (
                 <IconLogout size={18} stroke={1.5} className="text-red-400 shrink-0" />
               )}
-              <span>Logout</span>
+              <span>Sign Out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenuRoot>

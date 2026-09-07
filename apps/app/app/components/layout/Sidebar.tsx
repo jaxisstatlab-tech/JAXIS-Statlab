@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogoutButton } from "@/components/auth/LogoutButton";
 import type { RoleName } from "@prisma/client";
 import {
   IconLayoutDashboard,
@@ -512,8 +511,6 @@ const BADGE_STYLES: Record<string, string> = {
 
 export const Sidebar: React.FC<SidebarProps> = ({
   role = "ADMIN",
-  userFullName = "Developer Account",
-  userEmail = "dev@jaxis.local",
   clientProfileIncomplete = false,
   className = "",
   isOpen = false,
@@ -816,32 +813,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
       </div>
 
-      {/* User Info Card (Bottom) */}
-      <div className="p-3.5 sm:p-4 border-t border-white/[0.08] bg-white/[0.02] flex-shrink-0" style={{ padding: "0.875rem 1rem", flexShrink: 0, backgroundColor: "rgba(255, 255, 255, 0.02)" }}>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 overflow-hidden min-w-0">
-            <div
-              className="h-8 w-8 rounded-[2px] bg-gradient-to-br from-[#012E57] to-[#011B38] border border-white/15 flex items-center justify-center font-sans text-xs text-white font-semibold shadow-inner flex-shrink-0"
-              style={{
-                height: "2rem",
-                width: "2rem",
-                borderRadius: "2px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                border: "1px solid rgba(255, 255, 255, 0.15)",
-              }}
-            >
-              {userFullName.charAt(0)}
-            </div>
-            <div className="flex flex-col overflow-hidden min-w-0">
-              <span className="text-xs font-semibold text-white truncate leading-tight">{userFullName}</span>
-              <span className="text-[11px] text-white/40 truncate mt-0.5 font-sans">{userEmail}</span>
-            </div>
-          </div>
-
-          <LogoutButton />
+      {/* Sidebar Footer: System Status */}
+      <div className="px-4 py-3 border-t border-white/[0.08] flex items-center justify-between text-white/40 flex-shrink-0 bg-white/[0.01]">
+        <div className="flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <span className="font-sans text-[11px] text-white/50 tracking-tight">System Operational</span>
         </div>
+        <span className="font-mono text-[10px] text-white/30 tracking-wider">v2.4.0</span>
       </div>
     </aside>
   );

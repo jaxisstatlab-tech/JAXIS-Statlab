@@ -17,14 +17,40 @@ import type { ActiveShiftStatus } from "../schemas";
 
 interface DutyClockWidgetProps {
   userRole?: string;
+  initialActiveShift?: ActiveShiftStatus | null;
 }
 
-export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({ userRole = "CLIENT" }) => {
+export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
+  userRole = "CLIENT",
+  initialActiveShift,
+}) => {
   // Only render for internal staff roles
   const isInternal = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO"].includes(userRole);
 
-  const [shiftStatus, setShiftStatus] = useState<ActiveShiftStatus | null>(null);
-  const [seconds, setSeconds] = useState<number>(0);
+  // Initialize from server prop first, then check localStorage cache for 0ms instantaneous paint
+  const [shiftStatus, setShiftStatus] = useState<ActiveShiftStatus | null>(() => {
+    if (initialActiveShift !== undefined && initialActiveShift !== null) {
+      return initialActiveShift;
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("jaxis_active_shift");
+        if (cached) return JSON.parse(cached) as ActiveShiftStatus;
+      } catch (e) {
+        console.debug("Failed to read shift cache:", e);
+      }
+    }
+    return initialActiveShift || null;
+  });
+
+  const [seconds, setSeconds] = useState<number>(() => {
+    const active = initialActiveShift || shiftStatus;
+    if (active?.isOnDuty && active.clockInAt) {
+      return Math.max(0, Math.floor((Date.now() - new Date(active.clockInAt).getTime()) / 1000));
+    }
+    return active?.elapsedSeconds || 0;
+  });
+
   const [isPunching, setIsPunching] = useState<boolean>(false);
   const [isClockOutModalOpen, setIsClockOutModalOpen] = useState<boolean>(false);
   const [shiftNotes, setShiftNotes] = useState<string>("");
@@ -32,30 +58,49 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({ userRole = "CL
 
   const lastFetchRef = React.useRef<number>(0);
 
-  // 1. Fetch initial status (throttled for passive window focus)
+  // Helper to update state and sync with browser cache for instant 0ms transitions
+  const updateShiftState = useCallback((newStatus: ActiveShiftStatus | null) => {
+    setShiftStatus(newStatus);
+    if (typeof window !== "undefined") {
+      try {
+        if (newStatus && newStatus.isOnDuty) {
+          localStorage.setItem("jaxis_active_shift", JSON.stringify(newStatus));
+        } else {
+          localStorage.removeItem("jaxis_active_shift");
+        }
+      } catch (e) {
+        console.debug("Failed to update shift cache:", e);
+      }
+    }
+  }, []);
+
+  // 1. Fetch initial or refreshed status (silent background sync)
   const refreshStatus = useCallback(async (force = false) => {
     if (!isInternal) return;
     const now = Date.now();
-    if (!force && now - lastFetchRef.current < 15000) {
+    if (!force && now - lastFetchRef.current < 5000) {
       return;
     }
     lastFetchRef.current = now;
     try {
       const status = await getActiveShift();
-      setShiftStatus(status);
-      if (status.isOnDuty) {
-        setSeconds(status.elapsedSeconds);
+      updateShiftState(status);
+      if (status.isOnDuty && status.clockInAt) {
+        setSeconds(Math.max(0, Math.floor((Date.now() - new Date(status.clockInAt).getTime()) / 1000)));
       } else {
         setSeconds(0);
       }
     } catch (err) {
       console.error("Failed to load active shift status:", err);
     }
-  }, [isInternal]);
+  }, [isInternal, updateShiftState]);
 
   useEffect(() => {
-    refreshStatus(true);
-  }, [refreshStatus]);
+    // If no initial shift was provided via SSR, fetch immediately
+    if (initialActiveShift === undefined) {
+      refreshStatus(true);
+    }
+  }, [refreshStatus, initialActiveShift]);
 
   // Listen for global leave and shift updates from anywhere in the application
   useEffect(() => {
@@ -77,16 +122,23 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({ userRole = "CL
     };
   }, [refreshStatus]);
 
-  // 2. Running Live Timer Tick
+  // 2. High-Precision Wall-Clock Live Timer Tick (Immune to sleep or background tab drift)
   useEffect(() => {
-    if (!shiftStatus?.isOnDuty) return;
+    if (!shiftStatus?.isOnDuty || !shiftStatus.clockInAt) {
+      setSeconds(0);
+      return;
+    }
 
-    const interval = setInterval(() => {
-      setSeconds((prev) => prev + 1);
-    }, 1000);
+    const clockInMs = new Date(shiftStatus.clockInAt).getTime();
+    const updateTick = () => {
+      const elapsed = Math.max(0, Math.floor((Date.now() - clockInMs) / 1000));
+      setSeconds(elapsed);
+    };
 
+    updateTick();
+    const interval = setInterval(updateTick, 1000);
     return () => clearInterval(interval);
-  }, [shiftStatus?.isOnDuty]);
+  }, [shiftStatus?.isOnDuty, shiftStatus?.clockInAt]);
 
   if (!isInternal) return null;
 
@@ -98,9 +150,29 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({ userRole = "CL
     return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Clock In Action
+  // 3. Clock In Action with 0ms Instant Optimistic Transition
   const handleClockIn = async () => {
+    if (isPunching) return;
     setIsPunching(true);
+
+    const previousStatus = shiftStatus;
+    const now = new Date();
+
+    // Instant optimistic state transition (0ms)
+    const optimisticStatus: ActiveShiftStatus = {
+      isOnDuty: true,
+      activeLogId: "temp-optimistic-log",
+      clockInAt: now.toISOString(),
+      elapsedSeconds: 0,
+      ipAddress: null,
+      notes: null,
+      isOnLeave: false,
+    };
+
+    updateShiftState(optimisticStatus);
+    setSeconds(0);
+    window.dispatchEvent(new CustomEvent("shift-status-updated"));
+
     try {
       const res = await clockIn();
       if (res.success) {
@@ -109,8 +181,16 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({ userRole = "CL
           message: "Duty Clock-In Recorded",
           description: "Active shift session has commenced. Server timestamp verified.",
         });
-        await refreshStatus();
+        const serverStatus: ActiveShiftStatus = {
+          ...optimisticStatus,
+          activeLogId: res.data.logId,
+          clockInAt: res.data.clockInAt || now.toISOString(),
+        };
+        updateShiftState(serverStatus);
       } else {
+        // Rollback on server validation or policy failure
+        updateShiftState(previousStatus);
+        window.dispatchEvent(new CustomEvent("shift-status-updated"));
         setToast({
           variant: "danger",
           message: "Clock-In Failed",
@@ -118,6 +198,8 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({ userRole = "CL
         });
       }
     } catch {
+      updateShiftState(previousStatus);
+      window.dispatchEvent(new CustomEvent("shift-status-updated"));
       setToast({
         variant: "danger",
         message: "Network Error",
@@ -128,9 +210,30 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({ userRole = "CL
     }
   };
 
-  // Clock Out Action
+  // 4. Clock Out Action with 0ms Instant Optimistic Transition
   const handleClockOut = async () => {
+    if (isPunching) return;
     setIsPunching(true);
+
+    const previousStatus = shiftStatus;
+
+    // Instant optimistic state transition (0ms)
+    const optimisticStatus: ActiveShiftStatus = {
+      isOnDuty: false,
+      activeLogId: null,
+      clockInAt: null,
+      elapsedSeconds: 0,
+      ipAddress: null,
+      notes: null,
+      isOnLeave: shiftStatus?.isOnLeave || false,
+      leaveReason: shiftStatus?.leaveReason,
+    };
+
+    updateShiftState(optimisticStatus);
+    setSeconds(0);
+    setIsClockOutModalOpen(false);
+    window.dispatchEvent(new CustomEvent("shift-status-updated"));
+
     try {
       const res = await clockOut({
         notes: shiftNotes.trim() || undefined,
@@ -142,10 +245,11 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({ userRole = "CL
           message: "Shift Concluded & Saved",
           description: `Total Net Payable Hours: ${res.data.netHoursFormatted}.`,
         });
-        setIsClockOutModalOpen(false);
         setShiftNotes("");
-        await refreshStatus();
       } else {
+        // Rollback on failure
+        updateShiftState(previousStatus);
+        window.dispatchEvent(new CustomEvent("shift-status-updated"));
         setToast({
           variant: "danger",
           message: "Clock-Out Failed",
@@ -153,6 +257,8 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({ userRole = "CL
         });
       }
     } catch {
+      updateShiftState(previousStatus);
+      window.dispatchEvent(new CustomEvent("shift-status-updated"));
       setToast({
         variant: "danger",
         message: "Network Error",

@@ -73,6 +73,16 @@ Every dashboard page and future module (`/dashboard/*`) runs inside the unified 
   *(or `max-w-5xl` for focused legal contract / SOW document desks).*
 - **Guaranteed Consistency**: This standard guarantees that switching between tabs (Intake Triage, Quotation Desk, Staff Directory, Admin Command Center) maintains 100% pixel-perfect horizontal alignment without jumping.
 
+### 2.2. Single Identity Anchor & Anti-Redundancy Standard
+- **Topbar Anchor Exclusivity**: The top-right profile dropdown (`Topbar.tsx`) is the single authoritative anchor for all user identity, role badges, profile links, and session termination (`Sign Out`).
+- **Zero Redundant Cards in Sidebar**: The desktop sidebar (`Sidebar.tsx`) **must never render duplicate user cards**, initials, or logout buttons at its footer. This reclaims ~70px of fixed vertical height, ensuring navigation items breathe comfortably without unnecessary scroll clipping on laptops.
+- **Sidebar Footer Specification**: The sidebar terminates with a subtle, grounded operational status footer (`● System Operational v2.4.0`) that reinforces precision without duplicating session controls.
+
+### 2.3. Instantaneous State & Optimistic Duty Tracking Standard
+- **Server Component (RSC) Pre-loading**: Persistent shell widgets (such as `DutyClockWidget`) must receive pre-fetched status (`initialActiveShift`) from async Server Components (`app/dashboard/layout.tsx`). This eliminates client-side fetch delays on initial load, guaranteeing 0ms first-paint without flashing incorrect states or spinners.
+- **0ms Optimistic UI Transitions**: Interactive duty changes (Clock In, Clock Out) update local state, local cache (`jaxis_active_shift`), and global event dispatchers (`shift-status-updated`) **immediately (0ms)** before server mutations complete. In the rare event of a network or validation failure, the state rolls back cleanly with a toast notification.
+- **Wall-Clock High-Precision Timers**: Active shift timers must compute elapsed time via wall-clock math (`Date.now() - clockInMs`) rather than naive interval incrementation. This prevents time drift caused by background tab throttling, minimized windows, or laptop sleep.
+
 ---
 
 ## 3. Responsive Breakpoints & Multi-Device Standards

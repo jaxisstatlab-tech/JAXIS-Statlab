@@ -3,6 +3,7 @@ import { DashboardShell } from "../components/layout/DashboardShell";
 import { auth } from "@/lib/auth";
 import type { RoleName } from "@prisma/client";
 import { getClientProfile } from "@/features/client-profile/actions";
+import { getActiveShift } from "@/features/attendance/actions";
 
 export default async function DashboardLayout({
   children,
@@ -23,12 +24,16 @@ export default async function DashboardLayout({
     }
   }
 
+  const isInternal = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO"].includes(userRole);
+  const initialActiveShift = isInternal ? await getActiveShift() : null;
+
   return (
     <DashboardShell
       userFullName={userFullName}
       userRole={userRole}
       userEmail={userEmail}
       clientProfileIncomplete={clientProfileIncomplete}
+      initialActiveShift={initialActiveShift}
     >
       {children}
     </DashboardShell>

@@ -4,12 +4,14 @@ import React, { useState } from "react";
 import { Topbar } from "./Topbar";
 import { Sidebar } from "./Sidebar";
 import type { RoleName } from "@prisma/client";
+import type { ActiveShiftStatus } from "@/features/attendance/schemas";
 
 export interface DashboardShellProps {
   userFullName: string;
   userRole: RoleName | string;
   userEmail: string;
   clientProfileIncomplete?: boolean;
+  initialActiveShift?: ActiveShiftStatus | null;
   children: React.ReactNode;
 }
 
@@ -18,6 +20,7 @@ export function DashboardShell({
   userRole,
   userEmail,
   clientProfileIncomplete = false,
+  initialActiveShift,
   children,
 }: DashboardShellProps) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -32,6 +35,7 @@ export function DashboardShell({
           userFullName={userFullName}
           userRole={userRole}
           userEmail={userEmail}
+          initialActiveShift={initialActiveShift}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
         />
       </div>

@@ -129,4 +129,22 @@ All AI coding assistants and developers MUST strictly follow the design system a
   3. **Fast Client-Side Routing**: Breadcrumbs must use Next.js `<Link>` for instantaneous SPA navigation.
   4. **Order of Elements**: (1) Breadcrumbs, (2) Title & optional Status Badge, (3) Informative Description, and (4) Responsive Action Toolbar.
 
+---
+
+## 11. Single Identity Anchor & Anti-Redundancy Standard (CRITICAL)
+- **Mandatory Policy**:
+  1. All session identity, role display tags, role-specific profile routing, and sign-out controls **MUST live exclusively in the Topbar dropdown menu (`Topbar.tsx`)**.
+  2. Sidebars (`Sidebar.tsx`) **MUST NEVER duplicate user cards**, avatar initials, email addresses, or logout buttons at their footer across any role.
+  3. Reclaim the ~70px of fixed vertical height in sidebars to prevent navigation links from clipping or requiring awkward scrollbars on 13"–14" laptops.
+  4. The sidebar footer must strictly be reserved for a clean, minimal operational status badge (`● System Operational v2.4.0`).
+
+---
+
+## 12. Instantaneous State & 0ms Optimistic Shift Protocol (CRITICAL)
+- **Mandatory Policy**:
+  1. **Server Component Pre-loading**: Persistent shell widgets (such as `DutyClockWidget`) must pre-fetch `initialActiveShift` on the server in async RSC (`app/dashboard/layout.tsx`) and drill it through `DashboardShell` to eliminate flash-of-wrong-state or spinner delays on first paint.
+  2. **0ms Optimistic Transitions**: Interactive duty changes (Clock In, Clock Out) update local state, local cache (`jaxis_active_shift`), and global event dispatchers (`shift-status-updated`) **immediately (0ms)** before server mutations complete. On validation or network failure, state reverts gracefully with an error toast.
+  3. **Wall-Clock High-Precision Timers**: Active shift timers must compute elapsed seconds via wall-clock math (`Date.now() - clockInMs`) rather than naive interval incrementation. This prevents time drift caused by background tab throttling, minimized windows, or laptop sleep.
+
+
 
