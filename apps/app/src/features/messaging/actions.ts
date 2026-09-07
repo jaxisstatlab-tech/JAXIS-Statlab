@@ -180,36 +180,6 @@ export async function sendMessage(
         seenByNames: [],
       };
 
-      // Server-side broadcast push to Supabase Realtime REST API (WhatsApp/Telegram event model)
-      try {
-        const { supabaseUrl, supabaseServiceRoleKey } = await import("@/lib/supabase");
-        if (supabaseUrl && supabaseServiceRoleKey) {
-          fetch(`${supabaseUrl}/realtime/v1/api/broadcast`, {
-            method: "POST",
-            headers: {
-              apikey: supabaseServiceRoleKey,
-              Authorization: `Bearer ${supabaseServiceRoleKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              messages: [
-                {
-                  topic: `project-messages:${project.id}`,
-                  event: "new_message",
-                  payload: messageDTO,
-                },
-              ],
-            }),
-            signal: AbortSignal.timeout(2000),
-          }).catch((fetchErr) => {
-            console.warn("[Realtime Server REST Broadcast Warning]", fetchErr);
-          });
-        }
-      } catch (err) {
-        // Non-blocking fallback
-        console.warn("[Realtime Broadcast Error]", err);
-      }
-
       return {
         success: true,
         data: messageDTO,
