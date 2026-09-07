@@ -31,6 +31,7 @@ import {
   RespondQuotationSchema,
   type QuotationDetailItem,
   type ActionResponse,
+  type ClientQuoteEntry,
 } from "./schemas";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import { type QuotationStatus, type LineItemType, type ProjectStatus, type AddOnName, Prisma } from "@prisma/client";
@@ -1438,3 +1439,34 @@ export async function getQuotationsRoster(): Promise<QuotationDetailItem[]> {
 export async function getQuotationsDirectory() {
   return getQuotationsRoster();
 }
+
+/**
+ * 7. RSC Pre-loader for Client Proposals Desk: Fetches client projects and quotes in ONE server-side pass.
+ */
+export async function getClientQuotationsData(): Promise<ClientQuoteEntry[]> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return [];
+  }
+
+  const { getProjects } = await import("@/features/projects/actions");
+  const res = await getProjects();
+  if (!res.success || !res.data) {
+    return [];
+  }
+
+  const quotePromises = res.data.map(async (project) => {
+    const quote = await getQuotationByProject(project.id);
+    return { project, quotation: quote };
+  });
+
+  const results = await Promise.all(quotePromises);
+  return results.filter(
+    (r) =>
+      r.quotation !== null ||
+      r.project.masterStatus === "QUOTE_SENT" ||
+      r.project.masterStatus === "UNDER_EVALUATION" ||
+      r.project.masterStatus === "CLIENT_APPROVED"
+  );
+}
+

@@ -245,7 +245,11 @@
 - [x] **Sub-10ms Client Peer Broadcast**: Added `broadcastProjectMessage()` in `src/lib/messaging/realtime.ts` with active channel registry. Senders broadcast confirmed messages directly across their established WebSocket connection upon server action confirmation.
 - [x] **Immediate Receiver State Injection**: In `MessageThread.tsx`, added `handleIncomingRealtimeMessage` that immediately deduplicates, calibrates `isMine`, and appends incoming WebSocket frames to state in 0ms without waiting for slow HTTP delta queries.
 - [x] **Redundant Server REST Broadcast**: Updated `sendMessage` in `src/features/messaging/actions.ts` to push via Supabase Realtime REST API (`POST /realtime/v1/api/broadcast`) with 202 Accepted delivery.
-- [x] **Adaptive 2-Second Safety Net**: Tightened polling safety net from 4000ms to 2000ms for fallback scenarios.
+### Task 6.11 — Client Proposals & Desk RSC Pre-Loading (Eliminated 3.5s Refresh Latency)
+- [x] **Diagnosed Network Waterfall**: Audited DevTools network waterfall showing 3.53s delays on `/dashboard/client/quotations`. Confirmed there was **no hardcoded timer or artificial delay**; instead, the page was fetching data in a sequential client-side `useEffect` waterfall (`getProjects` -> N x `getQuotationByProject`).
+- [x] **Client Proposals Pre-Loading**: Added `getClientQuotationsData()` in `src/features/quotations/actions.ts` to query client projects and proposals in ONE server-side pass. Converted `app/dashboard/client/quotations/page.tsx` to an async React Server Component (RSC) pre-hydrating `ClientQuotationsClient.tsx`. Initial load spinner wait dropped to **0ms**.
+- [x] **Admin Proposals Pre-Loading**: Converted `app/dashboard/admin/quotations/page.tsx` to an async Server Component pre-loading `getQuotationsRoster()` and `getCommercialCatalog()`, rendering `AdminQuotationsClient.tsx` immediately.
+- [x] **DefenseLab & Disputes Pre-Loading**: Converted `app/dashboard/client/defenselab/page.tsx` and `app/dashboard/client/disputes/page.tsx` to async Server Components with `ClientDefenseLabClient.tsx` and `ClientDisputesClient.tsx`, eliminating spinner wait platform-wide.
 
 ---
 

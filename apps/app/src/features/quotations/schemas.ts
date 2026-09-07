@@ -1,5 +1,11 @@
 import { z } from "zod";
 import { PackageName, AddOnName, QuotationStatus, LineItemType } from "@prisma/client";
+import type { ProjectDetailItem } from "@/features/projects/schemas";
+
+export interface ClientQuoteEntry {
+  project: ProjectDetailItem;
+  quotation: QuotationDetailItem | null;
+}
 
 /**
  * Standard Action Response
