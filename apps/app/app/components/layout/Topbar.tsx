@@ -118,99 +118,101 @@ export const Topbar: React.FC<TopbarProps> = ({
       </div>
 
       {/* Right Controls: Notification Center + Duty Clock Widget + User Profile + Mobile Hamburger */}
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* In-App Notification Center Drawer */}
         <NotificationDrawer />
 
         {/* Topbar Duty Clock Widget for internal staff */}
         <DutyClockWidget userRole={userRole} initialActiveShift={initialActiveShift} />
 
-        {/* Radix / Shadcn Dropdown Menu */}
-        <DropdownMenuRoot>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="flex items-center gap-2.5 sm:gap-3 py-1.5 px-2 sm:px-2.5 rounded-[2px] bg-transparent hover:bg-white/[0.06] transition-all duration-150 cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 ring-0 group select-none"
-            >
-              <UserAvatar
-                name={userFullName}
-                role={userRole}
-                size="sm"
-              />
+        {/* Desktop Radix User Profile Dropdown Menu (Housed inside mobile drawer on < lg screens) */}
+        <div className="hidden lg:block">
+          <DropdownMenuRoot>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-2.5 sm:gap-3 py-1.5 px-2 sm:px-2.5 rounded-[2px] bg-transparent hover:bg-white/[0.06] transition-all duration-150 cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 ring-0 group select-none"
+              >
+                <UserAvatar
+                  name={userFullName}
+                  role={userRole}
+                  size="sm"
+                />
 
-              <span className="hidden sm:inline-block text-sm font-semibold text-white tracking-tight">
-                {userFullName}
-              </span>
-
-              <IconChevronDown
-                size={16}
-                stroke={2}
-                className="hidden sm:block text-white/50 group-hover:text-white/80 transition-transform duration-150"
-              />
-            </button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent
-            align="end"
-            className="w-64 p-2 bg-[#01142B] border border-white/15 shadow-2xl rounded-[2px] backdrop-blur-xl"
-          >
-            {/* Header User Identity */}
-            <div className="px-3 py-2.5 mb-1 flex flex-col gap-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold text-white truncate font-sans">
+                <span className="text-sm font-semibold text-white tracking-tight">
                   {userFullName}
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 tracking-wider shrink-0">
-                  {getRoleDisplayLabel(userRole)}
+
+                <IconChevronDown
+                  size={16}
+                  stroke={2}
+                  className="text-white/50 group-hover:text-white/80 transition-transform duration-150"
+                />
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              align="end"
+              className="w-64 p-2 bg-[#01142B] border border-white/15 shadow-2xl rounded-[2px] backdrop-blur-xl"
+            >
+              {/* Header User Identity */}
+              <div className="px-3 py-2.5 mb-1 flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-white truncate font-sans">
+                    {userFullName}
+                  </span>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 tracking-wider shrink-0">
+                    {getRoleDisplayLabel(userRole)}
+                  </span>
+                </div>
+                <span className="text-xs font-sans font-normal text-white/50 truncate">
+                  {userEmail}
                 </span>
               </div>
-              <span className="text-xs font-sans font-normal text-white/50 truncate">
-                {userEmail}
-              </span>
-            </div>
 
-            <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
+              <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
 
-            {/* Menu Options */}
-            <DropdownMenuItem asChild>
-              <Link
-                href={getProfileHref(userRole)}
-                className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
-              >
-                <IconUser size={18} stroke={1.5} className="text-white/60 shrink-0" />
-                <span>My Profile</span>
-              </Link>
-            </DropdownMenuItem>
-
-            {userRole?.toUpperCase() !== "CLIENT" && (
+              {/* Menu Options */}
               <DropdownMenuItem asChild>
                 <Link
-                  href="/dashboard/staff/hr"
+                  href={getProfileHref(userRole)}
                   className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
                 >
-                  <IconCalendarTime size={18} stroke={1.5} className="text-white/60 shrink-0" />
-                  <span>My HR & Timeclock</span>
+                  <IconUser size={18} stroke={1.5} className="text-white/60 shrink-0" />
+                  <span>My Profile</span>
                 </Link>
               </DropdownMenuItem>
-            )}
 
-            <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
-
-            {/* Logout Action */}
-            <DropdownMenuItem
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-semibold text-red-400 px-3 py-2.5 rounded-[2px] hover:bg-red-500/10 hover:text-red-300 transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
-            >
-              {isLoggingOut ? (
-                <span className="h-4 w-4 border-2 border-white/20 border-t-red-400 rounded-full animate-spin mr-1 shrink-0" />
-              ) : (
-                <IconLogout size={18} stroke={1.5} className="text-red-400 shrink-0" />
+              {userRole?.toUpperCase() !== "CLIENT" && (
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/dashboard/staff/hr"
+                    className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
+                  >
+                    <IconCalendarTime size={18} stroke={1.5} className="text-white/60 shrink-0" />
+                    <span>My HR & Timeclock</span>
+                  </Link>
+                </DropdownMenuItem>
               )}
-              <span>Sign Out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenuRoot>
+
+              <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
+
+              {/* Logout Action */}
+              <DropdownMenuItem
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-semibold text-red-400 px-3 py-2.5 rounded-[2px] hover:bg-red-500/10 hover:text-red-300 transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
+              >
+                {isLoggingOut ? (
+                  <span className="h-4 w-4 border-2 border-white/20 border-t-red-400 rounded-full animate-spin mr-1 shrink-0" />
+                ) : (
+                  <IconLogout size={18} stroke={1.5} className="text-red-400 shrink-0" />
+                )}
+                <span>Sign Out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenuRoot>
+        </div>
 
         {/* Mobile Sidebar Hamburger Button */}
         <button
@@ -219,7 +221,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           className="lg:hidden p-2 rounded-[2px] text-white/70 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer border border-white/10 outline-none focus:outline-none focus:ring-0 ring-0"
           aria-label="Toggle navigation menu"
         >
-          <IconMenu2 size={22} stroke={1.5} />
+          <IconMenu2 size={20} stroke={1.5} />
         </button>
       </div>
     </header>

@@ -632,6 +632,14 @@
 - [x] Added bubble spring entrance pop-in animation (`.animate-message-pop`), analytical cyan pulse (`.animate-message-highlight`), sticky bottom scroll anchoring (`ResizeObserver`), and floating "New message" jump button.
 - [x] Documented verification report in `docs/modules/21-production-hardening-verification.md`.
 
+### Task 14 — Global Layout Identity Consolidation & 0ms Instant Duty Clock
+- [x] Streamlined global identity architecture across all roles (`CLIENT`, `STATISTICIAN`, `SENIOR_QA_LEAD`, `FINANCE_OFFICER`, `CEO`, `ADMIN`): centralized profile routing, role badges, and session termination in [Topbar.tsx](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/app/components/layout/Topbar.tsx).
+- [x] Eliminated redundant user identity cards, avatar initials, and duplicate logout buttons from [Sidebar.tsx](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/app/components/layout/Sidebar.tsx) footer, reclaiming ~70px of fixed vertical height for navigation links.
+- [x] Installed grounded minimal status footer (`● System Operational v2.4.0`) in [Sidebar.tsx](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/app/components/layout/Sidebar.tsx).
+- [x] Optimized [DutyClockWidget.tsx](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/features/attendance/components/DutyClockWidget.tsx): implemented Server Component (RSC) pre-loading in [layout.tsx](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/app/dashboard/layout.tsx) to pass `initialActiveShift` directly to the widget, eliminating flash-of-wrong-state and spinner latency on page load.
+- [x] Built 0ms optimistic visual transitions for Clock-In and Clock-Out actions with `localStorage` persistence, background server synchronization, and automatic rollback on network failure.
+- [x] Upgraded live running duty timer to wall-clock difference math (`Date.now() - clockInMs`), eliminating background tab and OS sleep drift.
+
 ---
 
 ## Roadmap Status Matrix

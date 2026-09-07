@@ -417,38 +417,7 @@ export function ClientDashboardClient({
         </div>
       )}
 
-      {/* ── Quick Start Consultation Hero Card (When Studies Already Exist) ── */}
-      {projects.length > 0 && (
-        <Card className="p-6 sm:p-8 border border-white/10 bg-[#01142B]/90 rounded-[4px] shadow-xl relative overflow-hidden">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-            <div className="flex flex-col gap-2 max-w-2xl">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold text-[#FF9433] bg-[#CC6600]/15 border border-[#CC6600]/30 px-2.5 py-0.5 rounded-[2px] uppercase">
-                  New Research Request
-                </span>
-              </div>
-              <h2 className="text-lg sm:text-xl font-bold text-white font-sans">
-                Need statistical analysis for another thesis or dissertation?
-              </h2>
-              <p className="text-sm text-white/70 font-sans leading-relaxed">
-                Submit your research questions, raw dataset, or survey questionnaire. Our expert team will review your methodology and assign a dedicated PhD statistician.
-              </p>
-            </div>
-            <div className="shrink-0 self-start md:self-center">
-              <Link href="/dashboard/client/projects/new">
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="font-sans text-xs sm:text-sm font-bold tracking-wider px-5 py-2.5 flex items-center gap-2 bg-[#CC6600] hover:bg-[#E67300]"
-                >
-                  <IconPlus size={16} stroke={2.5} />
-                  <span>Start New Request →</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </Card>
-      )}
+
 
       {/* ── Actionable KPI Metric Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 items-stretch">
