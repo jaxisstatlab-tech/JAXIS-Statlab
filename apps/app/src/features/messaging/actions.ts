@@ -54,10 +54,12 @@ export async function sendMessage(
       // 1. Resolve User and Project Access
       let user = await db.user.findUnique({
         where: { id: session.user.id },
+        select: { id: true, fullName: true },
       });
       if (!user && session.user.email) {
         user = await db.user.findUnique({
           where: { email: session.user.email },
+          select: { id: true, fullName: true },
         });
       }
 
@@ -70,9 +72,15 @@ export async function sendMessage(
 
       const project = await db.project.findUnique({
         where: { id: projectId },
-        include: {
-          assignment: true,
-          client: true,
+        select: {
+          id: true,
+          clientId: true,
+          assignment: {
+            select: {
+              statisticianId: true,
+              qaLeadId: true,
+            },
+          },
         },
       });
 
@@ -132,8 +140,6 @@ export async function sendMessage(
           },
         });
 
-        revalidatePath("/dashboard/admin/messages");
-
         return {
           success: false,
           blocked: true,
@@ -160,10 +166,6 @@ export async function sendMessage(
           },
         },
       });
-
-      revalidatePath(`/dashboard/client/projects/${project.id}/messages`);
-      revalidatePath(`/dashboard/statistician/projects/${project.id}/messages`);
-      revalidatePath("/dashboard/client/messages");
 
       const messageDTO: MessageDTO = {
         id: newMsg.id,

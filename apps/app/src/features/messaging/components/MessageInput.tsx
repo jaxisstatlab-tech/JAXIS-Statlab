@@ -26,7 +26,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   onExternalTextConsumed,
 }) => {
   const [content, setContent] = useState<string>("");
-  const [isSending, setIsSending] = useState<boolean>(false);
   const [firewallError, setFirewallError] = useState<string | null>(null);
 
   // Synchronize external preset or quick prompt text if provided
@@ -37,34 +36,33 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [externalText, onExternalTextConsumed]);
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const textToSend = content.trim();
-    if (!textToSend || isSending || disabled) return;
+    if (!textToSend || disabled) return;
 
     setFirewallError(null);
-    setContent(""); // Instant clear for 0ms responsiveness
-    setIsSending(true);
+    setContent(""); // Instant 0ms clear for immediate typing of next message
 
-    try {
-      const res = await onSendMessage(textToSend);
-      if (!res.success) {
-        if (res.blocked) {
-          setFirewallError(
-            res.warning || "Your message was blocked. Sharing external contact info, direct payments, or outside chat links is prohibited."
-          );
-        } else if (res.warning) {
-          setFirewallError(res.warning);
+    // Send in background without freezing the input or spinning the Send button
+    onSendMessage(textToSend)
+      .then((res) => {
+        if (!res.success) {
+          if (res.blocked) {
+            setFirewallError(
+              res.warning ||
+                "Your message was blocked. Sharing external contact info, direct payments, or outside chat links is prohibited."
+            );
+          } else if (res.warning) {
+            setFirewallError(res.warning);
+          }
+          setContent(textToSend);
         }
-        // Restore text on failure so user doesn't lose what they typed
+      })
+      .catch(() => {
+        setFirewallError("An unexpected error occurred while sending your message.");
         setContent(textToSend);
-      }
-    } catch {
-      setFirewallError("An unexpected error occurred while sending your message.");
-      setContent(textToSend);
-    } finally {
-      setIsSending(false);
-    }
+      });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -116,7 +114,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 ? placeholder || disabledReason || "Consultation channel is locked until specialists are assigned..."
                 : placeholder || "Type your message here... (Press Enter to send, Shift+Enter for new line)"
             }
-            disabled={disabled || isSending}
+            disabled={disabled}
             maxLength={5000}
             rows={3}
             className="w-full p-3.5 sm:p-4 bg-transparent border-0 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-0 ring-0 resize-none font-sans leading-relaxed"
@@ -162,8 +160,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 type="submit"
                 variant={disabled ? "secondary" : "primary"}
                 size="sm"
-                disabled={!content.trim() || disabled || isSending}
-                loading={isSending}
+                disabled={!content.trim() || disabled}
                 className={`text-xs font-medium rounded-[2px] px-4 py-2 gap-1.5 transition-all ${
                   disabled
                     ? "bg-white/[0.04] text-white/30 border border-white/10 cursor-not-allowed hover:bg-white/[0.04]"
