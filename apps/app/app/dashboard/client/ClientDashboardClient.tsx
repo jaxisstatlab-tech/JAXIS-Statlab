@@ -349,7 +349,7 @@ export function ClientDashboardClient({
 
       {/* ── High-Priority Pending Quotation Alert Banner ── */}
       {pendingQuoteProjects.length > 0 && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 animate-card-reveal">
           {pendingQuoteProjects.map((p) => (
             <Card
               key={p.id}
@@ -390,7 +390,7 @@ export function ClientDashboardClient({
 
       {/* ── High-Priority Missing Information Alert Banner ── */}
       {awaitingInfoProjects.length > 0 && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 animate-card-reveal">
           {awaitingInfoProjects.map((p) => (
             <Card
               key={p.id}
@@ -444,6 +444,7 @@ export function ClientDashboardClient({
           value={kpis.total}
           variant="default"
           description="All commissioned research"
+          className="animate-card-reveal stagger-1"
         />
 
         <KpiCard
@@ -457,6 +458,7 @@ export function ClientDashboardClient({
               ? `${kpis.actionRequired} pending your response`
               : "All clear & up to date"
           }
+          className="animate-card-reveal stagger-2"
         />
 
         <KpiCard
@@ -464,6 +466,7 @@ export function ClientDashboardClient({
           value={kpis.inProgress}
           variant="default"
           description="Statistical analysis underway"
+          className="animate-card-reveal stagger-3"
         />
 
         <KpiCard
@@ -471,11 +474,12 @@ export function ClientDashboardClient({
           value={kpis.delivered}
           variant="default"
           description="Tables & write-ups completed"
+          className="animate-card-reveal stagger-4"
         />
       </div>
 
       {/* ── Research Milestone Progression & Activity Chart ── */}
-      <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-4">
+      <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-4 animate-card-reveal stagger-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
           <div className="flex items-center gap-2">
             <IconActivity size={18} stroke={2} className="text-[#CC6600]" />
@@ -499,7 +503,7 @@ export function ClientDashboardClient({
       </Card>
 
       {/* ── Studies Header, Filter Tabs, and View Switcher ── */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 animate-card-reveal stagger-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-white font-sans">
@@ -697,11 +701,12 @@ export function ClientDashboardClient({
         ) : viewMode === "cards" ? (
           /* ── Feed of Familiar Study Cards (Facebook / Shopee Order Style) ── */
           <div className="flex flex-col gap-5">
-            {filteredProjects.map((study) => (
+            {filteredProjects.map((study, idx) => (
               <ClientStudyCard
                 key={study.id}
                 study={study}
                 onDownloadDeliverable={handleDownloadDeliverable}
+                className={`animate-card-reveal stagger-${Math.min(idx + 1, 8)}`}
               />
             ))}
           </div>

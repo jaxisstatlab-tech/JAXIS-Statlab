@@ -18,10 +18,12 @@ export interface AreaChartProps extends React.HTMLAttributes<HTMLDivElement> {
   categories: string[];
   colors?: string[];
   valueFormatter?: (value: number) => string;
+  yAxisFormatter?: (value: number) => string;
   yAxisWidth?: number;
   showLegend?: boolean;
   showGridLines?: boolean;
   height?: number | string;
+  allowDecimals?: boolean;
 }
 
 const defaultColors = ["#CC6600", "#38BDF8", "#10B981"];
@@ -32,10 +34,12 @@ export function AreaChart({
   categories = [],
   colors = defaultColors,
   valueFormatter = (value: number) => `${value}`,
-  yAxisWidth = 45,
+  yAxisFormatter,
+  yAxisWidth = 28,
   showLegend = true,
   showGridLines = true,
   height = 280,
+  allowDecimals = false,
   className,
   ...props
 }: AreaChartProps) {
@@ -78,7 +82,7 @@ export function AreaChart({
       )}
       <div style={{ height, width: "100%" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <RechartsAreaChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+          <RechartsAreaChart data={data} margin={{ top: 8, right: 12, left: -10, bottom: 0 }}>
             {showGridLines && (
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" vertical={false} />
             )}
@@ -91,10 +95,11 @@ export function AreaChart({
             />
             <YAxis
               width={yAxisWidth}
+              allowDecimals={allowDecimals}
               tickLine={false}
               axisLine={false}
               tick={{ fill: "rgba(255, 255, 255, 0.5)", fontSize: 11, fontFamily: "monospace" }}
-              tickFormatter={valueFormatter}
+              tickFormatter={yAxisFormatter || ((val: number) => `${Math.round(val)}`)}
             />
             <RechartsTooltip
               content={({ active, payload, label }) => {

@@ -298,12 +298,12 @@ export function ClientDisputesClient({
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {eligibleProjects.map((p) => {
+            {eligibleProjects.map((p, idx) => {
               const hasDispute = Boolean(p.existingDispute);
               return (
                 <Card
                   key={p.projectId}
-                  className="p-5 flex flex-col justify-between gap-4 bg-[#01142B] border border-white/10 rounded-[2px]"
+                  className={`p-5 flex flex-col justify-between gap-4 bg-[#01142B] border border-white/10 rounded-[2px] animate-card-reveal stagger-${Math.min(idx + 1, 8)}`}
                 >
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
@@ -360,7 +360,7 @@ export function ClientDisputesClient({
       </div>
 
       {/* Filed Claims Table */}
-      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[2px]">
+      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[2px] animate-card-reveal stagger-4">
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div>
             <h2 className="text-base font-bold text-white">Your Filed Claims</h2>

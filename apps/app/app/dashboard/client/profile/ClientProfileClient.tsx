@@ -98,7 +98,7 @@ export function ClientProfileClient({ initialProfile }: ClientProfileClientProps
         ]}
       />
 
-      <Card className="p-6 md:p-8 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl">
+      <Card className="p-6 md:p-8 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl animate-card-reveal">
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div className="border-b border-white/[0.08] pb-4">
             <h2 className="text-base font-bold text-white font-sans">School &amp; University Details</h2>

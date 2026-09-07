@@ -181,6 +181,7 @@ export function ClientQuotationsClient({
           badge={stats.pendingAction > 0 ? "NEEDS REVIEW" : undefined}
           badgeColor={stats.pendingAction > 0 ? "orange" : "gray"}
           description="Quotes ready for your review"
+          className="animate-card-reveal stagger-1"
         />
 
         <KpiCard
@@ -188,6 +189,7 @@ export function ClientQuotationsClient({
           value={stats.approved}
           variant="default"
           description="Scope and milestones accepted"
+          className="animate-card-reveal stagger-2"
         />
 
         <KpiCard
@@ -195,6 +197,7 @@ export function ClientQuotationsClient({
           value={stats.inPrep}
           variant="default"
           description="Quotes being prepared by statisticians"
+          className="animate-card-reveal stagger-3"
         />
 
         <KpiCard
@@ -202,12 +205,13 @@ export function ClientQuotationsClient({
           value={`₱${stats.totalCommitted.toLocaleString()}`}
           variant="default"
           description="Total value of accepted studies"
+          className="animate-card-reveal stagger-4"
         />
       </div>
 
       {/* ── Main Proposals Table Substrate Card ── */}
       <Card
-        className="p-0 border border-white/10 overflow-hidden bg-[#01142B]/85 rounded-[2px] shadow-xl backdrop-blur-sm"
+        className="p-0 border border-white/10 overflow-hidden bg-[#01142B]/85 rounded-[2px] shadow-xl backdrop-blur-sm animate-card-reveal stagger-5"
         style={{ padding: 0 }}
       >
         {/* Filter Toolbar */}

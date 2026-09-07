@@ -59,11 +59,13 @@ function getStageIndex(status: string): number {
 interface ClientStudyCardProps {
   study: ProjectDetailItem;
   onDownloadDeliverable?: (study: ProjectDetailItem) => void;
+  className?: string;
 }
 
 export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
   study,
   onDownloadDeliverable,
+  className = "",
 }) => {
   const displayStatus = getProjectDisplayStatus(study, "CLIENT");
   const currentStageIndex = getStageIndex(study.masterStatus);
@@ -84,7 +86,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
     study.client?.clientProfile?.institutionSchool || null;
 
   return (
-    <Card className="p-6 sm:p-8 border border-white/10 bg-[#01142B]/90 hover:border-white/20 transition-all rounded-[4px] shadow-xl flex flex-col gap-6">
+    <Card className={`p-6 sm:p-8 border border-white/10 bg-[#01142B]/90 hover:border-white/20 transition-all rounded-[4px] shadow-xl flex flex-col gap-6 ${className}`}>
       {/* ── Top Header: Title, ID, Status Badge ── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="flex flex-col gap-2 min-w-0 flex-1">
