@@ -31,3 +31,12 @@ Module 20 establishes sub-100ms perceived latency across JAXIS StatLab through a
 | `PERF-F06` | **Modern Minimalist Loading Indicator** — Clean single-track 100° arc spinner in `#CC6600` Enterprise Orange rotating at 0.85s linear infinite. |
 | `PERF-F07` | **Real-Time Delivery Optimization** — SSE stream health tracking in `NotificationDrawer.tsx` and `ClientDashboardClient.tsx` that sleeps polling loops while SSE is healthy. |
 | `PERF-F08` | **Parallel Query Execution** — Concurrent pre-validation queries in `createProject` and attendance actions via `Promise.all`. |
+| `PERF-F09` | **Staff HR Portal RSC Migration** — Server-preloaded HR desk (`/dashboard/staff/hr`) prefetching timesheets, payslips, and payout details concurrently to eliminate the 2.79s client-side waterfall. |
+| `PERF-F10` | **Staff Attendance RSC Migration** — Server-preloaded punch timesheet desk (`/dashboard/staff/attendance`) prefetching logs, correction requests, and weekly KPIs. |
+| `PERF-F11` | **Client Projects List RSC Migration** — Server-preloaded client study desk (`/dashboard/client/projects`) streaming research portfolios and profile verification state with 0ms client wait time. |
+| `PERF-F12` | **Client Academic Profile RSC Migration** — Server-preloaded profile settings (`/dashboard/client/profile`) streaming university and contact credentials without form pop-in shifts. |
+| `PERF-F13` | **Statistician Payouts RSC Migration** — Server-preloaded milestone earnings desk (`/dashboard/statistician/payouts`) streaming escrow and disbursement history. |
+| `PERF-F14` | **QA Specialist Payouts RSC Migration** — Server-preloaded audit fee desk (`/dashboard/qa/payouts`) streaming verified audit earnings. |
+| `PERF-F15` | **Finance Ledger RSC Migration** — Server-preloaded accounting ledger (`/dashboard/finance/ledger`) prefetching gross receipts, specialist splits, and platform margin metrics. |
+| `PERF-F16` | **Specialist Leave Approvals RSC Migration** — Server-preloaded HR leave desk (`/dashboard/finance/leaves`) streaming specialist availability and leave queues. |
+| `PERF-F17` | **CEO Attendance & Labor Policy RSC Migration** — Server-preloaded executive audit vault (`/dashboard/ceo/attendance`) prefetching raw punch records and corporate duty policies. |

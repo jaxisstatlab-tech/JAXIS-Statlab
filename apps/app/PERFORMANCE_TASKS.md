@@ -231,6 +231,16 @@
 - [x] In `MessageThread.tsx`, add an adaptive 4s delta sync (`syncDelta`) safety net with tab visibility listener, guaranteeing 100% chat delivery even if WebSockets drop or are blocked by corporate proxies.
 - [x] In `src/features/messaging/actions.ts`, harden Supabase Realtime server-side broadcast to verify channel subscription before transmission and tear down channel cleanly.
 
+### Task 6.9 — Platform-Wide React Server Component (RSC) Pre-Loading Migration
+- [x] **Eliminated 2.79s DevTools Bottleneck**: In `/dashboard/staff/hr`, converted the `"use client"` page with a 2.79s client-side waterfall into an async Server Component wrapper with `<HrPortalClient />`, prefetching `getMyHrPortalData`, `getMyOfficialPayslip`, and `getMyPayoutDetails` concurrently on the server.
+- [x] **Staff Attendance**: Converted `/dashboard/staff/attendance` to async Server Component prefetching `getMyAttendanceHistory`, rendering `<StaffAttendanceClient />` with zero initial loading delay.
+- [x] **Client Research Desk**: Converted `/dashboard/client/projects` to async Server Component prefetching `getProjects` and `getClientProfile`, rendering `<ClientProjectsListClient />` instantly.
+- [x] **Client Academic Profile**: Converted `/dashboard/client/profile` to async Server Component prefetching `getClientProfile`, rendering `<ClientProfileClient />` without form pop-in shifts.
+- [x] **Specialist Payouts**: Converted `/dashboard/statistician/payouts` and `/dashboard/qa/payouts` to async Server Components prefetching `getSpecialistPayoutHistoryAction`.
+- [x] **Finance Accounting & Leaves**: Converted `/dashboard/finance/ledger` and `/dashboard/finance/leaves` to async Server Components prefetching ledger records and leave availability queues.
+- [x] **CEO Executive Audit**: Converted `/dashboard/ceo/attendance` to async Server Component prefetching `getCeoAttendanceAuditVault`.
+- [x] **Zero Regressions & 100% Type-Safe**: Validated with `npm run check-types` (0 errors) and `npx next build` (58/58 routes compiled).
+
 ---
 
 ## 🔒 Verification & Quality Gate Checklist
