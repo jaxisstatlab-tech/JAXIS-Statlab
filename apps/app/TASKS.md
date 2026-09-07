@@ -616,6 +616,15 @@
 - [x] Connected instantaneous tag invalidation (`updateTag` & `revalidateTag`) across all mutations for read-your-own-writes consistency.
 - [x] Migrated inner operational desks (`admin/assignments`, `finance/attendance`, `finance/payroll`) to async Server Components with server-side prefetching, eliminating initial loading delays entirely.
 
+### Task 13 — Module 21: Production-Grade Hardening & Vercel Deployment Readiness
+- [x] Resolved Next.js build compilation failure by removing object export (`PROJECT_DETAIL_SELECT`) from `"use server"` file [actions.ts](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/features/projects/actions.ts).
+- [x] Declared all 19 platform environment variables in `globalEnv` inside [turbo.json](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/turbo.json), eliminating Turborepo deployment warnings.
+- [x] Hardened authentication against production breaches: guarded dev password and offline account fallbacks in [auth.ts](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/lib/auth.ts) with `NODE_ENV !== "production"`.
+- [x] Added HTTP enterprise security headers (`X-Frame-Options`, `X-Content-Type-Options`, `HSTS`, `Referrer-Policy`) to [next.config.js](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/next.config.js).
+- [x] Added missing session verification to `POST /api/v1/projects` and hardened cron execution in `/api/v1/crons/storage-purge`.
+- [x] Created `app/dashboard/error.tsx`, `app/error.tsx`, and custom `app/not-found.tsx` adhering to design system.
+- [x] Documented verification report in `docs/modules/21-verification-report.md`.
+
 ---
 
 ## Roadmap Status Matrix
@@ -642,4 +651,6 @@
 | `17` | `17-reporting` — Reporting, Analytics & Audit Archive | Platform | ✅ Completed |
 | `18` | `18-attendance` — Staff Attendance & Duty Governance | HR & Labor | ✅ Completed |
 | `19` | `19-payroll` — Corporate Payroll & Payslip Engine | HR & Treasury | ✅ Completed |
-| `20` | `20-performance` — High-Speed Caching & Minimalist UI | Architecture | ✅ **Completed** |
+| `20` | `20-performance` — High-Speed Caching & Minimalist UI | Architecture | ✅ Completed |
+| `21` | `21-production-hardening` — Production Security & Vercel Readiness | Infrastructure | ✅ **Completed** |
+

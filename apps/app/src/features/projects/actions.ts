@@ -87,7 +87,7 @@ function revalidateProjectCaches(projectId?: string): void {
  * Canonical Project Detail Select projection.
  * Eliminates duplication and ensures consistent retrieval of relations.
  */
-export const PROJECT_DETAIL_SELECT = {
+const PROJECT_DETAIL_SELECT = {
   id: true,
   intakeId: true,
   clientId: true,

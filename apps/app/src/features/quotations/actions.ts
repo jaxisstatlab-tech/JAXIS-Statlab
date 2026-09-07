@@ -1435,4 +1435,6 @@ export async function getQuotationsRoster(): Promise<QuotationDetailItem[]> {
   }
 }
 
-export const getQuotationsDirectory = getQuotationsRoster;
+export async function getQuotationsDirectory() {
+  return getQuotationsRoster();
+}

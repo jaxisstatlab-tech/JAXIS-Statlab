@@ -88,10 +88,12 @@ export const authConfig: NextAuthConfig = {
               isValidPassword = false;
             }
 
-            // Dev password fallback check
-            const devFallback = getDevUserByEmail(normalizedEmail) || DEV_USERS[normalizedEmail];
-            if (!isValidPassword && devFallback && devFallback.password === password) {
-              isValidPassword = true;
+            // Dev password fallback check (only allowed in non-production environments)
+            if (process.env.NODE_ENV !== "production") {
+              const devFallback = getDevUserByEmail(normalizedEmail) || DEV_USERS[normalizedEmail];
+              if (!isValidPassword && devFallback && devFallback.password === password) {
+                isValidPassword = true;
+              }
             }
 
             if (!isValidPassword) {
@@ -142,24 +144,26 @@ export const authConfig: NextAuthConfig = {
           console.warn("[Auth] Live DB unreachable or offline. Checking dev user fallback.", dbError);
         }
 
-        // 2. Development Quick Credentials Fallback (Offline Mode)
-        const devUser = getDevUserByEmail(normalizedEmail) || DEV_USERS[normalizedEmail];
-        if (devUser) {
-          if (devUser.status === "SUSPENDED") {
-            throw new Error("ACCOUNT_SUSPENDED");
-          }
-          if (devUser.status === "TERMINATED") {
-            throw new Error("ACCOUNT_TERMINATED");
-          }
+        // 2. Development Quick Credentials Fallback (Offline Mode - non-production only)
+        if (process.env.NODE_ENV !== "production") {
+          const devUser = getDevUserByEmail(normalizedEmail) || DEV_USERS[normalizedEmail];
+          if (devUser) {
+            if (devUser.status === "SUSPENDED") {
+              throw new Error("ACCOUNT_SUSPENDED");
+            }
+            if (devUser.status === "TERMINATED") {
+              throw new Error("ACCOUNT_TERMINATED");
+            }
 
-          if (devUser.password === password) {
-            return {
-              id: devUser.id,
-              email: devUser.email,
-              fullName: devUser.fullName,
-              role: devUser.role,
-              status: devUser.status,
-            };
+            if (devUser.password === password) {
+              return {
+                id: devUser.id,
+                email: devUser.email,
+                fullName: devUser.fullName,
+                role: devUser.role,
+                status: devUser.status,
+              };
+            }
           }
         }
 

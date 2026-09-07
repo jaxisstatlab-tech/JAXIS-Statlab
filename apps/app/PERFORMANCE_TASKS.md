@@ -185,11 +185,56 @@
 
 ---
 
+## Phase 6 — Production-Grade Hardening & Vercel Deployment Readiness (Completed)
+
+### Task 6.1 — Server Action Export Compliance (Vercel Build Error Fix)
+- [x] In `src/features/projects/actions.ts`, remove `export` from `PROJECT_DETAIL_SELECT`. Keep it file-scoped because Next.js prohibits non-async-function exports from `"use server"` files.
+- [x] In `src/features/staff/actions.ts` and `src/features/quotations/actions.ts`, convert function alias exports (`getStaffDirectory`, `getStaffSelfProfile`, `getQuotationsDirectory`) to explicit `async function` declarations.
+- [x] Eliminates the Vercel production build error: `Error: A "use server" file can only export async functions, found object`.
+
+### Task 6.2 — Turborepo Environment Variable Declarations (`turbo.json`)
+- [x] Add `globalEnv` array in root `turbo.json` declaring all 19 production and deployment variables:
+  - `DATABASE_URL`, `DIRECT_URL`, `NEXTAUTH_SECRET`, `AUTH_SECRET`, `NEXTAUTH_URL`, `NODE_ENV`
+  - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+  - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`
+  - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `TRIGGER_API_KEY`, `TRIGGER_API_URL`, `AUTH_TRUST_HOST`, `NEXT_PHASE`
+- [x] Eliminates the Turborepo warning on Vercel regarding missing environment variable declarations.
+
+### Task 6.3 — Production Auth Security Hardening
+- [x] In `src/lib/auth.ts`, wrap dev password fallback check with `process.env.NODE_ENV !== "production"`.
+- [x] In `src/lib/auth.ts`, wrap offline credentials fallback with `process.env.NODE_ENV !== "production"`.
+- [x] Prevents dev credentials (e.g. `admin@jaxis.dev` / `JaxisAdmin2026!`) from ever validating against production data.
+
+### Task 6.4 — HTTP Security Headers
+- [x] In `apps/app/next.config.js`, configure standard enterprise security headers:
+  - `X-Frame-Options: SAMEORIGIN` (Clickjacking prevention)
+  - `X-Content-Type-Options: nosniff` (MIME sniffing prevention)
+  - `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` (HSTS enforcement)
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `X-DNS-Prefetch-Control: on`
+
+### Task 6.5 — Route & Cron Authorization Hardening
+- [x] In `app/api/v1/projects/route.ts`, add `auth()` session verification to `POST` handler to prevent unauthenticated study creation.
+- [x] In `app/api/v1/crons/storage-purge/route.ts`, add production check requiring configured cron secrets so unauthenticated executions cannot bypass verification in production.
+
+### Task 6.6 — Enterprise Error Boundaries & 404 Recovery UI
+- [x] Create `app/dashboard/error.tsx` for graceful dashboard error recovery with retry actions and error digest telemetry.
+- [x] Create root `app/error.tsx` for global application fallback.
+- [x] Create `app/not-found.tsx` with Dark Precision Terminal styling and instant link to return to workspace.
+- [x] All error components strictly follow `.agents/AGENTS.md` (no emojis, Tabler icons, Title Case, `#CC6600` accent, plain English copy).
+
+### Task 6.7 — Session Lifespan Hardening
+- [x] In `src/lib/auth.config.ts`, reduce JWT `maxAge` from 30 days to 24 hours to secure financial and operational sessions.
+
+---
+
 ## 🔒 Verification & Quality Gate Checklist
 Before marking any task complete:
 - [x] `npm run check-types` passes with **0 errors**.
-- [x] `npx eslint` passes on all modified files with **0 warnings / 0 errors**.
+- [x] `npx next build` passes cleanly: 58/58 routes prerendered / dynamic.
+- [x] `npx turbo run build --filter=app` passes cleanly with **code 0**.
 - [x] All pages follow `.agents/AGENTS.md` and `apps/app/docs/design-system.md` standards.
 - [x] No visual styling or functional regressions across role desks.
+
 
 

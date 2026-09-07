@@ -70,6 +70,21 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
+            status: 401,
+          },
+        },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const created = await projectService.createProject(body);
 

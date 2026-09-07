@@ -317,7 +317,11 @@ export async function getStaffRoster(
   }
 }
 
-export const getStaffDirectory = getStaffRoster;
+export async function getStaffDirectory(
+  filters?: Parameters<typeof getStaffRoster>[0]
+) {
+  return getStaffRoster(filters);
+}
 
 /**
  * 3. Retrieve detailed staff profile with full suspension audit history.
@@ -906,7 +910,9 @@ function revalidateStaffCaches(): void {
   revalidatePath("/dashboard/qa");
 }
 
-export const getStaffSelfProfile = getOwnProfile;
+export async function getStaffSelfProfile() {
+  return getOwnProfile();
+}
 
 /**
  * 9. Request or set a specialist on leave.

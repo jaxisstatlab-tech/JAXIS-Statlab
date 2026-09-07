@@ -35,6 +35,9 @@ function getEnv(): Env {
     if (parsed.success) {
       return parsed.data;
     }
+    if (process.env.NODE_ENV === "production" && process.env.NEXT_PHASE !== "phase-production-build") {
+      console.error("❌ Missing or invalid production environment variables:", parsed.error.format());
+    }
     // Return process.env with fallback in dev/build
     return process.env as unknown as Env;
   }

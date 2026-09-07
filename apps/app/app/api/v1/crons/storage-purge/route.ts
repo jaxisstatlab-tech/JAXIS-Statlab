@@ -13,6 +13,13 @@ export async function POST(req: NextRequest) {
 
     const expectedSecret = process.env.TRIGGER_API_KEY || process.env.CRON_SECRET;
 
+    if (process.env.NODE_ENV === "production" && !expectedSecret) {
+      return NextResponse.json(
+        { error: "Cron authorization secret is not configured." },
+        { status: 500 }
+      );
+    }
+
     // Verify bearer token unless in open development with no secrets defined
     if (expectedSecret && token !== expectedSecret) {
       return NextResponse.json(
