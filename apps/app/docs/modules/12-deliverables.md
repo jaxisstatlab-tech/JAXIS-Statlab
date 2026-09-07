@@ -35,6 +35,7 @@
 | `DLV-F13` | **Project closure** — After successful delivery + no revision within window → status → `CLOSED`; Finance payout eligibility unlocked |
 | `DLV-F14` | **Revision window countdown** — Client sees remaining days to request revision |
 | `DLV-F15` | **Multiple deliverable files** — Admin can upload multiple files per project (e.g., SPSS output + PDF report) |
+| `DLV-F16` | **Real-time notification dispatching** — Automatically alerts client and team on deliverable upload, dual-gate release, client revision request, and warranty classification via `dispatchRealtimeNotification` |
 
 ### ❌ Explicitly Out of Scope
 
@@ -195,45 +196,49 @@ const seedDeliverables = [
 
 ### 🎯 Expected Output (What you should be able to do now)
 
-- [ ] **Final Deliverable Bundling:** Admin can upload finalized statistical reports, APA tables, and datasets to the deliverable package.
-- [ ] **Dual Release Enforcement:** Release trigger enforces `paymentStatus === FULLY_PAID` (RULE_REL_01) and QA approval for Tier 2 packages (RULE_REL_02).
-- [ ] **Secure Client Download:** Client can download final deliverables via pre-signed storage URLs once released.
-- [ ] **3-Day Revision Clock:** Client dashboard displays a 3-business-day countdown window for submitting the 1 included revision request.
-- [ ] **Revision Triage & Routing:** Admin classifies client revision requests: `INCLUDED` (routes back to Statistician), `METHODOLOGY_CHANGE` (supplemental SOW), or `NEW_PAID_WORK`.
-- [ ] **Project Completion & Closure:** Project automatically transitions to `CLOSED` upon revision window expiry, unlocking expert payout calculation in Module 14.
+- [x] **Final Deliverable Bundling:** Admin can upload finalized statistical reports, APA tables, and datasets to the deliverable package.
+- [x] **Dual Release Enforcement:** Release trigger enforces `paymentStatus === FULLY_PAID` (RULE_REL_01) and QA approval for Tier 2 packages (RULE_REL_02).
+- [x] **Secure Client Download:** Client can download final deliverables via pre-signed storage URLs once released.
+- [x] **3-Day Revision Clock:** Client dashboard displays a 3-business-day countdown window for submitting the 1 included revision request.
+- [x] **Revision Triage & Routing:** Admin classifies client revision requests: `INCLUDED` (routes back to Statistician), `METHODOLOGY_CHANGE` (supplemental SOW), or `NEW_PAID_WORK`.
+- [x] **Project Completion & Closure:** Project automatically transitions to `CLOSED` upon revision window expiry, unlocking expert payout calculation in Module 14.
+- [x] **Real-Time Delivery & Revision Alerts:** Instant notifications dispatched across connected sessions on output upload, release, revision request, and triage classification.
 
 
 ## 8. Acceptance Criteria (Done Checklist)
 
 ### Deliverable Upload & Release
-- [ ] Admin can upload multiple deliverable files to a project
-- [ ] Release blocked if `payment_status !== FULLY_PAID` → 402 (RULE_REL_01)
-- [ ] Release blocked for Tier 2 project without QA approval → 403 (RULE_REL_02)
-- [ ] Both gates pass → `is_final_released = true`; project → `DELIVERED`; `delivered_at` set
-- [ ] `files_purge_at` = `delivered_at + 90 days` set on project
-- [ ] `revision_window_expires_at` = `delivered_at + 3 business days` set on project
+- [x] Admin can upload multiple deliverable files to a project
+- [x] Release blocked if `payment_status !== FULLY_PAID` → 402 (RULE_REL_01)
+- [x] Release blocked for Tier 2 project without QA approval → 403 (RULE_REL_02)
+- [x] Both gates pass → `is_final_released = true`; project → `DELIVERED`; `delivered_at` set
+- [x] `files_purge_at` = `delivered_at + 90 days` set on project
+- [x] `revision_window_expires_at` = `delivered_at + 3 business days` set on project
+- [x] Upload and release dispatch real-time in-app alerts to client and assigned team
 
 ### Client Download
-- [ ] Client download returns 403 before release
-- [ ] Client download returns pre-signed URL after release
-- [ ] Pre-signed URL expires (e.g., 1 hour); client must re-request
+- [x] Client download returns 403 before release
+- [x] Client download returns pre-signed URL after release
+- [x] Pre-signed URL expires (e.g., 1 hour); client must re-request
 
 ### Revision Request
-- [ ] Client can submit revision within 3-day window → `RevisionRequest` created
-- [ ] Client submitting after window expiry → 422 `REVISION_WINDOW_EXPIRED`
-- [ ] Client can see remaining revision window days on project page
-- [ ] Admin sees revision in classification queue
+- [x] Client can submit revision within 3-day window → `RevisionRequest` created
+- [x] Client submitting after window expiry → 422 `REVISION_WINDOW_EXPIRED`
+- [x] Client can see remaining revision window days on project page
+- [x] Admin sees revision in classification queue
+- [x] Revision submission dispatches real-time in-app alerts to Admin and Statistician
 
 ### Revision Classification
-- [ ] `INCLUDED` → project → `REVISION_REQUESTED` → Statistician gets `IN_PROGRESS`
-- [ ] `METHODOLOGY_CHANGE` → supplemental SOW flow triggered
-- [ ] `NEW_PAID_WORK` → Admin creates new intake or supplemental quote
+- [x] `INCLUDED` → project → `REVISION_REQUESTED` → Statistician gets `IN_PROGRESS`
+- [x] `METHODOLOGY_CHANGE` → supplemental SOW flow triggered
+- [x] `NEW_PAID_WORK` → Admin creates new intake or supplemental quote
+- [x] Classification decision dispatches real-time in-app alerts to Client with next steps
 
 ### Project Closure
-- [ ] Project auto-closes to `CLOSED` after delivery + no revision within window
-- [ ] `CLOSED` status unlocks Finance payout eligibility (Module 14)
+- [x] Project auto-closes to `CLOSED` after delivery + no revision within window
+- [x] `CLOSED` status unlocks Finance payout eligibility (Module 14)
 
 ### Quality Gates
-- [ ] `npm run check-types` → 0 errors
-- [ ] `npm run lint` → 0 warnings/errors
-- [ ] `npm run build` → clean
+- [x] `npm run check-types` → 0 errors
+- [x] `npm run lint` → 0 warnings/errors
+- [x] `npm run build` → clean

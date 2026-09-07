@@ -259,7 +259,22 @@
 - [x] **Communications Firewall Pre-Loading**: Converted `/dashboard/admin/messages` to an async Server Component pre-loading blocked messages into `AdminFirewallMessagesClient.tsx`.
 - [x] **Finance Queue Pre-Loading**: Converted `/dashboard/finance/payments`, `/dashboard/finance/payouts`, and `/dashboard/finance/disputes` into async Server Components with `FinancePaymentsQueueClient.tsx`, `FinancePayoutsClient.tsx`, and `FinanceDisputesClient.tsx`, eliminating all queue loading spinners.
 
+### Task 6.13 — Messaging Pop-In Animation, Sky Blue Highlight & Sticky Bottom Scrolling
+- [x] **Spring Entrance Pop-In Animation**: Added `@keyframes messagePopIn` and `.animate-message-pop` in `app/globals.css` with a smooth 220ms spring cubic-bezier (`cubic-bezier(0.16, 1, 0.3, 1)`), giving newly rendered incoming and outgoing bubbles an authoritative, fluid entrance.
+- [x] **Analytical Cyan Highlight Pulse**: Added `@keyframes messageHighlightPulse` and `.animate-message-highlight` with a subtle Analytical Sky Blue border and background glow for 1.8s, drawing clear visual focus to incoming peer updates without distracting users.
+- [x] **Sticky Bottom-Most Scroll Anchoring**: Implemented an active multi-frame scroll anchor using `requestAnimationFrame` and a container `ResizeObserver` in `MessageThread.tsx`. When opening any conversation, the thread reliably locks to the very latest message regardless of asynchronous font, profile badge, or image layout shifts.
+- [x] **Floating "New Message" Jump Pill**: Built a floating bottom pill (`unreadBelowCount`) that appears if a peer sends a message while the user is scrolled up reading earlier notes. Shows a sleek Tabler arrow down icon, the unread count, and smoothly scrolls to the bottom on a single click.
+
+### Task 6.14 — Platform-Wide Real-Time In-App Notification Engine Expansion
+- [x] **Universal Event Bus Expansion**: Extended `dispatchRealtimeNotification` in `src/features/notifications/dispatcher.ts` with new event types (`DELIVERABLE_UPDATE`, `REVISION_REQUEST`, `DISPUTE`) and multi-role recipient resolution across all 6 roles (`CLIENT`, `STATISTICIAN`, `SENIOR_QA_LEAD`, `ADMIN`, `FINANCE_OFFICER`, and `CEO`).
+- [x] **Deliverable Upload & Release Hooks**: Integrated real-time alerts into `uploadDeliverable` and `releaseDeliverables` in `src/features/deliverables/actions.ts`. When final outputs are released, the client, QA lead, admin, and finance officer receive instantaneous in-app alerts with direct links to the deliverables desk.
+- [x] **Client Revision Request & Warranty Classification**: Connected `submitClientRevision` and `classifyRevision` in `src/features/deliverables/actions.ts`. New revision requests instantly notify the admin and lead statistician; admin classification decisions immediately notify the client with next steps.
+- [x] **Academic Dispute & Executive Ruling Triggers**: Connected `submitDisputeAction` and `resolveDisputeAction` in `src/features/disputes/actions.ts`. Claim submissions instantly alert admin, finance, and CEO; executive rulings immediately alert the client with refund or closure details.
+- [x] **Dataset & Input File Modifications**: Configured `addProjectFile` in `src/features/projects/actions.ts` with `excludeUserId` to alert staff when a client uploads study materials without creating self-alert echo loops.
+- [x] **Event-Aware Action Routing in Notification Drawer**: Updated `NotificationDrawer.tsx` with dedicated category badges (Emerald for deliverables, Amber for revisions, Sky for chat/intake, Crimson for disputes) and smart action button labels (`View Deliverables →`, `Review Revisions →`, `View Dispute →`).
+
 ---
+
 
 ## 🔒 Verification & Quality Gate Checklist
 Before marking any task complete:

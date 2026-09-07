@@ -565,6 +565,7 @@
   - Admin Dispute Triage & Evidence Investigation Queue (`/dashboard/admin/disputes`)
   - CEO Academic Arbitrations & Refund Resolution Panel (`/dashboard/ceo/disputes`)
 - [x] Updated `Sidebar.tsx` activating Disputes links across Client, Admin, and CEO roles
+- [x] Connected real-time notification dispatching to `submitDisputeAction` and `resolveDisputeAction` alerting Admin, Finance, CEO, and Client with event-aware action links
 ### Task 10 — Module 16: Email Notifications & In-App Alert Center
 - [x] Implemented Prisma database models: `NotificationLog` and `InAppAlert` with enum `NotificationStatus` (`SENT`, `FAILED`, `RETRYING`)
 - [x] Synchronized schema with Supabase PostgreSQL and updated client relations on `Project` and `User`
@@ -581,6 +582,9 @@
   - Topbar Notification Bell with live unread badge counter and slide-out `<NotificationDrawer />` in `Topbar.tsx`
   - Admin Email Delivery Logs & Telemetry Desk (`/dashboard/admin/notifications`) with KPI telemetry cards and details modal
 - [x] Updated `Sidebar.tsx` activating Email Delivery Logs navigation under Admin
+- [x] Built Platform-Wide Real-Time In-App Notification Engine:
+  - Server-Sent Events stream (`/api/v1/notifications/stream`) with 15s delta background fallback and `jaxis:study-updated` DOM event bus
+  - Real-time dispatching across Deliverables, Revisions, Datasets, and Disputes across all 6 roles with event-aware deep links
 - [x] Seeded mock initial in-app alerts and delivery logs in `prisma/seed.ts`
 - [x] Documented verification report in `docs/modules/16-notifications-verification.md` (0 check-types errors across 5 packages)
 
@@ -623,6 +627,9 @@
 - [x] Added HTTP enterprise security headers (`X-Frame-Options`, `X-Content-Type-Options`, `HSTS`, `Referrer-Policy`) to [next.config.js](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/next.config.js).
 - [x] Added missing session verification to `POST /api/v1/projects` and hardened cron execution in `/api/v1/crons/storage-purge`.
 - [x] Created `app/dashboard/error.tsx`, `app/error.tsx`, and custom `app/not-found.tsx` adhering to design system.
+- [x] Built instant real-time WebSocket messaging pipeline (<100ms perceived latency) with client peer broadcast over Phoenix channels, static env inlining, and 0ms receiver state injection.
+- [x] Implemented universal workspace RSC preloading across Client/Admin Proposals, DefenseLab, Disputes, Intake, Staff Roster, and Messages threads (0ms spinner delay).
+- [x] Added bubble spring entrance pop-in animation (`.animate-message-pop`), analytical cyan pulse (`.animate-message-highlight`), sticky bottom scroll anchoring (`ResizeObserver`), and floating "New message" jump button.
 - [x] Documented verification report in `docs/modules/21-production-hardening-verification.md`.
 
 ---

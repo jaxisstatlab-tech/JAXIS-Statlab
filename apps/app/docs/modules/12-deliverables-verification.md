@@ -147,6 +147,11 @@ model RevisionRequest {
 1. Administrator opens `/dashboard/admin/revisions` and selects **Triage & Classify**.
 2. Administrator chooses **Included Revision** (routes back to Lead Statistician), **Methodology Change** (prompts supplemental SOW), or **New Paid Scope** (prompts supplemental quote), enters triage notes, and saves.
 
+### 4.5 Real-Time Notifications & Cross-Desk Sync
+1. **Deliverable Upload & Release**: `uploadDeliverable` and `releaseDeliverables` in `src/features/deliverables/actions.ts` invoke `dispatchRealtimeNotification` with event type `DELIVERABLE_UPDATE`. Instantly delivers in-app alerts to Client, Admin, Senior QA Lead, and Finance Officer with direct action links to `/dashboard/client/projects/[id]/deliverables`.
+2. **Client Revision Requests**: `submitClientRevision` triggers real-time alerts to Admin and assigned Statistician (`REVISION_REQUEST`), opening directly to `/dashboard/admin/revisions`.
+3. **Warranty Classification**: `classifyRevision` triggers real-time alerts to the Client with explicit next steps and updates the project state across active client browser tabs via the `jaxis:study-updated` DOM event.
+
 ---
 
 ## 5. Quality Gate Summary

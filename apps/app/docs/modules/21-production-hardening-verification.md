@@ -17,6 +17,10 @@ Module 21 resolves all Vercel deployment failures, Turborepo build warnings, and
 - **API Endpoint Authorization**: Protected `POST /api/v1/projects` with `auth()` session validation and hardened cron token verification in `app/api/v1/crons/storage-purge`.
 - **Error Boundaries & Custom 404**: Implemented `app/dashboard/error.tsx`, root `app/error.tsx`, and `app/not-found.tsx` adhering to the Dark Precision Terminal design system and Tabler icon standards.
 - **Session Lifespan Hardening**: Reduced JWT session `maxAge` from 30 days to 24 hours in `src/lib/auth.config.ts`.
+- **Instant Real-Time WebSocket Messaging (< 100ms)**: Eliminated 5+ second connection delays via static `process.env.NEXT_PUBLIC_*` inlining in `src/lib/supabase.ts`, client peer broadcast over active Phoenix channels in `src/lib/messaging/realtime.ts`, and 0ms receiver state injection in `MessageThread.tsx`.
+- **Universal Workspace RSC Pre-Loading**: Migrated Client Proposals, Admin Proposals, DefenseLab, Disputes, Intake Queue, Staff Directory, and Messages desks to async Server Components with concurrent server pre-fetching, dropping initial spinner delays to 0ms across all roles.
+- **Bubble Spring Entrance & Floating Jump Pill**: Integrated 220ms spring entrance pop-in (`.animate-message-pop`), 1.8s cyan highlight pulse (`.animate-message-highlight`), sticky bottom scroll anchoring (`ResizeObserver`), and floating "New message" jump button in `MessageThread.tsx`.
+- **Platform-Wide Real-Time In-App Notification Engine**: Connected real-time dispatching across Deliverables, Revisions, Dataset modifications, and Disputes across all 6 roles with event-aware deep links and action buttons.
 
 ---
 

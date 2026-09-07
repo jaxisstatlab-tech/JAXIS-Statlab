@@ -49,6 +49,12 @@ Module 09 implements the secure, project-scoped real-time communication consulta
    - Tapping any study switches directly to a full-screen Chat Desk with a 1-tap `< Back` header button.
    - Desktop devices (`>= lg` breakpoint) render the unified 2-column desk.
 
+6. **Bubble Entrance Animation, Sticky Scroll Anchoring & Floating Jump Pill (`MSG-F12`, `MSG-F13`)**:
+   - **Spring Entrance Pop-In**: Added `.animate-message-pop` (220ms spring bezier `cubic-bezier(0.16, 1, 0.3, 1)`) to newly painted chat bubbles in `MessageBubble.tsx`.
+   - **Analytical Cyan Highlight Pulse**: Incoming peer messages trigger `.animate-message-highlight` for 1.8s, casting a subtle Analytical Sky Blue border and substrate tint to draw immediate focal attention without jarring the user.
+   - **Sticky Bottom-Most Scroll Anchoring**: Implemented `ResizeObserver` and multi-frame `requestAnimationFrame` scrolls in `MessageThread.tsx`, guaranteeing threads open pinned to the bottom-most message regardless of asynchronous fonts, role badges, or profile image layout shifts.
+   - **Floating "New Message" Jump Pill**: Built a floating bottom pill tracking `unreadBelowCount` when users read earlier messages. Features a sleek Tabler arrow icon, unread count badge, and smooth 1-click bottom scrolling.
+
 ---
 
 ## 2. Quality Gates & Verification Checklist

@@ -28,6 +28,8 @@
 | `NTF-F06` | **React Email templates** — Server-side rendering; JAXIS brand colors; Disket Mono for heading |
 | `NTF-F07` | **Internal send endpoint** — `POST /api/v1/notifications/send` is server-only; not publicly accessible |
 | `NTF-F08` | **Unread alert badge** — In-app alert badge count visible in topbar for roles with pending internal events |
+| `NTF-F09` | **Real-Time Lifecycle Push & In-App Dispatch** — Real-time event streaming (`/api/v1/notifications/stream`) connecting Deliverables, Revisions, Datasets, and Disputes across all 6 roles (`CLIENT`, `STATISTICIAN`, `SENIOR_QA_LEAD`, `ADMIN`, `FINANCE_OFFICER`, and `CEO`) |
+| `NTF-F10` | **Event-Aware Multi-Role Deep Linking** — In-app alerts resolve to role-specific target paths with customized action buttons (`View Deliverables →`, `Review Revisions →`, `View Dispute →`) |
 
 ### ❌ Explicitly Out of Scope
 
@@ -63,17 +65,24 @@ All templates are React Email components in `src/lib/email/templates/`.
 
 ---
 
-## 4. Internal In-App Alerts (Not Email)
+## 4. Real-Time In-App Alerts & Multi-Role Notification Engine
 
-| Event | Desk | Alert Type |
-|---|---|---|
-| New intake received | Admin | Badge count on intake queue nav item |
-| QA submission ready | Senior QA Lead | Badge count on QA queue nav item |
-| 24-hour pre-deadline warning | Admin | Banner on Admin home + badge on assignments nav |
-| Ethical breach escalation | CEO | Red banner on CEO home + badge on escalations nav |
-| Blocked message detected | Admin | Badge count on blocked-messages nav item |
-| Expert suspension triggers reassignment | Admin | Banner alert on assignments nav |
-| QA rejection count ≥ 2 | Admin | Warning badge on expert roster |
+All operational lifecycle transitions dispatch real-time in-app alerts across connected browser sessions via Server-Sent Events (`/api/v1/notifications/stream`) with a 15-second background delta fallback.
+
+| Event Type | Typical Trigger | Target Desks & Recipients | Link Destination |
+|---|---|---|---|
+| `NEW_INTAKE` | Client submits research study intake | Admin, CEO, Client | `/dashboard/admin/projects/[id]`, `/dashboard/client` |
+| `INPUT_UPDATE` | Admin requests missing info / Client uploads datasets | Client, Admin, Statistician, QA Lead | Study Workspace / Input files tab |
+| `COMMERCIAL_UPDATE` | Quotation issued, accepted/declined, or SOW signed | Client, Admin, Finance Officer | Proposal / SOW desk |
+| `PAYMENT_UPDATE` | Client submits receipt / Finance verifies or rejects | Finance Officer, Admin, Client | `/dashboard/finance/payments`, Payment portal |
+| `ASSIGNMENT` | Admin assigns Statistician and QA Lead | Statistician, Senior QA Lead, Client, Admin | Workbench, QA Desk, Client Desk |
+| `OUTPUT_UPDATE` | Statistician uploads analysis outputs / scripts | Senior QA Lead, Admin | QA file review queue |
+| `QA_DECISION` | Study submitted for QA / QA Approved / QA Rejected | Senior QA Lead, Statistician, Admin, Client | QA Queue / Statistician Workbench |
+| `QA_DECISION` (Escalation) | QA flags ethical/academic misconduct | Admin, CEO, Statistician | `/dashboard/ceo/escalations` |
+| `DELIVERABLE_UPDATE` | Final files uploaded or released to client | Client, Admin, Senior QA Lead, Finance | `/dashboard/client/projects/[id]/deliverables` |
+| `REVISION_REQUEST` | Client requests revisions / Admin classifies warranty | Admin, Statistician, Client | Revision Triage Queue / Workbench |
+| `DISPUTE` | Academic dispute filed or executive ruling issued | Admin, Finance Officer, CEO, Client | `/dashboard/admin/disputes`, `/dashboard/ceo/disputes` |
+| `SYSTEM_ALERT` | Storage quota limit warning / Purge recommendation | Admin, CEO | `/dashboard/ceo/retention` |
 
 ---
 
@@ -229,6 +238,8 @@ const seedAlerts = [
 - [x] **In-App Notification Center:** Real-time topbar notification badge and drawer displaying internal action items, status transitions, and unread alerts.
 - [x] **Email Delivery Audit & Retries:** All outbound notifications tracked in `NotificationLog` with status, timestamp, and automatic 3-attempt exponential retry on failure.
 - [x] **Internal Event Masking:** Sensitive internal operational events (QA rejections, ethical breaches, firewall triggers) are strictly confined to in-app alerts and never sent to clients.
+- [x] **Platform-Wide Real-Time In-App Dispatch:** Real-time push alerts via Server-Sent Events connecting final deliverables, revisions, dataset uploads, and disputes across all 6 roles.
+- [x] **Event-Aware Deep-Linking Engine:** Contextual notification navigation links pointing directly to the exact work desk with tailored action buttons.
 
 
 ## 10. Acceptance Criteria (Done Checklist)
@@ -243,7 +254,7 @@ const seedAlerts = [
 - [x] Failed sends retried up to 3 times with exponential backoff (500ms, 1000ms)
 - [x] After 3 failed attempts → status `FAILED` (no further retries); Admin can see in log
 
-### In-App Alerts
+### In-App Alerts & Real-Time Engine
 - [x] New intake creates an in-app alert for Admin
 - [x] QA approval creates an in-app alert for Admin
 - [x] 24-hour deadline alert creates in-app alert for Admin
@@ -251,6 +262,10 @@ const seedAlerts = [
 - [x] Blocked message creates in-app alert for Admin
 - [x] Alert badge count in topbar reflects unread count
 - [x] Marking alert as read → badge count decrements
+- [x] Deliverable upload & release dispatches real-time alert to Client, Admin, QA Lead, and Finance Officer
+- [x] Revision request dispatches real-time alert to Admin and Statistician; classification alerts Client
+- [x] Dispute filing dispatches real-time alert to Admin, Finance Officer, and CEO; resolution alerts Client
+- [x] Dataset modification alerts staff while excluding the uploading user to prevent self-alert loops
 
 ### Event Coverage
 - [x] SOW generated → SOWReady email sent to Client

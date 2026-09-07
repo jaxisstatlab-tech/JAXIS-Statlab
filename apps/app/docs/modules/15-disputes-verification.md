@@ -21,6 +21,8 @@
 | `DSP-F09` | **Resolution Dossier & Audit Notes** | ✅ Verified | Documented reasoning preserved in `resolutionNotes`, `resolvedBy`, `resolvedAt`. |
 | `DSP-F10` | **Client Dispute & Window Tracker Desk** | ✅ Verified | Built at `/dashboard/client/disputes` with live countdown, claim filing modal, and arbitration history. |
 | `DSP-F11` | **CEO Academic Arbitration Panel** | ✅ Verified | Built at `/dashboard/ceo/disputes` with SOW deliverables comparison, evidence viewer, and executive ruling modal. |
+| `DSP-F12` | **Active Dispute Navigation & Desk Linking** | ✅ Verified | Deep links activated in `Sidebar.tsx` and study detail toolbars across Client, Admin, and CEO roles. |
+| `DSP-F13` | **Real-Time Arbitration Alerts Engine** | ✅ Verified | `dispatchRealtimeNotification` hooked into `submitDisputeAction` and `resolveDisputeAction`, alerting Admin, Finance, CEO, and Client with contextual action buttons. |
 
 ---
 

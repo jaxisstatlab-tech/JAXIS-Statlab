@@ -32,6 +32,7 @@
 | `DSP-F10` | **Resolution notes** — CEO documents resolution rationale |
 | `DSP-F11` | **Admin dispute queue** — All disputes: open, under review, resolved |
 | `DSP-F12` | **CEO authority panel** — CEO sees all disputes and can execute any resolution action |
+| `DSP-F13` | **Real-time dispute notification triggers** — Dispatches high-priority in-app alerts on dispute submission (`submitDisputeAction`) and CEO executive resolution (`resolveDisputeAction`) to Admin, Finance Officer, CEO, and Client |
 
 ### ❌ Explicitly Out of Scope
 
@@ -224,6 +225,7 @@ const seedDisputeResolved = {
 - [x] **CEO Refund Authority (RULE_ROL_01):** Exclusive ruling desk for CEO to issue `RESOLVED_REFUND` (full refund or SLA upgrade only) or `RESOLVED_NO_REFUND` with documented rationale.
 - [x] **Chargeback & Payout Freeze:** Chargebacks immediately freeze project state (`HALTED`) and lock related expert payouts pending arbitration.
 - [x] **SLA Failure Add-On Refund:** Automated handling of turnaround breach claims refunding rush fee add-ons without canceling core package deliverables.
+- [x] **Real-Time Arbitration Alerts:** Instant in-app alerts dispatched across Admin, Finance, CEO, and Client upon claim submission and executive resolution.
 
 
 ## 9. Acceptance Criteria (Done Checklist)
@@ -235,6 +237,7 @@ const seedDisputeResolved = {
 - [x] Evidence files upload correctly
 - [x] `project.hasActiveDispute = true` set on submission
 - [x] `disputeWindowExpiresAt` = `deliveredAt + 7 days`
+- [x] Dispute submission dispatches real-time in-app alerts to Admin, Finance Officer, and CEO
 
 ### Admin Actions
 - [x] Admin can move dispute to `UNDER_REVIEW`
@@ -245,6 +248,7 @@ const seedDisputeResolved = {
 - [x] CEO resolves `RESOLVED_REFUND` with resolution type and notes
 - [x] CEO resolves `RESOLVED_NO_REFUND` → project → `CLOSED`; payout unblocked
 - [x] SLA breach resolution → only add-on fee computed as refund
+- [x] Executive resolution dispatches real-time in-app alert to Client with resolution details and next steps
 
 ### Payout Impact
 - [x] Active dispute → payout disbursement blocked (RULE_PAY_01 gate returns 403)

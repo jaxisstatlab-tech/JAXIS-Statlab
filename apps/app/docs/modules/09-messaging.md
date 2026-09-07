@@ -32,6 +32,8 @@
 | `MSG-F09` | **Real-time delivery** — Supabase Realtime WebSocket channel per project (`project:{projectId}`); client subscribes via `supabase-js`; server broadcasts on new message via Supabase REST API. TanStack Query polling (5s interval) as dev fallback. |
 | `MSG-F10` | **Admin can message** — Admin can send messages in any project thread (oversight) |
 | `MSG-F11` | **Read receipts** — `readAt` timestamp per message per recipient (for new message notification in Module 16) |
+| `MSG-F12` | **Message entrance pop-in animation & highlight pulse** — Newly received or sent bubbles render with `.animate-message-pop` (220ms spring entrance) and peer incoming bubbles trigger a 1.8s Analytical Sky Blue highlight pulse (`.animate-message-highlight`) |
+| `MSG-F13` | **Sticky bottom scrolling & floating jump pill** — Multi-frame scroll anchoring via `ResizeObserver` locks viewport to the bottom on thread entry; a floating bottom pill (`unreadBelowCount`) appears when unread messages arrive while scrolled up |
 
 ### ❌ Explicitly Out of Scope
 
@@ -209,6 +211,9 @@ export async function broadcastProjectMessage(projectId: string, message: Messag
 4. **Redundant REST Server Broadcast**: The server also dispatches an HTTP POST to `https://<ref>.supabase.co/realtime/v1/api/broadcast` as a redundant push.
 5. **Immediate State Injection**: Receiving peer browser receives the broadcast frame, deduplicates by ID, dynamically computes `isMine`, and immediately appends to messages state without waiting for a database roundtrip.
 6. **2-Second Adaptive Polling Safety Net**: Fallback polling catches any missed frames if WebSockets temporarily disconnect.
+7. **Spring Pop-In & Analytical Highlight Pulse**: Newly mounted bubbles scale in via `.animate-message-pop` (220ms spring cubic-bezier). New incoming peer messages trigger `.animate-message-highlight`, pulsing a Sky Blue outline and substrate tint for 1.8s.
+8. **Sticky Bottom-Most Scroll Anchoring**: Container `ResizeObserver` and multi-frame `requestAnimationFrame` scrolls lock the thread to the latest message on study open, eliminating race conditions with late-rendering fonts or badges.
+9. **Floating Jump Indicator**: When scrolled up, incoming peer messages increment `unreadBelowCount`, displaying a floating pill with a down arrow that smoothly jumps to the bottom on click.
 
 | Page | Route | Role | Description |
 |---|---|---|---|
@@ -257,6 +262,8 @@ const seedMessages = [
 - [x] **Read Receipts & Participant Badges:** Messages clearly display sender role badges (`CLIENT`, `STATISTICIAN`, `QA`, `ADMIN`) and track recipient `readAt` timestamps.
 - [x] **WhatsApp/Telegram Architecture & Reverse Pagination:** 15-message chunking on initial load, automatic scroll-up pagination with scroll position preservation, optimistic UI send, and zero parent window scrolling.
 - [x] **Responsive Mobile Master-Detail UX:** Seamless full-width studies list with single-tap transition into full-height chat desk and one-tap `< Back` header button.
+- [x] **Smooth Bubble Pop-In & Highlight Pulse:** Instant spring entrance animation on new messages and gentle cyan highlight on incoming peer notes.
+- [x] **Sticky Bottom Scroll & Unread Jump Indicator:** Reliable bottom-most scroll anchoring on study load and floating jump button when reading earlier notes.
 
 
 ## 8. Acceptance Criteria (Done Checklist)
@@ -267,6 +274,11 @@ const seedMessages = [
 - [x] Admin can send a message in any project thread
 - [x] Messages display sender role label (Client / Statistician / Admin)
 - [x] Thread is empty state when no messages exist
+- [x] New messages pop in with `.animate-message-pop` (220ms spring)
+- [x] Incoming peer message highlights with `.animate-message-highlight` (1.8s cyan pulse)
+- [x] Opening/loading a study locks scroll position to the bottom-most message
+- [x] Receiving messages while scrolled up shows floating "New message" jump button
+- [x] Clicking jump button smoothly scrolls thread to the bottom and dismisses pill
 
 ### Firewall
 - [x] Message with email address → blocked; `is_blocked = true`; recipient sees nothing

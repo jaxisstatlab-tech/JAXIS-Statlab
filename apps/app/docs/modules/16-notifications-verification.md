@@ -17,6 +17,9 @@
 | `NTF-F05` | **Exponential Backoff Retries** | ✅ Verified | Failed deliveries automatically retried up to 3 times (500ms, 1000ms backoff) plus manual admin re-send capability. |
 | `NTF-F06` | **Internal Event Masking** | ✅ Verified | QA rejections, ethical breaches, and firewall triggers are strictly confined to internal in-app alerts and never emailed to clients. |
 | `NTF-F07` | **Dynamic Topbar Bell Badge** | ✅ Verified | Displays real-time unread alert count with auto-refresh every 30s. |
+| `NTF-F08` | **SSE Stream & Cross-Tab Sync** | ✅ Verified | Low-latency Server-Sent Events stream (`/api/v1/notifications/stream`) with 15s delta background fallback and `jaxis:study-updated` DOM event bus. |
+| `NTF-F09` | **Platform-Wide Real-Time In-App Dispatch** | ✅ Verified | `dispatchRealtimeNotification` in `dispatcher.ts` sending real-time in-app alerts on Deliverables, Revisions, Datasets, and Disputes across all 6 roles. |
+| `NTF-F10` | **Event-Aware Deep-Linking Engine** | ✅ Verified | Custom deep links and tailored action buttons (`View Deliverables →`, `Review Revisions →`, `View Dispute →`) with role-scoped destination routing. |
 
 ---
 
