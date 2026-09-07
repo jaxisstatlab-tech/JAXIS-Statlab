@@ -1325,6 +1325,7 @@ export async function addProjectFile(
         message: `File "${fileData.fileName}" (${fileData.fileCategory.replace(/_/g, " ")}) uploaded to study ${project.intakeId}.`,
         targetRoles: ["ADMIN"],
         includeProjectParties: true,
+        excludeUserId: session.user.id,
       });
     } catch (e) {
       console.warn("[addProjectFile] Realtime notification warning:", e);
@@ -1375,6 +1376,7 @@ export async function addProjectFile(
         message: `File "${fileData.fileName}" (${fileData.fileCategory.replace(/_/g, " ")}) uploaded to study ${devProjects[pIndex]!.intakeId}.`,
         targetRoles: ["ADMIN"],
         includeProjectParties: true,
+        excludeUserId: session.user.id,
       });
     } catch {
       // Ignore

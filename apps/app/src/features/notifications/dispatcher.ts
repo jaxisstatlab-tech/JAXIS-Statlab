@@ -12,6 +12,9 @@ export type NotificationEventType =
   | "ASSIGNMENT"
   | "COMMERCIAL_UPDATE"
   | "PAYMENT_UPDATE"
+  | "DELIVERABLE_UPDATE"
+  | "REVISION_REQUEST"
+  | "DISPUTE"
   | "DATA_PURGE"
   | "SYSTEM_ALERT";
 
@@ -29,10 +32,67 @@ export interface DispatchRealtimeNotificationOptions {
 }
 
 /**
- * Maps standard route targets according to user role
+ * Maps standard route targets according to user role and event type
  */
-function getRoleSpecificLink(role: RoleName, projectId?: string, defaultUrl?: string): string {
+function getRoleSpecificLink(
+  role: RoleName,
+  projectId?: string,
+  defaultUrl?: string,
+  eventType?: NotificationEventType
+): string {
   if (defaultUrl) return defaultUrl;
+
+  if (eventType === "DISPUTE") {
+    switch (role) {
+      case "CLIENT":
+        return "/dashboard/client/disputes";
+      case "ADMIN":
+        return "/dashboard/admin/disputes";
+      case "FINANCE_OFFICER":
+        return "/dashboard/finance/disputes";
+      case "CEO":
+        return "/dashboard/ceo/disputes";
+      case "STATISTICIAN":
+        return projectId ? `/dashboard/statistician/projects/${projectId}` : "/dashboard/statistician";
+      default:
+        return "/dashboard";
+    }
+  }
+
+  if (eventType === "DELIVERABLE_UPDATE" && projectId) {
+    switch (role) {
+      case "CLIENT":
+        return `/dashboard/client/projects/${projectId}/deliverables`;
+      case "STATISTICIAN":
+        return `/dashboard/statistician/projects/${projectId}/workbench`;
+      case "SENIOR_QA_LEAD":
+        return `/dashboard/qa/projects/${projectId}/files`;
+      case "ADMIN":
+        return `/dashboard/admin/projects/${projectId}/deliverables`;
+      case "FINANCE_OFFICER":
+        return "/dashboard/finance";
+      case "CEO":
+        return "/dashboard/ceo";
+      default:
+        return "/dashboard";
+    }
+  }
+
+  if (eventType === "REVISION_REQUEST" && projectId) {
+    switch (role) {
+      case "CLIENT":
+        return `/dashboard/client/projects/${projectId}/revision`;
+      case "STATISTICIAN":
+        return `/dashboard/statistician/projects/${projectId}/workbench`;
+      case "SENIOR_QA_LEAD":
+        return `/dashboard/qa/projects/${projectId}`;
+      case "ADMIN":
+        return `/dashboard/admin/projects/${projectId}/deliverables`;
+      default:
+        return "/dashboard";
+    }
+  }
+
   if (!projectId) {
     switch (role) {
       case "CLIENT":
@@ -247,7 +307,7 @@ export async function dispatchRealtimeNotification(
 
     // 4. Persist in database & broadcast across SSE stream
     for (const recipient of Array.from(recipientsMap.values())) {
-      const targetLink = getRoleSpecificLink(recipient.role, projectId, linkUrl);
+      const targetLink = getRoleSpecificLink(recipient.role, projectId, linkUrl, eventType);
 
       let alertRecordId = `alert_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
       try {

@@ -2,6 +2,7 @@
 
 import { db, withDbTimeout } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import {
   assertDisputeWindowOpen,
   computeSLABreachRefund,
@@ -260,6 +261,26 @@ export async function submitDisputeAction(rawInput: SubmitDisputeInput): Promise
     revalidatePath("/dashboard/admin/disputes");
     revalidatePath("/dashboard/ceo/disputes");
     revalidatePath("/dashboard/finance/payouts");
+
+    try {
+      const proj = await db.project.findUnique({
+        where: { id: projectId },
+        select: { intakeId: true, researchTitle: true },
+      });
+
+      await dispatchRealtimeNotification({
+        eventType: "DISPUTE",
+        projectId,
+        intakeId: proj?.intakeId || undefined,
+        title: "Dispute Submitted",
+        message: `Client submitted an academic dispute on study ${proj?.intakeId || ""} (${grounds.replace(/_/g, " ")}): "${description.slice(0, 100)}"`,
+        targetRoles: ["ADMIN", "FINANCE_OFFICER", "CEO"],
+        includeProjectParties: true,
+        excludeUserId: user.id,
+      });
+    } catch (notifyErr) {
+      console.warn("[submitDisputeAction] Realtime notification warning:", notifyErr);
+    }
 
     return { success: true, data: { disputeId: dispute.id } };
   } catch (err: unknown) {
@@ -631,6 +652,26 @@ export async function resolveDisputeAction(rawInput: ResolveDisputeInput): Promi
     revalidatePath("/dashboard/ceo/disputes");
     revalidatePath("/dashboard/finance/payouts");
     revalidatePath("/dashboard/client/disputes");
+
+    try {
+      const proj = await db.project.findUnique({
+        where: { id: dispute.projectId },
+        select: { intakeId: true, researchTitle: true },
+      });
+
+      await dispatchRealtimeNotification({
+        eventType: "DISPUTE",
+        projectId: dispute.projectId,
+        intakeId: proj?.intakeId || undefined,
+        title: "Dispute Ruling Issued",
+        message: `Executive ruling issued on study ${proj?.intakeId || ""}: ${resolutionType.replace(/_/g, " ")}. "${resolutionNotes?.slice(0, 100) || ""}"`,
+        targetRoles: ["ADMIN", "FINANCE_OFFICER"],
+        includeProjectParties: true,
+        excludeUserId: user.id,
+      });
+    } catch (notifyErr) {
+      console.warn("[resolveDisputeAction] Realtime notification warning:", notifyErr);
+    }
 
     return { success: true };
   } catch (err: unknown) {

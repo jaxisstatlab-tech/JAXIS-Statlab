@@ -26,6 +26,8 @@ import {
   IconCreditCard,
   IconReceipt2,
   IconUserCheck,
+  IconPackage,
+  IconRefresh,
 } from "@tabler/icons-react";
 
 type NotificationState = {
@@ -327,6 +329,10 @@ export function NotificationDrawer() {
       case "QA_DECISION":
       case "QA_SUBMISSION":
         return <IconShieldCheck size={16} className="text-emerald-400" />;
+      case "DELIVERABLE_UPDATE":
+        return <IconPackage size={16} className="text-emerald-400" />;
+      case "REVISION_REQUEST":
+        return <IconRefresh size={16} className="text-amber-400" />;
       case "PRE_DEADLINE":
         return <IconClock size={16} className="text-amber-400" />;
       case "ETHICAL_BREACH":
@@ -336,6 +342,22 @@ export function NotificationDrawer() {
         return <IconGavel size={16} className="text-[#CC6600]" />;
       default:
         return <IconFileText size={16} className="text-white/60" />;
+    }
+  };
+
+  const getActionLabel = (type: string) => {
+    switch (type) {
+      case "DELIVERABLE_UPDATE":
+        return "View Deliverables";
+      case "REVISION_REQUEST":
+        return "Review Revisions";
+      case "DISPUTE":
+      case "CLAIM_FILED":
+        return "View Dispute";
+      case "PAYMENT_UPDATE":
+        return "View Payment";
+      default:
+        return "Open Workspace";
     }
   };
 
@@ -537,7 +559,7 @@ export function NotificationDrawer() {
                         }}
                         className="inline-flex items-center gap-1 text-[0.688rem] text-white/70 hover:text-white font-medium transition-colors cursor-pointer group/link hover:underline"
                       >
-                        <span>Open Workspace</span>
+                        <span>{getActionLabel(alert.alertType)}</span>
                         <IconArrowRight
                           size={12}
                           className="transition-transform group-hover/link:translate-x-0.5"

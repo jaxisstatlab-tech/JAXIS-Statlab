@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import {
   assertReleaseEligibility,
   computePurgeDeadline,
@@ -209,6 +210,27 @@ export async function uploadDeliverable(rawInput: UploadDeliverableInput): Promi
 
   revalidatePath(`/dashboard/admin/projects/${input.projectId}/deliverables`);
   revalidatePath(`/dashboard/client/projects/${input.projectId}/deliverables`);
+
+  try {
+    const project = await db.project.findUnique({
+      where: { id: input.projectId },
+      select: { intakeId: true, researchTitle: true },
+    });
+
+    await dispatchRealtimeNotification({
+      eventType: "DELIVERABLE_UPDATE",
+      projectId: input.projectId,
+      intakeId: project?.intakeId || undefined,
+      title: "Deliverable Uploaded",
+      message: `${deliverable.uploader?.fullName || "A staff member"} uploaded deliverable "${deliverable.fileName}" to study ${project?.intakeId || ""}.`,
+      targetRoles: ["ADMIN", "SENIOR_QA_LEAD"],
+      includeProjectParties: true,
+      excludeUserId: session.user.id,
+    });
+  } catch (notifyErr) {
+    console.warn("[uploadDeliverable] Realtime notification warning:", notifyErr);
+  }
+
   return toDeliverableDTO(deliverable);
 }
 
@@ -308,6 +330,26 @@ export async function releaseDeliverables(rawInput: ReleaseDeliverablesInput): P
   revalidatePath(`/dashboard/client/projects/${input.projectId}`);
   revalidatePath(`/dashboard/client/projects`);
   revalidatePath(`/dashboard/admin/projects`);
+
+  try {
+    const project = await db.project.findUnique({
+      where: { id: input.projectId },
+      select: { intakeId: true, researchTitle: true },
+    });
+
+    await dispatchRealtimeNotification({
+      eventType: "DELIVERABLE_UPDATE",
+      projectId: input.projectId,
+      intakeId: project?.intakeId || undefined,
+      title: "Deliverables Released",
+      message: `Final deliverables for study ${project?.intakeId || ""} ("${project?.researchTitle || "Research Study"}") have been officially released and are ready for download.`,
+      targetRoles: ["FINANCE_OFFICER", "ADMIN"],
+      includeProjectParties: true,
+      excludeUserId: session.user.id,
+    });
+  } catch (notifyErr) {
+    console.warn("[releaseDeliverables] Realtime notification warning:", notifyErr);
+  }
 
   return {
     success: true,
@@ -608,6 +650,21 @@ export async function submitClientRevision(rawInput: SubmitRevisionRequestInput)
   revalidatePath(`/dashboard/client/projects/${input.projectId}`);
   revalidatePath(`/dashboard/admin/revisions`);
 
+  try {
+    await dispatchRealtimeNotification({
+      eventType: "REVISION_REQUEST",
+      projectId: input.projectId,
+      intakeId: project.intakeId,
+      title: "Revision Requested",
+      message: `Client ${session.user.name || "Client"} requested revisions on study ${project.intakeId}: "${input.description.slice(0, 100)}"`,
+      targetRoles: ["ADMIN"],
+      includeProjectParties: true,
+      excludeUserId: session.user.id,
+    });
+  } catch (notifyErr) {
+    console.warn("[submitClientRevision] Realtime notification warning:", notifyErr);
+  }
+
   return toRevisionRequestDTO({
     ...revision,
     project: { id: project.id, intakeId: project.intakeId, researchTitle: project.researchTitle },
@@ -715,6 +772,24 @@ export async function classifyRevision(rawInput: ClassifyRevisionInput): Promise
   revalidatePath(`/dashboard/admin/projects/${existing.projectId}/deliverables`);
   revalidatePath(`/dashboard/client/projects/${existing.projectId}/deliverables`);
   revalidatePath(`/dashboard/client/projects/${existing.projectId}`);
+
+  try {
+    const isIncluded = input.classification === "INCLUDED";
+    await dispatchRealtimeNotification({
+      eventType: "REVISION_REQUEST",
+      projectId: existing.projectId,
+      intakeId: existing.project.intakeId,
+      title: isIncluded ? "Revision Approved" : "Supplemental Scope Required",
+      message: isIncluded
+        ? `Revision request for study ${existing.project.intakeId} was approved under warranty and is now in progress.`
+        : `Revision request for study ${existing.project.intakeId} classified as ${input.classification.replace(/_/g, " ")}. Further review or supplemental terms required.`,
+      targetRoles: ["ADMIN"],
+      includeProjectParties: true,
+      excludeUserId: session.user.id,
+    });
+  } catch (notifyErr) {
+    console.warn("[classifyRevision] Realtime notification warning:", notifyErr);
+  }
 
   return toRevisionRequestDTO(updatedRevision);
 }
