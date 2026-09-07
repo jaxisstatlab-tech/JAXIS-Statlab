@@ -98,21 +98,36 @@ export async function registerClient(
       // Ignore audit log failure
     }
 
-    // Also sync to dev user store for fast credentials fallback
-    registerDevUser({
-      id: user.id,
-      email: user.email,
-      fullName: fullName.trim(),
-      role: "CLIENT",
-      password: password,
-      status: "ACTIVE",
-    });
+    // Sync to dev user store for offline / employee QA testing
+    const allowDevLogins = process.env.DISABLE_DEV_LOGINS !== "true";
+    if (allowDevLogins) {
+      registerDevUser({
+        id: user.id,
+        email: user.email,
+        fullName: fullName.trim(),
+        role: "CLIENT",
+        password: password,
+        status: "ACTIVE",
+      });
+    }
 
     return {
       success: true,
       data: user,
     };
   } catch (dbError) {
+    const allowDevLogins = process.env.DISABLE_DEV_LOGINS !== "true";
+    if (!allowDevLogins && process.env.NODE_ENV === "production") {
+      console.error("[Register] Database user creation failed in production:", dbError);
+      return {
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Unable to complete registration at this time. Please try again later.",
+        },
+      };
+    }
+
     console.warn("[Register] DB unavailable in offline mode. Falling back to dev user store.", dbError);
 
     const existingDev = getDevUserByEmail(normalizedEmail);

@@ -12,7 +12,7 @@
 Module 21 resolves all Vercel deployment failures, Turborepo build warnings, and production-readiness security and stability risks across `apps/app`:
 - **Server Action Export Compliance**: Removed invalid non-async-function object exports from `"use server"` files, resolving the Next.js production build error (`A "use server" file can only export async functions, found object`).
 - **Turborepo Environment Isolation (`globalEnv`)**: Declared all 19 platform environment variables in root `turbo.json`, eliminating cache isolation warnings during Vercel builds.
-- **Production Auth Hardening**: Wrapped dev user password check and offline store fallback in `src/lib/auth.ts` with `process.env.NODE_ENV !== "production"` guards, preventing hardcoded dev accounts from authenticating against live production databases.
+- **QA Demo Authentication & Production Isolation Switch**: Preserved 1-click demo role presets (`admin@jaxis.dev`, `ceo@jaxis.dev`, `client@jaxis.dev`, `stat@jaxis.dev`, `qa@jaxis.dev`, `finance@jaxis.dev`) and offline fallback in `src/lib/auth.ts` for internal employee QA testing on deployed builds, with an instant toggle (`DISABLE_DEV_LOGINS="true"`) for when client onboarding commences.
 - **HTTP Security Headers**: Configured HSTS, `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy` in `next.config.js`.
 - **API Endpoint Authorization**: Protected `POST /api/v1/projects` with `auth()` session validation and hardened cron token verification in `app/api/v1/crons/storage-purge`.
 - **Error Boundaries & Custom 404**: Implemented `app/dashboard/error.tsx`, root `app/error.tsx`, and `app/not-found.tsx` adhering to the Dark Precision Terminal design system and Tabler icon standards.
@@ -32,7 +32,7 @@ Module 21 resolves all Vercel deployment failures, Turborepo build warnings, and
 
 ### B. Security Hardening
 - **[`apps/app/src/lib/auth.ts`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/lib/auth.ts)**:
-  - Added `process.env.NODE_ENV !== "production"` guard on dev password matching and offline store fallback.
+  - Enabled demo role credentials and offline fallback for employee QA testing across deployed environments, controllable via `DISABLE_DEV_LOGINS="true"`.
 - **[`apps/app/src/lib/auth.config.ts`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/lib/auth.config.ts)**:
   - Reduced JWT `maxAge` to 24 hours.
 - **[`apps/app/next.config.js`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/next.config.js)**:

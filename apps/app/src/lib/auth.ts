@@ -88,12 +88,11 @@ export const authConfig: NextAuthConfig = {
               isValidPassword = false;
             }
 
-            // Dev password fallback check (only allowed in non-production environments)
-            if (process.env.NODE_ENV !== "production") {
-              const devFallback = getDevUserByEmail(normalizedEmail) || DEV_USERS[normalizedEmail];
-              if (!isValidPassword && devFallback && devFallback.password === password) {
-                isValidPassword = true;
-              }
+            // Dev password fallback check (active for employee QA / testing unless DISABLE_DEV_LOGINS=true)
+            const allowDevLogins = process.env.DISABLE_DEV_LOGINS !== "true";
+            const devFallback = getDevUserByEmail(normalizedEmail) || DEV_USERS[normalizedEmail];
+            if (!isValidPassword && allowDevLogins && devFallback && devFallback.password === password) {
+              isValidPassword = true;
             }
 
             if (!isValidPassword) {
@@ -116,7 +115,7 @@ export const authConfig: NextAuthConfig = {
             }
 
             const primaryRole: RoleName =
-              user.userRoles[0]?.role.name ?? "CLIENT";
+              user.userRoles[0]?.role.name ?? devFallback?.role ?? "CLIENT";
 
             // Fire-and-forget: do not block the user login response on telemetry audit writes
             db.authAuditLog.create({
@@ -144,8 +143,9 @@ export const authConfig: NextAuthConfig = {
           console.warn("[Auth] Live DB unreachable or offline. Checking dev user fallback.", dbError);
         }
 
-        // 2. Development Quick Credentials Fallback (Offline Mode - non-production only)
-        if (process.env.NODE_ENV !== "production") {
+        // 2. Development Quick Credentials Fallback (Offline / Employee QA Testing Mode)
+        const allowDevLogins = process.env.DISABLE_DEV_LOGINS !== "true";
+        if (allowDevLogins) {
           const devUser = getDevUserByEmail(normalizedEmail) || DEV_USERS[normalizedEmail];
           if (devUser) {
             if (devUser.status === "SUSPENDED") {
