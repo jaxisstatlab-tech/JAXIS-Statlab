@@ -25,8 +25,6 @@ import { getProjects } from "@/features/projects/actions";
 import { getQuotationByProject } from "@/features/quotations/actions";
 import { PACKAGES_CATALOG } from "@/lib/pricing-rules";
 import { copyTextToClipboard } from "@/lib/clipboard";
-import type { ProjectDetailItem } from "@/features/projects/schemas";
-import type { QuotationDetailItem } from "@/features/quotations/schemas";
 import type { PackageName } from "@prisma/client";
 import type { ClientQuoteEntry } from "@/features/quotations/schemas";
 
@@ -154,8 +152,8 @@ export function ClientQuotationsClient({
       <div className="flex-1 w-full min-h-full flex items-center justify-center animate-content-fade my-auto font-sans">
         <LoadingState
           variant="page"
-          label="Loading Commercial Proposals..."
-          description="Fetching your customized quotes and packages."
+          label="Loading quotes..."
+          description="Getting your study quotes and pricing."
         />
       </div>
     );
@@ -165,12 +163,12 @@ export function ClientQuotationsClient({
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {/* ── Page Header ── */}
       <PageHeader
-        title="Commercial Quotations & Proposals"
-        description="Inspect itemized analytical proposals, review methodology deliverables, and approve project quotations to commence statistical computation."
+        title="Study Quotes & Proposals"
+        description="Review pricing, package options, and payment terms for your research studies."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "Client Portal", href: "/dashboard/client" },
-          { label: "Commercial Proposals" },
+          { label: "Quotes & Proposals" },
         ]}
       />
 
@@ -180,42 +178,42 @@ export function ClientQuotationsClient({
           label="PENDING REVIEW"
           value={stats.pendingAction}
           variant="amber"
-          badge="ACTION REQUIRED"
+          badge="NEEDS REVIEW"
           badgeColor="amber"
-          description="Awaiting your approval decision"
+          description="Quotes ready for your review"
         />
 
         <KpiCard
-          label="APPROVED PROPOSALS"
+          label="APPROVED"
           value={stats.approved}
           variant="emerald"
-          badge="AUTHORIZED"
+          badge="CONFIRMED"
           badgeColor="emerald"
-          description="Scope & milestones accepted"
+          description="Scope and milestones accepted"
         />
 
         <KpiCard
-          label="IN FEASIBILITY PREP"
+          label="BEING PRICED"
           value={stats.inPrep}
           variant="sky"
-          badge="STAT LAB QUEUE"
+          badge="IN PROGRESS"
           badgeColor="sky"
-          description="Pricing under evaluation"
+          description="Quotes being prepared by statisticians"
         />
 
         <KpiCard
-          label="COMMITTED VALUE"
+          label="TOTAL VALUE"
           value={`₱${stats.totalCommitted.toLocaleString()}`}
           variant="orange"
-          badge="ESCROW SETTLED"
+          badge="ACCEPTED"
           badgeColor="orange"
-          description="Active study contract value"
+          description="Total value of accepted studies"
         />
       </div>
 
-      {/* ── Main Proposals Table Glass Card ── */}
+      {/* ── Main Proposals Table Substrate Card ── */}
       <Card
-        className="p-0 border-white/[0.08] overflow-hidden bg-gradient-to-b from-[#01142B]/90 via-[#010E20]/95 to-[#010A17] shadow-2xl"
+        className="p-0 border border-white/10 overflow-hidden bg-[#01142B]/85 rounded-[2px] shadow-xl backdrop-blur-sm"
         style={{ padding: 0 }}
       >
         {/* Filter Toolbar */}
@@ -226,14 +224,14 @@ export function ClientQuotationsClient({
           filters={[
             {
               key: "status",
-              label: "STATUS",
+              label: "Status",
               value: selectedStatus,
               defaultValue: "ALL",
               options: [
-                { value: "ALL", label: `All Proposals (${stats.total})` },
-                { value: "PENDING", label: `Action Required (${stats.pendingAction})` },
+                { value: "ALL", label: `All Quotes (${stats.total})` },
+                { value: "PENDING", label: `Needs Review (${stats.pendingAction})` },
                 { value: "APPROVED", label: `Approved (${stats.approved})` },
-                { value: "IN_PREP", label: `In Evaluation (${stats.inPrep})` },
+                { value: "IN_PREP", label: `Being Priced (${stats.inPrep})` },
               ],
             },
           ]}
@@ -253,18 +251,18 @@ export function ClientQuotationsClient({
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Research Study &amp; Intake</th>
-                  <th className="w-[200px] whitespace-nowrap">Commercial Package</th>
-                  <th className="w-[170px] whitespace-nowrap">Pricing &amp; Escrow</th>
+                  <th>Study &amp; Intake ID</th>
+                  <th className="w-[200px] whitespace-nowrap">Package &amp; Scope</th>
+                  <th className="w-[170px] whitespace-nowrap">Pricing &amp; Downpayment</th>
                   <th className="w-[130px] whitespace-nowrap">Status</th>
-                  <th className="w-[150px] text-right whitespace-nowrap">Actions</th>
+                  <th className="w-[150px] text-right whitespace-nowrap">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
                     <td colSpan={5} className="py-16 text-center">
-                      <LoadingState variant="table" label="Loading proposals..." />
+                      <LoadingState variant="table" label="Loading quotes..." />
                     </td>
                   </tr>
                 ) : filteredEntries.length === 0 ? (
@@ -272,8 +270,8 @@ export function ClientQuotationsClient({
                     <td colSpan={5} className="py-16 text-center">
                       <EmptyState
                         icon={IconReceiptOff}
-                        title="No Proposals Found"
-                        description="No commercial proposal records match the active filter criteria."
+                        title="No Quotes Found"
+                        description="No quotes match the active filter criteria."
                       />
                     </td>
                   </tr>
@@ -323,25 +321,25 @@ export function ClientQuotationsClient({
                           </div>
                         </td>
 
-                        {/* 2. Commercial Package */}
+                        {/* 2. Package & Scope */}
                         <td className="whitespace-nowrap">
                           {pkgInfo ? (
-                            <div className="flex flex-col gap-0.5">
+                            <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-1.5">
                                 <span className="text-xs font-mono font-bold text-[#FFA040]">
                                   {pkgInfo.id}
                                 </span>
-                                <span className="text-[0.5625rem] font-mono uppercase px-1.5 py-0.2 rounded-[2px] bg-white/[0.04] text-white/60 border border-white/[0.08]">
+                                <span className="text-[0.5625rem] font-mono uppercase px-1.5 py-0.5 rounded-[2px] bg-white/[0.04] text-white/70 border border-white/[0.08]">
                                   {pkgInfo.badge}
                                 </span>
                               </div>
-                              <span className="text-xs text-white/80 font-sans truncate max-w-[170px]">
-                                {pkgInfo.name}
+                              <span className="text-xs text-white/90 font-sans leading-snug">
+                                {pkgInfo.name.replace(/^JX-\d+\s*/, "")}
                               </span>
                               {hasAddOns && (
-                                <span className="text-[0.6875rem] font-mono text-amber-300 flex items-center gap-1">
-                                  <IconSparkles size={11} stroke={1.5} />
-                                  <span>{quotation?.lineItems.filter((li) => li.itemType === "ADDON").length} Add-on(s)</span>
+                                <span className="text-[0.6875rem] font-mono text-amber-300 flex items-center gap-1 mt-0.5">
+                                  <IconSparkles size={12} stroke={1.5} />
+                                  <span>{quotation?.lineItems.filter((li) => li.itemType === "ADDON").length} Add-on(s) included</span>
                                 </span>
                               )}
                             </div>
@@ -352,16 +350,16 @@ export function ClientQuotationsClient({
                           )}
                         </td>
 
-                        {/* 3. Pricing & Escrow */}
+                        {/* 3. Pricing & Downpayment */}
                         <td className="whitespace-nowrap">
                           {quotation ? (
                             <div className="flex flex-col gap-0.5">
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-baseline gap-1.5">
                                 <span className="text-xs font-mono text-[#38BDF8] font-bold inline-flex items-baseline">
                                   <Peso className="text-[#38BDF8]/80 text-xs" />
                                   {quotation.totalAmount.toLocaleString()}
                                 </span>
-                                <span className="text-[0.625rem] font-mono text-white/40 inline-flex items-baseline">
+                                <span className="text-[0.625rem] font-sans text-white/40 inline-flex items-baseline">
                                   (Base: <Peso className="text-white/40 text-[0.625rem]" />{quotation.basePrice.toLocaleString()})
                                 </span>
                               </div>
@@ -382,16 +380,16 @@ export function ClientQuotationsClient({
                               status={quotation.status}
                               label={
                                 isPending
-                                  ? "ACTION REQUIRED"
+                                  ? "Needs Review"
                                   : isApproved
-                                  ? "APPROVED"
+                                  ? "Approved"
                                   : quotation.status.replace(/_/g, " ")
                               }
                             />
                           ) : (
                             <StatusBadge
                               status="UNDER_EVALUATION"
-                              label="IN EVALUATION"
+                              label="In Evaluation"
                             />
                           )}
                         </td>
@@ -403,10 +401,10 @@ export function ClientQuotationsClient({
                               <Button
                                 variant="primary"
                                 size="sm"
-                                className="py-1.5 px-3.5 h-auto whitespace-nowrap font-mono text-xs tracking-wider bg-[#CC6600] text-white hover:bg-[#E67300] inline-flex items-center gap-1 cursor-pointer"
+                                className="py-1.5 px-3.5 h-auto whitespace-nowrap font-sans font-semibold text-xs tracking-wide bg-[#CC6600] text-white hover:bg-[#E67300] inline-flex items-center gap-1.5 cursor-pointer rounded-[2px]"
                               >
-                                <span>REVIEW QUOTE</span>
-                                <IconArrowRight size={13} stroke={1.5} />
+                                <span>Review Quote</span>
+                                <IconArrowRight size={14} stroke={2} />
                               </Button>
                             </Link>
                           ) : isApproved ? (
@@ -414,9 +412,9 @@ export function ClientQuotationsClient({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="py-1.5 px-3.5 h-auto whitespace-nowrap font-mono text-xs tracking-wider cursor-pointer"
+                                className="py-1.5 px-3.5 h-auto whitespace-nowrap font-sans font-medium text-xs tracking-wide cursor-pointer rounded-[2px]"
                               >
-                                VIEW DETAILS
+                                View Details
                               </Button>
                             </Link>
                           ) : (
@@ -424,9 +422,9 @@ export function ClientQuotationsClient({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="py-1.5 px-3.5 h-auto whitespace-nowrap font-mono text-xs tracking-wider text-white/60 hover:text-white cursor-pointer"
+                                className="py-1.5 px-3.5 h-auto whitespace-nowrap font-sans font-medium text-xs tracking-wide text-white/60 hover:text-white cursor-pointer rounded-[2px]"
                               >
-                                TRACKER →
+                                Study Tracker →
                               </Button>
                             </Link>
                           )}

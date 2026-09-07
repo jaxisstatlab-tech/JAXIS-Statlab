@@ -198,12 +198,12 @@ export function AdminQuotationsClient({
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {/* ── Page Header ── */}
       <PageHeader
-        title="Commercial Quotations & Proposals"
-        description="Build, price, configure priority riders, issue formal commercial proposals, and audit milestone escrow commitments."
+        title="Study Quotes & Proposals"
+        description="Create and price quotes, customize add-on services, and manage proposal approvals."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "Admin Command", href: "/dashboard/admin" },
-          { label: "Commercial Proposals" },
+          { label: "Quotes & Proposals" },
         ]}
         actions={
           <div className="flex items-center gap-3">
@@ -212,15 +212,17 @@ export function AdminQuotationsClient({
               size="sm"
               onClick={loadQuotations}
               loading={isLoading}
+              className="rounded-[2px]"
             >
-              REFRESH
+              Refresh
             </Button>
             <Button
               variant="primary"
               size="sm"
               onClick={() => setIsCatalogModalOpen(true)}
+              className="rounded-[2px] bg-[#CC6600] text-white hover:bg-[#E67300]"
             >
-              + CONFIGURE SERVICES & ADD-ONS
+              + Configure Services &amp; Add-ons
             </Button>
           </div>
         }
@@ -232,42 +234,42 @@ export function AdminQuotationsClient({
           label="ACTIVE QUOTES"
           value={kpis.sent}
           variant="amber"
-          badge="ACTION REQUIRED"
+          badge="NEEDS REVIEW"
           badgeColor="amber"
-          description="Awaiting researcher confirmation"
+          description="Awaiting client confirmation"
         />
 
         <KpiCard
           label="APPROVED QUOTES"
           value={kpis.approved}
           variant="emerald"
-          badge="SOW PENDING"
+          badge="SOW READY"
           badgeColor="emerald"
-          description="Ready for SOW contract execution"
+          description="Ready for contract execution"
         />
 
         <KpiCard
           label="PROPOSAL DRAFTS"
           value={kpis.drafts}
           variant="sky"
-          badge="INITIAL PRICING"
+          badge="DRAFTING"
           badgeColor="sky"
-          description="Unsent internal pricing drafts"
+          description="Internal quotes in preparation"
         />
 
         <KpiCard
           label="PIPELINE VALUE"
           value={`₱${kpis.totalValue.toLocaleString()}`}
           variant="orange"
-          badge="GROSS REVENUE"
+          badge="TOTAL PIPELINE"
           badgeColor="orange"
-          description="Issued & approved total sum"
+          description="Issued and approved total sum"
         />
       </div>
 
-      {/* ── Main Proposals Queue Glass Card ── */}
+      {/* ── Main Proposals Queue Substrate Card ── */}
       <Card
-        className="p-0 border-white/[0.08] overflow-hidden bg-gradient-to-b from-[#01142B]/90 via-[#010E20]/95 to-[#010A17] shadow-2xl"
+        className="p-0 border border-white/10 overflow-hidden bg-[#01142B]/85 rounded-[2px] shadow-xl backdrop-blur-sm"
         style={{ padding: 0 }}
       >
         {/* Filter Toolbar */}
@@ -278,11 +280,11 @@ export function AdminQuotationsClient({
           filters={[
             {
               key: "status",
-              label: "STATUS",
+              label: "Status",
               value: selectedStatus,
               defaultValue: "ALL",
               options: [
-                { value: "ALL", label: `All Proposals (${kpis.total})` },
+                { value: "ALL", label: `All Quotes (${kpis.total})` },
                 { value: "QUOTE_SENT", label: `Active Issued (${kpis.sent})` },
                 { value: "CLIENT_APPROVED", label: `Approved (${kpis.approved})` },
                 { value: "DRAFT", label: `Drafts (${kpis.drafts})` },
@@ -307,18 +309,18 @@ export function AdminQuotationsClient({
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Research Study &amp; Intake</th>
+                  <th>Study &amp; Intake ID</th>
                   <th className="w-[180px] whitespace-nowrap">Lead Researcher</th>
-                  <th className="w-[200px] whitespace-nowrap">Commercial Proposal</th>
+                  <th className="w-[200px] whitespace-nowrap">Package &amp; Proposal</th>
                   <th className="w-[130px] whitespace-nowrap">Status</th>
-                  <th className="w-[140px] text-right whitespace-nowrap">Actions</th>
+                  <th className="w-[140px] text-right whitespace-nowrap">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
                     <td colSpan={5} className="py-16 text-center">
-                      <LoadingState variant="table" label="Loading proposals..." />
+                      <LoadingState variant="table" label="Loading quotes..." />
                     </td>
                   </tr>
                 ) : filteredQuotations.length === 0 ? (
@@ -326,8 +328,8 @@ export function AdminQuotationsClient({
                     <td colSpan={5} className="py-16 text-center">
                       <EmptyState
                         icon={IconReceiptOff}
-                        title="No Proposals Found"
-                        description="No commercial proposal records match the active filter criteria."
+                        title="No Quotes Found"
+                        description="No quotes match the active filter criteria."
                       />
                     </td>
                   </tr>
