@@ -62,7 +62,31 @@ Never introduce foreign palettes, pastel purple gradients, or generic SaaS trope
 | **Danger Crimson** | `#EF4444` | Disputes, failed validations, destructive actions. |
 | **Borders** | `border-white/10` to `border-white/15` | Crisp, flat, high-contrast 1px divisions. |
 
+### 1.1. Color Restraint & Anti-Rainbow Mandate (Monochrome-First Standard)
+Color is a **scarce cognitive resource**. When every number, badge, pill, and label is painted in a different neon hue, the interface degrades into a chaotic carnival and quintessential AI-slop:
+
+1. **Monochrome-First for Metric Cards (`<KpiCard />`)**:
+   - In 90% of cases, `<KpiCard />` values must use **crisp bold white (`text-white`)** via `variant="default"`.
+   - **Absolute Ban on Rainbow Metric Rows**: Never render a row of 4 KPI cards where Card 1 is Yellow, Card 2 is Green, Card 3 is Sky Blue, and Card 4 is Orange.
+   - **When Accent Colors are Allowed**: Reserve colored metric values (`variant="orange"` or `"amber"`) **strictly for active alerts where user action is required and count > 0** (e.g., `2 Action Needed` or `3 Disputes Open`). Standard informational counts (Total Studies, Approved, In Progress, Hours Purchased) must remain bold white.
+2. **Monochrome Hierarchy in Data Tables**:
+   - Financial totals and quantities must default to `text-white font-mono font-bold`.
+   - Never stack multiple neon colors in a single cell (e.g. Cyan total + Green downpayment + Yellow add-ons).
+   - Use optical weight and opacity for hierarchy instead of color:
+     - Primary value: `text-white font-mono font-bold`
+     - Secondary breakdown: `text-white/70 font-mono`
+     - Base price / subtext: `text-white/40 font-sans`
+     - Add-ons: subtle `text-white/60 font-sans` (not screaming yellow)
+3. **Badge & Status Restraint**:
+   - Only the primary `<StatusBadge />` carries semantic status color. Do not surround it with 5 other colored chips. Keep ID chips muted (`bg-white/[0.04] text-white/80 border-white/10` or subtle `#CC6600/15 text-[#FF9433]`).
+4. **The 80 / 15 / 5 Color Budget**:
+   - **80% Substrate**: Dark precision canvas (`#010114`) and solid surfaces (`#01142B`).
+   - **15% Typographic Contrast**: High-contrast white and calibrated opacity tints (`text-white`, `text-white/70`, `text-white/40`).
+   - **5% Maximum Accent**: Enterprise Orange (`#CC6600`) for primary interactive CTAs, with semantic colors (`emerald`, `amber`, `crimson`) used strictly for purposeful state feedback.
+
 ### Absolute Aesthetic Bans:
+- **Zero Rainbow Metric Rows**: Never render multi-colored rainbow cards side-by-side. Default to crisp bold white numerals.
+- **Zero Gratuitous Color Highlights**: Never paint numbers, prices, or add-ons in rainbow hues (cyan, green, yellow, pink) unless communicating a live status trigger.
 - **Zero Box-Shadow Glows**: Never use blurry glowing box-shadows (`shadow-[0_0_...px]`). Use crisp, flat borders.
 - **Zero Awkward Gradients**: Never use multi-stop gradients (`bg-gradient-to-b from-[#01142B] via-[#010E20] to-[#010A17]`) on cards or tables. Use solid substrates (`bg-[#01142B]/85`).
 - **Zero Shouting All-Caps Buttons**: All buttons must use Title Case or Sentence Case (`"Review Quote →"`, `"View Details"`, `"Save Changes"`). Precision `rounded-[2px]`.

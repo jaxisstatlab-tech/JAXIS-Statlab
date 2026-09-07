@@ -12,6 +12,7 @@ All AI coding assistants and developers MUST strictly follow the design system a
 - **Palette**: Master Canvas (`#010114`), Surface Card (`rgba(1, 22, 46, 0.75)` / `#01142B` / `#011B38`), Enterprise Orange Accent (`#CC6600`), Analytical Sky (`#38BDF8`), Verification Emerald (`#10B981`), Escrow Amber (`#F59E0B`), Border Division (`rgba(255, 255, 255, 0.08)` / `border-white/10`).
 - **Zero Glow Policy**: Never use blurry box-shadow glows (`shadow-[0_0_...px]`). Use crisp, high-contrast flat borders (`border-white/10` to `border-white/20`) and calibrated opacity tints.
 - **No Awkward Gradients**: Do not use heavy gradient fills (`bg-gradient-to-r`) on action bars, banners, or modal headers. Rely on solid substrates (`#01142B` / `#011B38`) with calibrated borders.
+- **Color Restraint & Anti-Rainbow Mandate**: Reduce the use of colors unless strictly necessary. Color is a scarce cognitive resource. In 90% of cases, `<KpiCard />` metric numbers must default to crisp bold white (`variant="default"`). Never render rainbow rows where 4 adjacent cards each have a different neon hue (Amber, Green, Sky, Orange). In data tables, financial figures must default to bold white; never stack cyan, green, and yellow within a single table cell.
 
 ---
 

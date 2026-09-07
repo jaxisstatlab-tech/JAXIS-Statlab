@@ -87,7 +87,7 @@ export function ClientProfileClient({ initialProfile }: ClientProfileClientProps
   };
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-20 w-full animate-content-fade">
+    <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-20 w-full animate-content-fade font-sans">
       <PageHeader
         title="School &amp; Academic Profile"
         description="Complete your university and contact details in the Philippines to submit research study requests."
@@ -98,11 +98,11 @@ export function ClientProfileClient({ initialProfile }: ClientProfileClientProps
         ]}
       />
 
-      <Card className="p-6 md:p-8">
+      <Card className="p-6 md:p-8 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl">
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div className="border-b border-white/[0.08] pb-4">
-            <h2 className="text-base font-bold text-white">School &amp; University Details</h2>
-            <p className="text-xs text-white/50 mt-1">
+            <h2 className="text-base font-bold text-white font-sans">School &amp; University Details</h2>
+            <p className="text-xs text-white/50 mt-1 font-sans">
               Used for official statistical certificates and research consultation records.
             </p>
           </div>
@@ -154,7 +154,13 @@ export function ClientProfileClient({ initialProfile }: ClientProfileClientProps
 
           <FormFooter className="mt-8 pt-6">
             <Link href="/dashboard/client">
-              <Button type="button" variant="ghost" size="sm" disabled={isPending}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isPending}
+                className="rounded-[2px] active:scale-[0.97] transition-transform"
+              >
                 Cancel
               </Button>
             </Link>
@@ -163,9 +169,9 @@ export function ClientProfileClient({ initialProfile }: ClientProfileClientProps
               variant="primary"
               size="sm"
               loading={isPending}
-              className="w-full sm:w-auto font-bold tracking-wider"
+              className="w-full sm:w-auto font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
             >
-              SAVE PROFILE →
+              Save Profile →
             </Button>
           </FormFooter>
         </form>

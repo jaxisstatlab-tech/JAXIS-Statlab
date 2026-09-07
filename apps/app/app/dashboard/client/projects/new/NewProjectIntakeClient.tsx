@@ -528,9 +528,9 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               variant="primary"
               size="sm"
               onClick={() => setIsQuickModalOpen(true)}
-              className="font-mono text-xs font-bold tracking-wider"
+              className="font-sans text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
             >
-              COMPLETE PROFILE →
+              Complete Profile →
             </Button>
             <Link
               href="/dashboard/client/profile"
@@ -673,7 +673,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 type="submit"
                 variant="primary"
                 size="sm"
-                className="w-full sm:w-auto font-bold tracking-wider"
+                className="w-full sm:w-auto font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
               >
                 Proceed to Attachments →
               </Button>
@@ -1206,7 +1206,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               variant="primary"
               size="sm"
               onClick={handleProceedToStep3}
-              className="w-full sm:w-auto font-bold tracking-wider"
+              className="w-full sm:w-auto font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
             >
               Proceed to Review →
             </Button>
@@ -1234,7 +1234,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
             >
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-mono uppercase text-sky-400 font-bold tracking-wider">
-                  Verified Institutional Affiliation
+                  Verified School Profile
                 </span>
                 <span className="text-sm font-semibold text-white">
                   {profile.institutionSchool} · {profile.academicProgram}
@@ -1401,7 +1401,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               size="sm"
               onClick={() => setCurrentStep(2)}
               disabled={isPending}
-              className="w-full sm:w-auto font-bold tracking-wider"
+              className="w-full sm:w-auto font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
             >
               ← Back to Attachments
             </Button>
@@ -1412,7 +1412,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               onClick={handleFinalSubmit}
               loading={isPending}
               disabled={!integrityAgreed || isPending}
-              className="w-full sm:w-auto font-bold tracking-wider"
+              className="w-full sm:w-auto font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
             >
               Submit Study Request →
             </Button>

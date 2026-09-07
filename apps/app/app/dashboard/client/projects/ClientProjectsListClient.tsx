@@ -242,7 +242,6 @@ export function ClientProjectsListClient({
           label="Total Studies"
           value={kpis.total}
           variant="default"
-          badge="COMMISSIONED"
           description="All client submitted research scopes"
         />
 
@@ -250,7 +249,8 @@ export function ClientProjectsListClient({
           label="Action Required"
           value={kpis.awaitingInfo}
           variant={kpis.awaitingInfo > 0 ? "orange" : "default"}
-          badge={kpis.awaitingInfo > 0 ? "CLIENT ACTION" : "CLEAR"}
+          badge={kpis.awaitingInfo > 0 ? "CLIENT ACTION" : undefined}
+          badgeColor={kpis.awaitingInfo > 0 ? "orange" : "gray"}
           description={
             kpis.awaitingInfo > 0
               ? "Clarification or dataset needed"
@@ -261,16 +261,14 @@ export function ClientProjectsListClient({
         <KpiCard
           label="Under Evaluation"
           value={kpis.underEvaluation}
-          variant="sky"
-          badge="FEASIBILITY"
+          variant="default"
           description="Methodology & pricing assessment"
         />
 
         <KpiCard
           label="Active & QA"
           value={kpis.active + kpis.delivered}
-          variant="emerald"
-          badge="IN PRODUCTION"
+          variant="default"
           description={`${kpis.active} running · ${kpis.delivered} delivered`}
         />
       </div>

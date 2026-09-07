@@ -177,36 +177,30 @@ export function ClientQuotationsClient({
         <KpiCard
           label="PENDING REVIEW"
           value={stats.pendingAction}
-          variant="amber"
-          badge="NEEDS REVIEW"
-          badgeColor="amber"
+          variant={stats.pendingAction > 0 ? "orange" : "default"}
+          badge={stats.pendingAction > 0 ? "NEEDS REVIEW" : undefined}
+          badgeColor={stats.pendingAction > 0 ? "orange" : "gray"}
           description="Quotes ready for your review"
         />
 
         <KpiCard
           label="APPROVED"
           value={stats.approved}
-          variant="emerald"
-          badge="CONFIRMED"
-          badgeColor="emerald"
+          variant="default"
           description="Scope and milestones accepted"
         />
 
         <KpiCard
           label="BEING PRICED"
           value={stats.inPrep}
-          variant="sky"
-          badge="IN PROGRESS"
-          badgeColor="sky"
+          variant="default"
           description="Quotes being prepared by statisticians"
         />
 
         <KpiCard
           label="TOTAL VALUE"
           value={`₱${stats.totalCommitted.toLocaleString()}`}
-          variant="orange"
-          badge="ACCEPTED"
-          badgeColor="orange"
+          variant="default"
           description="Total value of accepted studies"
         />
       </div>
@@ -337,8 +331,8 @@ export function ClientQuotationsClient({
                                 {pkgInfo.name.replace(/^JX-\d+\s*/, "")}
                               </span>
                               {hasAddOns && (
-                                <span className="text-[0.6875rem] font-mono text-amber-300 flex items-center gap-1 mt-0.5">
-                                  <IconSparkles size={12} stroke={1.5} />
+                                <span className="text-[0.6875rem] font-sans text-white/60 flex items-center gap-1 mt-0.5">
+                                  <IconSparkles size={12} stroke={1.5} className="text-[#CC6600]" />
                                   <span>{quotation?.lineItems.filter((li) => li.itemType === "ADDON").length} Add-on(s) included</span>
                                 </span>
                               )}
@@ -355,16 +349,16 @@ export function ClientQuotationsClient({
                           {quotation ? (
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-baseline gap-1.5">
-                                <span className="text-xs font-mono text-[#38BDF8] font-bold inline-flex items-baseline">
-                                  <Peso className="text-[#38BDF8]/80 text-xs" />
+                                <span className="text-xs font-mono text-white font-bold inline-flex items-baseline">
+                                  <Peso className="text-white/80 text-xs" />
                                   {quotation.totalAmount.toLocaleString()}
                                 </span>
                                 <span className="text-[0.625rem] font-sans text-white/40 inline-flex items-baseline">
                                   (Base: <Peso className="text-white/40 text-[0.625rem]" />{quotation.basePrice.toLocaleString()})
                                 </span>
                               </div>
-                              <span className="text-[0.6875rem] font-mono text-emerald-400 font-medium inline-flex items-baseline">
-                                <Peso className="text-emerald-400/80 text-[0.6875rem]" />
+                              <span className="text-[0.6875rem] font-mono text-white/70 font-medium inline-flex items-baseline">
+                                <Peso className="text-white/50 text-[0.6875rem]" />
                                 {quotation.downpaymentRequired.toLocaleString()} Due ({quotation.isUpfrontEnforced ? "100%" : `${quotation.downpaymentPercentage}%`})
                               </span>
                             </div>

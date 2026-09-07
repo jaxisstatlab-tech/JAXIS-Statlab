@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { PageHeader, Card, LoadingState, Badge } from "@repo/ui";
-import { getMyProjectThreads } from "@/features/messaging/actions";
+import { PageHeader, Card, Badge } from "@repo/ui";
 import type { ProjectThreadSummaryDTO } from "@/features/messaging/schemas";
 import { MessageThread, type InitialThreadData } from "@/features/messaging/components/MessageThread";
 import {
@@ -31,7 +30,7 @@ export function ClientMessagesClient({
   const searchParams = useSearchParams();
   const queryProjectId = searchParams.get("projectId");
 
-  const [threads, setThreads] = useState<ProjectThreadSummaryDTO[]>(initialThreads);
+  const [threads] = useState<ProjectThreadSummaryDTO[]>(initialThreads);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     queryProjectId || initialSelectedProjectId || initialThreads[0]?.projectId || null
   );
@@ -47,17 +46,6 @@ export function ClientMessagesClient({
       setMobileView("chat");
     }
   }, [queryProjectId]);
-
-  const loadThreads = useCallback(async () => {
-    try {
-      const res = await getMyProjectThreads();
-      if (res.success && res.data) {
-        setThreads(res.data);
-      }
-    } catch (err) {
-      console.error("Failed to refresh message threads:", err);
-    }
-  }, []);
 
   const filteredThreads = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -101,7 +89,7 @@ export function ClientMessagesClient({
             <div className="flex items-center gap-2">
               <Badge variant="emerald" className="text-[0.688rem] font-mono flex items-center gap-1">
                 <IconShieldCheck size={13} stroke={2} />
-                <span>Firewall Protected</span>
+                <span>Private &amp; Secure</span>
               </Badge>
             </div>
           }
@@ -124,7 +112,8 @@ export function ClientMessagesClient({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by ID or title..."
-                className="w-full pl-9 pr-8 py-2 bg-[#010915] border border-white/15 focus:border-[#CC6600] rounded-[2px] text-xs text-white placeholder:text-white/30 focus:outline-none focus:ring-0 ring-0 font-sans transition-colors"
+                aria-label="Search study conversation by ID or title"
+                className="w-full pl-9 pr-8 py-2 bg-[#010915] border border-white/15 focus:border-[#CC6600] rounded-[2px] text-base sm:text-xs text-white placeholder:text-white/30 focus:outline-none focus:ring-0 ring-0 font-sans transition-colors"
               />
               {searchQuery && (
                 <button
@@ -205,9 +194,9 @@ export function ClientMessagesClient({
                       setSelectedProjectId(t.projectId);
                       setMobileView("chat");
                     }}
-                    className={`p-3 rounded-[2px] text-left transition-all duration-150 border cursor-pointer flex flex-col gap-1.5 select-none outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 ring-0 ${
+                    className={`p-3 rounded-[2px] text-left transition-all duration-150 border cursor-pointer flex flex-col gap-1.5 select-none active:scale-[0.99] outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 ring-0 ${
                       isSelected
-                        ? "bg-[#011B38] border-l-[3px] border-l-[#CC6600] border-t-white/15 border-r-white/15 border-b-white/15 shadow-md"
+                        ? "bg-[#011B38] border-l-[3px] border-l-[#CC6600] border-t-white/15 border-r-white/15 border-b-white/15"
                         : "bg-[#01142B]/60 border-white/[0.08] hover:bg-[#01142B] hover:border-white/15"
                     }`}
                   >

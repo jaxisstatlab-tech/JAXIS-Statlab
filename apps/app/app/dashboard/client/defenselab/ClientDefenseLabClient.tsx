@@ -6,7 +6,6 @@ import {
   PageHeader,
   Card,
   Button,
-  Badge,
   KpiCard,
   Modal,
   Toast,
@@ -19,16 +18,13 @@ import {
   IconClock,
   IconAlertTriangle,
   IconCheck,
-  IconChevronRight,
   IconDownload,
   IconInfoCircle,
   IconLoader2,
   IconMicrophone,
   IconPlus,
   IconCalendarEvent,
-  IconBrandZoom,
   IconShieldCheck,
-  IconHelpCircle,
 } from "@tabler/icons-react";
 import {
   getClientDefenseLabData,
@@ -39,7 +35,6 @@ import type {
   DefenseLabSessionDTO,
   DefenseLabProjectEntitlementDTO,
 } from "@/features/defenselab/schemas";
-import { DEFENSELAB_RATE_PER_HOUR, RESCHEDULE_MINIMUM_NOTICE_HOURS } from "@/lib/defenselab-rules";
 
 interface ClientDefenseLabClientProps {
   initialData?: {
@@ -255,7 +250,7 @@ export function ClientDefenseLabClient({
             size="sm"
             onClick={() => setIsBookModalOpen(true)}
             disabled={totalRemainingHours === 0 && entitlements.length === 0}
-            className="flex items-center gap-1.5 rounded-[2px]"
+            className="flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
           >
             <IconPlus size={15} stroke={2} />
             <span>Schedule Mock Defense</span>
@@ -277,7 +272,7 @@ export function ClientDefenseLabClient({
               value={totalRemainingHours}
               unit="HOURS"
               description="Remaining unbooked rehearsal hours"
-              variant={totalRemainingHours > 0 ? "emerald" : "default"}
+              variant="default"
             />
             <KpiCard
               label="UPCOMING REHEARSALS"
@@ -378,7 +373,7 @@ export function ClientDefenseLabClient({
                           setSelectedProjectId(ent.projectId);
                           setIsBookModalOpen(true);
                         }}
-                        className="rounded-[2px] text-xs"
+                        className="rounded-[2px] text-xs active:scale-[0.97] transition-transform"
                       >
                         Book Time
                       </Button>
@@ -474,7 +469,7 @@ export function ClientDefenseLabClient({
                             <Button
                               variant="primary"
                               size="sm"
-                              className="flex items-center gap-1.5 rounded-[2px]"
+                              className="flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
                             >
                               <IconVideo size={15} stroke={2} />
                               <span>Join Video Call</span>
@@ -493,7 +488,7 @@ export function ClientDefenseLabClient({
                             setRescheduleSession(s);
                             setRescheduleDate(s.scheduledAt.slice(0, 16));
                           }}
-                          className="rounded-[2px] text-xs font-sans"
+                          className="rounded-[2px] text-xs font-sans active:scale-[0.97] transition-transform"
                         >
                           Reschedule
                         </Button>

@@ -233,36 +233,28 @@ export function AdminQuotationsClient({
         <KpiCard
           label="ACTIVE QUOTES"
           value={kpis.sent}
-          variant="amber"
-          badge="NEEDS REVIEW"
-          badgeColor="amber"
+          variant="default"
           description="Awaiting client confirmation"
         />
 
         <KpiCard
           label="APPROVED QUOTES"
           value={kpis.approved}
-          variant="emerald"
-          badge="SOW READY"
-          badgeColor="emerald"
+          variant="default"
           description="Ready for contract execution"
         />
 
         <KpiCard
           label="PROPOSAL DRAFTS"
           value={kpis.drafts}
-          variant="sky"
-          badge="DRAFTING"
-          badgeColor="sky"
+          variant="default"
           description="Internal quotes in preparation"
         />
 
         <KpiCard
           label="PIPELINE VALUE"
           value={`₱${kpis.totalValue.toLocaleString()}`}
-          variant="orange"
-          badge="TOTAL PIPELINE"
-          badgeColor="orange"
+          variant="default"
           description="Issued and approved total sum"
         />
       </div>
@@ -393,27 +385,27 @@ export function AdminQuotationsClient({
                         <td className="whitespace-nowrap">
                           <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-xs font-mono font-bold text-[#FFA040]">
+                              <span className="text-xs font-mono font-bold text-white/90">
                                 {pkgInfo.id}
                               </span>
                               <span className="text-[0.5625rem] font-mono uppercase px-1.5 py-0.2 rounded-[2px] bg-white/[0.04] text-white/60 border border-white/[0.08]">
                                 {pkgInfo.badge}
                               </span>
-                              <span className="text-xs font-mono font-bold text-[#38BDF8] inline-flex items-baseline">
-                                <Peso className="text-[#38BDF8]/80 text-xs" />
+                              <span className="text-xs font-mono font-bold text-white inline-flex items-baseline">
+                                <Peso className="text-white/80 text-xs" />
                                 {quote.totalAmount.toLocaleString()}
                               </span>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-white/80 font-sans">
                               <span className="truncate max-w-[120px]">{pkgInfo.name}</span>
-                              <span className="text-emerald-400 font-mono text-[0.6875rem] font-semibold inline-flex items-baseline">
-                                <Peso className="text-emerald-400/80 text-[0.6875rem]" />
+                              <span className="text-white/70 font-mono text-[0.6875rem] font-medium inline-flex items-baseline">
+                                <Peso className="text-white/50 text-[0.6875rem]" />
                                 {quote.downpaymentRequired.toLocaleString()} DP
                               </span>
                             </div>
                             {hasAddOns && (
-                              <span className="text-[0.6875rem] font-mono text-amber-300 flex items-center gap-1">
-                                <IconSparkles size={11} stroke={1.5} />
+                              <span className="text-[0.6875rem] font-sans text-white/60 flex items-center gap-1">
+                                <IconSparkles size={11} stroke={1.5} className="text-[#CC6600]" />
                                 <span>{quote.lineItems.filter((li) => li.itemType === "ADDON").length} Add-on(s) included</span>
                               </span>
                             )}

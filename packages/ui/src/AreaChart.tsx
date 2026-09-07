@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
   AreaChart as RechartsAreaChart,
@@ -24,7 +24,7 @@ export interface AreaChartProps extends React.HTMLAttributes<HTMLDivElement> {
   height?: number | string;
 }
 
-const defaultColors = ["#CC6600", "#38BDF8", "#10B981", "#F59E0B", "#EF4444"];
+const defaultColors = ["#CC6600", "#38BDF8", "#10B981"];
 
 export function AreaChart({
   data = [],
@@ -39,6 +39,28 @@ export function AreaChart({
   className,
   ...props
 }: AreaChartProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <div className={cn("w-full space-y-3", className)} {...props}>
+        {showLegend && (
+          <div className="h-4 w-48 bg-white/[0.04] rounded-[2px] animate-pulse" />
+        )}
+        <div
+          style={{ height, width: "100%" }}
+          className="bg-white/[0.02] border border-white/[0.06] rounded-[2px] animate-pulse flex items-center justify-center text-xs font-mono text-white/30"
+        >
+          Loading telemetry chart...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("w-full space-y-3", className)} {...props}>
       {showLegend && (

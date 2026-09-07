@@ -259,14 +259,14 @@ export function ClientDisputesClient({
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "MY STUDIES", href: "/dashboard/client/projects" },
-          { label: "CLAIMS & DISPUTES" },
+          { label: "REVISIONS & HELP" },
         ]}
         title="Study Claims & Disputes"
         description="If your delivered study has math errors or did not follow your SOW, you can file a formal claim within 7 days of delivery."
         actions={
           <Button
             variant="primary"
-            className="text-xs flex items-center gap-1.5"
+            className="text-xs flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
             onClick={() => handleOpenFilingModal()}
             disabled={openEligibleProjects.length === 0}
           >
@@ -292,7 +292,7 @@ export function ClientDisputesClient({
             <LoadingState variant="card" label="Checking delivery dates..." />
           </div>
         ) : eligibleProjects.length === 0 ? (
-          <Card className="p-8 text-center text-xs text-white/40 flex flex-col items-center gap-2 bg-[#01142B] border border-white/10 rounded-[4px]">
+          <Card className="p-8 text-center text-xs text-white/40 flex flex-col items-center gap-2 bg-[#01142B] border border-white/10 rounded-[2px]">
             <IconShieldCheck size={28} stroke={1.5} className="text-white/20" />
             <span>No delivered studies found. Claims can only be filed once your study deliverables are released.</span>
           </Card>
@@ -303,11 +303,11 @@ export function ClientDisputesClient({
               return (
                 <Card
                   key={p.projectId}
-                  className="p-5 flex flex-col justify-between gap-4 bg-[#01142B] border border-white/10 rounded-[4px]"
+                  className="p-5 flex flex-col justify-between gap-4 bg-[#01142B] border border-white/10 rounded-[2px]"
                 >
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs text-sky-400 font-semibold">{p.intakeId}</span>
+                      <span className="font-mono text-xs text-white/80 font-semibold">{p.intakeId}</span>
                       {hasDispute ? (
                         getStatusBadge(p.existingDispute!.status)
                       ) : p.isEligible ? (
@@ -333,7 +333,7 @@ export function ClientDisputesClient({
                     {hasDispute ? (
                       <Button
                         variant="secondary"
-                        className="text-xs w-full"
+                        className="text-xs w-full rounded-[2px] active:scale-[0.97] transition-transform"
                         onClick={() => setSelectedDispute(p.existingDispute || null)}
                       >
                         View Claim Details
@@ -341,7 +341,7 @@ export function ClientDisputesClient({
                     ) : p.isEligible ? (
                       <Button
                         variant="primary"
-                        className="text-xs w-full"
+                        className="text-xs w-full rounded-[2px] active:scale-[0.97] transition-transform"
                         onClick={() => handleOpenFilingModal(p.projectId)}
                       >
                         File Claim
@@ -360,7 +360,7 @@ export function ClientDisputesClient({
       </div>
 
       {/* Filed Claims Table */}
-      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[4px]">
+      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[2px]">
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div>
             <h2 className="text-base font-bold text-white">Your Filed Claims</h2>
@@ -450,7 +450,7 @@ export function ClientDisputesClient({
       {/* Dispute Filing Modal */}
       {isFilingModalOpen && (
         <div className="fixed inset-0 z-50 bg-[#010114]/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#01142B] border border-white/15 rounded-[4px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#01142B] border border-white/15 rounded-[2px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2.5">
                 <IconShieldExclamation size={22} className="text-amber-400" />
@@ -592,7 +592,7 @@ export function ClientDisputesClient({
       {/* Details & Ruling Dossier Modal */}
       {selectedDispute && (
         <div className="fixed inset-0 z-50 bg-[#010114]/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#01142B] border border-white/15 rounded-[4px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#01142B] border border-white/15 rounded-[2px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
                 <IconFileText size={22} className="text-sky-400" />
