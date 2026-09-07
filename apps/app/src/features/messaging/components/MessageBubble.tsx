@@ -104,13 +104,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       {/* Footer Delivery & Read Receipts */}
       {isMine && (
         <div className="flex items-center gap-1.5 text-[0.625rem] font-mono text-white/35 px-1 justify-end select-none">
-          {message.status === "sending" ? (
-            <span className="flex items-center gap-1 text-white/40">
-              <IconClock size={12} stroke={1.5} className="animate-pulse text-white/40" />
-              <span>Sending...</span>
-            </span>
-          ) : message.status === "sent" ? (
-            <span className="flex items-center gap-1 text-white/40" title="Sent to server">
+          {message.status === "sending" || message.status === "sent" ? (
+            <span className="flex items-center gap-1 text-white/40" title="Sent">
               <IconCheck size={13} stroke={2} className="text-white/40" />
               <span>Sent</span>
             </span>

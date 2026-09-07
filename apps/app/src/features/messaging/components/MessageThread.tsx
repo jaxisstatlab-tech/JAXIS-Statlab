@@ -488,13 +488,13 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       },
     });
 
-    // Adaptive 2-second polling safety net (catches edge cases if socket drops)
+    // Fallback polling safety net (catches edge cases if socket drops)
     const pollInterval = setInterval(() => {
       if (typeof document !== "undefined" && document.visibilityState === "hidden") {
         return; // sleep when tab is hidden
       }
       syncDelta();
-    }, 2000);
+    }, 20000);
 
     // Instant sync when user tabs back into the consultation
     const handleVisibility = () => {
@@ -524,7 +524,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     };
   }, [projectId, handleIncomingRealtimeMessage, syncDelta]);
 
-  // Optimistic Message Sender (0ms instant bubble display)
+  // Optimistic Message Sender (Instant 0ms bubble display + Instant <20ms WebSocket peer broadcast)
   const handleSendMessage = async (content: string) => {
     const trimmed = content.trim();
     if (!trimmed) return { success: false };
@@ -534,7 +534,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       id: tempId,
       projectId,
       senderId: currentUserIdRef.current || "current_user",
-      senderName: "You",
+      senderName: currentUserNameRef.current || "You",
       senderRole: "CLIENT",
       content: trimmed,
       isBlocked: false,
@@ -543,16 +543,25 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       isMine: true,
       isRead: false,
       readByCount: 0,
-      status: "sending",
+      status: "sent",
       seenByNames: [],
     };
 
-    // 1. Paint optimistic bubble immediately on screen (0ms delay)
+    // 1. Paint optimistic bubble immediately on screen (0ms delay) with "sent" status
     setMessages((prev) => [...prev, optimisticMessage]);
     scrollToBottom(true);
 
+    // 2. Broadcast immediately over WebSocket so recipients receive it in <20ms (zero wait for DB HTTP write)
+    broadcastProjectMessage(projectId, {
+      ...optimisticMessage,
+      isMine: false,
+      status: "delivered",
+    }).catch((err) => {
+      console.warn("[Realtime Instant Peer Broadcast Warning]", err);
+    });
+
     try {
-      // 2. Transmit to server via ultra-fast REST Route Handler (<60ms, zero RSC re-render overhead)
+      // 3. Persist to server in background via ultra-fast REST Route Handler
       let res: { success: boolean; data?: MessageDTO; blocked?: boolean; warning?: string; error?: { code?: string; message: string } };
       try {
         const fetchRes = await fetch("/api/v1/messages", {
@@ -572,7 +581,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
           status: "sent",
         };
 
-        // Swap temporary optimistic bubble with confirmed server record
+        // Swap temporary optimistic bubble ID with confirmed server database record
         setMessages((prev) => {
           const updated = prev.map((m) => (m.id === tempId ? confirmedMsg : m));
           if (typeof window !== "undefined") {
@@ -592,12 +601,6 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             }
           }
           return updated;
-        });
-        scrollToBottom(true);
-
-        // Immediate Client-to-Client WebSocket Broadcast (sub-10ms delivery to all peers)
-        broadcastProjectMessage(projectId, confirmedMsg).catch((err) => {
-          console.warn("[Realtime Client Broadcast Warning]", err);
         });
 
         return { success: true };

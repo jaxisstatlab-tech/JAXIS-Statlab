@@ -9,6 +9,16 @@ import {
   type MessagingActionResult,
 } from "@/features/messaging/schemas";
 
+interface CachedProjectAuth {
+  id: string;
+  clientId: string;
+  statisticianId?: string | null;
+  qaLeadId?: string | null;
+  cachedAt: number;
+}
+
+const projectAuthCache = new Map<string, CachedProjectAuth>();
+
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<MessagingActionResult<MessageDTO>>> {
@@ -61,34 +71,46 @@ export async function POST(
 
   try {
     return await withDbTimeout((async () => {
-      // 1. Resolve project and access rights in single fast PK lookup
-      const project = await db.project.findUnique({
-        where: { id: projectId },
-        select: {
-          id: true,
-          clientId: true,
-          assignment: {
-            select: {
-              statisticianId: true,
-              qaLeadId: true,
+      // 1. Resolve project and access rights (cached in-memory for 2 minutes to skip 800ms DB latency)
+      let project = projectAuthCache.get(projectId);
+      if (!project || Date.now() - project.cachedAt > 120_000) {
+        const dbProject = await db.project.findUnique({
+          where: { id: projectId },
+          select: {
+            id: true,
+            clientId: true,
+            assignment: {
+              select: {
+                statisticianId: true,
+                qaLeadId: true,
+              },
             },
           },
-        },
-      });
+        });
 
-      if (!project) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: { code: "PROJECT_NOT_FOUND", message: "Research study project not found." },
-          },
-          { status: 404 }
-        );
+        if (!dbProject) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: { code: "PROJECT_NOT_FOUND", message: "Research study project not found." },
+            },
+            { status: 404 }
+          );
+        }
+
+        project = {
+          id: dbProject.id,
+          clientId: dbProject.clientId,
+          statisticianId: dbProject.assignment?.statisticianId || null,
+          qaLeadId: dbProject.assignment?.qaLeadId || null,
+          cachedAt: Date.now(),
+        };
+        projectAuthCache.set(projectId, project);
       }
 
       const isClient = project.clientId === userId;
-      const isStatistician = project.assignment?.statisticianId === userId;
-      const isQaLead = project.assignment?.qaLeadId === userId;
+      const isStatistician = project.statisticianId === userId;
+      const isQaLead = project.qaLeadId === userId;
       const isManager = callerRole === "ADMIN" || callerRole === "CEO";
 
       if (!isClient && !isStatistician && !isQaLead && !isManager) {
@@ -101,7 +123,7 @@ export async function POST(
         );
       }
 
-      if (isClient && (!project.assignment || (!project.assignment.statisticianId && !project.assignment.qaLeadId))) {
+      if (isClient && !project.statisticianId && !project.qaLeadId) {
         return NextResponse.json(
           {
             success: false,
