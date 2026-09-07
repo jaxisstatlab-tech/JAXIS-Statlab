@@ -551,3 +551,30 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
   scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 }
 
+/* ==========================================================================
+   Mobile Touch Action & Pinch Zoom Prevention
+   Disables double-tap to zoom and prevents accidental multi-touch pinch
+   zooming while preserving fast, native, silky-smooth single-finger scrolling.
+   ========================================================================== */
+html,
+body {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
+main,
+[role="main"],
+.custom-scrollbar {
+  touch-action: pan-x pan-y;
+}
+
+/* Prevent iOS Safari from auto-zooming into inputs on focus */
+@media screen and (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+

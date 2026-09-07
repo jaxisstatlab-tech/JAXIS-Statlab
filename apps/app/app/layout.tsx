@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Mrs_Saint_Delafield } from "next/font/google";
 import "./globals.css";
 import { Suspense } from "react";
 import { RouteProgressBar } from "./components/layout/RouteProgressBar";
+import { MobileTouchLock } from "./components/layout/MobileTouchLock";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,6 +23,15 @@ const signatureFont = Mrs_Saint_Delafield({
   variable: "--font-signature",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#010114",
+};
 
 export const metadata: Metadata = {
   title: "JAXIS StatLab Workspace",
@@ -48,6 +58,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <RouteProgressBar />
         </Suspense>
+        <MobileTouchLock />
         {children}
       </body>
     </html>
