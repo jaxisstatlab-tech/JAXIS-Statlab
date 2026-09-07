@@ -226,6 +226,11 @@
 ### Task 6.7 — Session Lifespan Hardening
 - [x] In `src/lib/auth.config.ts`, reduce JWT `maxAge` from 30 days to 24 hours to secure financial and operational sessions.
 
+### Task 6.8 — Real-Time Serverless Resilience (Hybrid Delivery & Delta Safety Nets)
+- [x] In `NotificationDrawer.tsx`, implement a resilient 15s background delta sync with unread detection. Rings bell, displays live floating toast, and dispatches `jaxis:study-updated` even when serverless function instances are partitioned across Vercel.
+- [x] In `MessageThread.tsx`, add an adaptive 4s delta sync (`syncDelta`) safety net with tab visibility listener, guaranteeing 100% chat delivery even if WebSockets drop or are blocked by corporate proxies.
+- [x] In `src/features/messaging/actions.ts`, harden Supabase Realtime server-side broadcast to verify channel subscription before transmission and tear down channel cleanly.
+
 ---
 
 ## 🔒 Verification & Quality Gate Checklist

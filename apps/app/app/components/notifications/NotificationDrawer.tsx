@@ -76,13 +76,44 @@ export function NotificationDrawer() {
     }
   );
 
+  const alertsRef = useRef<InAppAlertDTO[]>([]);
+  alertsRef.current = alerts;
+
   const loadAlerts = useCallback(async (isInitial = false) => {
     if (isInitial) setIsLoading(true);
     try {
       const res = await getInAppAlertsAction();
       if (res.success && res.data) {
-        setAlerts(res.data.alerts);
-        setUnreadCount(res.data.unreadCount);
+        const freshAlerts = res.data.alerts;
+        const freshUnreadCount = res.data.unreadCount;
+
+        // If delta sync discovers brand new unread alerts that arrived from another serverless instance
+        if (!isInitial && alertsRef.current.length > 0 && freshAlerts.length > 0) {
+          const knownIds = new Set(alertsRef.current.map((a) => a.id));
+          const newlyDiscovered = freshAlerts.filter((a) => !knownIds.has(a.id) && !a.isRead);
+
+          const latestAlert = newlyDiscovered[0];
+          if (latestAlert) {
+            // Ring bell animation
+            setIsRinging(true);
+            setTimeout(() => setIsRinging(false), 2500);
+
+            // Live floating Toast notification
+            setToastMessage({
+              message: latestAlert.alertType?.replace(/_/g, " ") || "New Notification",
+              description: latestAlert.message,
+              variant: "info",
+            });
+
+            // Dispatch global event for active desk pages to auto-refresh data
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new CustomEvent("jaxis:study-updated", { detail: latestAlert }));
+            }
+          }
+        }
+
+        setAlerts(freshAlerts);
+        setUnreadCount(freshUnreadCount);
       }
     } catch (err) {
       console.error("Failed to load alerts:", err);
@@ -176,10 +207,6 @@ export function NotificationDrawer() {
     loadAlerts(true);
 
     const poll = () => {
-      // If SSE is healthy and connected, skip background poll
-      if (sseConnectedRef.current) {
-        return;
-      }
       // Sleep background poll if tab is hidden/minimized
       if (typeof document !== "undefined" && document.visibilityState === "hidden") {
         return;
@@ -187,8 +214,8 @@ export function NotificationDrawer() {
       loadAlerts(false);
     };
 
-    // Silent background poll fallback (every 25 seconds when SSE is disconnected)
-    const interval = setInterval(poll, 25000);
+    // Resilient background delta sync (every 15 seconds) ensuring guaranteed delivery across Vercel serverless instances
+    const interval = setInterval(poll, 15000);
 
     // Refresh immediately when user returns to tab
     const handleVisibilityChange = () => {

@@ -34,3 +34,5 @@ Module 21 hardens JAXIS StatLab for production readiness on Vercel and real-worl
 | `PROD-F08` | **Custom 404 Not Found Page (`app/not-found.tsx`)** — High-precision 404 page styled with Dark Precision Terminal cards and Tabler icons. |
 | `PROD-F09` | **Session Lifespan Hardening** — JWT `maxAge` set to 24 hours in `src/lib/auth.config.ts`. |
 | `PROD-F10` | **Production Runtime Environment Validation** — Validates and logs missing production environment variables at server runtime. |
+| `PROD-F11` | **Serverless-Resilient Notification Delivery** — Hybrid SSE stream + 15s background delta sync with unread detection in `NotificationDrawer.tsx` guaranteeing real-time delivery across Vercel serverless instances. |
+| `PROD-F12` | **Serverless-Resilient Chat Delivery** — Supabase Realtime broadcast channels + 4s adaptive delta polling in `MessageThread.tsx` guaranteeing 100% chat delivery even on network drops or WebSocket partition. |

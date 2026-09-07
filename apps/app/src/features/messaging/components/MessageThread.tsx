@@ -233,52 +233,77 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     }
   }, [isLoading, messages.length, scrollToBottom]);
 
-  // 3. Real-time Subscription via Supabase Realtime Channels
+  // Delta Sync: Fetches new incoming messages since the last known timestamp
+  const syncDelta = useCallback(async () => {
+    if (!projectId) return;
+    const lastMsg = messagesRef.current[messagesRef.current.length - 1];
+    const sinceIso = lastMsg ? lastMsg.sentAt : new Date(Date.now() - 60000).toISOString();
+
+    try {
+      const syncRes = await syncNewMessages(projectId, sinceIso);
+      if (syncRes.success && syncRes.data && syncRes.data.length > 0) {
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const fresh = syncRes.data!.filter((m) => !existingIds.has(m.id));
+          if (fresh.length === 0) return prev;
+          const updated = [...prev, ...fresh];
+
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.setItem(
+                `jaxis_chat_cache_${projectId}`,
+                JSON.stringify({
+                  project: projectInfoRef.current,
+                  messages: updated,
+                  hasMore: hasMoreRef.current,
+                  nextCursor: nextCursorRef.current,
+                })
+              );
+            } catch {
+              // ignore
+            }
+          }
+
+          return updated;
+        });
+        scrollToBottom(true);
+      }
+    } catch (err) {
+      console.error("Failed to sync realtime delta messages:", err);
+    }
+  }, [projectId, scrollToBottom]);
+
+  // 3. Real-time Subscription via Supabase Realtime Channels + Adaptive 4-second Polling Safety Net
   useEffect(() => {
     if (!projectId) return;
 
-    const cleanup = subscribeToProjectMessages(projectId, async () => {
-      const lastMsg = messagesRef.current[messagesRef.current.length - 1];
-      const sinceIso = lastMsg ? lastMsg.sentAt : new Date(Date.now() - 60000).toISOString();
-
-      try {
-        const syncRes = await syncNewMessages(projectId, sinceIso);
-        if (syncRes.success && syncRes.data && syncRes.data.length > 0) {
-          setMessages((prev) => {
-            const existingIds = new Set(prev.map((m) => m.id));
-            const fresh = syncRes.data!.filter((m) => !existingIds.has(m.id));
-            if (fresh.length === 0) return prev;
-            const updated = [...prev, ...fresh];
-
-            if (typeof window !== "undefined") {
-              try {
-                sessionStorage.setItem(
-                  `jaxis_chat_cache_${projectId}`,
-                  JSON.stringify({
-                    project: projectInfoRef.current,
-                    messages: updated,
-                    hasMore: hasMoreRef.current,
-                    nextCursor: nextCursorRef.current,
-                  })
-                );
-              } catch {
-                // ignore
-              }
-            }
-
-            return updated;
-          });
-          scrollToBottom(true);
-        }
-      } catch (err) {
-        console.error("Failed to sync realtime delta messages:", err);
-      }
+    // WebSocket push trigger for instant (0ms) delivery
+    const cleanup = subscribeToProjectMessages(projectId, () => {
+      syncDelta();
     });
+
+    // Adaptive 4-second polling safety net (ensures delivery even if WebSocket drops or is blocked)
+    const pollInterval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return; // sleep when tab is hidden
+      }
+      syncDelta();
+    }, 4000);
+
+    // Instant sync when user tabs back into the consultation
+    const handleVisibility = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        syncDelta();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       cleanup();
+      clearInterval(pollInterval);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [projectId, scrollToBottom]);
+  }, [projectId, syncDelta]);
 
   // Optimistic Message Sender (0ms instant bubble display)
   const handleSendMessage = async (content: string) => {

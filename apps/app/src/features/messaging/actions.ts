@@ -184,10 +184,19 @@ export async function sendMessage(
       try {
         const { supabaseAdmin } = await import("@/lib/supabase");
         const channel = supabaseAdmin.channel(`project-messages:${project.id}`);
-        await channel.send({
-          type: "broadcast",
-          event: "new_message",
-          payload: messageDTO,
+        channel.subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            channel
+              .send({
+                type: "broadcast",
+                event: "new_message",
+                payload: messageDTO,
+              })
+              .catch(() => {})
+              .finally(() => {
+                supabaseAdmin.removeChannel(channel);
+              });
+          }
         });
       } catch (err) {
         // Non-blocking fallback
