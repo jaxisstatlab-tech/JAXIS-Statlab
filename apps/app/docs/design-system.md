@@ -140,22 +140,21 @@ All telemetry, financial, and operational index cards across all roles and pages
 
 #### Canonical Typography & Visual Specifications:
 1. **Header Label**: `text-xs font-mono font-semibold uppercase tracking-wider text-white/50 select-none truncate`. Never use `font-sans` or microscopic fonts for metric labels.
-2. **Metric Value**: `font-mono font-bold tracking-tight text-2xl sm:text-3xl` (scaled dynamically for large numbers). Consistent 700 bold weight across all cards; never use `font-extrabold` (800) or weak `font-normal`.
-3. **Unit Suffix**: Rendered cleanly inline as `text-xs font-mono text-white/40 select-none` (e.g. `hrs`, `specialists`, `shifts`, `completed`).
-4. **Description / Subtitle**: `text-xs font-sans text-white/50 select-none truncate` preceded by a calibrated `1.5` dot indicator.
-5. **Border & Substrate**: Solid elevated substrate `bg-[#01142B] border border-white/10 hover:border-white/20 rounded-[2px] p-5 sm:p-6 shadow-xl`.
+2. **Metric Value**: `font-mono font-bold tracking-tight text-2xl sm:text-3xl` (scaled dynamically for large numbers). In 90% of cases, values must default to crisp bold white (`variant="default"`).
+3. **Color Restraint & Anti-Rainbow Mandate**: Never render rainbow rows where each adjacent card has a different hue (e.g. Amber, Green, Sky, Orange). Reserve accent colors strictly for urgent, actionable states when count > 0.
+4. **Unit Suffix**: Rendered cleanly inline as `text-xs font-mono text-white/40 select-none` (e.g. `hrs`, `specialists`, `shifts`, `completed`).
+5. **Description / Subtitle**: `text-xs font-sans text-white/50 select-none truncate` preceded by a calibrated `1.5` dot indicator.
+6. **Border & Substrate**: Solid elevated substrate `bg-[#01142B] border border-white/10 hover:border-white/20 rounded-[2px] p-5 sm:p-6 shadow-xl`.
 
 ```tsx
 import { KpiCard } from "@repo/ui";
-import { IconClock, IconBuildingBank, IconCoins } from "@tabler/icons-react";
+import { IconClock, IconBuildingBank } from "@tabler/icons-react";
 
 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
   <KpiCard
     label="Active Studies"
     value={24}
-    variant="emerald"
-    badge="+14% MoM"
-    badgeColor="emerald"
+    variant="default"
     description="12 In Progress · 4 In QA Review"
   />
 
@@ -170,7 +169,7 @@ import { IconClock, IconBuildingBank, IconCoins } from "@tabler/icons-react";
   <KpiCard
     label="Total Escrow Vault"
     value="₱184,500.00"
-    variant="sky"
+    variant="default"
     icon={<IconBuildingBank size={16} stroke={1.5} />}
     description="Secured in dual-signatory escrow"
   />
@@ -216,7 +215,44 @@ Every table rendered across all modules **must** adhere to horizontal scroll con
 
 ---
 
-### 4.4. Form Fields & Validation Controls
+### 4.4. Telemetry & Area Charts (`<AreaChart />`)
+All continuous telemetry, activity, and milestone time-series curves must use the canonical `<AreaChart />` component from `@repo/ui` powered by `recharts`.
+
+#### Standards:
+1. **SSR Hydration Safety**: Components internally handle client mounting with an animated pulse placeholder to prevent hydration mismatches in Next.js 16.
+2. **Restrained Color Palette**: Default strictly to Enterprise Orange (`#CC6600`) and Analytical Sky (`#38BDF8`). Never render rainbow charts with 4+ disparate neon lines.
+3. **Terminal Substrate**: Encapsulate inside a solid `#01142B` Card with `rounded-[2px]`, `border-white/10`, and a dedicated header with icon and time range label.
+4. **Tooltips**: Built-in dark terminal tooltip (`bg-[#01142B] border-white/15 text-white font-mono`).
+
+```tsx
+import { AreaChart, Card } from "@repo/ui";
+import { IconActivity } from "@tabler/icons-react";
+
+<Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-4">
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
+    <div className="flex items-center gap-2">
+      <IconActivity size={18} stroke={2} className="text-[#CC6600]" />
+      <h3 className="text-sm font-bold text-white font-sans">
+        Research Pipeline & Milestone Activity
+      </h3>
+    </div>
+    <span className="text-xs text-white/50 font-mono">6-Month Telemetry Overview</span>
+  </div>
+
+  <AreaChart
+    data={chartData}
+    index="month"
+    categories={["Active Studies", "Completed Milestones"]}
+    colors={["#CC6600", "#38BDF8"]}
+    height={220}
+    valueFormatter={(val) => `${val} Studies`}
+  />
+</Card>
+```
+
+---
+
+### 4.5. Form Fields & Validation Controls
 All inputs (`FormInput`, `FormSelect`, `FormTextarea`) strictly enforce:
 
 1. **Labels**: Uppercase mono typography (`font-mono text-xs text-slate-200 uppercase tracking-wider`).
@@ -227,7 +263,7 @@ All inputs (`FormInput`, `FormSelect`, `FormTextarea`) strictly enforce:
 
 ---
 
-### 4.5. Modal & Drawer Inspection Windows
+### 4.6. Modal & Drawer Inspection Windows
 Modal dialogs (`Modal.tsx`) enforce responsive containment:
 
 1. **Viewport Constraints**: `max-w-[94vw] sm:max-w-xl md:max-w-2xl lg:max-w-4xl`.

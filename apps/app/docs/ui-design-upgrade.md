@@ -92,6 +92,12 @@ Color is a **scarce cognitive resource**. When every number, badge, pill, and la
   2. Always use the canonical `<Peso />` component from `@repo/ui` or `<MoneyDisplay amount={...} />`.
   3. The `₱` symbol must always be rendered in **Sans-Serif (`font-sans font-normal opacity-85 select-none inline-block mr-0.5`)**.
 
+### 2.4. Telemetry & Area Charts Standard (`<AreaChart />`)
+- **Library**: Powered by `recharts`, encapsulated cleanly in `@repo/ui`'s `<AreaChart />`.
+- **SSR Hydration Safety**: Includes built-in `isMounted` state and a pulse skeleton matching the chart's exact height to prevent Next.js 16 SSR mismatches.
+- **Color Budget**: Strict 2-color maximum — Enterprise Orange (`#CC6600`) and Analytical Sky (`#38BDF8`).
+- **Substrate**: Must be encapsulated inside a solid `#01142B` Card with `rounded-[2px]`, `border-white/10`, and a telemetry header with an icon and time range label.
+
 ---
 
 ## 3. What is "AI Slop" & How We Eradicate It
