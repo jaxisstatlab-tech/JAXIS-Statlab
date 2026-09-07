@@ -156,3 +156,22 @@ All AI coding assistants and developers MUST strictly follow the design system a
   3. **Current Theme Grounding**: Anchor strictly to Master Canvas (`#010114`), Surface Cards (`rgba(1, 22, 46, 0.75)` / `#01142B`), Enterprise Orange (`#CC6600`, 5–10% max visual weight), and crisp 1px borders (`border-white/10`).
   4. **Anti-AI-Slop Mandate**: Zero awkward multi-stop gradients, zero blurry box-shadow glows, zero robotic buzzwords, zero double slashes (`//`), zero broken text truncations (`...`), and zero ALL-CAPS shouting buttons.
   5. **Tactile Motion (Emil Kowalski)**: Buttons scale to `0.97` on `:active`, entrances start from `scale(0.95)` with opacity `0`, fast durations under `250ms`, and custom cubic-bezier easing.
+
+---
+
+## 17. Tactile Live Activity & Notification Badging Standard (CRITICAL)
+- **Mandatory Policy**:
+  1. **Dual-Cue Alert Architecture**: All live activity counters and unread alerts (e.g. unread consultation messages) must combine an active live pulse beacon (`animate-ping` outer beacon + solid `#CC6600` core) and a high-contrast Enterprise Orange count chip (`bg-[#CC6600] text-white font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-[2px] shadow-sm active:scale-90`).
+  2. **Icon & Text Illumination**: When actionable items or unread messages exist, illuminate the item icon in warm amber (`text-[#FFA040]`) and elevate link text to bold white (`font-semibold text-white`).
+  3. **Quiet-When-Zero Protocol**: When the count is `0`, the indicator must be **completely quiet and invisible**. Never render gray `0` chips, muted outlines, or idle ping blobs.
+  4. **Instantaneous State & 0ms Real-Time Protocol**: Pre-load unread counts on the server in async RSC (`layout.tsx`) via dedicated count queries (`getUnreadMessagesCount`), dispatch window events (`jaxis:unread-count-updated`) on receipt clearance, and revalidate on tab focus (`visibilitychange`).
+
+---
+
+## 18. Canonical Modern Portal UX Standards (CRITICAL)
+- **Mandatory Policy**:
+  1. **Keyboard Search Shortcut (`/`)**: Dashboards and data tables must support pressing `/` anywhere to focus the search bar, with `Esc` to clear search text and blur input. Display an elegant `<kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.08] text-white/40 border border-white/10 select-none">/</kbd>` keycap in the search box.
+  2. **Visual 5-Stage Study Pipeline Stepper**: All study cards and inspection desks must display the canonical 5-stage progress stepper: `Proposal` $\rightarrow$ `Contract (SOW)` $\rightarrow$ `Deposit` $\rightarrow$ `Analysis` $\rightarrow$ `Deliverables`. Never expose raw database status codes to clients.
+  3. **Smart 1-Click "Reset Filters"**: Search queries or filter tabs that return 0 results must display a helpful empty state card with a 1-click **"Clear Filters"** button. Never leave users stranded in empty views.
+  4. **Multi-Document Lightbox Navigation**: Document viewers must support left/right arrows or `[` / `]`, document counter badges, and instant `Esc` dismissal.
+  5. **1-Click Copy Badges (`<CopyButton variant="badge" />`)**: Study IDs (`JAXIS-...`) and transaction reference numbers must provide instant 1-click copy with tactile scale compression and emerald checkmark (`Copied!`) confirmation.

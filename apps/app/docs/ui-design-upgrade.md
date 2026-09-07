@@ -175,10 +175,51 @@ Micro-interactions transform a static page into an interface that feels alive an
    ```
    - Micro-distance: Only 8px translation and 1% scale difference (`0.99`). Elements feel like they are gently settling into place rather than flying across the screen.
    - Total window: All elements must finish animating within 300ms.
-   - Container-level only: Never stagger 50 table rows individually; animate the outer table container as a single unit.
-   - Accessible reset: Always include `@media (prefers-reduced-motion: reduce)` to disable animations immediately for sensitive users.
+    - Container-level only: Never stagger 50 table rows individually; animate the outer table container as a single unit.
+    - Accessible reset: Always include `@media (prefers-reduced-motion: reduce)` to disable animations immediately for sensitive users.
 
-### 4.2. Impeccable Visual Hierarchy & Layout Geometry (`impeccable`)
+### 4.2. Tactile Live Activity & Notification Badging Standard
+Interactive indicators (such as unread message alerts, pending review badges, and live counters) must provide immediate, high-contrast, physical feedback:
+1. **Dual-Cue Visual Indicator**:
+   - **Live Pulse Beacon**: A glowing Enterprise Orange ping dot (`animate-ping` outer pulse + solid inner core `#CC6600`) signaling real-time activity.
+   - **High-Contrast Count Chip**: A crisp, authoritative count badge (`bg-[#CC6600] text-white font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-[2px] shadow-sm tracking-tight active:scale-90`) displaying `{count} NEW` (or `9+ NEW` if count exceeds 9).
+2. **Icon Illumination & Label Elevation**:
+   - When new messages or actionable items exist, illuminate the item icon in warm amber (`text-[#FFA040]`) and elevate the navigation text to bold white (`font-semibold text-white`).
+3. **Quiet-When-Zero Protocol (Anti-Distraction)**:
+   - When the count is `0`, the indicator must be **completely quiet and invisible**. Never render empty gray `0` badges, muted outlines, or idle ping blobs.
+4. **Physical Haptic Compression**:
+   - Navigation links and alert triggers compress on click/tap (`active:scale-[0.98]` on containers, `active:scale-90` on badges).
+5. **Instantaneous State & 0ms Real-Time Protocol**:
+   - Pre-load counts on the server in async RSC (`layout.tsx`) to eliminate first-paint flash or spinner delays.
+   - Wire instantaneous local updates with custom window events (`jaxis:unread-count-updated`, `jaxis:message-read`, `jaxis:new-message`).
+   - Automatically revalidate on tab focus via `visibilitychange` and lightweight background intervals.
+
+### 4.3. Canonical Modern Portal UX Patterns & Standards
+Elevate all customer and administrative portals using these canonical, high-efficiency UX patterns:
+1. **Keyboard Navigation Shortcut (`/` to Search & `Esc` to Clear)**:
+   - Behavior: Pressing `/` anywhere on a dashboard, search view, or table immediately focuses the search input; pressing `Esc` clears the search text and blurs the input.
+   - Visual Cue: Inputs equipped with this shortcut display a subtle, elegant keycap badge `<kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.08] text-white/40 border border-white/10 select-none">/</kbd>` on the right.
+   - UX Benefit: Power users, researchers, and clients can filter through studies, staff records, or payslips instantaneously without reaching for their mouse.
+2. **Visual 5-Stage Study Pipeline (Progress Stepper)**:
+   - Pipeline Stages: `Proposal` $\rightarrow$ `Contract (SOW)` $\rightarrow$ `Deposit` $\rightarrow$ `Analysis` $\rightarrow$ `Deliverables`.
+   - Implementation: Used on study cards (`ClientStudyCard.tsx`) and project inspection desks.
+   - Stage Styling:
+     - Completed Stages: Verification Emerald (`text-emerald-400 bg-emerald-500/15 border-emerald-500/30`) with `<IconCheck size={12} />`.
+     - Active Stage: Enterprise Orange (`text-white bg-[#CC6600] border-[#CC6600] font-bold`) with subtle ping or pulse.
+     - Upcoming Stages: Muted white/20 (`text-white/30 bg-white/[0.02] border-white/10`).
+   - UX Benefit: Eliminates confusing database status codes; users immediately understand where their study is in the consultation pipeline and what the exact next step is.
+3. **Smart 1-Click "Reset Filters" on Empty Search Results**:
+   - Anti-Dead-End Rule: When a search query or status filter returns 0 results, never display a barren blank table or generic "No data" text.
+   - Implementation: Render a clean empty state card with a 1-click **"Clear Filters"** button that resets search queries and filter tabs with a single click.
+4. **Multi-Document Lightbox Navigation**:
+   - Keyboard Shortcuts: Keyboard left/right arrow keys or `[` / `]` navigate between documents; `Esc` closes the viewer.
+   - Navigation Chrome: Includes a header counter badge (`Document 2 of 5`), quick document tab strip, and zoom/pan controls.
+   - UX Benefit: Allows clients and QA leads to inspect multiple datasets, methodology reports, and receipts without repeatedly opening and closing modals.
+5. **1-Click Copy Badge (`<CopyButton variant="badge" />`)**:
+   - Usage: Study intake IDs (`JAXIS-YYYYMM-XXXX`), transaction reference numbers, and escrow hashes.
+   - Feedback: Immediate tactile scale compression, instant clipboard copy, and visual state flip to emerald badge with checkmark (`Copied!`) for 1.8 seconds before reverting.
+
+### 4.4. Impeccable Visual Hierarchy & Layout Geometry (`impeccable`)
 1. **The Anti-Double-Padding Mandate**:
    The root layout shell (`DashboardShell.tsx`) already applies `clamp(2rem, 4vw, 3.5rem)` padding.
    Inner page routes inside `/dashboard` **MUST NOT add redundant outer padding** (NO `px-4 sm:px-8 py-8`).
@@ -195,7 +236,7 @@ Micro-interactions transform a static page into an interface that feels alive an
    - Micro Badges & Meta: `text-xs font-mono font-medium tracking-wide`
    - Numerical Telemetry: `text-2xl sm:text-3xl font-mono font-bold text-white`
 
-### 4.3. Plain-English Coworker Copywriting (`writing-guidelines`)
+### 4.5. Plain-English Coworker Copywriting (`writing-guidelines`)
 Write all labels, descriptions, empty states, and toast notifications as if explaining clearly to a colleague:
 | Jargon (Banned) | Human Replacement |
 |---|---|
@@ -211,7 +252,7 @@ Write all labels, descriptions, empty states, and toast notifications as if expl
 | Institutional Payslip Audit Ledger | All Payslips |
 | Run Batch Cycle | Generate Payslips |
 
-### 4.4. Industrial-Scientific Precision (`industrial-brutalist-ui`)
+### 4.6. Industrial-Scientific Precision (`industrial-brutalist-ui`)
 - Tabular data precision: clear header alignments, numerical columns right-aligned, monospaced dates and IDs.
 - Hairline 1px border divisions (`border-white/10`).
 - Strict Tabler Icons exclusively (`@tabler/icons-react`), with `stroke={1.5}` or `stroke={2}`. Zero emojis anywhere.
@@ -421,6 +462,11 @@ All user roles share the **same visual substrate, design tokens, typography, and
 [ ] Are all icon-only buttons equipped with aria-label or .sr-only accessible names?
 [ ] Is text contrast verified at >= 4.5:1 and are visible focus rings present?
 [ ] Are Tabler icons used exclusively (no emojis, no ad-hoc SVGs)?
+[ ] Are interactive alerts using the tactile live badging standard (pulse beacon + high-contrast chip, quiet-when-zero)?
+[ ] Are intro animations using Emil Kowalski micro-staggering (.animate-card-reveal .stagger-1..6)?
+[ ] Do search bars support the `/` focus and `Esc` clear keyboard shortcut with <kbd>/</kbd>?
+[ ] Do empty filter/search results offer a 1-click "Clear Filters" action?
+[ ] Are Study IDs and transaction references equipped with 1-click <CopyButton variant="badge" />?
 [ ] Do check-types and ESLint pass with 0 errors and 0 warnings?
 ```
 

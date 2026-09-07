@@ -692,5 +692,41 @@ import { IconPackage, IconBolt } from "@tabler/icons-react";
 </Tabs>
 ```
 
+---
 
+### 6.9. Tactile Live Activity & Notification Badging System
 
+Interactive indicators (such as unread message alerts, pending review badges, and live counters) must provide immediate, high-contrast, physical feedback:
+
+1. **Dual-Cue Visual Indicator**:
+   - **Live Pulse Beacon**: An active glowing Enterprise Orange beacon (`animate-ping` outer pulse + solid `#CC6600` core) signaling live activity.
+   - **High-Contrast Count Chip**: A crisp, authoritative count badge (`bg-[#CC6600] text-white font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-[2px] shadow-sm tracking-tight active:scale-90`) displaying `{count} NEW` (or `9+ NEW` if count exceeds 9).
+2. **Icon Illumination & Label Elevation**:
+   - When new messages or actionable items exist, illuminate the item icon in warm amber (`text-[#FFA040]`) and elevate the navigation text to bold white (`font-semibold text-white`).
+3. **Quiet-When-Zero Protocol (Anti-Distraction)**:
+   - When the count is `0`, the indicator must be **completely quiet and invisible**. Never render empty gray `0` badges, muted outlines, or idle ping blobs.
+4. **Physical Haptic Compression (Emil Kowalski)**:
+   - Navigation links and alert triggers compress on click/tap (`active:scale-[0.98]` on containers, `active:scale-90` on badges).
+5. **Instantaneous State & 0ms Real-Time Protocol**:
+   - Pre-load counts on the server in async RSC (`layout.tsx`) via dedicated count queries (`getUnreadMessagesCount`) to eliminate first-paint flash or spinner delays.
+   - Wire instantaneous local updates with custom window events (`jaxis:unread-count-updated`, `jaxis:message-read`, `jaxis:new-message`).
+   - Automatically revalidate on tab focus via `visibilitychange` and lightweight background intervals.
+
+---
+
+### 6.10. Canonical Modern Portal UX Standards
+
+All client and administrative portals must adhere to canonical high-efficiency UX patterns:
+
+1. **Keyboard Search Shortcut (`/` to Focus & `Esc` to Clear)**:
+   - Dashboards and data tables must support pressing `/` anywhere to focus the search bar, with `Esc` to clear search text and blur input.
+   - Display an elegant `<kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.08] text-white/40 border border-white/10 select-none">/</kbd>` keycap inside the search box.
+2. **Visual 5-Stage Study Pipeline Stepper**:
+   - All study cards and inspection desks must display the canonical 5-stage progress stepper: `Proposal` $\rightarrow$ `Contract (SOW)` $\rightarrow$ `Deposit` $\rightarrow$ `Analysis` $\rightarrow$ `Deliverables`.
+   - Never expose raw database status codes to clients.
+3. **Smart 1-Click "Reset Filters" on Empty Results**:
+   - Search queries or filter tabs that return 0 results must display a helpful empty state card with a 1-click **"Clear Filters"** button. Never leave users stranded in empty views.
+4. **Multi-Document Lightbox Navigation**:
+   - Document viewers must support left/right arrows or `[` / `]`, document counter badges (`Document 2 of 5`), quick document tab strip, and instant `Esc` dismissal.
+5. **1-Click Copy Badges (`<CopyButton variant="badge" />`)**:
+   - Study IDs (`JAXIS-...`) and transaction reference numbers must provide instant 1-click copy with tactile scale compression and emerald checkmark (`Copied!`) confirmation.

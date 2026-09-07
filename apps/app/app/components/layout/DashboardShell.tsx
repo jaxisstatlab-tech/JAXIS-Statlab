@@ -37,6 +37,7 @@ export function DashboardShell({
           userFullName={userFullName}
           userRole={userRole}
           userEmail={userEmail}
+          clientProfileIncomplete={clientProfileIncomplete}
           initialActiveShift={initialActiveShift}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
         />

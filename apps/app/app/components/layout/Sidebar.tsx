@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
 import type { RoleName } from "@prisma/client";
 import { getUnreadMessagesCount } from "@/features/messaging/actions";
 import {
@@ -129,7 +128,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
       ],
     },
     {
-      groupTitle: "COMMUNICATION & ACCOUNT",
+      groupTitle: "COMMUNICATION & SUPPORT",
       items: [
         {
           label: "Messages",
@@ -140,11 +139,6 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           label: "Revisions & Help",
           href: "/dashboard/client/disputes",
           icon: Icons.Claims,
-        },
-        {
-          label: "School & Profile",
-          href: "/dashboard/client/profile",
-          icon: Icons.Users,
         },
       ],
     },
@@ -510,43 +504,8 @@ const BADGE_STYLES: Record<string, string> = {
   gray: "bg-white/[0.04] text-white/35 border-white/[0.08]",
 };
 
-function getProfileHref(role?: string): string {
-  const normalized = role?.toUpperCase() || "";
-  if (normalized === "CLIENT") return "/dashboard/client/profile";
-  if (normalized === "STATISTICIAN") return "/dashboard/statistician/profile";
-  if (normalized === "SENIOR_QA_LEAD" || normalized === "QA") return "/dashboard/qa/profile";
-  if (normalized === "FINANCE_OFFICER" || normalized === "FINANCE") return "/dashboard/finance/profile";
-  if (normalized === "CEO") return "/dashboard/ceo/profile";
-  return "/dashboard/admin/profile";
-}
-
-function getRoleDisplayLabel(role?: string): string {
-  const normalized = role?.toUpperCase() || "";
-  switch (normalized) {
-    case "CLIENT":
-      return "Client";
-    case "STATISTICIAN":
-      return "Lead Statistician";
-    case "SENIOR_QA_LEAD":
-    case "QA":
-      return "Senior QA Lead";
-    case "FINANCE_OFFICER":
-    case "FINANCE":
-      return "Finance Officer";
-    case "CEO":
-      return "Chief Executive";
-    case "ADMIN":
-    case "OPERATIONS_MANAGER":
-      return "Operations Admin";
-    default:
-      return role ? role.replace(/_/g, " ") : "Staff";
-  }
-}
-
 export const Sidebar: React.FC<SidebarProps> = ({
   role = "ADMIN",
-  userFullName = "User",
-  userEmail = "",
   clientProfileIncomplete = false,
   initialUnreadMessagesCount = 0,
   className = "",
@@ -621,17 +580,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     };
   }, [refreshUnreadCount]);
 
-  const handleLogout = async () => {
-    try {
-      await signOut({
-        callbackUrl: "/login",
-        redirect: true,
-      });
-    } catch {
-      window.location.href = "/login";
-    }
-  };
-
   // Reset pending state once navigation completes or URL matches target
   useEffect(() => {
     if (pendingHref) {
@@ -697,17 +645,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     navGroups = navGroups.map((group) => ({
       ...group,
       items: group.items.map((item) => {
-        if (item.href === "/dashboard/client/profile") {
-          return {
-            ...item,
-            badge: "1. START HERE",
-            badgeColor: "orange" as const,
-          };
-        }
         if (item.href === "/dashboard/client/projects/new") {
           return {
             ...item,
-            badge: "2. NEXT STEP",
+            badge: "NEW STUDY",
             badgeColor: "amber" as const,
           };
         }
@@ -778,54 +719,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <IconX size={18} stroke={1.5} />
           </button>
-        </div>
-
-        {/* Mobile User Identity & Session Card */}
-        <div className="flex lg:hidden flex-col gap-2.5 p-3 rounded-[2px] bg-white/[0.03] border border-white/10 -mt-1">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="h-8 w-8 rounded-[2px] bg-[#011B38] border border-white/15 flex items-center justify-center font-sans text-xs text-white font-semibold shrink-0">
-                {userFullName ? userFullName.charAt(0) : "U"}
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold text-white truncate font-sans">
-                  {userFullName}
-                </span>
-                <span className="text-[10px] text-white/40 truncate font-sans">
-                  {userEmail}
-                </span>
-              </div>
-            </div>
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[9px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 shrink-0">
-              {getRoleDisplayLabel(effectiveRole)}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 pt-2 border-t border-white/[0.08]">
-            <Link
-              href={getProfileHref(effectiveRole)}
-              onClick={onClose}
-              className="flex-1 py-1.5 px-2 rounded-[2px] bg-white/[0.04] hover:bg-white/[0.08] text-center text-[11px] font-sans font-medium text-white/80 transition-colors"
-            >
-              My Profile
-            </Link>
-            {effectiveRole !== "CLIENT" && (
-              <Link
-                href="/dashboard/staff/hr"
-                onClick={onClose}
-                className="flex-1 py-1.5 px-2 rounded-[2px] bg-white/[0.04] hover:bg-white/[0.08] text-center text-[11px] font-sans font-medium text-white/80 transition-colors"
-              >
-                HR &amp; Time
-              </Link>
-            )}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="py-1.5 px-2.5 rounded-[2px] bg-red-500/10 hover:bg-red-500/20 text-red-400 text-center text-[11px] font-sans font-semibold transition-colors cursor-pointer"
-            >
-              Sign Out
-            </button>
-          </div>
         </div>
 
         {/* Navigation Groups */}

@@ -18,6 +18,7 @@ import {
   IconCalendarTime,
   IconLogout,
   IconMenu2,
+  IconSchool,
 } from "@tabler/icons-react";
 import { DutyClockWidget } from "@/features/attendance/components/DutyClockWidget";
 import type { ActiveShiftStatus } from "@/features/attendance/schemas";
@@ -27,6 +28,7 @@ export interface TopbarProps {
   userFullName?: string;
   userRole?: string;
   userEmail?: string;
+  clientProfileIncomplete?: boolean;
   initialActiveShift?: ActiveShiftStatus | null;
   className?: string;
   onToggleMobileSidebar?: () => void;
@@ -69,6 +71,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   userFullName = "Developer Account",
   userRole = "ADMIN",
   userEmail = "dev@jaxis.local",
+  clientProfileIncomplete = false,
   initialActiveShift,
   className = "",
   onToggleMobileSidebar,
@@ -87,6 +90,8 @@ export const Topbar: React.FC<TopbarProps> = ({
       window.location.href = "/login";
     }
   };
+
+  const isClient = userRole?.toUpperCase() === "CLIENT";
 
   return (
     <header
@@ -125,63 +130,84 @@ export const Topbar: React.FC<TopbarProps> = ({
         {/* Topbar Duty Clock Widget for internal staff */}
         <DutyClockWidget userRole={userRole} initialActiveShift={initialActiveShift} />
 
-        {/* Desktop Radix User Profile Dropdown Menu (Housed inside mobile drawer on < lg screens) */}
-        <div className="hidden lg:block">
-          <DropdownMenuRoot>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="flex items-center gap-2.5 sm:gap-3 py-1.5 px-2 sm:px-2.5 rounded-[2px] bg-transparent hover:bg-white/[0.06] transition-all duration-150 cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 ring-0 group select-none"
-              >
+        {/* Unified Radix User Profile Dropdown Menu (Accessible across all screen sizes) */}
+        <DropdownMenuRoot>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-2 sm:gap-2.5 py-1 sm:py-1.5 px-1 sm:px-2.5 rounded-[2px] bg-transparent hover:bg-white/[0.06] transition-all duration-150 cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 ring-0 group select-none relative"
+              aria-label="User account menu"
+            >
+              <div className="relative shrink-0">
                 <UserAvatar
                   name={userFullName}
                   role={userRole}
                   size="sm"
                 />
-
-                <span className="text-sm font-semibold text-white tracking-tight">
-                  {userFullName}
-                </span>
-
-                <IconChevronDown
-                  size={16}
-                  stroke={2}
-                  className="text-white/50 group-hover:text-white/80 transition-transform duration-150"
-                />
-              </button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent
-              align="end"
-              className="w-64 p-2 bg-[#01142B] border border-white/15 shadow-2xl rounded-[2px] backdrop-blur-xl"
-            >
-              {/* Header User Identity */}
-              <div className="px-3 py-2.5 mb-1 flex flex-col gap-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-white truncate font-sans">
-                    {userFullName}
-                  </span>
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 tracking-wider shrink-0">
-                    {getRoleDisplayLabel(userRole)}
-                  </span>
-                </div>
-                <span className="text-xs font-sans font-normal text-white/50 truncate">
-                  {userEmail}
-                </span>
+                {isClient && clientProfileIncomplete && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#CC6600] ring-2 ring-[#010114]"
+                    title="Profile setup required"
+                  />
+                )}
               </div>
 
-              <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
+              <span className="hidden md:inline text-sm font-semibold text-white tracking-tight">
+                {userFullName}
+              </span>
 
-              {/* Menu Options */}
-              <DropdownMenuItem asChild>
-                <Link
-                  href={getProfileHref(userRole)}
-                  className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
-                >
-                  <IconUser size={18} stroke={1.5} className="text-white/60 shrink-0" />
-                  <span>My Profile</span>
-                </Link>
-              </DropdownMenuItem>
+              <IconChevronDown
+                size={16}
+                stroke={2}
+                className="hidden md:inline text-white/50 group-hover:text-white/80 transition-transform duration-150"
+              />
+            </button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent
+            align="end"
+            className="w-64 p-2 bg-[#01142B] border border-white/15 shadow-2xl rounded-[2px] backdrop-blur-xl"
+          >
+            {/* Header User Identity */}
+            <div className="px-3 py-2.5 mb-1 flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-white truncate font-sans">
+                  {userFullName}
+                </span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 tracking-wider shrink-0">
+                  {getRoleDisplayLabel(userRole)}
+                </span>
+              </div>
+              <span className="text-xs font-sans font-normal text-white/50 truncate">
+                {userEmail}
+              </span>
+            </div>
+
+            <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
+
+            {/* Menu Options */}
+            <DropdownMenuItem asChild>
+              <Link
+                href={getProfileHref(userRole)}
+                className="flex items-center justify-between cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  {isClient ? (
+                    <IconSchool size={18} stroke={1.5} className="text-white/60 shrink-0" />
+                  ) : (
+                    <IconUser size={18} stroke={1.5} className="text-white/60 shrink-0" />
+                  )}
+                  <span className="truncate">
+                    {isClient ? "School & Profile" : "My Profile"}
+                  </span>
+                </div>
+                {isClient && clientProfileIncomplete && (
+                  <span className="text-[9px] font-mono font-bold text-[#FFA040] bg-[#CC6600]/20 border border-[#CC6600]/40 px-1.5 py-0.5 rounded-[2px] shrink-0 ml-2">
+                    SETUP
+                  </span>
+                )}
+              </Link>
+            </DropdownMenuItem>
 
               {userRole?.toUpperCase() !== "CLIENT" && (
                 <DropdownMenuItem asChild>
@@ -212,7 +238,6 @@ export const Topbar: React.FC<TopbarProps> = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenuRoot>
-        </div>
 
         {/* Mobile Sidebar Hamburger Button */}
         <button

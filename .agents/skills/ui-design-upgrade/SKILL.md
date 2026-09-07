@@ -151,13 +151,62 @@ Apply micro-interactions that make software feel alive, responsive, and tactile:
    - Container-level only: Never stagger 50 table rows individually; animate the outer table container as a single unit.
    - Accessible reset: Always include `@media (prefers-reduced-motion: reduce)` to disable animations immediately for sensitive users.
 
+### 3.2. Tactile Live Activity & Notification Badging Standard
+Interactive indicators (such as unread message alerts, pending review badges, and live counters) must provide immediate, high-contrast, physical feedback:
+1. **Dual-Cue Visual Indicator**:
+   - **Live Pulse Beacon**: A glowing Enterprise Orange ping dot (`animate-ping` outer pulse + solid inner core `#CC6600`) signaling real-time activity.
+   - **High-Contrast Count Chip**: A crisp, authoritative count badge (`bg-[#CC6600] text-white font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-[2px] shadow-sm tracking-tight active:scale-90`) displaying `{count} NEW` (or `9+ NEW` if count exceeds 9).
+2. **Icon Illumination & Label Elevation**:
+   - When new messages or actionable items exist, illuminate the item icon in warm amber (`text-[#FFA040]`) and elevate the navigation text to bold white (`font-semibold text-white`).
+3. **Quiet-When-Zero Protocol (Anti-Distraction)**:
+   - When the count is `0`, the indicator must be **completely quiet and invisible**. Never render empty gray `0` badges, muted outlines, or idle ping blobs.
+4. **Physical Haptic Compression**:
+   - Navigation links and alert triggers compress on click/tap (`active:scale-[0.98]` on containers, `active:scale-90` on badges).
+5. **Instantaneous State & 0ms Real-Time Protocol**:
+   - Pre-load counts on the server in async RSC (`layout.tsx`) to eliminate first-paint flash or spinner delays.
+   - Wire instantaneous local updates with custom window events (`jaxis:unread-count-updated`, `jaxis:message-read`, `jaxis:new-message`).
+   - Automatically revalidate on tab focus via `visibilitychange` and lightweight background intervals.
+
 ---
 
-## 4. Anti-Double-Padding & Comprehensive Responsive Standards
+## 4. Canonical Modern Portal UX Patterns & Standards
+
+Elevate all customer and administrative portals using these canonical, high-efficiency UX patterns:
+
+### 4.1. Keyboard Navigation Shortcut (`/` to Search & `Esc` to Clear)
+- **Behavior**: Pressing `/` anywhere on a dashboard, search view, or table immediately focuses the search input; pressing `Esc` clears the search text and blurs the input.
+- **Visual Cue**: Inputs equipped with this shortcut display a subtle, elegant keycap badge `<kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.08] text-white/40 border border-white/10 select-none">/</kbd>` on the right.
+- **UX Benefit**: Power users, researchers, and clients can filter through studies, staff records, or payslips instantaneously without reaching for their mouse.
+
+### 4.2. Visual 5-Stage Study Pipeline (Progress Stepper)
+- **Pipeline Stages**: `Proposal` $\rightarrow$ `Contract (SOW)` $\rightarrow$ `Deposit` $\rightarrow$ `Analysis` $\rightarrow$ `Deliverables`.
+- **Implementation**: Used on study cards (`ClientStudyCard.tsx`) and project inspection desks.
+- **Stage Styling**:
+  - **Completed Stages**: Verification Emerald (`text-emerald-400 bg-emerald-500/15 border-emerald-500/30`) with `<IconCheck size={12} />`.
+  - **Active Stage**: Enterprise Orange (`text-white bg-[#CC6600] border-[#CC6600] font-bold`) with subtle ping or pulse.
+  - **Upcoming Stages**: Muted white/20 (`text-white/30 bg-white/[0.02] border-white/10`).
+- **UX Benefit**: Eliminates confusing database status codes; users immediately understand where their study is in the consultation pipeline and what the exact next step is.
+
+### 4.3. Smart 1-Click "Reset Filters" on Empty Search Results
+- **Anti-Dead-End Rule**: When a search query or status filter returns 0 results, never display a barren blank table or generic "No data" text.
+- **Implementation**: Render a clean empty state card with a 1-click **"Clear Filters"** button that resets search queries and filter tabs with a single click.
+
+### 4.4. Multi-Document Lightbox Navigation
+- **Keyboard Shortcuts**: Keyboard left/right arrow keys or `[` / `]` navigate between documents; `Esc` closes the viewer.
+- **Navigation Chrome**: Includes a header counter badge (`Document 2 of 5`), quick document tab strip, and zoom/pan controls.
+- **UX Benefit**: Allows clients and QA leads to inspect multiple datasets, methodology reports, and receipts without repeatedly opening and closing modals.
+
+### 4.5. 1-Click Copy Badge (`<CopyButton variant="badge" />`)
+- **Usage**: Study intake IDs (`JAXIS-YYYYMM-XXXX`), transaction reference numbers, and escrow hashes.
+- **Feedback**: Immediate tactile scale compression, instant clipboard copy, and visual state flip to emerald badge with checkmark (`Copied!`) for 1.8 seconds before reverting.
+
+---
+
+## 5. Anti-Double-Padding & Comprehensive Responsive Standards
 
 Responsive design in JAXIS StatLab is **never about merely shrinking desktop cards until text clips or breaks**. It requires intentional layout transformation across viewports, respecting touch targets, viewport heights, and information density.
 
-### 4.1. Shell Gutters vs. Page Container (Anti-Double-Padding Rule)
+### 5.1. Shell Gutters vs. Page Container (Anti-Double-Padding Rule)
 - The root shell (`DashboardShell.tsx`) already applies `clamp(2rem, 4vw, 3.5rem)` padding.
 - Inner page routes inside `/dashboard` **MUST NOT add redundant outer padding** (`NO px-4 sm:px-8 py-8`).
 - Standard inner wrapper:
@@ -201,7 +250,7 @@ Responsive design in JAXIS StatLab is **never about merely shrinking desktop car
    - Mobile topbar capped at **3 actions maximum** (`[🔔] [⏱ Duty Clock] [☰ Menu Trigger]`).
    - User profile, email, role badge, and sign-out live inside the mobile drawer.
 
-### 4.4. Mobile-First Verification Checklist
+### 5.4. Mobile-First Verification Checklist
 - [ ] No horizontal viewport scrolling/leakage at `375px`.
 - [ ] Primary actions (Save, Submit, Next) easily reachable with thumbs.
 - [ ] Visual hierarchy clear above the fold without 400px of decorative cards.
@@ -210,19 +259,17 @@ Responsive design in JAXIS StatLab is **never about merely shrinking desktop car
 
 ---
 
----
-
-## 5. Comprehensive Accessibility (WCAG 2.2 AA) & Inclusive Design Standard
+## 6. Comprehensive Accessibility (WCAG 2.2 AA) & Inclusive Design Standard
 
 All UI upgrades must comply with **WCAG 2.2 Level AA**:
 
-### 5.1. Contrast Ratios & Optical Hierarchy (WCAG 1.4.3 / 1.4.11)
+### 6.1. Contrast Ratios & Optical Hierarchy (WCAG 1.4.3 / 1.4.11)
 - **Primary Body & Titles**: Text on Master Canvas (`#010114`) and Surface Cards (`#01142B`) must use `text-white` or `text-white/90` (14:1+ contrast, exceeding 4.5:1 requirement).
 - **Secondary & Helper Text**: Must use `text-white/60` or `text-white/70` (minimum 4.5:1 contrast).
 - **Strictly Banned**: Low-contrast gray text (`text-white/20` or `text-white/30` for readable labels).
 - **Borders & Focus States**: Hairline borders (`border-white/10` to `border-white/20`) and focus rings must maintain at least 3:1 contrast against adjacent substrates.
 
-### 5.2. Keyboard Navigation & Visible Focus Rings (WCAG 2.4.7 / 2.4.11)
+### 6.2. Keyboard Navigation & Visible Focus Rings (WCAG 2.4.7 / 2.4.11)
 - **Full Tabability**: Every interactive element must be reachable and operable via `Tab` / `Shift+Tab` and `Enter` / `Space`.
 - **Visible Focus Rings**: Never use `outline-none` without pairing with a high-contrast focus ring:
   ```tsx
@@ -230,7 +277,7 @@ All UI upgrades must comply with **WCAG 2.2 Level AA**:
   ```
 - **Modal & Drawer Focus Trapping**: Modals and drawers must trap focus while open and restore focus to trigger upon dismissal with `Escape`.
 
-### 5.3. Screen Reader Support & Semantic HTML (WCAG 1.3.1 / 4.1.2)
+### 6.3. Screen Reader Support & Semantic HTML (WCAG 1.3.1 / 4.1.2)
 - **Single `<h1>` Rule**: Every page must have exactly one authoritative `<h1>` via `<PageHeader title="..." />`.
 - **Icon Buttons Must Have Accessible Names**: Icon-only buttons MUST provide an accessible name via `aria-label` or `<span className="sr-only">`:
   ```tsx
@@ -241,13 +288,13 @@ All UI upgrades must comply with **WCAG 2.2 Level AA**:
 - **Decorative Icons**: All visual accompaniment icons must have `aria-hidden="true"`.
 - **Disclosure Controls**: Dropdowns and drawers declare `aria-expanded="true|false"` and `aria-controls="id"`.
 
-### 5.4. Color Independence & Multi-Cue Status Design (WCAG 1.4.1)
+### 6.4. Color Independence & Multi-Cue Status Design (WCAG 1.4.1)
 - **Never Rely on Color Alone**: Every status indicator and badge must combine **three distinct visual cues**:
   1. **Color Tint Substrate** (`bg-emerald-500/10 text-emerald-400 border-emerald-500/20`)
   2. **Explicit Text Label** (`"Active"`, `"Needs Review"`, `"Disputed"`)
   3. **Distinct Tabler Icon** (`<IconCheck />`, `<IconClock />`, `<IconAlertTriangle />`)
 
-### 5.5. Motion Sensitivity & Reduced Motion (WCAG 2.3.3)
+### 6.5. Motion Sensitivity & Reduced Motion (WCAG 2.3.3)
 - Respect `prefers-reduced-motion: reduce`:
   ```css
   @media (prefers-reduced-motion: reduce) {
@@ -261,13 +308,13 @@ All UI upgrades must comply with **WCAG 2.2 Level AA**:
   ```
 - In Tailwind: use `motion-reduce:transition-none motion-reduce:transform-none` on critical interactive elements.
 
-### 5.6. Form Usability & Accessible Validation (WCAG 3.3.1 / 3.3.2)
+### 6.6. Form Usability & Accessible Validation (WCAG 3.3.1 / 3.3.2)
 - Explicit `<label htmlFor="id">` on every input (never placeholders alone).
 - Accessible error states with `aria-invalid="true"` and `aria-describedby="error-id"`.
 
 ---
 
-## 6. Standardized 6-Step Page Upgrade Protocol
+## 7. Standardized 6-Step Page Upgrade Protocol
 
 When assigned to upgrade any page or view, execute this exact sequence:
 
@@ -308,7 +355,7 @@ When assigned to upgrade any page or view, execute this exact sequence:
 
 ---
 
-## 7. Role Harmonization Standard
+## 8. Role Harmonization Standard
 
 All roles share the **same visual substrate, design tokens, typography, and button primitives**. Roles differ only in information density and operational workflows:
 
@@ -321,7 +368,7 @@ All roles share the **same visual substrate, design tokens, typography, and butt
 
 ---
 
-## 8. Summary Checklist Before Any UI Change
+## 9. Summary Checklist Before Any UI Change
 
 ```text
 [ ] Is this strictly a frontend presentation/UX change? (No backend/database/API changes)
@@ -336,6 +383,11 @@ All roles share the **same visual substrate, design tokens, typography, and butt
 [ ] Are all icon-only buttons equipped with aria-label or .sr-only accessible names?
 [ ] Is text contrast verified at >= 4.5:1 and are visible focus rings present?
 [ ] Are Tabler icons used exclusively (no emojis, no ad-hoc SVGs)?
+[ ] Are interactive alerts using the tactile live badging standard (pulse beacon + high-contrast chip, quiet-when-zero)?
+[ ] Are intro animations using Emil Kowalski micro-staggering (.animate-card-reveal .stagger-1..6)?
+[ ] Do search bars support the `/` focus and `Esc` clear keyboard shortcut with <kbd>/</kbd>?
+[ ] Do empty filter/search results offer a 1-click "Clear Filters" action?
+[ ] Are Study IDs and transaction references equipped with 1-click <CopyButton variant="badge" />?
 [ ] Do check-types and ESLint pass with 0 errors and 0 warnings?
 ```
 
