@@ -3,10 +3,10 @@
 import React from "react";
 import { Button, Badge, MoneyDisplay } from "@repo/ui";
 import {
-  IconPrinter,
-  IconClock,
-  IconCheck,
-} from "@tabler/icons-react";
+  Printer,
+  Clock,
+  Check,
+} from "@phosphor-icons/react";
 import type { SOWDetailItem } from "../schemas";
 
 export interface SowDocumentProps {
@@ -39,19 +39,19 @@ export function SowDocument({
               <span className="text-xs font-sans text-white/50 tracking-wider">
                 Document Ref:
               </span>
-              <code className="text-xs font-mono font-semibold text-sky-400 bg-sky-500/10 px-2.5 py-1 rounded-[3px] border border-sky-500/30">
+              <code className="text-xs font-mono font-semibold text-sky-400 bg-sky-500/10 px-2.5 py-1 rounded-[2px] border border-sky-500/30">
                 {contractRef}
               </code>
             </div>
 
             {sow.isLocked ? (
               <Badge variant="emerald" className="font-mono text-xs px-2.5 py-1">
-                <IconCheck size={13} stroke={2.5} className="mr-1.5" />
+                <Check size={13} weight="bold" className="mr-1.5" />
                 SIGNED &amp; LEGALLY LOCKED
               </Badge>
             ) : (
               <Badge variant="amber" className="font-mono text-xs px-2.5 py-1">
-                <IconClock size={13} stroke={2} className="mr-1.5" />
+                <Clock size={13} weight="fill" className="mr-1.5" />
                 AWAITING SIGNATURE
               </Badge>
             )}
@@ -62,16 +62,16 @@ export function SowDocument({
             variant="outline"
             size="md"
             onClick={handlePrint}
-            className="text-xs font-sans font-semibold tracking-wider flex items-center gap-2 bg-white/[0.05] hover:bg-white/[0.10] px-4 py-2"
+            className="text-xs font-sans font-semibold tracking-wider flex items-center gap-2 bg-white/[0.05] hover:bg-white/[0.10] px-4 py-2 rounded-[2px]"
           >
-            <IconPrinter size={16} stroke={1.5} />
+            <Printer size={16} weight="fill" />
             <span>Print / Save PDF</span>
           </Button>
         </div>
       )}
 
       {/* ── Pure Document Sheet ── */}
-      <div className="sow-print-container bg-[#011126] border border-white/[0.12] rounded-[4px] p-8 sm:p-12 lg:p-16 text-white shadow-2xl relative print:bg-white print:text-black print:border-none print:p-0 print:shadow-none font-sans">
+      <div className="sow-print-container bg-[#011126] border border-white/[0.12] rounded-[2px] p-8 sm:p-12 lg:p-16 text-white shadow-2xl relative print:bg-white print:text-black print:border-none print:p-0 print:shadow-none font-sans">
         
         {/* ── Document Header ── */}
         <div className="border-b-2 border-white/20 print:border-black/30 pb-6 mb-8">

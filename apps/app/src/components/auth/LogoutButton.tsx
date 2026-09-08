@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { signOut } from "next-auth/react";
-import { IconLogout } from "@tabler/icons-react";
+import { SignOut } from "@phosphor-icons/react";
 
 interface LogoutButtonProps {
   className?: string;
@@ -36,7 +36,7 @@ export function LogoutButton({ className = "", showText = false }: LogoutButtonP
       {isLoggingOut ? (
         <span className="h-4 w-4 border-2 border-white/20 border-t-red-400 rounded-full animate-spin" />
       ) : (
-        <IconLogout size={16} stroke={1.5} />
+        <SignOut size={16} weight="bold" />
       )}
       {showText && <span className="text-xs font-mono">LOGOUT</span>}
     </button>

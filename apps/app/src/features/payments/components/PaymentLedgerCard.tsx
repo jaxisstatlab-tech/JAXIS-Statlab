@@ -15,12 +15,16 @@ import {
   CopyButton,
 } from "@repo/ui";
 import {
-  IconReceipt,
-  IconFileText,
-  IconPlus,
-  IconDownload,
-  IconExternalLink,
-} from "@tabler/icons-react";
+  Receipt,
+  FileText,
+  Plus,
+  DownloadSimple,
+  ArrowSquareOut,
+  CurrencyDollar,
+  ShieldCheck,
+  CheckCircle,
+  Clock,
+} from "@phosphor-icons/react";
 import type { PaymentItem } from "../schemas";
 import type { ProjectPaymentSummary } from "@/lib/payment-rules";
 import { triggerFileDownload, getFilePreviewUrl } from "@/lib/file-utils";
@@ -57,6 +61,13 @@ export function PaymentLedgerCard({
           value={<MoneyDisplay amount={summary.totalAmount} />}
           description="Agreed in Statement of Work"
           variant="default"
+          badge={
+            <span className="flex items-center gap-1">
+              <CurrencyDollar size={12} weight="fill" className="text-white/40" />
+              <span>CONTRACT</span>
+            </span>
+          }
+          badgeColor="gray"
           className="animate-card-reveal stagger-2"
         />
 
@@ -65,7 +76,16 @@ export function PaymentLedgerCard({
           value={<MoneyDisplay amount={summary.downpaymentRequired} />}
           description={summary.isDownpaymentCleared ? "Cleared · Research active" : "Required to start research"}
           variant={summary.isDownpaymentCleared ? "emerald" : "default"}
-          badge={summary.isDownpaymentCleared ? "CLEARED" : "REQUIRED"}
+          badge={
+            <span className="flex items-center gap-1">
+              {summary.isDownpaymentCleared ? (
+                <ShieldCheck size={12} weight="fill" className="text-emerald-400" />
+              ) : (
+                <Clock size={12} weight="fill" className="text-amber-400" />
+              )}
+              <span>{summary.isDownpaymentCleared ? "CLEARED" : "REQUIRED"}</span>
+            </span>
+          }
           badgeColor={summary.isDownpaymentCleared ? "emerald" : "amber"}
           className="animate-card-reveal stagger-3"
         />
@@ -83,6 +103,13 @@ export function PaymentLedgerCard({
             )
           }
           variant="default"
+          badge={
+            <span className="flex items-center gap-1">
+              <CheckCircle size={12} weight="fill" className="text-emerald-400" />
+              <span>VERIFIED</span>
+            </span>
+          }
+          badgeColor="emerald"
           className="animate-card-reveal stagger-4"
         />
 
@@ -95,6 +122,13 @@ export function PaymentLedgerCard({
               : "Due when deliverables are ready"
           }
           variant="default"
+          badge={
+            <span className="flex items-center gap-1">
+              <Clock size={12} weight="fill" className={summary.remainingBalance === 0 ? "text-emerald-400" : "text-[#FFA040]"} />
+              <span>{summary.remainingBalance === 0 ? "SETTLED" : "BALANCE"}</span>
+            </span>
+          }
+          badgeColor={summary.remainingBalance === 0 ? "emerald" : "orange"}
           className="animate-card-reveal stagger-5"
         />
       </div>
@@ -130,7 +164,7 @@ export function PaymentLedgerCard({
                 onClick={onOpenUploadModal}
                 className="gap-1.5"
               >
-                <IconPlus size={14} stroke={2.5} />
+                <Plus size={14} weight="bold" />
                 <span>Submit Deposit Proof</span>
               </Button>
             )}
@@ -166,7 +200,7 @@ export function PaymentLedgerCard({
         {payments.length === 0 ? (
           <div className="py-14 px-6 text-center flex flex-col items-center justify-center gap-6">
             <div className="w-12 h-12 rounded-[2px] bg-white/[0.04] border border-white/10 flex items-center justify-center">
-              <IconReceipt size={22} stroke={1.5} className="text-white/40" />
+              <Receipt size={22} weight="fill" className="text-white/40" />
             </div>
 
             <div className="flex flex-col items-center gap-2 max-w-md">
@@ -181,7 +215,7 @@ export function PaymentLedgerCard({
             {canUpload && onOpenUploadModal && (
               <div className="pt-2">
                 <Button variant="primary" size="sm" onClick={onOpenUploadModal} className="gap-2 font-sans font-medium px-4 py-2">
-                  <IconPlus size={15} stroke={2.5} />
+                  <Plus size={15} weight="bold" />
                   <span>Submit First Deposit Proof</span>
                 </Button>
               </div>
@@ -268,7 +302,7 @@ export function PaymentLedgerCard({
                             }}
                             className="inline-flex items-center gap-1.5 text-xs font-sans text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 px-2.5 py-1 rounded-[2px] transition-colors cursor-pointer"
                           >
-                            <IconFileText size={14} stroke={1.5} />
+                            <FileText size={14} weight="fill" />
                             <span>View Receipt</span>
                           </button>
                         ) : (
@@ -419,7 +453,7 @@ export function PaymentLedgerCard({
                       </div>
                     ) : (
                       <div className="p-8 text-center flex flex-col items-center gap-3">
-                        <IconFileText size={42} stroke={1.5} className="text-sky-400" />
+                        <FileText size={42} weight="fill" className="text-sky-400" />
                         <div className="flex flex-col items-center gap-1">
                           <span className="font-sans text-sm font-semibold text-white">
                             {proof.fileName}
@@ -449,7 +483,7 @@ export function PaymentLedgerCard({
                         }}
                         className="gap-1.5 font-sans text-xs font-semibold bg-[#CC6600] hover:bg-[#FFA040] text-white rounded-[2px] active:scale-[0.97] transition-all"
                       >
-                        <IconDownload size={14} stroke={2} />
+                        <DownloadSimple size={14} weight="bold" />
                         <span>Download Receipt</span>
                       </Button>
 
@@ -461,7 +495,7 @@ export function PaymentLedgerCard({
                         }}
                         className="gap-1.5 font-sans text-xs rounded-[2px] active:scale-[0.97] transition-all"
                       >
-                        <IconExternalLink size={14} stroke={1.5} />
+                        <ArrowSquareOut size={14} weight="bold" />
                         <span>Open in New Tab</span>
                       </Button>
                     </div>

@@ -4,7 +4,7 @@ import React, { use } from "react";
 import Link from "next/link";
 import { PageHeader, Button } from "@repo/ui";
 import { MessageThread } from "@/features/messaging/components/MessageThread";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { ArrowLeft } from "@phosphor-icons/react";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -34,7 +34,7 @@ export default function ClientProjectMessagesPage({ params }: PageProps) {
                 size="sm"
                 className="cursor-pointer text-xs font-semibold rounded-[2px]"
               >
-                <IconArrowLeft size={16} stroke={2} className="mr-1.5" />
+                <ArrowLeft size={16} weight="bold" className="mr-1.5" />
                 <span>Back to Study Details</span>
               </Button>
             </Link>

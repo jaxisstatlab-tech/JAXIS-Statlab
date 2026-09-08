@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { IconAlertTriangle } from "@tabler/icons-react";
+import { Warning } from "@phosphor-icons/react";
 import { Label } from "./Label";
 import { Textarea, type TextareaProps } from "./Textarea";
 import { cn } from "./utils";
@@ -56,7 +56,7 @@ export const FormTextarea = React.forwardRef<HTMLTextAreaElement, FormTextareaPr
         />
         {error ? (
           <div className="flex items-center gap-2 px-0.5 mt-0.5">
-            <IconAlertTriangle size={14} stroke={2} className="text-[#EF4444] shrink-0" />
+            <Warning size={14} weight="fill" className="text-[#EF4444] shrink-0" />
             <span className="text-xs text-[#EF4444] font-sans font-medium leading-relaxed">
               {error}
             </span>

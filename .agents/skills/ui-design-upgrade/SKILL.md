@@ -1,6 +1,6 @@
 ---
 name: ui-design-upgrade
-description: Master Frontend UI/UX Design Upgrade Standard for JAXIS StatLab. Enforces system-first, anti-AI-slop interface elevation using current deep navy substrates (#010114, #01142B), enterprise orange accents (#CC6600), Tabler icons, Emil Kowalski tactile motion, and plain English copywriting. Strictly frontend-only with zero backend/data/auth changes.
+description: Master Frontend UI/UX Design Upgrade Standard for JAXIS StatLab. Enforces system-first, anti-AI-slop interface elevation using current deep navy substrates (#010114, #01142B), enterprise orange accents (#CC6600), Phosphor fill icons, Emil Kowalski tactile motion, and plain English copywriting. Strictly frontend-only with zero backend/data/auth changes.
 ---
 
 # UI Design Upgrade Skill — JAXIS StatLab Master Standard
@@ -292,7 +292,7 @@ All UI upgrades must comply with **WCAG 2.2 Level AA**:
 - **Never Rely on Color Alone**: Every status indicator and badge must combine **three distinct visual cues**:
   1. **Color Tint Substrate** (`bg-emerald-500/10 text-emerald-400 border-emerald-500/20`)
   2. **Explicit Text Label** (`"Active"`, `"Needs Review"`, `"Disputed"`)
-  3. **Distinct Tabler Icon** (`<IconCheck />`, `<IconClock />`, `<IconAlertTriangle />`)
+  3. **Distinct Phosphor Fill Icon** (`<CheckCircle weight="fill" />`, `<Clock weight="fill" />`, `<Warning weight="fill" />`)
 
 ### 6.5. Motion Sensitivity & Reduced Motion (WCAG 2.3.3)
 - Respect `prefers-reduced-motion: reduce`:
@@ -335,7 +335,7 @@ When assigned to upgrade any page or view, execute this exact sequence:
   - `<KpiCard />` with uppercase mono labels and bold mono metrics.
   - `<DataTable />` / `<table className="data-table">` with clean headers.
   - `<LoadingState />` with single-track orange arc spinner.
-  - `<EmptyState />` with relevant Tabler icon and helpful next step.
+  - `<EmptyState />` with relevant Phosphor fill icon (`weight="fill"`) and helpful next step.
 
 ### Step 4: Design Improvement Plan
 - Document specific issues found.
@@ -368,11 +368,65 @@ All roles share the **same visual substrate, design tokens, typography, and butt
 
 ---
 
-## 9. Summary Checklist Before Any UI Change
+## 9. Canonical Dashboard Bento Architecture (Dashdark X Precision Standard)
+
+To achieve world-class SaaS simplicity, cleanliness, and spatial elegance, all primary role dashboards must follow the **Asymmetric Bento Grid Architecture** inspired by premier dark dashboards (e.g. *Dashdark X*), strictly harmonized with JAXIS StatLab's **Dark Precision Terminal standard (`rounded-[2px]`)**.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ TIER 1: GREETING & COMMAND TOOLBAR                                                     │
+│ Welcome back, [Name]                        [Secondary Action ↓]  [+ Primary Action]  │
+│ Plain-English context description                                                     │
+├───────────────────┬───────────────────┬───────────────────┬────────────────────────────┤
+│ TIER 2: 4-COLUMN BALANCED KPI METRIC BENTO                                             │
+│ [👁 Pageviews ...] │ [👤 Monthly users] │ [➕ New sign ups]  │ [⭐ Subscriptions]         │
+│  50.8K [28.4% ↗]  │  23.6K [12.6% ↘]  │  756 [3.1% ↗]     │  2.3K [11.3% ↗]            │
+│  Subtle subtext   │  Subtle subtext   │  Subtle subtext   │  Subtle subtext            │
+├───────────────────┴───────────────────┴───────────────────┴────────────────────────────┤
+│ TIER 3: THE 2:1 ASYMMETRIC FOCAL BENTO (8 COLS vs 4 COLS)                              │
+│ ┌───────────────────────────────────────────────┐ ┌──────────────────────────────────┐ │
+│ │ PRIMARY HERO CARD (8 COLS / ~66% WIDTH)       │ │ AUXILIARY STACK (4 COLS / ~33%)  │ │
+│ │ Metric Header: Total Revenue $240.8K [24.6% ↗]│ │ ┌──────────────────────────────┐ │ │
+│ │ Controls: ● Series A  ● Series B  [Jan-Dec ⌵] │ │ │ Total Profit $144.6K [28.5% ↗]│ │ │
+│ │                                               │ │ │ High-Density Micro Bar Chart │ │ │
+│ │ Deep Spline Area Chart / 5-Stage Stepper Desk │ │ │ Last 12 mos     View report →│ │ │
+│ │                                               │ │ └──────────────────────────────┘ │ │
+│ │ Interactive Tooltip Pin: $125.2k [12.6% ↗]    │ │ ┌──────────────────────────────┐ │ │
+│ │ Faint Horizontal Dividers (border-white/[0.04]│ │ │ Total Sessions 400 [16.8% ↗] │ │ │
+│ │ Jan Feb Mar Apr May Jun Jul Aug Sep Oct NovDec│ │ │ Sparkline Wave · [● Live]      │ │ │
+│ └───────────────────────────────────────────────┘ └──────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ TIER 4: SECTION COMMAND RIBBON                                                         │
+│ Reports Overview / Active Studies    [All] [In Progress] [Delivered]    [Search... /]  │
+├───────────────────────────────────┬────────────────────────────────────────────────────┤
+│ TIER 5: LOWER BENTO COMPOSITION   │                                                    │
+│ ┌───────────────────────────────┐ │ ┌────────────────────────────────────────────────┐ │
+│ │ PROGRESS GAUGE / DONUT METER  │ │ │ HIGH-PRECISION RECENT STUDIES / ORDERS TABLE   │ │
+│ │ 23,648 Studies by Stage       │ │ │ ID        Title       Status     Total  Actions│ │
+│ │ Centered Arc / Donut Meter    │ │ │ JX-001    Genomics    ● Analysis ₱45K   [View] │ │
+│ │ · Desktop: 15,624 (65%)       │ │ │ JX-002    Nursing     ● Quoted   ₱28K   [Sign] │ │
+│ │ · Mobile: 5,546 (25%)         │ │ │ JX-003    Business    ● Closed   ₱60K   [File] │ │
+│ └───────────────────────────────┘ │ └────────────────────────────────────────────────┘ │
+└───────────────────────────────────┴────────────────────────────────────────────────────┘
+```
+
+### Key Directives for Bento Orchestration:
+1. **"Of Course Still No Border Radius" (`rounded-[2px]`)**: Never use Webflow `rounded-2xl` or `rounded-xl`. Maintain the crisp architectural precision of `rounded-[2px]` on all cards and tables.
+2. **The 2:1 Asymmetric Focal Ratio**: The primary telemetry chart or active research milestone stepper takes 8 columns (`lg:col-span-8`), flanked on the right by two stacked cards (`lg:col-span-4`) whose combined vertical height matches the hero card.
+3. **Micro-Anatomy of KPI Cards**: Top icon + label, bold monospace metric numeral, inline micro status/trend pill (`bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono font-bold`), and calm subtitle.
+4. **Lower Bento Split**: Pair a circular/semi-circular progress gauge or donut breakdown card (4–5 cols) with a dense, compact data table or study feed (7–8 cols).
+5. **Hairline Division**: Borders are strictly flat 1px `border-white/10` to `border-white/15`. Blurry glowing drop shadows are strictly forbidden.
+
+---
+
+## 10. Summary Checklist Before Any UI Change
 
 ```text
 [ ] Is this strictly a frontend presentation/UX change? (No backend/database/API changes)
 [ ] Does it use the current theme palette (#010114, #01142B, #CC6600)?
+[ ] Are all cards strictly using precision rounded-[2px] (no bubbly rounded-xl/2xl)?
+[ ] Does the layout follow the Asymmetric Bento Grid (2:1 hero split: 8-col hero + 4-col stacked cards)?
+[ ] Are KPI cards using the micro-anatomy (icon + label, bold metric, inline micro-pill indicator)?
 [ ] Are all awkward gradients and box-shadow glows removed?
 [ ] Are all double slashes (//) and robotic buzzwords replaced with plain English?
 [ ] Are buttons using Title Case, precision rounded-[2px], and active scale(0.97)?
@@ -382,9 +436,9 @@ All roles share the **same visual substrate, design tokens, typography, and butt
 [ ] Are touch targets minimum 44x44px and inputs minimum 16px font size on mobile?
 [ ] Are all icon-only buttons equipped with aria-label or .sr-only accessible names?
 [ ] Is text contrast verified at >= 4.5:1 and are visible focus rings present?
-[ ] Are Tabler icons used exclusively (no emojis, no ad-hoc SVGs)?
+[ ] Are Phosphor Fill icons used exclusively (weight="fill" only, no line icons, no emojis)?
 [ ] Are interactive alerts using the tactile live badging standard (pulse beacon + high-contrast chip, quiet-when-zero)?
-[ ] Are intro animations using Emil Kowalski micro-staggering (.animate-card-reveal .stagger-1..6)?
+[ ] Are intro animations using role-calibrated motion profiles (snappy sub-300ms for internal desks; calm, graceful 620ms staggered reveal for Client Portal)?
 [ ] Do search bars support the `/` focus and `Esc` clear keyboard shortcut with <kbd>/</kbd>?
 [ ] Do empty filter/search results offer a 1-click "Clear Filters" action?
 [ ] Are Study IDs and transaction references equipped with 1-click <CopyButton variant="badge" />?

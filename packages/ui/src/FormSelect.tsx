@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { IconChevronDown, IconAlertTriangle } from "@tabler/icons-react";
+import { CaretDown, Warning } from "@phosphor-icons/react";
 import { Label } from "./Label";
 import { cn } from "./utils";
 
@@ -92,13 +92,13 @@ export const FormSelect = React.forwardRef<HTMLSelectElement, FormSelectProps>(
 
           {/* Custom Chevron icon */}
           <div className="absolute right-3.5 pointer-events-none flex items-center justify-center text-white/50">
-            <IconChevronDown size={16} stroke={1.5} />
+            <CaretDown size={16} weight="fill" />
           </div>
         </div>
 
         {error ? (
           <div className="flex items-center gap-2 px-0.5 mt-0.5">
-            <IconAlertTriangle size={14} stroke={2} className="text-[#EF4444] shrink-0" />
+            <Warning size={14} weight="fill" className="text-[#EF4444] shrink-0" />
             <span className="text-xs text-[#EF4444] font-sans font-medium leading-relaxed">
               {error}
             </span>

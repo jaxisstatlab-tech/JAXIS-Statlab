@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { IconCheck, IconPlus, IconX } from "@tabler/icons-react";
+import { Check, Plus, X } from "@phosphor-icons/react";
 import { cn } from "./utils";
 
 export interface TagPickerProps {
@@ -103,7 +103,7 @@ export function TagPicker({
               )}
             >
               {isSelected ? (
-                <IconCheck size={12} stroke={2.5} className="text-[#CC6600] shrink-0" />
+                <Check size={12} weight="bold" className="text-[#CC6600] shrink-0" />
               ) : (
                 <span className="text-white/30 font-bold text-xs leading-none">+</span>
               )}
@@ -117,7 +117,7 @@ export function TagPicker({
                   className="ml-1 text-[#FFA040]/70 hover:text-red-400 font-bold text-xs p-0.5 hover:bg-red-500/20 rounded-[2px] transition-colors inline-flex items-center"
                   title="Remove custom tag"
                 >
-                  <IconX size={10} stroke={2.5} />
+                  <X size={10} weight="bold" />
                 </span>
               )}
             </button>
@@ -147,7 +147,7 @@ export function TagPicker({
             disabled={!customInput.trim()}
             className="px-3 h-8 rounded-[2px] bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/10 hover:border-white/25 text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1 shrink-0"
           >
-            <IconPlus size={12} stroke={2} />
+            <Plus size={12} weight="bold" />
             Add Tag
           </button>
         </div>

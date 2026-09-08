@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { IconX } from "@tabler/icons-react";
+import { X } from "@phosphor-icons/react";
 import { cn } from "./utils";
 
 export const Dialog = DialogPrimitive.Root;
@@ -48,7 +48,7 @@ export const DialogContent = React.forwardRef<
       {children}
 
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-[2px] p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-1 focus:ring-[#38BDF8] disabled:pointer-events-none">
-        <IconX size={16} stroke={1.5} />
+        <X size={16} weight="bold" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>

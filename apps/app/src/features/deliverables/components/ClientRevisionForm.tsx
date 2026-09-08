@@ -12,13 +12,13 @@ import {
   Toast,
 } from "@repo/ui";
 import {
-  IconClock,
-  IconAlertTriangle,
-  IconShieldCheck,
-  IconArrowLeft,
-  IconSend,
-  IconLoader2,
-} from "@tabler/icons-react";
+  Clock,
+  Warning,
+  ShieldCheck,
+  ArrowLeft,
+  PaperPlaneRight,
+  CircleNotch,
+} from "@phosphor-icons/react";
 
 interface ClientRevisionFormProps {
   data: ClientDeliverablesDTO;
@@ -104,7 +104,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
 
         <Card className="p-8 text-center bg-[#01142B] border border-amber-500/20">
           <div className="mx-auto w-14 h-14 rounded-[2px] bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-4">
-            <IconClock size={32} />
+            <Clock size={32} weight="fill" />
           </div>
           <h3 className="font-sans font-bold text-base text-white">
             Revision Request Submission Unavailable
@@ -150,7 +150,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
 
         <Card className="p-8 text-center bg-[#01142B] border border-sky-500/20">
           <div className="mx-auto w-14 h-14 rounded-[2px] bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mb-4">
-            <IconShieldCheck size={32} />
+            <ShieldCheck size={32} weight="fill" />
           </div>
           <h3 className="font-sans font-bold text-base text-white">
             Revision Under Administrative Review
@@ -191,7 +191,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
             size="md"
             onClick={() => router.push(`/dashboard/client/projects/${project.id}/deliverables`)}
           >
-            <IconArrowLeft size={16} />
+            <ArrowLeft size={16} weight="bold" />
             <span>Back to Deliverables</span>
           </Button>
         }
@@ -202,7 +202,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-[2px] bg-sky-500/10 text-sky-400 border border-sky-500/20">
-              <IconClock size={20} />
+              <Clock size={20} weight="fill" />
             </div>
             <div>
               <span className="font-mono text-xs text-sky-400 block font-semibold">
@@ -227,7 +227,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
           <div className="p-3.5 rounded-[2px] bg-emerald-500/[0.04] border border-emerald-500/20 text-white/80 space-y-1.5">
             <div className="flex items-center gap-1.5 font-semibold text-emerald-300">
-              <IconShieldCheck size={16} />
+              <ShieldCheck size={16} weight="fill" />
               <span>Included (Free of Charge)</span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-white/60 pl-1 text-[11px]">
@@ -239,7 +239,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
 
           <div className="p-3.5 rounded-[2px] bg-amber-500/[0.04] border border-amber-500/20 text-white/80 space-y-1.5">
             <div className="flex items-center gap-1.5 font-semibold text-amber-300">
-              <IconAlertTriangle size={16} />
+              <Warning size={16} weight="fill" />
               <span>Requires Supplemental SOW / Quote</span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-white/60 pl-1 text-[11px]">
@@ -320,7 +320,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
               size="md"
               disabled={isSubmitting || !description.trim() || !agreed}
             >
-              {isSubmitting ? <IconLoader2 size={16} className="animate-spin" /> : <IconSend size={16} />}
+              {isSubmitting ? <CircleNotch size={16} className="animate-spin" /> : <PaperPlaneRight size={16} weight="fill" />}
               <span>{isSubmitting ? "Submitting..." : "Submit Revision Request"}</span>
             </Button>
           </div>

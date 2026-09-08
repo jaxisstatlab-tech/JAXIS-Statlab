@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { IconCheck } from "@tabler/icons-react";
+import { Check } from "@phosphor-icons/react";
 
 export interface StepItem {
   id: number | string;
@@ -82,7 +82,7 @@ export const Stepper: React.FC<StepperProps> = ({
                 }`}
               >
                 {isCompleted ? (
-                  <IconCheck size={11} stroke={2.5} />
+                  <Check size={11} weight="bold" />
                 ) : (
                   <span>{String(stepNumber).padStart(2, "0")}</span>
                 )}
@@ -120,7 +120,7 @@ export const Stepper: React.FC<StepperProps> = ({
                   }`}
                 >
                   {isCompleted ? (
-                    <IconCheck size={14} stroke={2.5} />
+                    <Check size={14} weight="bold" />
                   ) : (
                     <span>{String(stepNumber).padStart(2, "0")}</span>
                   )}

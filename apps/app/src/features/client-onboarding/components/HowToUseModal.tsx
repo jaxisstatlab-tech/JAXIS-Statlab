@@ -12,17 +12,17 @@ import {
   cn,
 } from "@repo/ui";
 import {
-  IconSchool,
-  IconFileUpload,
-  IconShieldLock,
-  IconFileText,
-  IconShieldCheck,
-  IconSparkles,
-  IconListCheck,
-  IconHelpCircle,
-  IconChevronDown,
-  IconArrowRight,
-} from "@tabler/icons-react";
+  GraduationCap,
+  CloudArrowUp,
+  Shield,
+  FileText,
+  ShieldCheck,
+  Sparkle,
+  ListChecks,
+  Question,
+  CaretDown,
+  ArrowRight,
+} from "@phosphor-icons/react";
 
 export interface HowToUseModalProps {
   isOpen: boolean;
@@ -46,7 +46,7 @@ const STEPS: StepItem[] = [
     number: "01",
     badge: "STEP 01",
     title: "Save Your University & Degree",
-    icon: <IconSchool size={20} stroke={2} className="text-white/85" />,
+    icon: <GraduationCap size={20} weight="fill" className="text-[#FFA040]" />,
     summary:
       "Save your school name and degree program. Your assigned statistician formats all tables and statistical writeups to match your university's exact thesis guidelines (UST, UP, Ateneo, DLSU, etc.).",
     highlight: "Takes only 30 seconds to complete",
@@ -55,7 +55,7 @@ const STEPS: StepItem[] = [
     number: "02",
     badge: "STEP 02",
     title: "Upload Your Survey & Raw Data",
-    icon: <IconFileUpload size={20} stroke={2} className="text-white/85" />,
+    icon: <CloudArrowUp size={20} weight="fill" className="text-[#FFA040]" />,
     summary:
       "Upload your survey questionnaire and raw survey responses in Excel, Google Sheets, CSV, or SPSS. Even if your spreadsheet is messy or has missing scores, our team cleans, recodes, and screens it for you.",
     highlight: "Full data screening and cleaning included",
@@ -64,7 +64,7 @@ const STEPS: StepItem[] = [
     number: "03",
     badge: "STEP 03",
     title: "Review Quote & Safe Escrow Deposit",
-    icon: <IconShieldLock size={20} stroke={2} className="text-white/85" />,
+    icon: <Shield size={20} weight="fill" className="text-[#FFA040]" />,
     summary:
       "Receive a clear, transparent price quote. Pay an initial 50% deposit via GCash, Maya, or bank transfer. Your money remains locked safely in escrow until our Senior QA Lead audits and verifies your math.",
     highlight: "100% money-back escrow protection",
@@ -73,7 +73,7 @@ const STEPS: StepItem[] = [
     number: "04",
     badge: "STEP 04",
     title: "Chat with Your Expert & Download Results",
-    icon: <IconFileText size={20} stroke={2} className="text-white/85" />,
+    icon: <FileText size={20} weight="fill" className="text-[#FFA040]" />,
     summary:
       "Chat directly with your assigned statistician for questions and defense tips. Once Senior QA approves the math, download your defense-ready Chapter 4 Word report with APA 7th tables and full interpretation.",
     highlight: "Includes 3 days of free warranty revisions",
@@ -122,7 +122,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
       {/* Reassurance Badge */}
       <div className="flex items-center gap-2 text-xs text-white/55 font-sans">
-        <IconShieldCheck size={16} stroke={2} className="text-emerald-400 shrink-0" />
+        <ShieldCheck size={16} weight="fill" className="text-emerald-400 shrink-0" />
         <span>Protected by JAXIS Escrow & Senior QA Review</span>
       </div>
 
@@ -147,9 +147,9 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
             }}
             className="w-full sm:w-auto font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] active:scale-[0.97] transition-transform shadow-sm flex items-center justify-center gap-1.5"
           >
-            <IconSchool size={15} stroke={2} />
+            <GraduationCap size={15} weight="fill" />
             <span>Save School Profile First</span>
-            <IconArrowRight size={14} stroke={2} />
+            <ArrowRight size={14} weight="bold" />
           </Button>
         ) : onStartRequest ? (
           <Button
@@ -162,7 +162,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
             className="w-full sm:w-auto font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] active:scale-[0.97] transition-transform shadow-sm flex items-center justify-center gap-1.5"
           >
             <span>Start New Study Request</span>
-            <IconArrowRight size={14} stroke={2} />
+            <ArrowRight size={14} weight="bold" />
           </Button>
         ) : null}
       </div>
@@ -194,11 +194,11 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
         >
           <TabsList className="bg-[#01142B] border border-white/10 p-1 rounded-[2px] w-full sm:w-auto">
             <TabsTrigger value="steps" className="flex items-center gap-2">
-              <IconListCheck size={14} stroke={2} />
+              <ListChecks size={14} weight="fill" />
               <span>4 Simple Steps</span>
             </TabsTrigger>
             <TabsTrigger value="faqs" className="flex items-center gap-2">
-              <IconHelpCircle size={14} stroke={2} />
+              <Question size={14} weight="fill" />
               <span>Common Questions</span>
             </TabsTrigger>
           </TabsList>
@@ -254,7 +254,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
                       </p>
 
                       <div className="inline-flex items-center gap-1.5 self-start px-2 py-0.5 rounded-[2px] bg-white/[0.03] border border-white/[0.08] text-white/65 text-[11px] font-sans mt-0.5">
-                        <IconSparkles size={12} stroke={2} className="text-[#FFA040] shrink-0" />
+                        <Sparkle size={12} weight="fill" className="text-[#FFA040] shrink-0" />
                         <span>{step.highlight}</span>
                       </div>
                     </div>
@@ -286,9 +286,9 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
                       <span className="text-xs sm:text-sm font-semibold text-white font-sans leading-snug">
                         {faq.question}
                       </span>
-                      <IconChevronDown
+                      <CaretDown
                         size={16}
-                        stroke={2}
+                        weight="bold"
                         className={cn(
                           "text-white/40 shrink-0 transition-transform duration-200",
                           isExpanded && "rotate-180 text-[#FFA040]"

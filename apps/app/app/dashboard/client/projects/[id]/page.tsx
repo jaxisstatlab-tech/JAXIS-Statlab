@@ -16,19 +16,19 @@ import {
   Peso,
 } from "@repo/ui";
 import {
-  IconCheck,
-  IconUpload,
-  IconCloudUpload,
-  IconFileText,
-  IconDatabase,
-  IconClipboardList,
-  IconReceipt,
-  IconClock,
-  IconShieldCheck,
-  IconFileCertificate,
-  IconMessages,
-  IconDownload,
-} from "@tabler/icons-react";
+  Check,
+  UploadSimple,
+  CloudArrowUp,
+  FileText,
+  Database,
+  ClipboardText,
+  Receipt,
+  Clock,
+  ShieldCheck,
+  Certificate,
+  ChatCenteredText,
+  DownloadSimple,
+} from "@phosphor-icons/react";
 import { getProjectById, deleteProjectFile, resolveMissingInfo, addProjectFile } from "@/features/projects/actions";
 import { uploadFileToR2 } from "@/lib/storage-client";
 import { ProjectFilesCard } from "@/features/projects/components/ProjectFilesCard";
@@ -149,17 +149,17 @@ function getCategoryIcon(category: string) {
   switch (category) {
     case "DATASET":
       return {
-        icon: <IconDatabase size={16} stroke={1.5} className="text-white/70" />,
+        icon: <Database size={16} weight="fill" className="text-white/70" />,
         tagLabel: "RAW DATASET",
       };
     case "QUESTIONNAIRE":
       return {
-        icon: <IconClipboardList size={16} stroke={1.5} className="text-white/70" />,
+        icon: <ClipboardText size={16} weight="fill" className="text-white/70" />,
         tagLabel: "SURVEY INSTRUMENT",
       };
     default:
       return {
-        icon: <IconFileText size={16} stroke={1.5} className="text-white/70" />,
+        icon: <FileText size={16} weight="fill" className="text-white/70" />,
         tagLabel: "RESEARCH DOCUMENT",
       };
   }
@@ -447,7 +447,10 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
     project.masterStatus === "SOW_PENDING";
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-20 w-full animate-content-fade">
+    <div
+      data-portal="client"
+      className="flex flex-col gap-8 max-w-7xl mx-auto pb-20 w-full animate-content-fade"
+    >
       <PageHeader
         title={project.researchTitle}
         description={`Study ID: ${project.intakeId} · Primary Client: ${project.client.fullName} · Submitted ${new Date(
@@ -469,7 +472,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                 size="sm"
                 className="cursor-pointer text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-transform bg-[#CC6600] hover:bg-[#E67300] text-white shadow-sm"
               >
-                <IconMessages size={15} stroke={2} className="mr-1.5" />
+                <ChatCenteredText size={15} weight="fill" className="mr-1.5" />
                 <span>Messages & Chat</span>
               </Button>
             </Link>
@@ -543,7 +546,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                       size="sm"
                       className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
                     >
-                      <IconReceipt size={14} stroke={1.5} />
+                      <Receipt size={14} weight="fill" />
                       <span>Review Quote →</span>
                     </Button>
                   </Link>
@@ -556,7 +559,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                       size="sm"
                       className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
                     >
-                      <IconFileText size={14} stroke={1.5} />
+                      <FileText size={14} weight="fill" />
                       <span>View Quote</span>
                     </Button>
                   </Link>
@@ -569,7 +572,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                       size="sm"
                       className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
                     >
-                      <IconFileText size={14} stroke={2} />
+                      <FileText size={14} weight="fill" />
                       <span>Review &amp; Sign Contract →</span>
                     </Button>
                   </Link>
@@ -586,7 +589,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                       size="sm"
                       className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 rounded-[2px] active:scale-[0.97] transition-transform"
                     >
-                      <IconShieldCheck size={14} stroke={1.5} />
+                      <ShieldCheck size={14} weight="fill" />
                       <span>View Signed Contract</span>
                     </Button>
                   </Link>
@@ -600,7 +603,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                       size="sm"
                       className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
                     >
-                      <IconReceipt size={14} stroke={2} />
+                      <Receipt size={14} weight="fill" />
                       <span>Proceed to Payment →</span>
                     </Button>
                   </Link>
@@ -615,7 +618,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                       size="sm"
                       className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
                     >
-                      <IconReceipt size={14} stroke={1.5} />
+                      <Receipt size={14} weight="fill" />
                       <span>Payment History</span>
                     </Button>
                   </Link>
@@ -632,7 +635,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                     }}
                     className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
                   >
-                    <IconUpload size={14} stroke={1.5} />
+                    <UploadSimple size={14} weight="bold" />
                     <span>Attach File</span>
                   </Button>
                 )}
@@ -666,7 +669,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                             : "bg-white/[0.05] text-white/40 border border-white/10"
                         }`}
                       >
-                        {isCompleted ? <IconCheck size={12} stroke={2.5} /> : i + 1}
+                        {isCompleted ? <Check size={12} weight="bold" /> : i + 1}
                       </span>
 
                       <span className="text-[9px] font-mono tracking-wider uppercase font-semibold">
@@ -705,7 +708,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
         <Card className="p-6 sm:p-7 bg-[#01142B] border border-amber-500/30 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-[2px] bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
-              <IconFileCertificate size={20} stroke={1.5} className="text-amber-400" />
+              <Certificate size={20} weight="fill" className="text-amber-400" />
             </div>
             <div className="space-y-0.5">
               <span className="text-xs font-sans text-amber-400 font-semibold uppercase tracking-wider block">
@@ -734,7 +737,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
           <Card className="p-6 sm:p-7 bg-[#01142B] border border-sky-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0">
-                <IconClock size={20} stroke={1.5} className="text-sky-400" />
+                <Clock size={20} weight="fill" className="text-sky-400" />
               </div>
               <div className="space-y-0.5">
                 <span className="text-xs font-sans text-sky-400 font-semibold uppercase tracking-wider block">
@@ -759,7 +762,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
           <Card className="p-6 sm:p-7 bg-[#01142B] border border-[#CC6600]/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center shrink-0">
-                <IconReceipt size={20} stroke={1.5} className="text-[#FFA040]" />
+                <Receipt size={20} weight="fill" className="text-[#FFA040]" />
               </div>
               <div className="space-y-0.5">
                 <span className="text-xs font-sans text-[#FFA040] font-semibold uppercase tracking-wider block">
@@ -788,7 +791,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
         <Card className="p-6 sm:p-7 bg-[#01142B] border border-sky-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-[2px] bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0">
-              <IconClock size={20} stroke={1.5} className="text-sky-400" />
+              <Clock size={20} weight="fill" className="text-sky-400" />
             </div>
             <div className="space-y-0.5">
               <span className="text-xs font-sans text-sky-400 font-semibold uppercase tracking-wider block">
@@ -817,7 +820,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
           <Card className="p-6 sm:p-7 bg-[#01142B] border border-amber-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-content-fade">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
-                <IconReceipt size={20} stroke={1.5} className="text-amber-400" />
+                <Receipt size={20} weight="fill" className="text-amber-400" />
               </div>
               <div className="space-y-0.5">
                 <span className="text-xs font-sans text-amber-400 font-semibold uppercase tracking-wider block">
@@ -834,7 +837,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                 size="md"
                 className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#E67300] text-white whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform cursor-pointer shadow-md"
               >
-                <IconReceipt size={15} stroke={2} className="mr-1.5" />
+                <Receipt size={15} weight="fill" className="mr-1.5" />
                 <span>Proceed to Payment →</span>
               </Button>
             </Link>
@@ -843,7 +846,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
           <Card className="p-6 sm:p-7 bg-[#01142B] border border-emerald-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-content-fade">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                <IconShieldCheck size={20} stroke={1.5} className="text-emerald-400" />
+                <ShieldCheck size={20} weight="fill" className="text-emerald-400" />
               </div>
               <div className="space-y-0.5">
                 <span className="text-xs font-sans text-emerald-400 font-semibold uppercase tracking-wider block">
@@ -860,7 +863,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                 size="md"
                 className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#E67300] text-white whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform cursor-pointer shadow-md"
               >
-                <IconDownload size={15} stroke={2} className="mr-1.5" />
+                <DownloadSimple size={15} weight="bold" className="mr-1.5" />
                 <span>Download Deliverables →</span>
               </Button>
             </Link>
@@ -900,7 +903,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
             <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-4 shadow-sm">
               <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <IconReceipt size={18} stroke={1.5} className="text-[#CC6600]" />
+                  <Receipt size={18} weight="fill" className="text-[#CC6600]" />
                   <h3 className="text-sm font-bold text-white font-sans">
                     Price Quote &amp; Scope
                   </h3>
@@ -1199,7 +1202,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                             {opt.label}
                           </span>
                           {isSelected && (
-                            <IconCheck size={15} stroke={2.5} className="text-emerald-400 flex-shrink-0" />
+                            <Check size={15} weight="bold" className="text-emerald-400 flex-shrink-0" />
                           )}
                         </div>
                         <span className="text-[0.688rem] text-white/50 font-sans leading-relaxed">
@@ -1233,7 +1236,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0">
-                        <IconFileText size={16} stroke={1.75} />
+                        <FileText size={16} weight="fill" />
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="font-mono text-xs font-bold text-white truncate" title={selectedUploadFile.name}>
@@ -1331,7 +1334,7 @@ export default function ClientProjectDetailPage({ params }: PageProps) {
                         : "bg-white/[0.05] border-white/[0.10] group-hover:border-white/20 text-white/60 group-hover:text-white"
                     }`}
                   >
-                    <IconCloudUpload size={22} stroke={1.5} />
+                    <CloudArrowUp size={22} weight="fill" />
                   </div>
 
                   {/* Heading & Subtitle */}

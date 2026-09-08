@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { IconEye, IconEyeOff, IconAlertTriangle } from "@tabler/icons-react";
+import { Eye, EyeSlash, Warning } from "@phosphor-icons/react";
 import { Label } from "./Label";
 import { Input, type InputProps } from "./Input";
 import { cn } from "./utils";
@@ -20,11 +20,11 @@ export interface FormInputProps extends Omit<InputProps, "error"> {
 }
 
 export function EyeIcon({ className = "w-4 h-4" }: { className?: string }) {
-  return <IconEye size={16} stroke={1.5} className={className} />;
+  return <Eye size={16} weight="fill" className={className} />;
 }
 
 export function EyeOffIcon({ className = "w-4 h-4" }: { className?: string }) {
-  return <IconEyeOff size={16} stroke={1.5} className={className} />;
+  return <EyeSlash size={16} weight="fill" className={className} />;
 }
 
 export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
@@ -105,13 +105,13 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
           errorVariant === "banner" ? (
             <div className="flex items-start gap-2.5 rounded-[5px] bg-[#EF4444]/10 border border-[#EF4444]/35 text-[#FCA5A5] text-xs font-sans leading-relaxed mt-1 p-3 border-l-4 border-l-[#EF4444]">
               <div className="w-5 h-5 rounded-[3px] bg-[#EF4444]/20 border border-[#EF4444]/40 flex items-center justify-center text-[#EF4444] shrink-0 mt-0.5">
-                <IconAlertTriangle size={14} stroke={2} />
+                <Warning size={14} weight="fill" />
               </div>
               <span className="font-medium text-white/90">{error}</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 px-0.5 mt-0.5">
-              <IconAlertTriangle size={14} stroke={2} className="text-[#EF4444] shrink-0" />
+              <Warning size={14} weight="fill" className="text-[#EF4444] shrink-0" />
               <span className="text-xs text-[#EF4444] font-sans font-medium leading-relaxed">
                 {error}
               </span>

@@ -85,7 +85,10 @@ export function AssignmentsClient({
 
   useEffect(() => {
     isMountedRef.current = true;
-    if (!initialProjects && !initialStatisticians) {
+    if (
+      (!initialProjects || initialProjects.length === 0) &&
+      (!initialStatisticians || initialStatisticians.length === 0)
+    ) {
       loadData();
     }
     return () => {

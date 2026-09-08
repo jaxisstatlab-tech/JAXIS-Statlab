@@ -12,7 +12,7 @@ export interface KpiCardProps {
   unit?: string;
   description?: string | React.ReactNode;
   variant?: KpiCardVariant;
-  badge?: string;
+  badge?: React.ReactNode;
   badgeColor?: "orange" | "emerald" | "sky" | "amber" | "indigo" | "gray";
   icon?: React.ReactNode;
   href?: string;
@@ -76,17 +76,25 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       }}
     >
       <div className="flex flex-col justify-between h-full w-full gap-2.5 flex-1">
-        {/* Header Row: Label + Icon / Badge */}
+        {/* Header Row: Icon + Label (Left) and Micro-Badge (Right) matching Dashdark X */}
         <div className="flex items-center justify-between gap-2 min-h-[1.5rem]">
-          <span
-            className={`text-xs select-none uppercase tracking-wider font-semibold truncate ${
-              monoLabel ? "font-mono text-white/50" : "font-sans text-white/60"
-            }`}
-          >
-            {label}
-          </span>
-          <div className="flex items-center gap-2 shrink-0">
-            {badge && (
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {icon && (
+              <span className="shrink-0 text-white/50">
+                {icon}
+              </span>
+            )}
+            <span
+              className={`text-xs select-none uppercase tracking-wider font-semibold truncate ${
+                monoLabel ? "font-mono text-white/50" : "font-sans text-white/60"
+              }`}
+              title={label}
+            >
+              {label}
+            </span>
+          </div>
+          {badge && (
+            <div className="flex items-center gap-1.5 shrink-0">
               <span
                 className={`text-[0.688rem] font-mono px-2 py-0.5 rounded-[2px] border font-semibold tracking-wider ${
                   BADGE_STYLES[badgeColor] || BADGE_STYLES.gray
@@ -94,13 +102,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({
               >
                 {badge}
               </span>
-            )}
-            {icon && (
-              <div className="p-1.5 rounded-[2px] bg-white/[0.04] border border-white/10 flex items-center justify-center text-white/60 group-hover:text-white transition-colors">
-                {icon}
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Value Row: Canonical Telemetry Metric Typography (font-mono font-bold tracking-tight) */}

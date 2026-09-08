@@ -4,10 +4,10 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader, LoadingState, Toast, Button, Peso } from "@repo/ui";
 import {
-  IconArrowLeft,
-  IconShieldCheck,
-  IconPlus,
-} from "@tabler/icons-react";
+  ArrowLeft,
+  ShieldCheck,
+  Plus,
+} from "@phosphor-icons/react";
 import Link from "next/link";
 import { getPaymentsByProject } from "@/features/payments/actions";
 import type { PaymentItem, ProjectPaymentsData } from "@/features/payments/schemas";
@@ -132,7 +132,7 @@ export default function ClientProjectPaymentPage() {
           <div className="flex items-center gap-2.5">
             <Link href={`/dashboard/client/projects/${project.id}`}>
               <Button variant="outline" size="sm" className="gap-1.5 font-sans rounded-[2px] active:scale-[0.97] transition-all">
-                <IconArrowLeft size={14} stroke={2} />
+                <ArrowLeft size={14} weight="bold" />
                 <span>Return to Study</span>
               </Button>
             </Link>
@@ -143,7 +143,7 @@ export default function ClientProjectPaymentPage() {
                 onClick={() => setIsUploadModalOpen(true)}
                 className="gap-1.5 font-sans rounded-[2px] active:scale-[0.97] transition-all bg-[#CC6600] hover:bg-[#E67300] text-white"
               >
-                <IconPlus size={14} stroke={2.5} />
+                <Plus size={14} weight="bold" />
                 <span>Submit Deposit Proof</span>
               </Button>
             )}
@@ -155,7 +155,7 @@ export default function ClientProjectPaymentPage() {
       <div className="p-4 rounded-[2px] bg-[#011B38]/80 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-card-reveal stagger-1">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-[2px] bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
-            <IconShieldCheck size={20} stroke={2} className="text-emerald-400" />
+            <ShieldCheck size={20} weight="fill" className="text-emerald-400" />
           </div>
           <div>
             <h4 className="text-xs font-sans font-semibold text-white">

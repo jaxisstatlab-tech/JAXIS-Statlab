@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 
 export type StatusCategory = "success" | "warning" | "danger" | "info" | "neutral";

@@ -15,15 +15,15 @@ import {
   Peso,
 } from "@repo/ui";
 import {
-  IconDownload,
-  IconClock,
-  IconShieldCheck,
-  IconFileText,
-  IconLoader2,
-  IconRotateClockwise,
-  IconInfoCircle,
-  IconReceipt,
-} from "@tabler/icons-react";
+  DownloadSimple,
+  Clock,
+  ShieldCheck,
+  FileText,
+  CircleNotch,
+  ArrowCounterClockwise,
+  Info,
+  Receipt,
+} from "@phosphor-icons/react";
 import { DELIVERABLE_CATEGORY_METADATA } from "@/lib/delivery-rules";
 
 interface ClientDeliverablesDeskProps {
@@ -87,7 +87,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
               size="md"
               onClick={() => router.push(`/dashboard/client/projects/${project.id}/revision`)}
             >
-              <IconRotateClockwise size={16} />
+              <ArrowCounterClockwise size={16} weight="bold" />
               <span>Request Included Revision</span>
             </Button>
           ) : undefined
@@ -101,6 +101,13 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
             label="FINAL DELIVERABLES"
             value={String(deliverables.length)}
             unit="FILES"
+            badge={
+              <span className="flex items-center gap-1">
+                <ShieldCheck size={12} weight="fill" className="text-emerald-400" />
+                <span>VERIFIED</span>
+              </span>
+            }
+            badgeColor="emerald"
             description="Verified research deliverables"
             variant="emerald"
             className="animate-card-reveal stagger-1"
@@ -109,6 +116,13 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
           <KpiCard
             label="REVISION WINDOW"
             value={revisionWindow.isActive ? revisionWindow.remainingFormatted : "CLOSED"}
+            badge={
+              <span className="flex items-center gap-1">
+                <Clock size={12} weight="fill" className="text-sky-400" />
+                <span>{revisionWindow.isActive ? "ACTIVE" : "EXPIRED"}</span>
+              </span>
+            }
+            badgeColor={revisionWindow.isActive ? "sky" : "gray"}
             description={
               revisionWindow.isActive
                 ? `Expires ${revisionWindow.expiresAtFormatted}`
@@ -121,6 +135,13 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
           <KpiCard
             label="ARCHIVE RETENTION"
             value="90 DAYS"
+            badge={
+              <span className="flex items-center gap-1">
+                <FileText size={12} weight="fill" className="text-white/40" />
+                <span>CLOUD</span>
+              </span>
+            }
+            badgeColor="gray"
             description={
               project.filesPurgeAt
                 ? `Stored until ${new Date(project.filesPurgeAt).toLocaleDateString("en-PH")}`
@@ -136,7 +157,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
       {!isReleased && paymentLock?.isLocked && (
         <Card className="p-8 sm:p-12 text-center bg-[#01142B] border border-amber-500/30 animate-card-reveal stagger-1">
           <div className="mx-auto w-16 h-16 rounded-[2px] bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-4">
-            <IconReceipt size={36} stroke={1.5} />
+            <Receipt size={36} weight="fill" />
           </div>
           <h3 className="font-sans font-bold text-lg text-white">
             Deliverables Locked · Final Balance Settlement Required
@@ -151,7 +172,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
               onClick={() => router.push(`/dashboard/client/projects/${project.id}/payment`)}
               className="bg-[#CC6600] hover:bg-[#E67300] text-white"
             >
-              <IconReceipt size={16} className="mr-1.5" />
+              <Receipt size={16} weight="fill" className="mr-1.5" />
               <span>Settle Balance on Payment Desk →</span>
             </Button>
           </div>
@@ -162,7 +183,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
       {!isReleased && !paymentLock?.isLocked && (
         <Card className="p-8 sm:p-12 text-center bg-[#01142B] border border-sky-500/20 animate-card-reveal stagger-1">
           <div className="mx-auto w-16 h-16 rounded-[2px] bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mb-4">
-            <IconShieldCheck size={36} />
+            <ShieldCheck size={36} weight="fill" />
           </div>
           <h3 className="font-sans font-bold text-lg text-white">
             Final Outputs Under Senior QA Verification & Packaging
@@ -188,7 +209,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="p-2.5 rounded-[2px] bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                <IconClock size={24} />
+                <Clock size={24} weight="fill" />
               </div>
               <div>
                 <h3 className="font-sans font-bold text-sm text-white">
@@ -206,7 +227,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
                 size="md"
                 onClick={() => router.push(`/dashboard/client/projects/${project.id}/revision`)}
               >
-                <IconRotateClockwise size={16} />
+                <ArrowCounterClockwise size={16} weight="bold" />
                 <span>File Revision Request</span>
               </Button>
             ) : (
@@ -253,7 +274,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
 
                     <div className="flex items-start gap-3">
                       <div className="p-2.5 rounded-[2px] bg-sky-500/10 text-sky-400 border border-sky-500/20 shrink-0">
-                        <IconFileText size={20} />
+                        <FileText size={20} weight="fill" />
                       </div>
                       <div className="min-w-0">
                         <h4 className="font-sans font-bold text-sm text-white truncate" title={file.fileName}>
@@ -278,9 +299,9 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
                       onClick={() => handleDownload(file)}
                     >
                       {downloadingId === file.id ? (
-                        <IconLoader2 size={14} className="animate-spin" />
+                        <CircleNotch size={14} className="animate-spin" />
                       ) : (
-                        <IconDownload size={14} />
+                        <DownloadSimple size={14} weight="bold" />
                       )}
                       <span>{downloadingId === file.id ? "Preparing..." : "Download File"}</span>
                     </Button>
@@ -353,7 +374,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
       {isReleased && (
         <Card className="p-5 bg-white/[0.02] border border-white/10">
           <div className="flex items-start gap-3">
-            <IconInfoCircle size={18} className="text-white/40 shrink-0 mt-0.5" />
+            <Info size={18} weight="fill" className="text-white/40 shrink-0 mt-0.5" />
             <p className="font-sans text-xs text-white/60 leading-relaxed">
               <strong className="text-white/80">Archival & Retention Policy:</strong> JAXIS StatLab retains your raw and finalized research files on secure encrypted cloud storage for 90 calendar days following project delivery. Please download and store local backups of your datasets and reports before the archival expiration date.
             </p>

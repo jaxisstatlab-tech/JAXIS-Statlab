@@ -4,16 +4,16 @@ import React from "react";
 import Link from "next/link";
 import { Card, Button, StatusBadge, CopyButton } from "@repo/ui";
 import {
-  IconMessages,
-  IconDownload,
-  IconArrowRight,
-  IconCheck,
-  IconClock,
-  IconCalendar,
-  IconAlertTriangle,
-  IconFileText,
-  IconSchool,
-} from "@tabler/icons-react";
+  ChatCenteredText,
+  DownloadSimple,
+  ArrowRight,
+  Check,
+  Clock,
+  Calendar,
+  Warning,
+  FileText,
+  GraduationCap,
+} from "@phosphor-icons/react";
 import { getProjectDisplayStatus } from "@/lib/project-rules";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 
@@ -86,7 +86,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
     study.client?.clientProfile?.institutionSchool || null;
 
   return (
-    <Card className={`p-6 sm:p-8 border border-white/10 bg-[#01142B]/90 hover:border-white/20 transition-all rounded-[4px] shadow-xl flex flex-col gap-6 ${className}`}>
+    <Card className={`p-6 sm:p-8 border border-white/10 bg-[#01142B] hover:border-white/20 transition-all rounded-[2px] shadow-xl flex flex-col gap-6 ${className}`}>
       {/* ── Top Header: Title, ID, Status Badge ── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="flex flex-col gap-2 min-w-0 flex-1">
@@ -97,8 +97,8 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
               label={study.intakeId}
             />
             {institutionSchool && (
-              <span className="flex items-center gap-1 text-xs text-white/60 font-sans bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-[2px] truncate max-w-[260px]">
-                <IconSchool size={13} className="text-sky-400 shrink-0" />
+              <span className="flex items-center gap-1.5 text-xs text-white/60 font-sans bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-[2px] truncate max-w-[260px]">
+                <GraduationCap size={14} weight="fill" className="text-sky-400 shrink-0" />
                 <span className="truncate">{institutionSchool}</span>
               </span>
             )}
@@ -109,14 +109,14 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
             prefetch={false}
             className="group/title"
           >
-            <h3 className="text-base sm:text-lg font-bold text-white group-hover/title:text-sky-300 transition-colors font-sans leading-snug">
+            <h3 className="text-base sm:text-lg font-bold text-white group-hover/title:text-[#FFA040] transition-colors font-sans leading-snug">
               {study.researchTitle}
             </h3>
           </Link>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/50 font-sans">
             <span className="flex items-center gap-1.5">
-              <IconCalendar size={14} className="text-amber-400/80" />
+              <Calendar size={14} weight="fill" className="text-amber-400/80" />
               <span>Target:</span>
               <strong className="text-white/80 font-mono font-semibold">
                 {new Date(study.deadlineRequested).toLocaleDateString("en-US", {
@@ -128,9 +128,9 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
             </span>
             <span>•</span>
             <span className="flex items-center gap-1">
-              <IconClock size={14} className="text-white/40" />
+              <Clock size={14} weight="fill" className="text-white/40" />
               <span>Submitted:</span>
-              <span className="text-white/70">
+              <span className="text-white/70 font-mono">
                 {new Date(study.createdAt).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
@@ -150,7 +150,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
         </div>
       </div>
 
-      {/* ── Visual Milestone Pipeline (Shopee/Grab Order Tracker Style) ── */}
+      {/* ── Visual Milestone Pipeline (Dashdark X Precision Stepper) ── */}
       <div className="pt-2 pb-1 border-y border-white/[0.06]">
         <div
           className="hidden md:flex items-center justify-between relative py-2"
@@ -184,14 +184,14 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-mono font-bold transition-all z-10 ${
                     isPassed
-                      ? "bg-[#10B981] text-black shadow-sm"
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
                       : isCurrent
-                      ? "bg-[#CC6600] text-white ring-2 ring-[#CC6600] border-2 border-white/60"
-                      : "bg-[#01142B] border border-white/20 text-white/30"
+                      ? "bg-[#CC6600] text-white ring-2 ring-[#CC6600]/40 border-2 border-white/80"
+                      : "bg-[#010D1F] border border-white/15 text-white/30"
                   }`}
                 >
                   {isPassed ? (
-                    <IconCheck size={14} stroke={3} />
+                    <Check size={13} weight="bold" />
                   ) : (
                     <span>{idx + 1}</span>
                   )}
@@ -201,9 +201,9 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
                 <span
                   className={`text-xs mt-2 font-sans font-medium text-center tracking-normal ${
                     isCurrent
-                      ? "text-amber-300 font-semibold"
+                      ? "text-[#FFA040] font-semibold"
                       : isPassed
-                      ? "text-white/80"
+                      ? "text-emerald-400/90 font-medium"
                       : "text-white/40"
                   }`}
                 >
@@ -244,7 +244,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
       {isAwaitingInfo && (
         <div className="p-4 rounded-[2px] bg-amber-500/[0.08] border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-start gap-2.5">
-            <IconAlertTriangle size={18} className="text-amber-400 shrink-0 mt-0.5" />
+            <Warning size={18} weight="fill" className="text-amber-400 shrink-0 mt-0.5" />
             <div className="text-xs text-amber-100 font-sans leading-relaxed">
               <span className="font-semibold text-amber-300 block mb-0.5">
                 Action Required from You:
@@ -267,7 +267,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
       {isQuotePending && (
         <div className="p-4 rounded-[2px] bg-[#CC6600]/10 border border-[#CC6600]/35 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-start gap-2.5">
-            <IconFileText size={18} className="text-[#FFA040] shrink-0 mt-0.5" />
+            <FileText size={18} weight="fill" className="text-[#FFA040] shrink-0 mt-0.5" />
             <div className="text-xs text-white/90 font-sans leading-relaxed">
               <span className="font-semibold text-white block mb-0.5">
                 Quotation Ready for Your Review
@@ -279,7 +279,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
             <Button
               variant="primary"
               size="sm"
-              className="font-sans text-xs font-semibold px-3.5 py-1.5 whitespace-nowrap bg-[#CC6600] hover:bg-[#E67300] text-white active:scale-[0.97] transition-transform min-h-[36px]"
+              className="font-sans text-xs font-semibold px-3.5 py-1.5 whitespace-nowrap bg-[#CC6600] hover:bg-[#B35500] text-white active:scale-[0.97] transition-all rounded-[2px]"
             >
               Review &amp; Accept Quote →
             </Button>
@@ -295,9 +295,9 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
             <Button
               variant="outline"
               size="sm"
-              className="font-sans text-xs font-semibold px-3.5 py-2 flex items-center gap-2 border-white/15 hover:bg-white/[0.06] text-white/90 active:scale-[0.97] transition-transform min-h-[36px]"
+              className="font-sans text-xs font-semibold px-3.5 py-2 flex items-center gap-2 border-white/15 hover:bg-white/[0.06] text-white/90 active:scale-[0.97] transition-all rounded-[2px]"
             >
-              <IconMessages size={16} stroke={1.5} className="text-sky-400" />
+              <ChatCenteredText size={16} weight="fill" className="text-sky-400" />
               <span>{hasAssignedSpecialist ? "Message Statistician" : "Message Desk"}</span>
             </Button>
           </Link>
@@ -310,9 +310,9 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
               variant="primary"
               size="sm"
               onClick={() => onDownloadDeliverable(study)}
-              className="font-sans text-xs font-semibold px-4 py-2 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white active:scale-[0.97] transition-transform min-h-[36px]"
+              className="font-sans text-xs font-semibold px-4 py-2 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white active:scale-[0.97] transition-all rounded-[2px]"
             >
-              <IconDownload size={16} stroke={1.5} />
+              <DownloadSimple size={16} weight="bold" />
               <span>Download Deliverables</span>
             </Button>
           )}
@@ -322,10 +322,10 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
             <Button
               variant="secondary"
               size="sm"
-              className="font-sans text-xs font-semibold px-4 py-2 flex items-center gap-1.5 active:scale-[0.97] transition-transform min-h-[36px]"
+              className="font-sans text-xs font-semibold px-4 py-2 flex items-center gap-1.5 active:scale-[0.97] transition-all rounded-[2px]"
             >
               <span>View Details</span>
-              <IconArrowRight size={14} />
+              <ArrowRight size={14} weight="bold" />
             </Button>
           </Link>
         </div>

@@ -7,21 +7,21 @@ import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { LoadingState, Badge } from "@repo/ui";
 import {
-  IconMessages,
-  IconShieldCheck,
-  IconLoader2,
-  IconHistory,
-  IconArrowLeft,
-  IconLock,
-  IconUser,
-  IconCalculator,
-  IconAward,
-  IconClock,
-  IconDatabase,
-  IconReportAnalytics,
-  IconArrowRight,
-  IconArrowDown,
-} from "@tabler/icons-react";
+  ChatCenteredText,
+  ShieldCheck,
+  CircleNotch,
+  ClockCounterClockwise,
+  ArrowLeft,
+  Lock,
+  User,
+  Calculator,
+  Medal,
+  Clock,
+  Database,
+  ChartBar,
+  ArrowRight,
+  ArrowDown,
+} from "@phosphor-icons/react";
 import {
   subscribeToProjectMessages,
   broadcastProjectMessage,
@@ -727,11 +727,11 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                 className="lg:hidden p-1.5 rounded-[2px] bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 text-white/80 hover:text-white cursor-pointer transition-colors shrink-0"
                 aria-label="Back to studies list"
               >
-                <IconArrowLeft size={16} stroke={2} />
+                <ArrowLeft size={16} weight="bold" />
               </button>
             )}
             <div className="hidden xs:flex p-1.5 rounded-[2px] bg-white/[0.04] border border-white/10 text-white/50 shrink-0">
-              <IconMessages size={15} stroke={1.5} />
+              <ChatCenteredText size={15} weight="fill" />
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
@@ -755,7 +755,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 
           {/* Security Status Pill */}
           <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 rounded-[2px] bg-white/[0.02] border border-white/10 text-white/50 text-[0.688rem] font-sans select-none shrink-0">
-            <IconShieldCheck size={13} stroke={1.5} className="text-emerald-400 shrink-0" />
+            <ShieldCheck size={13} weight="fill" className="text-emerald-400 shrink-0" />
             <span className="hidden sm:inline">Encrypted Consultation</span>
             <span className="sm:hidden text-[0.625rem] font-mono text-emerald-400/80">ENCRYPTED</span>
           </div>
@@ -788,7 +788,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
           </div>
         ) : (
           <div className="flex sm:hidden items-center gap-1 text-[0.688rem] text-white/40 font-mono">
-            <IconLock size={11} stroke={1.5} className="text-white/30 shrink-0" />
+            <Lock size={11} weight="fill" className="text-white/30 shrink-0" />
             <span>Awaiting Specialist Assignment</span>
           </div>
         )}
@@ -797,7 +797,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
         <div className="hidden sm:flex items-center gap-2 flex-wrap min-w-0 pt-0.5">
           {!isAssigned ? (
             <div className="flex items-center gap-1.5 text-xs text-white/50 bg-white/[0.02] px-2.5 py-0.5 rounded-[2px] border border-white/10">
-              <IconLock size={12} stroke={1.5} className="text-white/40 shrink-0" />
+              <Lock size={12} weight="fill" className="text-white/40 shrink-0" />
               <span className="text-[0.688rem] font-mono">
                 Team: Awaiting Specialist Assignment
               </span>
@@ -810,7 +810,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 
               {/* Client Chip */}
               <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[2px] bg-white/[0.03] border border-white/10 text-xs text-white/80 shrink-0">
-                <IconUser size={13} stroke={1.5} className="text-white/40 shrink-0" />
+                <User size={13} weight="fill" className="text-white/40 shrink-0" />
                 <span className="text-white/40 text-[0.688rem] font-mono">Client:</span>
                 <span className="font-medium text-white/90 truncate max-w-[140px]">
                   {projectInfo?.clientName || "Client"}
@@ -819,7 +819,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 
               {/* Statistician Chip */}
               <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[2px] bg-white/[0.03] border border-white/10 text-xs text-white/80 shrink-0">
-                <IconCalculator size={13} stroke={1.5} className="text-white/40 shrink-0" />
+                <Calculator size={13} weight="fill" className="text-white/40 shrink-0" />
                 <span className="text-white/40 text-[0.688rem] font-mono">Statistician:</span>
                 <span className="font-medium text-white/90 truncate max-w-[150px]">
                   {projectInfo?.statisticianName || "Unassigned"}
@@ -829,7 +829,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
               {/* QA Lead Chip */}
               {projectInfo?.qaLeadName && (
                 <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-[2px] bg-white/[0.03] border border-white/10 text-xs text-white/80 shrink-0">
-                  <IconAward size={13} stroke={1.5} className="text-white/40 shrink-0" />
+                  <Medal size={13} weight="fill" className="text-white/40 shrink-0" />
                   <span className="text-white/40 text-[0.688rem] font-mono">QA:</span>
                   <span className="font-medium text-white/90 truncate max-w-[140px]">
                     {projectInfo.qaLeadName}
@@ -852,7 +852,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
         {/* Older Messages Pagination Trigger / Indicator */}
         {isLoadingOlder ? (
           <div className="py-2 flex items-center justify-center gap-2 text-xs text-white/40 font-mono">
-            <IconLoader2 size={14} className="animate-spin" />
+            <CircleNotch size={14} className="animate-spin" />
             <span>Loading older messages...</span>
           </div>
         ) : hasMore ? (
@@ -862,7 +862,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
               onClick={loadOlderMessages}
               className="px-3 py-1 rounded-[2px] bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-[0.688rem] font-mono text-white/60 hover:text-white flex items-center gap-1.5 cursor-pointer transition-all shadow-sm"
             >
-              <IconHistory size={13} stroke={1.5} className="text-white/40" />
+              <ClockCounterClockwise size={13} weight="bold" className="text-white/40" />
               <span>Load older messages</span>
             </button>
           </div>
@@ -870,7 +870,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
           <div className="py-2 flex items-center justify-center gap-3 text-[0.625rem] font-mono text-white/30 uppercase tracking-wider select-none">
             <span className="h-px bg-white/10 flex-1" />
             <span className="flex items-center gap-1.5">
-              <IconShieldCheck size={12} stroke={1.5} className="text-white/40" />
+              <ShieldCheck size={12} weight="fill" className="text-white/40" />
               <span>Direct Consultation Channel • Protected</span>
             </span>
             <span className="h-px bg-white/10 flex-1" />
@@ -881,7 +881,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
         {!isAssigned && messages.length === 0 ? (
           <div className="my-auto py-4 px-6 max-w-md mx-auto rounded-[2px] bg-[#01142B]/60 border border-white/10 flex flex-col items-center justify-center text-center gap-3 shadow-xl animate-content-fade">
             <div className="h-9 w-9 rounded-[2px] bg-white/[0.03] border border-white/10 flex items-center justify-center text-white/40">
-              <IconLock size={18} stroke={1.5} />
+              <Lock size={18} weight="fill" />
             </div>
             <div className="space-y-1">
               <h3 className="text-sm font-semibold text-white">Consultation Channel Locked</h3>
@@ -896,7 +896,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
         ) : messages.length === 0 ? (
           <div className="my-auto py-2 px-4 sm:px-6 max-w-md mx-auto flex flex-col items-center justify-center text-center gap-3 animate-content-fade">
             <div className="h-9 w-9 rounded-[2px] bg-white/[0.03] border border-white/10 flex items-center justify-center text-white/40">
-              <IconMessages size={18} stroke={1.5} />
+              <ChatCenteredText size={18} weight="fill" />
             </div>
             <div className="space-y-1">
               <h3 className="text-sm font-semibold text-white tracking-tight">
@@ -923,12 +923,12 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                 className="w-full p-2 rounded-[2px] bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-white/20 text-left text-xs text-white/70 hover:text-white flex items-center justify-between gap-2 transition-all cursor-pointer group select-none"
               >
                 <div className="flex items-center gap-2">
-                  <IconClock size={13} stroke={1.5} className="text-white/40 shrink-0" />
+                  <Clock size={13} weight="fill" className="text-white/40 shrink-0" />
                   <span>Inquire about analysis timeline &amp; milestones</span>
                 </div>
-                <IconArrowRight
+                <ArrowRight
                   size={12}
-                  stroke={1.5}
+                  weight="bold"
                   className="text-white/25 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all"
                 />
               </button>
@@ -943,12 +943,12 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                 className="w-full p-2 rounded-[2px] bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-white/20 text-left text-xs text-white/70 hover:text-white flex items-center justify-between gap-2 transition-all cursor-pointer group select-none"
               >
                 <div className="flex items-center gap-2">
-                  <IconDatabase size={13} stroke={1.5} className="text-white/40 shrink-0" />
+                  <Database size={13} weight="fill" className="text-white/40 shrink-0" />
                   <span>Confirm dataset format &amp; variable requirements</span>
                 </div>
-                <IconArrowRight
+                <ArrowRight
                   size={12}
-                  stroke={1.5}
+                  weight="bold"
                   className="text-white/25 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all"
                 />
               </button>
@@ -963,12 +963,12 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                 className="w-full p-2 rounded-[2px] bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-white/20 text-left text-xs text-white/70 hover:text-white flex items-center justify-between gap-2 transition-all cursor-pointer group select-none"
               >
                 <div className="flex items-center gap-2">
-                  <IconReportAnalytics size={13} stroke={1.5} className="text-white/40 shrink-0" />
+                  <ChartBar size={13} weight="fill" className="text-white/40 shrink-0" />
                   <span>Clarify research hypothesis &amp; statistical tests</span>
                 </div>
-                <IconArrowRight
+                <ArrowRight
                   size={12}
-                  stroke={1.5}
+                  weight="bold"
                   className="text-white/25 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all"
                 />
               </button>
@@ -1003,7 +1003,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             <span className="font-medium">
               {unreadBelowCount === 1 ? "New message received" : `${unreadBelowCount} new messages`}
             </span>
-            <IconArrowDown size={13} stroke={2} className="text-[#38BDF8] group-hover:translate-y-0.5 transition-transform" />
+            <ArrowDown size={13} weight="bold" className="text-[#38BDF8] group-hover:translate-y-0.5 transition-transform" />
           </button>
         </div>
       )}

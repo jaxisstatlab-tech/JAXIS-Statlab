@@ -2,6 +2,7 @@ import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
+import { auth } from "@/lib/auth";
 import { ClientDashboardClient } from "./ClientDashboardClient";
 import { LoadingState } from "@repo/ui";
 
@@ -15,15 +16,17 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function ClientDashboardPage() {
-  const [projRes, profile] = await Promise.all([
+  const [projRes, profile, session] = await Promise.all([
     getProjects(),
     getClientProfile(),
+    auth(),
   ]);
 
   const initialProjects = projRes.success && projRes.data ? projRes.data : [];
   const initialIsProfileComplete = Boolean(
     profile && profile.institutionSchool && profile.contactNumber
   );
+  const userName = session?.user?.name || undefined;
 
   return (
     <Suspense
@@ -36,6 +39,7 @@ export default async function ClientDashboardPage() {
       <ClientDashboardClient
         initialProjects={initialProjects}
         initialIsProfileComplete={initialIsProfileComplete}
+        userName={userName}
       />
     </Suspense>
   );

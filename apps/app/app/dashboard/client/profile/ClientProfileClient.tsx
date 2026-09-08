@@ -87,7 +87,10 @@ export function ClientProfileClient({ initialProfile }: ClientProfileClientProps
   };
 
   return (
-    <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-20 w-full animate-content-fade font-sans">
+    <div
+      data-portal="client"
+      className="flex flex-col gap-8 max-w-4xl mx-auto pb-20 w-full animate-content-fade font-sans"
+    >
       <PageHeader
         title="School &amp; Academic Profile"
         description="Complete your university and contact details in the Philippines to submit research study requests."

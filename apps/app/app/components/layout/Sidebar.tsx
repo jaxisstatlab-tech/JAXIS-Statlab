@@ -1,42 +1,60 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import type { RoleName } from "@prisma/client";
 import { getUnreadMessagesCount } from "@/features/messaging/actions";
+import { DutyClockWidget } from "@/features/attendance/components/DutyClockWidget";
+import type { ActiveShiftStatus } from "@/features/attendance/schemas";
+import { NotificationDrawer } from "../notifications/NotificationDrawer";
 import {
-  IconLayoutDashboard,
-  IconFiles,
-  IconFilePlus,
-  IconDatabase,
-  IconReceipt,
-  IconTerminal2,
-  IconCode,
-  IconCloudUpload,
-  IconMessageReport,
-  IconShieldCheck,
-  IconClipboardCheck,
-  IconAward,
-  IconCoins,
-  IconKey,
-  IconUsers,
-  IconShieldLock,
-  IconActivity,
-  IconClock,
-  IconCalendarTime,
-  IconX,
-  IconFileInvoice,
-  IconCalendarEvent,
-  IconRotate,
-  IconScale,
-  IconArchive,
-  IconChartBar,
-  IconShieldExclamation,
-  IconMailForward,
-  IconGavel,
-} from "@tabler/icons-react";
+  UserAvatar,
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@repo/ui";
+import {
+  SquaresFour,
+  Files,
+  FilePlus,
+  Database,
+  Receipt,
+  FileText,
+  TerminalWindow,
+  Code,
+  CloudArrowUp,
+  ChatCenteredText,
+  ShieldCheck,
+  ClipboardText,
+  Medal,
+  Coins,
+  Key,
+  Users,
+  Shield,
+  Pulse,
+  Clock,
+  CalendarCheck,
+  Calendar,
+  X,
+  ArrowsCounterClockwise,
+  Scales,
+  Archive,
+  ChartBar,
+  ShieldWarning,
+  PaperPlaneRight,
+  Gavel,
+  MagnifyingGlass,
+  CaretLeft,
+  CaretRight,
+  User,
+  GraduationCap,
+  SignOut,
+} from "@phosphor-icons/react";
 
 export interface NavItem {
   label: string;
@@ -60,42 +78,45 @@ export interface SidebarProps {
   userEmail?: string;
   clientProfileIncomplete?: boolean;
   initialUnreadMessagesCount?: number;
+  initialActiveShift?: ActiveShiftStatus | null;
   className?: string;
   isOpen?: boolean;
   onClose?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-// ─── Tabler Icons ───────────────────────────────────────────────────────────
+// ─── Phosphor Fill Icons (Dashdark X Precision Standard) ────────────────────
 
 const Icons = {
-  Overview: <IconLayoutDashboard size={16} stroke={1.5} className="flex-shrink-0" />,
-  Studies: <IconFiles size={16} stroke={1.5} className="flex-shrink-0" />,
-  Intake: <IconFilePlus size={16} stroke={1.5} className="flex-shrink-0" />,
-  Vault: <IconDatabase size={16} stroke={1.5} className="flex-shrink-0" />,
-  Receipt: <IconReceipt size={16} stroke={1.5} className="flex-shrink-0" />,
-  Invoice: <IconFileInvoice size={16} stroke={1.5} className="flex-shrink-0" />,
-  Terminal: <IconTerminal2 size={16} stroke={1.5} className="flex-shrink-0" />,
-  Scripts: <IconCode size={16} stroke={1.5} className="flex-shrink-0" />,
-  UploadCloud: <IconCloudUpload size={16} stroke={1.5} className="flex-shrink-0" />,
-  Feedback: <IconMessageReport size={16} stroke={1.5} className="flex-shrink-0" />,
-  ShieldCheck: <IconShieldCheck size={16} stroke={1.5} className="flex-shrink-0" />,
-  CheckQueue: <IconClipboardCheck size={16} stroke={1.5} className="flex-shrink-0" />,
-  Award: <IconAward size={16} stroke={1.5} className="flex-shrink-0" />,
-  FinanceVault: <IconCoins size={16} stroke={1.5} className="flex-shrink-0" />,
-  KeyRelease: <IconKey size={16} stroke={1.5} className="flex-shrink-0" />,
-  Users: <IconUsers size={16} stroke={1.5} className="flex-shrink-0" />,
-  Audit: <IconShieldLock size={16} stroke={1.5} className="flex-shrink-0" />,
-  Activity: <IconActivity size={16} stroke={1.5} className="flex-shrink-0" />,
-  Clock: <IconClock size={16} stroke={1.5} className="flex-shrink-0" />,
-  LeaveDesk: <IconCalendarTime size={16} stroke={1.5} className="flex-shrink-0" />,
-  Schedule: <IconCalendarEvent size={16} stroke={1.5} className="flex-shrink-0" />,
-  Revisions: <IconRotate size={16} stroke={1.5} className="flex-shrink-0" />,
-  Claims: <IconScale size={16} stroke={1.5} className="flex-shrink-0" />,
-  Archive: <IconArchive size={16} stroke={1.5} className="flex-shrink-0" />,
-  Reports: <IconChartBar size={16} stroke={1.5} className="flex-shrink-0" />,
-  Firewall: <IconShieldExclamation size={16} stroke={1.5} className="flex-shrink-0" />,
-  Emails: <IconMailForward size={16} stroke={1.5} className="flex-shrink-0" />,
-  Gavel: <IconGavel size={16} stroke={1.5} className="flex-shrink-0" />,
+  Overview: <SquaresFour size={16} weight="fill" className="flex-shrink-0" />,
+  Studies: <Files size={16} weight="fill" className="flex-shrink-0" />,
+  Intake: <FilePlus size={16} weight="fill" className="flex-shrink-0" />,
+  Vault: <Database size={16} weight="fill" className="flex-shrink-0" />,
+  Receipt: <Receipt size={16} weight="fill" className="flex-shrink-0" />,
+  Invoice: <FileText size={16} weight="fill" className="flex-shrink-0" />,
+  Terminal: <TerminalWindow size={16} weight="fill" className="flex-shrink-0" />,
+  Scripts: <Code size={16} weight="bold" className="flex-shrink-0" />,
+  UploadCloud: <CloudArrowUp size={16} weight="fill" className="flex-shrink-0" />,
+  Feedback: <ChatCenteredText size={16} weight="fill" className="flex-shrink-0" />,
+  ShieldCheck: <ShieldCheck size={16} weight="fill" className="flex-shrink-0" />,
+  CheckQueue: <ClipboardText size={16} weight="fill" className="flex-shrink-0" />,
+  Award: <Medal size={16} weight="fill" className="flex-shrink-0" />,
+  FinanceVault: <Coins size={16} weight="fill" className="flex-shrink-0" />,
+  KeyRelease: <Key size={16} weight="fill" className="flex-shrink-0" />,
+  Users: <Users size={16} weight="fill" className="flex-shrink-0" />,
+  Audit: <Shield size={16} weight="fill" className="flex-shrink-0" />,
+  Activity: <Pulse size={16} weight="bold" className="flex-shrink-0" />,
+  Clock: <Clock size={16} weight="fill" className="flex-shrink-0" />,
+  LeaveDesk: <CalendarCheck size={16} weight="fill" className="flex-shrink-0" />,
+  Schedule: <Calendar size={16} weight="fill" className="flex-shrink-0" />,
+  Revisions: <ArrowsCounterClockwise size={16} weight="bold" className="flex-shrink-0" />,
+  Claims: <Scales size={16} weight="fill" className="flex-shrink-0" />,
+  Archive: <Archive size={16} weight="fill" className="flex-shrink-0" />,
+  Reports: <ChartBar size={16} weight="fill" className="flex-shrink-0" />,
+  Firewall: <ShieldWarning size={16} weight="fill" className="flex-shrink-0" />,
+  Emails: <PaperPlaneRight size={16} weight="fill" className="flex-shrink-0" />,
+  Gavel: <Gavel size={16} weight="fill" className="flex-shrink-0" />,
 };
 
 // ─── Role-Specific Navigation Definitions ─────────────────────────────────────
@@ -504,17 +525,59 @@ const BADGE_STYLES: Record<string, string> = {
   gray: "bg-white/[0.04] text-white/35 border-white/[0.08]",
 };
 
+function getProfileHref(role?: string): string {
+  const normalized = role?.toUpperCase() || "";
+  if (normalized === "CLIENT") return "/dashboard/client/profile";
+  if (normalized === "STATISTICIAN") return "/dashboard/statistician/profile";
+  if (normalized === "SENIOR_QA_LEAD" || normalized === "QA") return "/dashboard/qa/profile";
+  if (normalized === "FINANCE_OFFICER" || normalized === "FINANCE") return "/dashboard/finance/profile";
+  if (normalized === "CEO") return "/dashboard/ceo/profile";
+  return "/dashboard/admin/profile";
+}
+
+function getRoleDisplayLabel(role?: string): string {
+  const normalized = role?.toUpperCase() || "";
+  switch (normalized) {
+    case "CLIENT":
+      return "Client";
+    case "STATISTICIAN":
+      return "Lead Statistician";
+    case "SENIOR_QA_LEAD":
+    case "QA":
+      return "Senior QA Lead";
+    case "FINANCE_OFFICER":
+    case "FINANCE":
+      return "Finance Officer";
+    case "CEO":
+      return "Chief Executive";
+    case "ADMIN":
+    case "OPERATIONS_MANAGER":
+      return "Operations Admin";
+    default:
+      return role ? role.replace(/_/g, " ") : "Staff";
+  }
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   role = "ADMIN",
+  userFullName = "Developer Account",
+  userEmail = "dev@jaxis.local",
   clientProfileIncomplete = false,
   initialUnreadMessagesCount = 0,
+  initialActiveShift,
   className = "",
   isOpen = false,
   onClose,
+  isCollapsed = false,
+  onToggleCollapse,
 }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(
     initialUnreadMessagesCount ?? 0
   );
@@ -580,6 +643,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
     };
   }, [refreshUnreadCount]);
 
+  // Keyboard shortcut: "/" to focus search (and expand sidebar if collapsed), "Esc" to blur/clear
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "/" &&
+        !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        e.preventDefault();
+        if (isCollapsed && onToggleCollapse) {
+          onToggleCollapse();
+        }
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 60);
+      } else if (
+        e.key === "Escape" &&
+        document.activeElement === searchInputRef.current
+      ) {
+        setSearchQuery("");
+        searchInputRef.current?.blur();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isCollapsed, onToggleCollapse]);
+
   // Reset pending state once navigation completes or URL matches target
   useEffect(() => {
     if (pendingHref) {
@@ -611,24 +701,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleNavClick = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-      // Allow browser native behavior for modified clicks (e.g. Cmd/Ctrl + Click to open new tab)
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
         return;
       }
 
       if (onClose) onClose();
 
-      // If already at this exact route and no other route is pending, ignore redundant click
       if (pathname === href && !pendingHref) {
         e.preventDefault();
         return;
       }
 
-      // Optimistically activate the clicked tab immediately so the UI responds instantaneously (0ms)
       setPendingHref(href);
     },
     [onClose, pathname, pendingHref]
   );
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await signOut({
+        callbackUrl: "/login",
+        redirect: true,
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
+      window.location.href = "/login";
+    }
+  };
 
   const normalizedRole = (role?.toUpperCase() || "ADMIN") as string;
   let effectiveRole = normalizedRole;
@@ -639,6 +739,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   } else if (normalizedRole === "OPERATIONS_MANAGER" || normalizedRole === "OPERATIONS") {
     effectiveRole = "ADMIN";
   }
+
+  const isInternal = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO"].includes(
+    effectiveRole
+  );
+  const isClient = effectiveRole === "CLIENT";
+
   let navGroups = ROLE_NAV_GROUPS[effectiveRole] || ROLE_NAV_GROUPS.ADMIN!;
 
   if (effectiveRole === "CLIENT" && clientProfileIncomplete) {
@@ -657,95 +763,176 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }));
   }
 
+  // Live filter groups when user types in sidebar search box
+  const filteredNavGroups = useMemo(() => {
+    if (!searchQuery.trim()) return navGroups;
+    const q = searchQuery.toLowerCase().trim();
+    return navGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          item.label.toLowerCase().includes(q)
+        ),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [navGroups, searchQuery]);
+
   return (
     <aside
       className={`
         fixed lg:static inset-y-0 left-0 z-50 lg:z-20
-        w-[18.5rem] min-w-[18.5rem] max-w-[18.5rem] h-full max-h-full
-        bg-[#010114] border-r border-white/[0.08] flex flex-col justify-between
+        h-full max-h-full bg-[#010114] border-r border-white/[0.08] flex flex-col justify-between
         select-none flex-shrink-0 overflow-hidden
-        transition-transform duration-200 ease-out shadow-2xl lg:shadow-none
+        transition-[width,transform] duration-300 ease-[cubic-bezier(0.2,0,0,1)] shadow-2xl lg:shadow-none
+        ${isCollapsed ? "lg:w-[5rem] lg:min-w-[5rem] lg:max-w-[5rem]" : "lg:w-[17.5rem] lg:min-w-[17.5rem] lg:max-w-[17.5rem]"}
+        w-[18rem]
         ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         ${className}
       `}
-      style={{
-        width: "18.5rem",
-        minWidth: "18.5rem",
-        maxWidth: "18.5rem",
-        height: "100%",
-        maxHeight: "100%",
-        flexShrink: 0,
-        backgroundColor: "#010114",
-        borderRight: "1px solid rgba(255, 255, 255, 0.08)",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        overflow: "hidden",
-        boxSizing: "border-box",
-      }}
     >
-      {/* Top Navigation Sections */}
-      <div
-        className="p-4 sm:p-5 flex flex-col gap-5 overflow-y-auto flex-1 scrollbar-thin"
-        style={{
-          padding: "1.25rem 1rem",
-          display: "flex",
-          flexDirection: "column",
-          gap: "1.25rem",
-          overflowY: "auto",
-          flex: 1,
-        }}
-      >
-        {/* Mobile Header with Official Logo & Close Button */}
-        <div className="flex lg:hidden items-center justify-between pb-3.5 border-b border-white/[0.08] -mt-1">
-          <div className="flex items-center gap-2 font-sans">
-            <Image
-              src="/jaxislogo.png"
-              alt="JAXIS Logo"
-              width={22}
-              height={22}
-              className="h-5.5 w-auto"
-            />
-            <div className="flex items-baseline gap-1 font-sans">
-              <span className="font-bold text-sm tracking-wider text-white">JAXIS</span>
-              <span className="font-bold text-sm tracking-wider text-[#CC6600]">STATLAB</span>
+      {/* Top Header & Navigation Container */}
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        {/* ── 1. Header (Logo + Title + Opposing Caret Toggle < >) ── */}
+        {isCollapsed ? (
+          <div className="p-3.5 flex flex-col items-center justify-center border-b border-white/[0.08] shrink-0 gap-2.5">
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="flex items-center justify-center p-1 rounded-[2px] hover:bg-white/[0.08] transition-colors cursor-pointer group"
+              title="Expand sidebar"
+            >
+              <Image
+                src="/jaxislogo.png"
+                alt="JAXIS Logo"
+                width={24}
+                height={24}
+                className="h-6 w-auto transition-transform group-hover:scale-110 shrink-0"
+                priority
+              />
+            </button>
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="p-1 rounded-[2px] text-white/40 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+              title="Expand sidebar"
+              aria-label="Expand sidebar"
+            >
+              <CaretRight size={13} weight="bold" />
+            </button>
+          </div>
+        ) : (
+          <div className="px-4 py-4 sm:px-5 flex items-center justify-between border-b border-white/[0.08] shrink-0">
+            <Link href="/dashboard" className="flex items-center gap-2.5 group">
+              <Image
+                src="/jaxislogo.png"
+                alt="JAXIS Logo"
+                width={24}
+                height={24}
+                className="h-6 w-auto transition-transform group-hover:scale-105 shrink-0"
+                priority
+              />
+              <div className="flex items-center gap-1.5 font-sans shrink-0">
+                <span className="font-extrabold text-sm tracking-wider text-white">JAXIS</span>
+                <span className="font-extrabold text-sm tracking-wider text-[#CC6600]">STATLAB</span>
+                <span className="hidden sm:inline-flex items-center text-[0.625rem] font-sans uppercase px-1.5 py-0.2 rounded-[2px] bg-white/[0.08] border border-white/15 text-white/60 font-semibold tracking-wider ml-0.5">
+                  Studio
+                </span>
+              </div>
+            </Link>
+
+            <div className="flex items-center gap-1">
+              {/* Desktop Collapse Opposing Carets Toggle (< >) */}
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                className="hidden lg:flex items-center justify-center p-1.5 rounded-[2px] text-white/40 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer border border-transparent hover:border-white/10"
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+              >
+                <div className="flex items-center -space-x-1">
+                  <CaretLeft size={11} weight="bold" />
+                  <CaretRight size={11} weight="bold" />
+                </div>
+              </button>
+
+              {/* Mobile Drawer Close Button */}
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex lg:hidden p-1.5 rounded-[2px] text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+                aria-label="Close navigation drawer"
+              >
+                <X size={18} weight="bold" />
+              </button>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-md text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
-            aria-label="Close navigation"
-          >
-            <IconX size={18} stroke={1.5} />
-          </button>
-        </div>
+        )}
 
-        {/* Navigation Groups */}
-        <nav aria-label="Sidebar navigation" className="flex flex-col gap-4" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {navGroups.map((group, gIdx) => (
-            <div key={gIdx} className="flex flex-col gap-0.5" style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
-              <span
-                className="text-[10px] font-sans font-semibold tracking-wider text-white/40 px-3 uppercase mb-1 mt-1.5 select-none"
-                style={{ paddingLeft: "0.75rem", paddingRight: "0.75rem", fontSize: "0.625rem" }}
-              >
-                {group.groupTitle}
-              </span>
-              {group.items.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/dashboard" &&
-                    item.href !== "/dashboard/admin" &&
-                    item.href !== "/dashboard/ceo" &&
-                    item.href !== "/dashboard/client" &&
-                    item.href !== "/dashboard/statistician" &&
-                    item.href !== "/dashboard/qa" &&
-                    item.href !== "/dashboard/finance" &&
-                    pathname.startsWith(item.href + "/"));
+        {/* ── 2. Integrated Search Input (Dashdark X Standard) ── */}
+        {isCollapsed ? (
+          <div className="flex justify-center py-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                if (onToggleCollapse) onToggleCollapse();
+                setTimeout(() => searchInputRef.current?.focus(), 100);
+              }}
+              className="h-9 w-9 rounded-[2px] bg-[#010D1F] border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/20 transition-colors cursor-pointer"
+              title="Search (Press / or click to expand)"
+            >
+              <MagnifyingGlass size={14} weight="bold" />
+            </button>
+          </div>
+        ) : (
+          <div className="px-3.5 pt-3 pb-1 shrink-0">
+            <div className="relative flex items-center">
+              <MagnifyingGlass
+                size={14}
+                weight="bold"
+                className="absolute left-2.5 text-white/40 pointer-events-none"
+              />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search for..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-8 pl-8 pr-7 bg-[#010D1F] border border-white/10 rounded-[2px] text-xs font-sans text-white placeholder:text-white/30 focus:outline-none focus:border-[#CC6600]/70 transition-colors"
+              />
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 text-white/40 hover:text-white p-0.5 cursor-pointer"
+                  title="Clear search"
+                >
+                  <X size={12} weight="bold" />
+                </button>
+              ) : (
+                <kbd className="absolute right-2 text-[10px] font-mono px-1 py-0.2 rounded bg-white/[0.06] text-white/40 border border-white/10 select-none">
+                  /
+                </kbd>
+              )}
+            </div>
+          </div>
+        )}
 
-                const isPendingActive =
-                  pendingHref !== null &&
-                  (pendingHref === item.href ||
+        {/* ── 3. Navigation Links List ── */}
+        <div className="p-3 sm:p-3.5 flex flex-col gap-4 overflow-y-auto flex-1 scrollbar-thin">
+          <nav aria-label="Sidebar navigation" className="flex flex-col gap-3">
+            {filteredNavGroups.map((group, gIdx) => (
+              <div key={gIdx} className="flex flex-col gap-0.5">
+                {isCollapsed ? (
+                  gIdx > 0 && <div className="my-1.5 border-t border-white/[0.08] mx-2" />
+                ) : (
+                  <span className="text-[10px] font-sans font-semibold tracking-wider text-white/40 px-3 uppercase mb-1 mt-1 select-none">
+                    {group.groupTitle}
+                  </span>
+                )}
+
+                {group.items.map((item) => {
+                  const isActive =
+                    pathname === item.href ||
                     (item.href !== "/dashboard" &&
                       item.href !== "/dashboard/admin" &&
                       item.href !== "/dashboard/ceo" &&
@@ -753,130 +940,165 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       item.href !== "/dashboard/statistician" &&
                       item.href !== "/dashboard/qa" &&
                       item.href !== "/dashboard/finance" &&
-                      pendingHref.startsWith(item.href + "/")));
+                      pathname.startsWith(item.href + "/"));
 
-                const effectivelyActive = pendingHref !== null ? isPendingActive : isActive;
-                const isDisabled = Boolean(item.disabled);
+                  const isPendingActive =
+                    pendingHref !== null &&
+                    (pendingHref === item.href ||
+                      (item.href !== "/dashboard" &&
+                        item.href !== "/dashboard/admin" &&
+                        item.href !== "/dashboard/ceo" &&
+                        item.href !== "/dashboard/client" &&
+                        item.href !== "/dashboard/statistician" &&
+                        item.href !== "/dashboard/qa" &&
+                        item.href !== "/dashboard/finance" &&
+                        pendingHref.startsWith(item.href + "/")));
 
-                if (isDisabled) {
-                  return (
-                    <div
-                      key={item.href + item.label}
-                      className="flex items-center justify-between px-3 py-1.5 text-xs rounded-md select-none opacity-40 cursor-not-allowed border-l-2 border-transparent"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0.45rem 0.75rem",
-                        borderRadius: "2px",
-                        boxSizing: "border-box",
-                        fontSize: "0.8125rem",
-                      }}
-                      title={`${item.label} (Under Active Development)`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
-                        <span className="text-white/30 flex-shrink-0">
+                  const effectivelyActive = pendingHref !== null ? isPendingActive : isActive;
+                  const isDisabled = Boolean(item.disabled);
+
+                  if (isDisabled) {
+                    if (isCollapsed) {
+                      return (
+                        <div
+                          key={item.href + item.label}
+                          className="flex items-center justify-center h-10 w-10 mx-auto rounded-[2px] opacity-30 cursor-not-allowed text-white/40"
+                          title={`${item.label} (Coming Soon)`}
+                        >
+                          {item.icon}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={item.href + item.label}
+                        className="flex items-center justify-between px-3 py-1.5 text-xs rounded-[2px] select-none opacity-40 cursor-not-allowed border-l-2 border-transparent"
+                        title={`${item.label} (Under Active Development)`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                          <span className="text-white/30 flex-shrink-0">
+                            {item.icon}
+                          </span>
+                          <span className="font-sans font-normal text-white/40 text-[0.8125rem] truncate">
+                            {item.label}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-sans px-1.5 py-0.5 rounded-[2px] border font-medium bg-white/[0.04] text-white/30 border-white/[0.08]">
+                          {item.badge || "SOON"}
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  const isMessagesLink =
+                    item.label === "Messages" || item.href.endsWith("/messages");
+                  const hasNewMessages = isMessagesLink && unreadMessagesCount > 0;
+
+                  // Collapsed Icon Rail Link
+                  if (isCollapsed) {
+                    return (
+                      <Link
+                        key={`${item.href}-${item.label}`}
+                        href={item.href}
+                        prefetch={true}
+                        onMouseEnter={() => router.prefetch(item.href)}
+                        onClick={(e) => handleNavClick(e, item.href)}
+                        className={`relative flex items-center justify-center h-10 w-10 mx-auto rounded-[2px] transition-all duration-150 group border ${
+                          effectivelyActive
+                            ? "bg-[#CC6600]/15 text-[#FFA040] border-[#CC6600]/40 shadow-sm"
+                            : hasNewMessages
+                            ? "border-[#CC6600]/40 bg-[#CC6600]/[0.08] text-[#FFA040]"
+                            : "border-transparent text-white/50 hover:text-white hover:bg-white/[0.06]"
+                        }`}
+                        title={`${item.label}${item.count ? ` (${item.count})` : ""}${hasNewMessages ? ` (${unreadMessagesCount} new)` : ""}`}
+                      >
+                        <span className="flex-shrink-0">
                           {item.icon}
                         </span>
-                        <span className="font-sans font-normal text-white/40 text-[0.8125rem] truncate" title={item.label}>
+                        {hasNewMessages && (
+                          <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-80" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#CC6600]" />
+                          </span>
+                        )}
+                        {!hasNewMessages && item.count !== undefined && item.count > 0 && (
+                          <span className="absolute -top-1 -right-1 min-w-[15px] h-3.5 px-0.5 rounded-[2px] bg-white/10 text-white font-mono text-[9px] font-bold flex items-center justify-center border border-white/20">
+                            {item.count}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  }
+
+                  // Expanded Nav Item Link (Icon + Label + Chevron >)
+                  return (
+                    <Link
+                      key={`${item.href}-${item.label}`}
+                      href={item.href}
+                      prefetch={true}
+                      onMouseEnter={() => router.prefetch(item.href)}
+                      onClick={(e) => handleNavClick(e, item.href)}
+                      className={`flex items-center justify-between px-3 py-2 text-xs font-medium rounded-[2px] transition-all duration-150 ease-out group border-l-2 active:scale-[0.98] ${
+                        effectivelyActive
+                          ? "bg-[#CC6600]/12 text-white font-semibold border-[#CC6600]"
+                          : hasNewMessages
+                          ? "border-[#CC6600] bg-[#CC6600]/[0.08] text-white hover:bg-[#CC6600]/[0.14]"
+                          : "border-transparent text-white/65 hover:text-white hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                        <span
+                          className={`${
+                            effectivelyActive
+                              ? "text-[#CC6600]"
+                              : hasNewMessages
+                              ? "text-[#FFA040]"
+                              : "text-white/40 group-hover:text-white/80"
+                          } transition-colors flex-shrink-0`}
+                        >
+                          {item.icon}
+                        </span>
+                        <span
+                          className={`font-sans text-[0.8125rem] truncate ${
+                            effectivelyActive
+                              ? "font-semibold text-white"
+                              : hasNewMessages
+                              ? "font-semibold text-white"
+                              : "font-normal text-white/70 group-hover:text-white"
+                          }`}
+                          title={item.label}
+                        >
                           {item.label}
                         </span>
                       </div>
 
+                      {/* Badges / Dynamic Counters / Right Caret */}
                       <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
-                        <span
-                          className="text-[10px] font-sans px-1.5 py-0.5 rounded-[2px] border font-medium flex-shrink-0 bg-white/[0.04] text-white/30 border-white/[0.08]"
-                        >
-                          {item.badge || "SOON"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                }
-
-                const isMessagesLink =
-                  item.label === "Messages" || item.href.endsWith("/messages");
-                const hasNewMessages = isMessagesLink && unreadMessagesCount > 0;
-
-                return (
-                  <Link
-                    key={`${item.href}-${item.label}`}
-                    href={item.href}
-                    prefetch={true}
-                    onMouseEnter={() => {
-                      router.prefetch(item.href);
-                    }}
-                    onClick={(e) => handleNavClick(e, item.href)}
-                    className={`flex items-center justify-between px-3 py-1.5 text-xs font-medium rounded-r-[3px] rounded-l-[1px] transition-all duration-150 ease-out group border-l-2 active:scale-[0.98] ${
-                      effectivelyActive
-                        ? "bg-[#CC6600]/12 text-white font-semibold border-[#CC6600]"
-                        : hasNewMessages
-                        ? "border-[#CC6600] bg-[#CC6600]/[0.08] text-white hover:bg-[#CC6600]/[0.14]"
-                        : "border-transparent text-white/65 hover:text-white hover:bg-white/[0.04]"
-                    }`}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "0.45rem 0.75rem",
-                      boxSizing: "border-box",
-                      fontSize: "0.8125rem",
-                    }}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
-                      <span
-                        className={`${
-                          effectivelyActive
-                            ? "text-[#CC6600]"
-                            : hasNewMessages
-                            ? "text-[#FFA040]"
-                            : "text-white/40 group-hover:text-white/80"
-                        } transition-colors flex-shrink-0`}
-                      >
-                        {item.icon}
-                      </span>
-                      <span
-                        className={`font-sans text-[0.8125rem] truncate ${
-                          effectivelyActive
-                            ? "font-semibold text-white"
-                            : hasNewMessages
-                            ? "font-semibold text-white"
-                            : "font-normal text-white/70 group-hover:text-white"
-                        }`}
-                        title={item.label}
-                      >
-                        {item.label}
-                      </span>
-                    </div>
-
-                    {/* Actionable Badges & Dynamic Counters */}
-                    <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
-                      {isPendingActive && !isActive && (
-                        <span
-                          className="h-1.5 w-1.5 rounded-full bg-[#CC6600] animate-ping flex-shrink-0 mr-1"
-                          title="Navigating..."
-                        />
-                      )}
-
-                      {/* Tactile New Messages Indicator (Live Pulse + High-Contrast Count Chip) */}
-                      {hasNewMessages ? (
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {isPendingActive && !isActive && (
                           <span
-                            className="relative flex h-2 w-2 items-center justify-center flex-shrink-0"
-                            aria-label="New unread message activity"
-                          >
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-80" />
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC6600]" />
-                          </span>
-                          <span
-                            className="text-[10px] font-mono px-1.5 py-0.5 rounded-[2px] bg-[#CC6600] text-white font-bold leading-none shadow-sm transition-transform duration-150 active:scale-90 select-none flex-shrink-0 tracking-tight"
-                            title={`${unreadMessagesCount} unread message${unreadMessagesCount > 1 ? "s" : ""}`}
-                          >
-                            {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount} NEW
-                          </span>
-                        </div>
-                      ) : (
-                        item.count !== undefined && item.count > 0 && (
+                            className="h-1.5 w-1.5 rounded-full bg-[#CC6600] animate-ping flex-shrink-0 mr-1"
+                            title="Navigating..."
+                          />
+                        )}
+
+                        {hasNewMessages ? (
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <span
+                              className="relative flex h-2 w-2 items-center justify-center flex-shrink-0"
+                              aria-label="New unread message activity"
+                            >
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-80" />
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC6600]" />
+                            </span>
+                            <span
+                              className="text-[10px] font-mono px-1.5 py-0.5 rounded-[2px] bg-[#CC6600] text-white font-bold leading-none shadow-sm transition-transform duration-150 active:scale-90 select-none flex-shrink-0 tracking-tight"
+                              title={`${unreadMessagesCount} unread message${unreadMessagesCount > 1 ? "s" : ""}`}
+                            >
+                              {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount} NEW
+                            </span>
+                          </div>
+                        ) : item.count !== undefined && item.count > 0 ? (
                           <span
                             className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full flex-shrink-0 border leading-none ${
                               effectivelyActive
@@ -886,34 +1108,213 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           >
                             {item.count}
                           </span>
-                        )
-                      )}
-
-                      {item.badge && (
-                        <span
-                          className={`text-[10px] font-sans px-1.5 py-0.5 rounded-[2px] border font-semibold flex-shrink-0 tracking-wide uppercase ${
-                            BADGE_STYLES[item.badgeColor || "indigo"]
-                          }`}
-                        >
-                          {item.badge}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
+                        ) : item.badge ? (
+                          <span
+                            className={`text-[10px] font-sans px-1.5 py-0.5 rounded-[2px] border font-semibold flex-shrink-0 tracking-wide uppercase ${
+                              BADGE_STYLES[item.badgeColor || "indigo"]
+                            }`}
+                          >
+                            {item.badge}
+                          </span>
+                        ) : (
+                          <CaretRight
+                            size={11}
+                            weight="bold"
+                            className={`text-white/20 group-hover:text-white/50 transition-transform duration-150 group-hover:translate-x-0.5 ${
+                              effectivelyActive ? "text-[#CC6600]/70" : ""
+                            }`}
+                          />
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </nav>
+        </div>
       </div>
 
-      {/* Sidebar Footer: System Status */}
-      <div className="px-4 py-3 border-t border-white/[0.08] flex items-center justify-between text-white/40 flex-shrink-0 bg-white/[0.01]">
-        <div className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-          <span className="font-sans text-[11px] text-white/50 tracking-tight">System Operational</span>
+      {/* ── 4. Bottom Identity & Operational Footer (Dashdark X Precision Standard) ── */}
+      <div className="flex flex-col shrink-0 border-t border-white/[0.08] bg-[#010D1F]/60">
+        {/* Operational Strip: Notifications & Duty Clock */}
+        {isCollapsed ? (
+          <div className="py-2.5 flex flex-col items-center gap-2 border-b border-white/[0.08]">
+            <NotificationDrawer />
+            {isInternal && (
+              <DutyClockWidget userRole={role} initialActiveShift={initialActiveShift} />
+            )}
+          </div>
+        ) : (
+          <div className="px-3.5 py-2.5 flex items-center justify-between gap-2 border-b border-white/[0.08]">
+            <div className="flex items-center gap-2">
+              <NotificationDrawer />
+              <span className="text-xs font-sans text-white/50">Alerts</span>
+            </div>
+            {isInternal && (
+              <DutyClockWidget userRole={role} initialActiveShift={initialActiveShift} />
+            )}
+          </div>
+        )}
+
+        {/* User Identity Card with Popover Dropdown Menu */}
+        <div className="p-2">
+          <DropdownMenuRoot>
+            <DropdownMenuTrigger asChild>
+              {isCollapsed ? (
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-center p-1.5 rounded-[2px] hover:bg-white/[0.08] transition-colors cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0 group"
+                  aria-label="User account menu"
+                  title={`${userFullName} (${getRoleDisplayLabel(role)})`}
+                >
+                  <div className="relative shrink-0">
+                    <UserAvatar
+                      name={userFullName}
+                      role={role}
+                      size="sm"
+                    />
+                    {isClient && clientProfileIncomplete && (
+                      <span
+                        className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#CC6600] ring-2 ring-[#010114]"
+                        title="Profile setup required"
+                      />
+                    )}
+                  </div>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between p-2 rounded-[2px] hover:bg-white/[0.06] transition-colors cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0 group text-left"
+                  aria-label="User account menu"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-1">
+                    <div className="relative shrink-0">
+                      <UserAvatar
+                        name={userFullName}
+                        role={role}
+                        size="sm"
+                      />
+                      {isClient && clientProfileIncomplete && (
+                        <span
+                          className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#CC6600] ring-2 ring-[#010114]"
+                          title="Profile setup required"
+                        />
+                      )}
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-xs font-semibold text-white truncate font-sans">
+                        {userFullName}
+                      </span>
+                      <span className="text-[11px] text-white/40 truncate font-sans">
+                        {getRoleDisplayLabel(role)}
+                      </span>
+                    </div>
+                  </div>
+                  <CaretRight
+                    size={13}
+                    weight="bold"
+                    className="text-white/30 group-hover:text-white/70 transition-colors shrink-0"
+                  />
+                </button>
+              )}
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              side="right"
+              align="end"
+              sideOffset={12}
+              className="w-64 p-2 bg-[#01142B] border border-white/15 shadow-2xl rounded-[2px] backdrop-blur-xl z-50"
+            >
+              {/* Header User Identity */}
+              <div className="px-3 py-2.5 mb-1 flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-white truncate font-sans">
+                    {userFullName}
+                  </span>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 tracking-wider shrink-0">
+                    {getRoleDisplayLabel(role)}
+                  </span>
+                </div>
+                <span className="text-xs font-sans font-normal text-white/50 truncate">
+                  {userEmail}
+                </span>
+              </div>
+
+              <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
+
+              {/* Menu Options */}
+              <DropdownMenuItem asChild>
+                <Link
+                  href={getProfileHref(role)}
+                  className="flex items-center justify-between cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {isClient ? (
+                      <GraduationCap size={18} weight="fill" className="text-white/60 shrink-0" />
+                    ) : (
+                      <User size={18} weight="fill" className="text-white/60 shrink-0" />
+                    )}
+                    <span className="truncate">
+                      {isClient ? "School & Profile" : "My Profile"}
+                    </span>
+                  </div>
+                  {isClient && clientProfileIncomplete && (
+                    <span className="text-[9px] font-mono font-bold text-[#FFA040] bg-[#CC6600]/20 border border-[#CC6600]/40 px-1.5 py-0.5 rounded-[2px] shrink-0 ml-2">
+                      SETUP
+                    </span>
+                  )}
+                </Link>
+              </DropdownMenuItem>
+
+              {isInternal && (
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/dashboard/staff/hr"
+                    className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
+                  >
+                    <CalendarCheck size={18} weight="fill" className="text-white/60 shrink-0" />
+                    <span>My HR & Timeclock</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
+
+              {/* Logout Action */}
+              <DropdownMenuItem
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-semibold text-red-400 px-3 py-2.5 rounded-[2px] hover:bg-red-500/10 hover:text-red-300 transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
+              >
+                {isLoggingOut ? (
+                  <span className="h-4 w-4 border-2 border-white/20 border-t-red-400 rounded-full animate-spin mr-1 shrink-0" />
+                ) : (
+                  <SignOut size={18} weight="fill" className="text-red-400 shrink-0" />
+                )}
+                <span>Sign Out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenuRoot>
         </div>
-        <span className="font-mono text-[10px] text-white/30 tracking-wider">v2.4.0</span>
+
+        {/* System Operational Status Badge */}
+        {isCollapsed ? (
+          <div
+            className="py-2 border-t border-white/[0.08] flex items-center justify-center text-white/40 shrink-0"
+            title="System Operational v2.4.0"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          </div>
+        ) : (
+          <div className="px-3.5 py-2 border-t border-white/[0.08] flex items-center justify-between text-white/40 shrink-0 bg-white/[0.01]">
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span className="font-sans text-[10px] text-white/50 tracking-tight">System Operational</span>
+            </div>
+            <span className="font-mono text-[9px] text-white/30 tracking-wider">v2.4.0</span>
+          </div>
+        )}
       </div>
     </aside>
   );

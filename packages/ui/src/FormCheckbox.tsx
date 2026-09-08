@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { IconCheck, IconAlertTriangle } from "@tabler/icons-react";
+import { Check, Warning } from "@phosphor-icons/react";
 
 export interface FormCheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
   label: React.ReactNode;
@@ -100,7 +100,7 @@ export const FormCheckbox = React.forwardRef<HTMLInputElement, FormCheckboxProps
                 flexShrink: 0,
               }}
             >
-              {checked && <IconCheck size={14} stroke={3} style={{ color: "#FFFFFF" }} />}
+              {checked && <Check size={14} weight="bold" style={{ color: "#FFFFFF" }} />}
             </div>
           </div>
 
@@ -127,7 +127,7 @@ export const FormCheckbox = React.forwardRef<HTMLInputElement, FormCheckboxProps
             className="flex items-center gap-1.5 px-0.5 mt-1"
             style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginTop: "0.25rem" }}
           >
-            <IconAlertTriangle size={13} stroke={2} className="text-[#EF4444] shrink-0" style={{ color: "#EF4444", flexShrink: 0 }} />
+            <Warning size={13} weight="fill" className="text-[#EF4444] shrink-0" style={{ color: "#EF4444", flexShrink: 0 }} />
             <span className="text-xs text-[#EF4444] font-mono leading-relaxed" style={{ fontSize: "0.75rem", color: "#EF4444" }}>
               {error}
             </span>

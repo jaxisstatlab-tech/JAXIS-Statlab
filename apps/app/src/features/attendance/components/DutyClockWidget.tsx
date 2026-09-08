@@ -2,15 +2,15 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  IconPlayerPlay,
-  IconPlayerStop,
-  IconClock,
-  IconLoader2,
-  IconCoffee,
-  IconCalendarOff,
-  IconAlertTriangle,
-  IconCheck,
-} from "@tabler/icons-react";
+  Play,
+  Stop,
+  Clock,
+  CircleNotch,
+  Coffee,
+  CalendarX,
+  Warning,
+  Check,
+} from "@phosphor-icons/react";
 import { Button, Modal, Toast } from "@repo/ui";
 import { clockIn, clockOut, getActiveShift } from "../actions";
 import type { ActiveShiftStatus } from "../schemas";
@@ -275,7 +275,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
         {/* On Leave Indicator */}
         {shiftStatus?.isOnLeave ? (
           <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-semibold rounded-[2px] bg-purple-950/50 text-purple-300 border border-purple-500/30 whitespace-nowrap shrink-0">
-            <IconCalendarOff size={13} stroke={2} />
+            <CalendarX size={13} weight="fill" />
             <span>On Leave</span>
           </span>
         ) : shiftStatus?.isOnDuty ? (
@@ -306,7 +306,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
               className="hidden sm:flex px-2 sm:px-2.5 py-1 text-[0.688rem] font-sans font-semibold rounded-[2px] bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-500/30 hover:border-red-500/50 transition-colors items-center gap-1 cursor-pointer whitespace-nowrap"
               title="Conclude active shift"
             >
-              <IconPlayerStop size={12} stroke={2} />
+              <Stop size={12} weight="fill" />
               <span>Conclude Shift</span>
             </button>
           </div>
@@ -321,9 +321,9 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
             title="Clock In to commence duty shift"
           >
             {isPunching ? (
-              <IconLoader2 size={13} stroke={2.5} className="animate-spin text-emerald-300" />
+              <CircleNotch size={13} className="animate-spin text-emerald-300" />
             ) : (
-              <IconPlayerPlay size={12} stroke={2} />
+              <Play size={12} weight="fill" />
             )}
             <span>Clock In</span>
           </Button>
@@ -356,12 +356,12 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
             >
               {isPunching ? (
                 <div className="flex items-center gap-1.5">
-                  <IconLoader2 size={14} stroke={2.5} className="animate-spin text-white" />
+                  <CircleNotch size={14} className="animate-spin text-white" />
                   <span>Clocking out...</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
-                  <IconCheck size={14} stroke={2.5} />
+                  <Check size={14} weight="bold" />
                   <span>Clock Out</span>
                 </div>
               )}
@@ -374,7 +374,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
           <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-[2px] bg-emerald-950/50 border border-emerald-500/30 text-emerald-400">
-                <IconClock size={20} stroke={1.5} />
+                <Clock size={20} weight="fill" />
               </div>
               <div>
                 <span className="text-[0.688rem] text-white/50 uppercase font-mono tracking-wider block">
@@ -399,7 +399,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
           <div className="p-3 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-center justify-between text-xs">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 rounded-[2px] bg-[#CC6600]/10 border border-[#CC6600]/30 text-[#CC6600]">
-                <IconCoffee size={15} stroke={1.5} />
+                <Coffee size={15} weight="fill" />
               </div>
               <div className="flex flex-col">
                 <span className="text-white font-semibold font-sans">Lunch Break Deduction</span>
@@ -418,7 +418,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
           {/* Overtime / Overnight Alert if shift > 10h */}
           {seconds >= 10 * 3600 && (
             <div className="p-3 bg-amber-950/40 border border-amber-500/30 rounded-[2px] flex items-start gap-2.5 text-xs text-amber-200">
-              <IconAlertTriangle size={16} stroke={2} className="text-amber-400 shrink-0 mt-0.5" />
+              <Warning size={16} weight="fill" className="text-amber-400 shrink-0 mt-0.5" />
               <div>
                 <span className="font-semibold text-amber-300 block">Extended Shift Detected ({Math.floor(seconds / 3600)}h+)</span>
                 <p className="text-white/70 text-[0.688rem] mt-0.5 leading-relaxed">

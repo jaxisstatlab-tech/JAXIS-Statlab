@@ -4,13 +4,13 @@ import React from "react";
 import Link from "next/link";
 import { Card, Button } from "@repo/ui";
 import {
-  IconSchool,
-  IconFileUpload,
-  IconHelp,
-  IconCheck,
-  IconArrowRight,
-  IconSparkles,
-} from "@tabler/icons-react";
+  GraduationCap,
+  CloudArrowUp,
+  Question,
+  Check,
+  ArrowRight,
+  Sparkle,
+} from "@phosphor-icons/react";
 
 export interface ClientWelcomeBannerProps {
   isProfileComplete: boolean | null;
@@ -24,13 +24,13 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
   onOpenHowToUseModal,
 }) => {
   return (
-    <Card className="p-6 sm:p-8 border border-white/15 bg-gradient-to-b from-[#011B38]/90 to-[#01142B]/90 rounded-[4px] shadow-2xl flex flex-col gap-6 animate-card-reveal">
+    <Card className="p-6 sm:p-8 border border-white/15 bg-gradient-to-b from-[#011B38]/90 to-[#01142B]/90 rounded-[2px] shadow-2xl flex flex-col gap-6 animate-card-reveal">
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono font-bold text-[#FF9433] bg-[#CC6600]/15 border border-[#CC6600]/30 px-2.5 py-0.5 rounded-[2px] uppercase flex items-center gap-1.5">
-              <IconSparkles size={13} className="text-[#FFA040]" />
+              <Sparkle size={13} weight="fill" className="text-[#FFA040]" />
               <span>Getting Started Guide</span>
             </span>
           </div>
@@ -45,9 +45,9 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
         <button
           type="button"
           onClick={onOpenHowToUseModal}
-          className="self-start sm:self-center px-3.5 py-2 rounded-[2px] bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-sans font-semibold text-white/80 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+          className="self-start sm:self-center px-3.5 py-2 rounded-[2px] bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-sans font-semibold text-white/80 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-[0.97]"
         >
-          <IconHelp size={15} className="text-sky-400" />
+          <Question size={15} weight="fill" className="text-sky-400" />
           <span>How It Works Guide</span>
         </button>
       </div>
@@ -56,7 +56,7 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 items-stretch">
         {/* Step 1: Save School */}
         <div
-          className={`p-5 rounded-[4px] border transition-all flex flex-col justify-between gap-4 ${
+          className={`p-5 rounded-[2px] border transition-all flex flex-col justify-between gap-4 ${
             isProfileComplete
               ? "bg-[#01142B]/80 border-emerald-500/30"
               : "bg-[#01142B] border-[#CC6600]/40 ring-1 ring-[#CC6600]/20"
@@ -73,7 +73,7 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
               >
                 {isProfileComplete ? (
                   <span className="flex items-center gap-1">
-                    <IconCheck size={11} stroke={2.5} />
+                    <Check size={11} weight="bold" />
                     <span>COMPLETED</span>
                   </span>
                 ) : (
@@ -81,7 +81,7 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
                 )}
               </span>
               <div className="w-8 h-8 rounded-[2px] bg-white/[0.04] border border-white/10 flex items-center justify-center text-sky-400">
-                <IconSchool size={16} />
+                <GraduationCap size={16} weight="fill" />
               </div>
             </div>
 
@@ -97,7 +97,7 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
             variant={isProfileComplete ? "secondary" : "primary"}
             size="sm"
             onClick={onOpenProfileModal}
-            className={`font-sans text-xs font-semibold w-full flex items-center justify-center gap-1.5 ${
+            className={`font-sans text-xs font-semibold w-full flex items-center justify-center gap-1.5 rounded-[2px] active:scale-[0.97] ${
               !isProfileComplete ? "bg-[#CC6600] hover:bg-[#E67300] text-white" : ""
             }`}
           >
@@ -106,14 +106,14 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
         </div>
 
         {/* Step 2: Submit Study */}
-        <div className="p-5 rounded-[4px] bg-[#01142B] border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between gap-4">
+        <div className="p-5 rounded-[2px] bg-[#01142B] border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-[0.688rem] font-mono font-bold bg-white/[0.06] text-white/70 border border-white/10 px-2 py-0.5 rounded-[2px]">
                 2. NEXT STEP
               </span>
               <div className="w-8 h-8 rounded-[2px] bg-white/[0.04] border border-white/10 flex items-center justify-center text-amber-400">
-                <IconFileUpload size={16} />
+                <CloudArrowUp size={16} weight="fill" />
               </div>
             </div>
 
@@ -129,23 +129,23 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
             <Button
               variant="outline"
               size="sm"
-              className="font-sans text-xs font-semibold w-full flex items-center justify-center gap-1.5 border-white/15 text-white/90 hover:bg-white/[0.06]"
+              className="font-sans text-xs font-semibold w-full flex items-center justify-center gap-1.5 border-white/15 text-white/90 hover:bg-white/[0.06] rounded-[2px] active:scale-[0.97]"
             >
               <span>Start Study Request</span>
-              <IconArrowRight size={14} />
+              <ArrowRight size={14} weight="bold" />
             </Button>
           </Link>
         </div>
 
         {/* Step 3: Learn How It Works */}
-        <div className="p-5 rounded-[4px] bg-[#01142B] border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between gap-4">
+        <div className="p-5 rounded-[2px] bg-[#01142B] border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-[0.688rem] font-mono font-bold bg-white/[0.06] text-white/70 border border-white/10 px-2 py-0.5 rounded-[2px]">
                 3. HOW IT WORKS
               </span>
               <div className="w-8 h-8 rounded-[2px] bg-white/[0.04] border border-white/10 flex items-center justify-center text-emerald-400">
-                <IconCheck size={16} />
+                <Check size={16} weight="bold" />
               </div>
             </div>
 
@@ -161,10 +161,10 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
             variant="secondary"
             size="sm"
             onClick={onOpenHowToUseModal}
-            className="font-sans text-xs font-semibold w-full flex items-center justify-center gap-1.5"
+            className="font-sans text-xs font-semibold w-full flex items-center justify-center gap-1.5 rounded-[2px] active:scale-[0.97]"
           >
             <span>Read 60-Sec Guide</span>
-            <IconArrowRight size={14} />
+            <ArrowRight size={14} weight="bold" />
           </Button>
         </div>
       </div>

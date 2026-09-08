@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
-import { IconChevronDown } from "@tabler/icons-react";
+import { CaretDown } from "@phosphor-icons/react";
 import { cn } from "./utils";
 
 const Accordion = AccordionPrimitive.Root;
@@ -33,9 +33,9 @@ const AccordionTrigger = React.forwardRef<
       {...props}
     >
       {children}
-      <IconChevronDown
+      <CaretDown
         size={18}
-        stroke={1.5}
+        weight="fill"
         className="text-white/50 shrink-0 transition-transform duration-200"
       />
     </AccordionPrimitive.Trigger>

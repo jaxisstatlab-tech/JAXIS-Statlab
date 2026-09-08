@@ -3,12 +3,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
-  IconX,
-  IconAlertOctagon,
-  IconAlertTriangle,
-  IconCircleCheck,
-  IconInfoCircle,
-} from "@tabler/icons-react";
+  X,
+  WarningOctagon,
+  Warning,
+  CheckCircle,
+  Info,
+} from "@phosphor-icons/react";
 
 export type ToastVariant = "info" | "success" | "warning" | "danger";
 
@@ -24,7 +24,7 @@ export interface ToastProps {
 
 const toastVariantConfig = {
   danger: {
-    icon: IconAlertOctagon,
+    icon: WarningOctagon,
     iconColor: "#EF4444",
     iconBg: "rgba(239, 68, 68, 0.12)",
     iconBorder: "rgba(239, 68, 68, 0.25)",
@@ -34,7 +34,7 @@ const toastVariantConfig = {
     label: "CRITICAL ALERT",
   },
   warning: {
-    icon: IconAlertTriangle,
+    icon: Warning,
     iconColor: "#F59E0B",
     iconBg: "rgba(245, 158, 11, 0.12)",
     iconBorder: "rgba(245, 158, 11, 0.25)",
@@ -44,7 +44,7 @@ const toastVariantConfig = {
     label: "ATTENTION REQUIRED",
   },
   success: {
-    icon: IconCircleCheck,
+    icon: CheckCircle,
     iconColor: "#10B981",
     iconBg: "rgba(16, 185, 129, 0.12)",
     iconBorder: "rgba(16, 185, 129, 0.25)",
@@ -54,7 +54,7 @@ const toastVariantConfig = {
     label: "CONFIRMATION",
   },
   info: {
-    icon: IconInfoCircle,
+    icon: Info,
     iconColor: "#38BDF8",
     iconBg: "rgba(56, 189, 248, 0.12)",
     iconBorder: "rgba(56, 189, 248, 0.25)",
@@ -167,7 +167,7 @@ export const Toast: React.FC<ToastProps> = ({
               flexShrink: 0,
             }}
           >
-            <IconComponent size={16} stroke={2} />
+            <IconComponent size={16} weight="fill" />
           </div>
 
           <div
@@ -225,7 +225,7 @@ export const Toast: React.FC<ToastProps> = ({
               }}
               aria-label="Dismiss notification"
             >
-              <IconX size={15} stroke={2} />
+              <X size={15} weight="bold" />
             </button>
           )}
         </div>

@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import {
-  IconCloudUpload,
-  IconCheck,
-  IconAlertCircle,
-  IconX,
-} from "@tabler/icons-react";
+  CloudArrowUp,
+  Check,
+  WarningCircle,
+  X,
+} from "@phosphor-icons/react";
 import { cn } from "./utils";
 import { FileTypeIcon } from "./FileTypeIcon";
 
@@ -140,7 +140,7 @@ export function FileDropzone({
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#CC6600] shrink-0 animate-pulse">
-                <IconCloudUpload size={18} stroke={1.75} />
+                <CloudArrowUp size={18} weight="fill" />
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="font-mono text-xs font-bold text-white truncate">
@@ -166,7 +166,7 @@ export function FileDropzone({
             <div className="flex items-center justify-between text-xs font-mono">
               <span className="text-[#CC6600] text-[0.6875rem] flex items-center gap-1.5 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#CC6600] animate-ping" />
-                Ingesting telemetry stream...
+                Uploading file...
               </span>
               <span className="text-white/40 text-[0.6875rem]">Please wait</span>
             </div>
@@ -193,7 +193,7 @@ export function FileDropzone({
               </div>
             </div>
             <span className="font-mono text-[0.6875rem] font-semibold text-[#10B981] px-2 py-0.5 rounded-[2px] bg-[#10B981]/15 border border-[#10B981]/30 flex items-center gap-1 shrink-0">
-              <IconCheck size={12} stroke={2.5} />
+              <Check size={12} weight="bold" />
               Attached
             </span>
           </div>
@@ -223,7 +223,7 @@ export function FileDropzone({
                 onClick={onRemove}
                 className="text-[0.6875rem] font-mono font-medium text-red-400/80 hover:text-red-400 transition-colors cursor-pointer flex items-center gap-1"
               >
-                <IconX size={12} stroke={2} />
+                <X size={12} weight="bold" />
                 Remove
               </button>
             )}
@@ -244,7 +244,7 @@ export function FileDropzone({
           )}
         >
           <div className="p-2.5 rounded-[2px] bg-white/[0.04] border border-white/10 text-white/60">
-            <IconCloudUpload size={22} stroke={1.5} />
+            <CloudArrowUp size={22} weight="fill" />
           </div>
           <div className="flex flex-col gap-0.5">
             <p className="text-xs font-semibold text-white">
@@ -260,7 +260,7 @@ export function FileDropzone({
       {/* Error Message */}
       {error && (
         <div className="flex items-center gap-1.5 text-xs text-red-400 font-sans">
-          <IconAlertCircle size={14} stroke={2} className="shrink-0" />
+          <WarningCircle size={14} weight="fill" className="shrink-0" />
           <span>{error}</span>
         </div>
       )}

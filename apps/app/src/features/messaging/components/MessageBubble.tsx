@@ -4,10 +4,10 @@ import React from "react";
 import type { MessageDTO } from "../schemas";
 import { Badge } from "@repo/ui";
 import {
-  IconAlertTriangle,
-  IconCheck,
-  IconChecks,
-} from "@tabler/icons-react";
+  Warning,
+  Check,
+  Checks,
+} from "@phosphor-icons/react";
 
 interface MessageBubbleProps {
   message: MessageDTO;
@@ -56,7 +56,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isNew }) 
 
         <div className="p-3.5 rounded-[2px] bg-red-950/40 border border-red-500/40 text-red-200 text-xs font-sans flex flex-col gap-2 shadow-lg">
           <div className="flex items-center gap-2 text-red-300 font-bold uppercase tracking-wider text-[0.688rem]">
-            <IconAlertTriangle size={15} stroke={2} className="text-red-400 shrink-0" />
+            <Warning size={15} weight="fill" className="text-red-400 shrink-0" />
             <span>Message Blocked by Communication Firewall</span>
           </div>
           <p className="text-white/70 italic line-clamp-3">
@@ -107,12 +107,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isNew }) 
         <div className="flex items-center gap-1.5 text-[0.625rem] font-mono text-white/35 px-1 justify-end select-none">
           {message.status === "sending" || message.status === "sent" ? (
             <span className="flex items-center gap-1 text-white/40" title="Sent">
-              <IconCheck size={13} stroke={2} className="text-white/40" />
+              <Check size={13} weight="bold" className="text-white/40" />
               <span>Sent</span>
             </span>
           ) : message.status === "delivered" ? (
             <span className="flex items-center gap-1 text-white/55" title="Delivered to recipients">
-              <IconChecks size={13} stroke={2} className="text-white/50" />
+              <Checks size={13} weight="bold" className="text-white/50" />
               <span>Delivered</span>
             </span>
           ) : message.status === "seen" ? (
@@ -124,7 +124,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isNew }) 
                   : "Seen"
               }
             >
-              <IconChecks size={13} stroke={2.5} className="text-[#38BDF8]" />
+              <Checks size={13} weight="bold" className="text-[#38BDF8]" />
               <span className="text-[#38BDF8] font-medium">
                 {message.seenByNames && message.seenByNames.length > 0
                   ? `Seen by ${message.seenByNames[0]}`
@@ -133,12 +133,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isNew }) 
             </span>
           ) : isRead ? (
             <span className="flex items-center gap-1 text-[#38BDF8]">
-              <IconChecks size={13} stroke={2.5} className="text-[#38BDF8]" />
+              <Checks size={13} weight="bold" className="text-[#38BDF8]" />
               <span className="text-[#38BDF8] font-medium">Seen</span>
             </span>
           ) : (
             <span className="flex items-center gap-1 text-white/40">
-              <IconCheck size={13} stroke={2} className="text-white/40" />
+              <Check size={13} weight="bold" className="text-white/40" />
               <span>Sent</span>
             </span>
           )}

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { IconChevronRight, IconDots } from "@tabler/icons-react";
+import { CaretRight, DotsThree } from "@phosphor-icons/react";
 import { cn } from "./utils";
 
 export const Breadcrumb = React.forwardRef<
@@ -84,7 +84,7 @@ export const BreadcrumbSeparator = ({
     className={cn("[&>svg]:size-3.5 text-white/30", className)}
     {...props}
   >
-    {children ?? <IconChevronRight size={14} stroke={1.5} />}
+    {children ?? <CaretRight size={14} weight="fill" />}
   </li>
 );
 BreadcrumbSeparator.displayName = "BreadcrumbSeparator";
@@ -99,7 +99,7 @@ export const BreadcrumbEllipsis = ({
     className={cn("flex h-7 w-7 items-center justify-center text-white/40", className)}
     {...props}
   >
-    <IconDots size={14} stroke={1.5} />
+    <DotsThree size={14} weight="bold" />
     <span className="sr-only">More</span>
   </span>
 );

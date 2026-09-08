@@ -13,22 +13,22 @@ import {
 } from "@/features/notifications/actions";
 import type { InAppAlertDTO } from "@/features/notifications/schemas";
 import {
-  IconBell,
-  IconCheck,
-  IconClock,
-  IconFileText,
-  IconGavel,
-  IconShieldCheck,
-  IconX,
-  IconArrowRight,
-  IconAlertTriangle,
-  IconInbox,
-  IconCreditCard,
-  IconReceipt2,
-  IconUserCheck,
-  IconPackage,
-  IconRefresh,
-} from "@tabler/icons-react";
+  Bell,
+  Check,
+  Clock,
+  FileText,
+  Gavel,
+  ShieldCheck,
+  X,
+  ArrowRight,
+  Warning,
+  Tray,
+  CreditCard,
+  Receipt,
+  UserCheck,
+  Package,
+  ArrowCounterClockwise,
+} from "@phosphor-icons/react";
 
 type NotificationState = {
   alerts: InAppAlertDTO[];
@@ -319,29 +319,29 @@ export function NotificationDrawer() {
   const getAlertIcon = (type: string) => {
     switch (type) {
       case "NEW_INTAKE":
-        return <IconInbox size={16} className="text-sky-400" />;
+        return <Tray size={16} weight="fill" className="text-sky-400" />;
       case "PAYMENT_UPDATE":
-        return <IconCreditCard size={16} className="text-emerald-400" />;
+        return <CreditCard size={16} weight="fill" className="text-emerald-400" />;
       case "COMMERCIAL_UPDATE":
-        return <IconReceipt2 size={16} className="text-amber-400" />;
+        return <Receipt size={16} weight="fill" className="text-amber-400" />;
       case "ASSIGNMENT":
-        return <IconUserCheck size={16} className="text-sky-400" />;
+        return <UserCheck size={16} weight="fill" className="text-sky-400" />;
       case "QA_DECISION":
       case "QA_SUBMISSION":
-        return <IconShieldCheck size={16} className="text-emerald-400" />;
+        return <ShieldCheck size={16} weight="fill" className="text-emerald-400" />;
       case "DELIVERABLE_UPDATE":
-        return <IconPackage size={16} className="text-emerald-400" />;
+        return <Package size={16} weight="fill" className="text-emerald-400" />;
       case "REVISION_REQUEST":
-        return <IconRefresh size={16} className="text-amber-400" />;
+        return <ArrowCounterClockwise size={16} weight="bold" className="text-amber-400" />;
       case "PRE_DEADLINE":
-        return <IconClock size={16} className="text-amber-400" />;
+        return <Clock size={16} weight="fill" className="text-amber-400" />;
       case "ETHICAL_BREACH":
-        return <IconAlertTriangle size={16} className="text-red-400" />;
+        return <Warning size={16} weight="fill" className="text-red-400" />;
       case "CLAIM_FILED":
       case "DISPUTE":
-        return <IconGavel size={16} className="text-[#CC6600]" />;
+        return <Gavel size={16} weight="fill" className="text-[#CC6600]" />;
       default:
-        return <IconFileText size={16} className="text-white/60" />;
+        return <FileText size={16} weight="fill" className="text-white/60" />;
     }
   };
 
@@ -378,9 +378,9 @@ export function NotificationDrawer() {
             : "bg-white/[0.02] hover:bg-white/[0.06] border border-white/10 hover:border-white/20 text-white/70 hover:text-white"
         }`}
       >
-        <IconBell
+        <Bell
           size={17}
-          stroke={1.75}
+          weight="fill"
           className={`transition-transform duration-200 group-hover:scale-105 ${
             isRinging ? "animate-bounce text-[#CC6600]" : ""
           }`}
@@ -416,7 +416,7 @@ export function NotificationDrawer() {
           <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-[#010E1F]/90">
             <div className="flex items-center gap-2.5">
               <div className="h-8 w-8 rounded-[2px] bg-white/[0.04] border border-white/10 flex items-center justify-center text-white/70">
-                <IconBell size={16} stroke={1.75} />
+                <Bell size={16} weight="fill" />
               </div>
               <div className="flex flex-col">
                 <h2 className="text-sm font-bold text-white font-sans leading-none tracking-tight">Notifications</h2>
@@ -444,7 +444,7 @@ export function NotificationDrawer() {
                 className="h-8 w-8 rounded-[2px] border border-transparent hover:border-white/10 text-white/40 hover:text-white hover:bg-white/[0.06] flex items-center justify-center transition-colors cursor-pointer outline-none focus:outline-none focus:ring-0 ring-0"
                 aria-label="Close notifications"
               >
-                <IconX size={16} stroke={2} />
+                <X size={16} weight="bold" />
               </button>
             </div>
           </div>
@@ -489,7 +489,7 @@ export function NotificationDrawer() {
             ) : filteredAlerts.length === 0 ? (
               <div className="flex-1 min-h-full my-auto flex flex-col items-center justify-center text-center text-xs text-white/40 gap-3 px-6 py-16">
                 <div className="h-12 w-12 rounded-[2px] bg-white/[0.03] border border-white/10 flex items-center justify-center text-white/30">
-                  <IconInbox size={24} stroke={1.5} />
+                  <Tray size={24} weight="fill" />
                 </div>
                 <div className="flex flex-col gap-1 max-w-[260px]">
                   <span className="font-semibold text-white/70 text-xs font-sans">
@@ -539,7 +539,7 @@ export function NotificationDrawer() {
                           title="Mark as read"
                           className="text-white/40 hover:text-emerald-400 p-0.5 transition-colors cursor-pointer outline-none focus:outline-none focus:ring-0 ring-0"
                         >
-                          <IconCheck size={14} stroke={2} />
+                          <Check size={14} weight="bold" />
                         </button>
                       )}
                     </div>
@@ -560,8 +560,9 @@ export function NotificationDrawer() {
                         className="inline-flex items-center gap-1 text-[0.688rem] text-white/70 hover:text-white font-medium transition-colors cursor-pointer group/link hover:underline"
                       >
                         <span>{getActionLabel(alert.alertType)}</span>
-                        <IconArrowRight
+                        <ArrowRight
                           size={12}
+                          weight="bold"
                           className="transition-transform group-hover/link:translate-x-0.5"
                         />
                       </Link>
@@ -575,7 +576,7 @@ export function NotificationDrawer() {
           {/* Footer */}
           <div className="px-5 py-3.5 border-t border-white/10 bg-[#010E1F]/90 flex justify-between items-center text-xs text-white/40 font-sans">
             <span className="flex items-center gap-1.5">
-              <IconBell size={13} stroke={1.5} className="text-white/30" />
+              <Bell size={13} weight="fill" className="text-white/30" />
               <span>Study updates and alerts</span>
             </span>
             <button

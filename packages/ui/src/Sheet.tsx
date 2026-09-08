@@ -3,7 +3,7 @@
 import * as React from "react";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
-import { IconX } from "@tabler/icons-react";
+import { X } from "@phosphor-icons/react";
 import { cn } from "./utils";
 
 export const Sheet = SheetPrimitive.Root;
@@ -69,7 +69,7 @@ export const SheetContent = React.forwardRef<
       {children}
 
       <SheetPrimitive.Close className="absolute right-4 top-4 rounded-[2px] p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-1 focus:ring-[#38BDF8] disabled:pointer-events-none">
-        <IconX size={16} stroke={1.5} />
+        <X size={16} weight="bold" />
         <span className="sr-only">Close</span>
       </SheetPrimitive.Close>
     </SheetPrimitive.Content>

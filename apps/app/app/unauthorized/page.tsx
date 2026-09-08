@@ -4,7 +4,7 @@ import React, { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button, Card, LoadingState } from "@repo/ui";
-import { IconAlertTriangle } from "@tabler/icons-react";
+import { Warning } from "@phosphor-icons/react";
 
 function UnauthorizedContent() {
   const searchParams = useSearchParams();
@@ -15,7 +15,7 @@ function UnauthorizedContent() {
       <Card className="max-w-md w-full p-8 border border-white/[0.12] bg-[#01142B]/90 backdrop-blur-xl rounded-[2px] shadow-2xl flex flex-col items-center text-center">
         {/* Warning Icon Emblem */}
         <div className="h-14 w-14 rounded-[2px] bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 mb-6 shadow-inner">
-          <IconAlertTriangle size={28} stroke={1.5} />
+          <Warning size={28} weight="fill" />
         </div>
 
         {/* Status Stamp */}
@@ -46,13 +46,13 @@ function UnauthorizedContent() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 w-full">
           <Link href="/dashboard" className="flex-1">
-            <Button variant="primary" size="md" className="w-full">
-              RETURN TO DESK
+            <Button variant="primary" size="md" className="w-full rounded-[2px]">
+              Return to Workspace
             </Button>
           </Link>
           <Link href="/login" className="flex-1">
-            <Button variant="secondary" size="md" className="w-full">
-              SWITCH ROLE
+            <Button variant="secondary" size="md" className="w-full rounded-[2px]">
+              Switch Account
             </Button>
           </Link>
         </div>

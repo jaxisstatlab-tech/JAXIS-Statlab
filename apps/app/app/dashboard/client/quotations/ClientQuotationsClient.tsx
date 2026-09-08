@@ -18,10 +18,14 @@ import {
   MoneyDisplay,
 } from "@repo/ui";
 import {
-  IconSparkles,
-  IconArrowRight,
-  IconReceiptOff,
-} from "@tabler/icons-react";
+  Sparkle,
+  ArrowRight,
+  Receipt,
+  Clock,
+  CheckCircle,
+  FileText,
+  CurrencyDollar,
+} from "@phosphor-icons/react";
 import { getProjects } from "@/features/projects/actions";
 import { getQuotationByProject } from "@/features/quotations/actions";
 import { PACKAGES_CATALOG } from "@/lib/pricing-rules";
@@ -150,7 +154,10 @@ export function ClientQuotationsClient({
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
+    <div
+      data-portal="client"
+      className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade"
+    >
       {/* ── Page Header ── */}
       <PageHeader
         title="Study Quotes & Proposals"
@@ -162,15 +169,16 @@ export function ClientQuotationsClient({
         ]}
       />
 
-      {/* ── KPI Metrics Ribbon ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+      {/* ── KPI Metrics Ribbon (Dashdark X Precision Standard) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 items-stretch">
         <KpiCard
           label="PENDING REVIEW"
           value={stats.pendingAction}
           variant={stats.pendingAction > 0 ? "orange" : "default"}
-          badge={stats.pendingAction > 0 ? "NEEDS REVIEW" : undefined}
+          badge={stats.pendingAction > 0 ? "ACTION NEEDED" : "ALL CLEAR"}
           badgeColor={stats.pendingAction > 0 ? "orange" : "gray"}
           description="Quotes ready for your review"
+          icon={<Clock size={16} weight="fill" className={stats.pendingAction > 0 ? "text-[#FFA040]" : "text-white/60"} />}
           className="animate-card-reveal stagger-1"
         />
 
@@ -178,7 +186,10 @@ export function ClientQuotationsClient({
           label="APPROVED"
           value={stats.approved}
           variant="default"
+          badge="ACCEPTED"
+          badgeColor="emerald"
           description="Scope and milestones accepted"
+          icon={<CheckCircle size={16} weight="fill" className="text-emerald-400" />}
           className="animate-card-reveal stagger-2"
         />
 
@@ -186,7 +197,10 @@ export function ClientQuotationsClient({
           label="BEING PRICED"
           value={stats.inPrep}
           variant="default"
+          badge="IN PIPELINE"
+          badgeColor="sky"
           description="Quotes being prepared by statisticians"
+          icon={<FileText size={16} weight="fill" className="text-sky-400" />}
           className="animate-card-reveal stagger-3"
         />
 
@@ -194,7 +208,10 @@ export function ClientQuotationsClient({
           label="TOTAL VALUE"
           value={<MoneyDisplay amount={stats.totalCommitted} />}
           variant="default"
+          badge="COMMITTED"
+          badgeColor="orange"
           description="Total value of accepted studies"
+          icon={<CurrencyDollar size={16} weight="fill" className="text-[#FFA040]" />}
           className="animate-card-reveal stagger-4"
         />
       </div>
@@ -233,31 +250,32 @@ export function ClientQuotationsClient({
           }}
         />
 
-        {/* ── Table Container ── */}
-        <div style={{ padding: "1.25rem 1.75rem 1.75rem 1.75rem" }}>
-          <div className="w-full overflow-x-auto rounded-[3px] border border-white/[0.08]">
-            <table className="data-table">
-              <thead>
+        {/* ── Table Container (Dashdark X Precision Standard) ── */}
+        <div className="p-0">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-[#010D1F] border-b border-white/10">
                 <tr>
-                  <th>Study &amp; Intake ID</th>
-                  <th className="w-[200px] whitespace-nowrap">Package &amp; Scope</th>
-                  <th className="w-[170px] whitespace-nowrap">Pricing &amp; Downpayment</th>
-                  <th className="w-[130px] whitespace-nowrap">Status</th>
-                  <th className="w-[150px] text-right whitespace-nowrap">Action</th>
+                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[140px] whitespace-nowrap">Study ID</th>
+                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold">Research Study</th>
+                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[190px] whitespace-nowrap">Package Tier</th>
+                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[180px] whitespace-nowrap">Investment</th>
+                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[140px] whitespace-nowrap">Status</th>
+                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[150px] text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-white/[0.06]">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={5} className="py-16 text-center">
+                    <td colSpan={6} className="py-16 text-center">
                       <LoadingState variant="table" label="Loading quotes..." />
                     </td>
                   </tr>
                 ) : filteredEntries.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-16 text-center">
+                    <td colSpan={6} className="py-16 text-center">
                       <EmptyState
-                        icon={IconReceiptOff}
+                        icon={Receipt}
                         title="No Quotes Found"
                         description="No quotes match the active filter criteria."
                       />
@@ -271,66 +289,66 @@ export function ClientQuotationsClient({
                     const hasAddOns = quotation?.lineItems.some((li) => li.itemType === "ADDON");
 
                     return (
-                      <tr key={project.id} className="group">
-                        {/* 1. Research Study & Intake */}
-                        <td className="max-w-[420px] min-w-0">
-                          <div className="flex flex-col gap-1 min-w-0 pr-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <CopyButton
-                                variant="badge"
-                                value={project.intakeId}
-                                label={project.intakeId}
-                                onCopy={() =>
-                                  setToastMessage({
-                                    message: "Study ID Copied",
-                                    description: `"${project.intakeId}" has been copied to your clipboard.`,
-                                    variant: "info",
-                                  })
-                                }
-                              />
+                      <tr key={project.id} className="group hover:bg-white/[0.02] transition-colors">
+                        {/* 1. Study ID */}
+                        <td className="py-3.5 px-4 font-mono text-xs whitespace-nowrap align-middle">
+                          <CopyButton
+                            variant="badge"
+                            value={project.intakeId}
+                            label={project.intakeId}
+                            onCopy={() =>
+                              setToastMessage({
+                                message: "Study ID Copied",
+                                description: `"${project.intakeId}" has been copied to your clipboard.`,
+                                variant: "info",
+                              })
+                            }
+                          />
+                        </td>
 
-                              <span className="text-[0.6875rem] font-mono text-white/40 whitespace-nowrap">
-                                Target: {new Date(project.deadlineRequested).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
-                              </span>
-                            </div>
-
+                        {/* 2. Research Study & Intake */}
+                        <td className="py-3.5 px-4 max-w-[380px] min-w-0 align-middle">
+                          <div className="flex flex-col gap-0.5 pr-2 min-w-0">
                             <Link
                               href={
                                 quotation
                                   ? `/dashboard/client/projects/${project.id}/quote`
                                   : `/dashboard/client/projects/${project.id}`
                               }
-                              className="text-xs font-semibold text-white group-hover:text-sky-300 transition-colors line-clamp-2 leading-snug"
+                              className="text-sm font-semibold text-white group-hover:text-[#FFA040] transition-colors line-clamp-1 leading-snug font-sans"
                               title={project.researchTitle}
                             >
                               {project.researchTitle}
                             </Link>
+                            <span className="text-xs text-white/40 font-sans">
+                              Target Date: {new Date(project.deadlineRequested).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </span>
                           </div>
                         </td>
 
-                        {/* 2. Package & Scope */}
-                        <td className="whitespace-nowrap">
+                        {/* 3. Package & Scope */}
+                        <td className="py-3.5 px-4 whitespace-nowrap align-middle">
                           {pkgInfo ? (
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1.5">
                                 <span className="text-xs font-mono font-bold text-[#FFA040]">
                                   {pkgInfo.id}
                                 </span>
-                                <span className="text-[0.5625rem] font-mono uppercase px-1.5 py-0.5 rounded-[2px] bg-white/[0.04] text-white/70 border border-white/[0.08]">
+                                <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-[2px] bg-white/[0.04] text-white/70 border border-white/[0.08]">
                                   {pkgInfo.badge}
                                 </span>
                               </div>
-                              <span className="text-xs text-white/90 font-sans leading-snug">
+                              <span className="text-xs text-white/90 font-sans">
                                 {pkgInfo.name.replace(/^JX-\d+\s*/, "")}
                               </span>
                               {hasAddOns && (
-                                <span className="text-[0.6875rem] font-sans text-white/60 flex items-center gap-1 mt-0.5">
-                                  <IconSparkles size={12} stroke={1.5} className="text-[#CC6600]" />
-                                  <span>{quotation?.lineItems.filter((li) => li.itemType === "ADDON").length} Add-on(s) included</span>
+                                <span className="text-[11px] font-sans text-white/50 flex items-center gap-1">
+                                  <Sparkle size={11} weight="fill" className="text-[#CC6600]" />
+                                  <span>{quotation?.lineItems.filter((li) => li.itemType === "ADDON").length} Add-on(s)</span>
                                 </span>
                               )}
                             </div>
@@ -341,21 +359,21 @@ export function ClientQuotationsClient({
                           )}
                         </td>
 
-                        {/* 3. Pricing & Downpayment */}
-                        <td className="whitespace-nowrap">
+                        {/* 4. Investment & Downpayment */}
+                        <td className="py-3.5 px-4 whitespace-nowrap align-middle">
                           {quotation ? (
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-baseline gap-1.5">
-                                <span className="text-xs font-mono text-white font-bold inline-flex items-baseline">
-                                  <Peso className="text-white/80 text-xs" />
+                                <span className="text-sm font-mono text-white font-bold inline-flex items-baseline">
+                                  <Peso className="text-white/80 text-sm" />
                                   {quotation.totalAmount.toLocaleString()}
                                 </span>
-                                <span className="text-[0.625rem] font-sans text-white/40 inline-flex items-baseline">
-                                  (Base: <Peso className="text-white/40 text-[0.625rem]" />{quotation.basePrice.toLocaleString()})
+                                <span className="text-xs font-sans text-white/40 inline-flex items-baseline">
+                                  (Base: <Peso className="text-white/40 text-xs" />{quotation.basePrice.toLocaleString()})
                                 </span>
                               </div>
-                              <span className="text-[0.6875rem] font-mono text-white/70 font-medium inline-flex items-baseline">
-                                <Peso className="text-white/50 text-[0.6875rem]" />
+                              <span className="text-[11px] font-mono text-white/70 font-medium inline-flex items-baseline">
+                                <Peso className="text-white/50 text-[11px]" />
                                 {quotation.downpaymentRequired.toLocaleString()} Due ({quotation.isUpfrontEnforced ? "100%" : `${quotation.downpaymentPercentage}%`})
                               </span>
                             </div>
@@ -364,8 +382,8 @@ export function ClientQuotationsClient({
                           )}
                         </td>
 
-                        {/* 4. Status */}
-                        <td className="whitespace-nowrap">
+                        {/* 5. Status */}
+                        <td className="py-3.5 px-4 whitespace-nowrap align-middle">
                           {quotation ? (
                             <StatusBadge
                               status={quotation.status}
@@ -385,17 +403,17 @@ export function ClientQuotationsClient({
                           )}
                         </td>
 
-                        {/* 5. Actions */}
-                        <td className="text-right whitespace-nowrap">
+                        {/* 6. Actions */}
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap align-middle">
                           {isPending ? (
                             <Link href={`/dashboard/client/projects/${project.id}/quote`}>
                               <Button
                                 variant="primary"
                                 size="sm"
-                                className="py-1.5 px-3.5 h-auto whitespace-nowrap font-sans font-semibold text-xs tracking-wide bg-[#CC6600] text-white hover:bg-[#E67300] inline-flex items-center gap-1.5 cursor-pointer rounded-[2px]"
+                                className="whitespace-nowrap font-sans font-semibold text-xs bg-[#CC6600] text-white hover:bg-[#B35500] inline-flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-all px-3 py-1.5"
                               >
                                 <span>Review Quote</span>
-                                <IconArrowRight size={14} stroke={2} />
+                                <ArrowRight size={13} weight="bold" />
                               </Button>
                             </Link>
                           ) : isApproved ? (
@@ -403,7 +421,7 @@ export function ClientQuotationsClient({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="py-1.5 px-3.5 h-auto whitespace-nowrap font-sans font-medium text-xs tracking-wide cursor-pointer rounded-[2px]"
+                                className="whitespace-nowrap font-sans font-medium text-xs rounded-[2px] active:scale-[0.97] transition-all px-3 py-1.5"
                               >
                                 View Details
                               </Button>
@@ -413,7 +431,7 @@ export function ClientQuotationsClient({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="py-1.5 px-3.5 h-auto whitespace-nowrap font-sans font-medium text-xs tracking-wide text-white/60 hover:text-white cursor-pointer rounded-[2px]"
+                                className="whitespace-nowrap font-sans font-medium text-xs text-white/60 hover:text-white rounded-[2px] active:scale-[0.97] transition-all px-3 py-1.5"
                               >
                                 Study Tracker →
                               </Button>

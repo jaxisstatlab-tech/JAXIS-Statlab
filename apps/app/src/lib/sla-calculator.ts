@@ -58,10 +58,13 @@ export interface SlaRemainingInfo {
  * Calculates remaining SLA time for live workbench and countdown displays.
  */
 export function calculateSlaRemaining(
-  slaDueAt: Date,
-  slaPausedAt?: Date | null
+  slaDueAt: Date | string,
+  slaPausedAt?: Date | string | null
 ): SlaRemainingInfo {
-  if (slaPausedAt) {
+  const dueDate = slaDueAt instanceof Date ? slaDueAt : new Date(slaDueAt);
+  const pausedDate = slaPausedAt ? (slaPausedAt instanceof Date ? slaPausedAt : new Date(slaPausedAt)) : null;
+
+  if (pausedDate) {
     return {
       isPaused: true,
       isOverdue: false,
@@ -73,7 +76,7 @@ export function calculateSlaRemaining(
   }
 
   const now = new Date();
-  const diffMs = slaDueAt.getTime() - now.getTime();
+  const diffMs = dueDate.getTime() - now.getTime();
   const totalHours = Math.round(diffMs / (1000 * 60 * 60));
   const totalDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 

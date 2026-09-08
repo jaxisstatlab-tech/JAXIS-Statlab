@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@repo/ui";
 import {
-  IconSend,
-  IconShieldLock,
-  IconAlertTriangle,
-  IconX,
-  IconLock,
-} from "@tabler/icons-react";
+  PaperPlaneRight,
+  ShieldCheck,
+  Warning,
+  X,
+  Lock,
+} from "@phosphor-icons/react";
 
 interface MessageInputProps {
   onSendMessage: (content: string) => Promise<{ success: boolean; blocked?: boolean; warning?: string }>;
@@ -78,7 +78,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       {firewallError && (
         <div className="p-3.5 bg-red-950/50 border border-red-500/40 rounded-[2px] flex items-start justify-between gap-3 text-xs text-red-200 animate-content-fade">
           <div className="flex items-start gap-2.5">
-            <IconAlertTriangle size={18} stroke={2} className="text-red-400 shrink-0 mt-0.5" />
+            <Warning size={18} weight="fill" className="text-red-400 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold text-red-300 block">Firewall Block Notice</span>
               <p className="text-white/80 mt-0.5 leading-relaxed">{firewallError}</p>
@@ -90,7 +90,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             className="text-white/50 hover:text-white cursor-pointer"
             aria-label="Dismiss warning"
           >
-            <IconX size={16} stroke={2} />
+            <X size={16} weight="bold" />
           </button>
         </div>
       )}
@@ -124,7 +124,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <div className="flex items-center justify-between px-3 py-1.5 sm:px-3.5 sm:py-2.5 border-t border-white/[0.06] bg-[#010B18]/70 gap-2">
             {disabled && disabledReason ? (
               <div className="flex items-center gap-1.5 text-xs text-white/40 font-mono">
-                <IconLock size={13} stroke={1.5} className="text-white/30" />
+                <Lock size={13} weight="fill" className="text-white/30" />
                 <span>{disabledReason}</span>
               </div>
             ) : (
@@ -137,7 +137,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                   <span>new line</span>
                 </span>
                 <span className="sm:hidden flex items-center gap-1 text-[0.688rem] text-white/40">
-                  <IconShieldLock size={13} stroke={1.5} className="text-emerald-400/70" />
+                  <ShieldCheck size={13} weight="fill" className="text-emerald-400/70" />
                   <span className="hidden xs:inline">Protected</span>
                 </span>
               </div>
@@ -169,12 +169,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               >
                 {disabled ? (
                   <>
-                    <IconLock size={14} stroke={1.5} />
+                    <Lock size={14} weight="fill" />
                     <span>Locked</span>
                   </>
                 ) : (
                   <>
-                    <IconSend size={14} stroke={2} />
+                    <PaperPlaneRight size={14} weight="fill" />
                     <span>Send</span>
                   </>
                 )}

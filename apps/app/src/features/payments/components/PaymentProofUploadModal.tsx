@@ -14,16 +14,16 @@ import {
   FileDropzone,
 } from "@repo/ui";
 import {
-  IconReceipt,
-  IconBuildingBank,
-  IconDeviceMobile,
-  IconCopy,
-  IconCheck,
-  IconLoader2,
-  IconAlertCircle,
-  IconQrcode,
-  IconLock,
-} from "@tabler/icons-react";
+  Receipt,
+  Bank,
+  DeviceMobile,
+  Copy,
+  Check,
+  CircleNotch,
+  WarningCircle,
+  QrCode,
+  Lock,
+} from "@phosphor-icons/react";
 import { uploadFileToR2 } from "@/lib/storage-client";
 import { submitPaymentProof, getPaymentChannels } from "../actions";
 import type { PaymentItem } from "../schemas";
@@ -203,11 +203,11 @@ export function PaymentProofUploadModal({
           >
             <TabsList className="w-full grid grid-cols-2">
               <TabsTrigger value="GCASH" className="gap-2">
-                <IconDeviceMobile size={16} stroke={1.5} />
+                <DeviceMobile size={16} weight="fill" />
                 <span>GCash (QR Ph)</span>
               </TabsTrigger>
               <TabsTrigger value="BANK_TRANSFER" className="gap-2">
-                <IconBuildingBank size={16} stroke={1.5} />
+                <Bank size={16} weight="fill" />
                 <span>Bank Deposit</span>
               </TabsTrigger>
             </TabsList>
@@ -239,9 +239,9 @@ export function PaymentProofUploadModal({
                         title="Copy Account Number"
                       >
                         {copiedAccount === channel.accountNumber ? (
-                          <IconCheck size={14} stroke={2.5} className="text-emerald-400" />
+                          <Check size={14} weight="bold" className="text-emerald-400" />
                         ) : (
-                          <IconCopy size={14} stroke={1.5} />
+                          <Copy size={14} weight="bold" />
                         )}
                       </button>
                     </div>
@@ -251,7 +251,7 @@ export function PaymentProofUploadModal({
                     </p>
 
                     <div className="flex items-center gap-1.5 mt-2.5 text-[0.688rem] text-white/40 font-mono">
-                      <IconQrcode size={14} stroke={1.5} className="text-[#CC6600]" />
+                      <QrCode size={14} weight="fill" className="text-[#CC6600]" />
                       <span>Scan with GCash or any QR Ph app</span>
                     </div>
                   </div>
@@ -378,9 +378,9 @@ export function PaymentProofUploadModal({
                         title="Copy Account Number"
                       >
                         {copiedAccount === channel.accountNumber ? (
-                          <IconCheck size={14} stroke={2.5} className="text-emerald-400" />
+                          <Check size={14} weight="bold" className="text-emerald-400" />
                         ) : (
-                          <IconCopy size={14} stroke={1.5} />
+                          <Copy size={14} weight="bold" />
                         )}
                       </button>
                     </div>
@@ -419,7 +419,7 @@ export function PaymentProofUploadModal({
             required
             readOnly
             value={amount}
-            rightIcon={<IconLock size={15} stroke={1.5} className="text-white/40" />}
+            rightIcon={<Lock size={15} weight="fill" className="text-white/40" />}
             className="bg-white/[0.04] text-white/70 border-white/10 cursor-not-allowed font-mono font-bold select-none focus:border-white/10 focus:ring-0"
             helper="Locked to the exact milestone amount required by your contract."
           />
@@ -461,7 +461,7 @@ export function PaymentProofUploadModal({
 
         {errorMessage && (
           <div className="p-3.5 rounded-[2px] bg-red-500/10 border border-red-500/30 flex items-center gap-2.5 text-red-400 font-sans text-xs">
-            <IconAlertCircle size={16} stroke={2} className="flex-shrink-0" />
+            <WarningCircle size={16} weight="fill" className="flex-shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
@@ -486,12 +486,12 @@ export function PaymentProofUploadModal({
           >
             {isSubmitting ? (
               <>
-                <IconLoader2 size={16} stroke={2.5} className="animate-spin text-white/90" />
+                <CircleNotch size={16} className="animate-spin text-white/90" />
                 <span>Uploading & Submitting...</span>
               </>
             ) : (
               <>
-                <IconReceipt size={16} stroke={2} />
+                <Receipt size={16} weight="fill" />
                 <span>Submit Deposit Proof →</span>
               </>
             )}

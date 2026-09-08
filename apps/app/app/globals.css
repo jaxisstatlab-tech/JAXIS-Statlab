@@ -253,11 +253,11 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
   animation: contentFadeIn 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* ── Emil Kowalski Staggered Component Reveal ── */
+/* ── Emil Kowalski Staggered Component Reveal (Base / Operational Desks) ── */
 @keyframes cardReveal {
   0% {
     opacity: 0;
-    transform: translateY(8px) scale(0.99);
+    transform: translateY(8px) scale(0.985);
   }
   100% {
     opacity: 1;
@@ -266,17 +266,18 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .animate-card-reveal {
-  animation: cardReveal 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation: cardReveal 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
 }
 
-.stagger-1 { animation-delay: 30ms; }
-.stagger-2 { animation-delay: 60ms; }
-.stagger-3 { animation-delay: 90ms; }
-.stagger-4 { animation-delay: 120ms; }
-.stagger-5 { animation-delay: 150ms; }
-.stagger-6 { animation-delay: 180ms; }
-.stagger-7 { animation-delay: 210ms; }
-.stagger-8 { animation-delay: 240ms; }
+.stagger-1 { animation-delay: 35ms; }
+.stagger-2 { animation-delay: 70ms; }
+.stagger-3 { animation-delay: 105ms; }
+.stagger-4 { animation-delay: 140ms; }
+.stagger-5 { animation-delay: 175ms; }
+.stagger-6 { animation-delay: 210ms; }
+.stagger-7 { animation-delay: 245ms; }
+.stagger-8 { animation-delay: 280ms; }
 
 .font-signature {
   font-family: var(--font-signature), 'Mrs Saint Delafield', cursive !important;
@@ -645,15 +646,29 @@ main,
 }
 
 /* ==========================================================================
-   Emil Kowalski Tactile Card & Element Reveal Intro Transitions
-   - Never animates from scale(0); starts from subtle scale(0.985) + translateY(8px).
-   - Snappy custom ease-out: cubic-bezier(0.16, 1, 0.3, 1) under 250ms (240ms duration).
-   - Uses `both` fill-mode for seamless staggered cascades without initial flash.
+   Client Portal — Calm, Graceful Content & Card Reveal (Anti-Instant Standard)
+   - Specifically crafted for thesis candidates, researchers, and client portals.
+   - Replaces the abrupt 240ms flash with an intentional, silky 620ms reveal.
+   - Easing: Apple/Vercel-grade smooth ease-out `cubic-bezier(0.22, 1, 0.36, 1)`.
+   - Trajectory: Gentle 14px upward float settling into place (`translateY(14px) scale(0.985)` -> `translateY(0) scale(1)`).
+   - Cascading Stagger: Perceptible 70ms step intervals (70ms -> 560ms waterfall).
+   - Applied via [data-role="CLIENT"], [data-portal="client"], or .client-reveal.
    ========================================================================== */
-@keyframes cardReveal {
+@keyframes clientContentFadeIn {
   0% {
     opacity: 0;
-    transform: translateY(8px) scale(0.985);
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes clientCardReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
   }
   100% {
     opacity: 1;
@@ -661,20 +676,33 @@ main,
   }
 }
 
-.animate-card-reveal {
-  animation: cardReveal 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+[data-role="CLIENT"] .animate-content-fade,
+[data-portal="client"].animate-content-fade,
+[data-portal="client"] .animate-content-fade,
+.client-reveal.animate-content-fade,
+.client-reveal .animate-content-fade {
+  animation: clientContentFadeIn 680ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
 }
 
-/* Staggered Delay Utilities (30ms increments for natural cascading cadence) */
-.stagger-1 { animation-delay: 30ms; }
-.stagger-2 { animation-delay: 60ms; }
-.stagger-3 { animation-delay: 90ms; }
-.stagger-4 { animation-delay: 120ms; }
-.stagger-5 { animation-delay: 150ms; }
-.stagger-6 { animation-delay: 180ms; }
-.stagger-7 { animation-delay: 210ms; }
-.stagger-8 { animation-delay: 240ms; }
+[data-role="CLIENT"] .animate-card-reveal,
+[data-portal="client"].animate-card-reveal,
+[data-portal="client"] .animate-card-reveal,
+.client-reveal.animate-card-reveal,
+.client-reveal .animate-card-reveal {
+  animation: clientCardReveal 750ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+/* Client Portal 90ms Cascading Stagger Cadence (Deliberate & Silky Slow Waterfall) */
+[data-role="CLIENT"] .stagger-1, [data-portal="client"] .stagger-1, [data-portal="client"].stagger-1 { animation-delay: 90ms; }
+[data-role="CLIENT"] .stagger-2, [data-portal="client"] .stagger-2, [data-portal="client"].stagger-2 { animation-delay: 180ms; }
+[data-role="CLIENT"] .stagger-3, [data-portal="client"] .stagger-3, [data-portal="client"].stagger-3 { animation-delay: 270ms; }
+[data-role="CLIENT"] .stagger-4, [data-portal="client"] .stagger-4, [data-portal="client"].stagger-4 { animation-delay: 360ms; }
+[data-role="CLIENT"] .stagger-5, [data-portal="client"] .stagger-5, [data-portal="client"].stagger-5 { animation-delay: 450ms; }
+[data-role="CLIENT"] .stagger-6, [data-portal="client"] .stagger-6, [data-portal="client"].stagger-6 { animation-delay: 540ms; }
+[data-role="CLIENT"] .stagger-7, [data-portal="client"] .stagger-7, [data-portal="client"].stagger-7 { animation-delay: 630ms; }
+[data-role="CLIENT"] .stagger-8, [data-portal="client"] .stagger-8, [data-portal="client"].stagger-8 { animation-delay: 720ms; }
 
 
 

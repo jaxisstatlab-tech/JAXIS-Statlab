@@ -13,23 +13,23 @@ import {
   Peso,
 } from "@repo/ui";
 import {
-  IconArrowLeft,
-  IconCheck,
-  IconReceipt,
-  IconClock,
-  IconShieldCheck,
-  IconSparkles,
-  IconAlertTriangle,
-  IconSchool,
-  IconBolt,
-  IconFlame,
-  IconLock,
-  IconCopy,
-  IconX,
-  IconClipboardList,
-  IconFileText,
-  IconFileCertificate,
-} from "@tabler/icons-react";
+  ArrowLeft,
+  Check,
+  Receipt,
+  Clock,
+  ShieldCheck,
+  Sparkle,
+  Warning,
+  GraduationCap,
+  Lightning,
+  Flame,
+  Lock,
+  Copy,
+  X,
+  ClipboardText,
+  FileText,
+  Certificate,
+} from "@phosphor-icons/react";
 import { getProjectById } from "@/features/projects/actions";
 import {
   getQuotationByProject,
@@ -188,15 +188,15 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
   const getAddOnIcon = (name: AddOnName | string) => {
     switch (name) {
       case "DEFENSELAB":
-        return <IconSchool size={20} stroke={1.5} className="text-sky-400" />;
+        return <GraduationCap size={20} weight="fill" className="text-sky-400" />;
       case "RUSH":
-        return <IconBolt size={20} stroke={1.5} className="text-amber-400" />;
+        return <Lightning size={20} weight="fill" className="text-amber-400" />;
       case "EXPRESS":
-        return <IconFlame size={20} stroke={1.5} className="text-orange-400" />;
+        return <Flame size={20} weight="fill" className="text-orange-400" />;
       case "EMERGENCY":
-        return <IconAlertTriangle size={20} stroke={1.5} className="text-rose-400" />;
+        return <Warning size={20} weight="fill" className="text-rose-400" />;
       default:
-        return <IconSparkles size={20} stroke={1.5} className="text-amber-400" />;
+        return <Sparkle size={20} weight="fill" className="text-amber-400" />;
     }
   };
 
@@ -352,7 +352,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
           ]}
         />
         <Card className="p-8 sm:p-12 text-center flex flex-col items-center gap-6 bg-[#01142B]/90 border border-white/10 rounded-[6px]">
-          <IconAlertTriangle size={36} stroke={1.5} className="text-rose-400 mx-auto" />
+          <Warning size={36} weight="fill" className="text-rose-400 mx-auto" />
           <div className="space-y-1">
             <h2 className="text-lg font-bold text-white font-sans">Unable to Load Quotation</h2>
             <p className="text-sm text-white/60 font-sans">{error || "Study not found."}</p>
@@ -391,7 +391,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
 
         <Card className="p-10 sm:p-14 bg-[#01142B] border border-white/10 rounded-[6px] text-center space-y-5 max-w-2xl mx-auto shadow-2xl">
           <div className="h-14 w-14 rounded-full bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center mx-auto text-[#FFA040]">
-            <IconClock size={32} stroke={1.5} />
+            <Clock size={32} weight="fill" />
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-white font-sans">
@@ -433,7 +433,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
         actions={
           <Link href={`/dashboard/client/projects/${projectId}`}>
             <Button variant="secondary" size="sm" className="font-sans font-semibold text-xs flex items-center gap-2">
-              <IconArrowLeft size={15} stroke={1.5} />
+              <ArrowLeft size={15} weight="bold" />
               <span>Return to Study Details</span>
             </Button>
           </Link>
@@ -449,22 +449,22 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
             </span>
             {quotation.status === "CLIENT_APPROVED" ? (
               <span className="text-xs font-sans text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-[3px] uppercase font-bold flex items-center gap-1.5">
-                <IconCheck size={14} stroke={2.5} />
+                <Check size={14} weight="bold" />
                 PROPOSAL ACCEPTED
               </span>
             ) : quotation.status === "QUOTE_DECLINED" ? (
               <span className="text-xs font-sans text-rose-400 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-[3px] uppercase font-bold flex items-center gap-1.5">
-                <IconX size={14} stroke={2.5} />
+                <X size={14} weight="bold" />
                 PROPOSAL DECLINED
               </span>
             ) : quotation.isExpired ? (
               <span className="text-xs font-sans text-rose-400 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-[3px] uppercase font-bold flex items-center gap-1.5">
-                <IconAlertTriangle size={14} stroke={2} />
+                <Warning size={14} weight="fill" />
                 PROPOSAL EXPIRED
               </span>
             ) : (
               <span className="text-xs font-sans text-amber-300 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-[3px] uppercase font-bold flex items-center gap-1.5">
-                <IconClock size={14} stroke={2} />
+                <Clock size={14} weight="fill" />
                 READY FOR YOUR REVIEW
               </span>
             )}
@@ -476,7 +476,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
               className="text-xs font-mono font-bold text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 hover:border-sky-400 px-2.5 py-1 rounded-[3px] whitespace-nowrap cursor-pointer transition-all inline-flex items-center gap-1.5"
             >
               <span>{project.intakeId}</span>
-              <IconCopy size={13} stroke={1.5} className="opacity-60" />
+              <Copy size={13} weight="fill" className="opacity-60" />
             </button>
           </div>
 
@@ -500,7 +500,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-4 gap-3">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center shrink-0 text-[#FFA040]">
-                  <IconClipboardList size={18} stroke={1.5} />
+                  <ClipboardText size={18} weight="fill" />
                 </div>
                 <div>
                   <span className="text-xs font-sans uppercase text-[#FFA040] font-semibold tracking-wider block">
@@ -529,7 +529,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                 <ul className="space-y-2.5 pt-0.5">
                   {pkgDef.deliverables.map((item, idx) => (
                     <li key={idx} className="text-xs sm:text-sm text-white/85 font-sans flex items-start gap-2.5">
-                      <IconCheck size={16} stroke={2} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <Check size={16} weight="bold" className="text-emerald-400 flex-shrink-0 mt-0.5" />
                       <span className="leading-relaxed">{item}</span>
                     </li>
                   ))}
@@ -542,7 +542,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
             <div className="border-b border-white/10 pb-4 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
-                  <IconReceipt size={18} stroke={1.5} className="text-[#CC6600]" />
+                  <Receipt size={18} weight="fill" className="text-[#CC6600]" />
                   <span>Itemized Commercial Schedule</span>
                 </h3>
                 {quotation.status === "QUOTE_SENT" && !quotation.isExpired && (
@@ -602,7 +602,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                                 : "border-white/30 bg-white/[0.04]"
                             }`}
                           >
-                            {isSelected && <IconCheck size={13} stroke={3} />}
+                            {isSelected && <Check size={13} weight="bold" />}
                           </div>
                         </div>
                       )}
@@ -665,7 +665,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
           {quotation.notes && (
             <Card className="p-6 sm:p-8 bg-[#01142B]/90 border border-white/10 rounded-[4px] flex flex-col gap-3 shadow-xl">
               <div className="border-b border-white/10 pb-3 flex items-center gap-2">
-                <IconFileText size={18} stroke={1.5} className="text-[#CC6600]" />
+                <FileText size={18} weight="fill" className="text-[#CC6600]" />
                 <h3 className="text-sm font-bold text-white font-sans">
                   Statistical Team Scope Notes &amp; Assumptions
                 </h3>
@@ -692,7 +692,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
               <div className="p-4 sm:p-5 rounded-[2px] bg-[#010D1F] border border-emerald-500/25 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-sans uppercase text-emerald-400 font-semibold tracking-wider flex items-center gap-1.5">
-                    <IconLock size={14} stroke={2} />
+                    <Lock size={14} weight="fill" />
                     <span>1. Escrow Deposit</span>
                   </span>
                   <span className="text-base font-mono font-bold text-emerald-400">
@@ -724,7 +724,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
             </div>
 
             <div className="p-4 rounded-[2px] bg-emerald-500/[0.06] border border-emerald-500/20 text-xs text-white/75 font-sans leading-relaxed flex items-start gap-2.5">
-              <IconShieldCheck size={18} stroke={1.5} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+              <ShieldCheck size={18} weight="fill" className="text-emerald-400 flex-shrink-0 mt-0.5" />
               <span>
                 <strong className="text-emerald-300 font-semibold">JAXIS Escrow Protection:</strong> Funds remain securely vaulted until you review and approve your defense-ready deliverables.
               </span>
@@ -747,7 +747,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                   disabled={isPending}
                   className="w-full gap-2 justify-center bg-[#CC6600] text-white hover:bg-[#E67300] min-h-[42px] text-xs font-sans font-semibold cursor-pointer flex items-center"
                 >
-                  <IconCheck size={16} stroke={2} />
+                  <Check size={16} weight="bold" />
                   <span>Accept Proposal &amp; Proceed to SOW</span>
                 </Button>
 
@@ -758,7 +758,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                   disabled={isPending}
                   className="w-full text-white/75 hover:text-rose-400 hover:border-rose-500/40 justify-center text-xs font-sans min-h-[38px] cursor-pointer flex items-center gap-2"
                 >
-                  <IconX size={15} stroke={1.5} />
+                  <X size={15} weight="bold" />
                   <span>Decline / Request Scope Adjustment</span>
                 </Button>
               </div>
@@ -768,7 +768,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                   <>
                     <div className="p-5 rounded-[2px] bg-emerald-950/20 border border-emerald-500/30 text-left space-y-1.5">
                       <div className="text-xs font-sans text-emerald-400 font-bold flex items-center gap-2">
-                        <IconCheck size={16} stroke={2} />
+                        <Check size={16} weight="bold" />
                         <span>Proposal Accepted</span>
                       </div>
                       <p className="text-xs text-white/70 font-sans leading-relaxed">
@@ -783,7 +783,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                           size="md"
                           className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
                         >
-                          <IconArrowLeft size={15} stroke={1.5} />
+                          <ArrowLeft size={15} weight="bold" />
                           <span>Return to Study Details</span>
                         </Button>
                       </Link>
@@ -793,7 +793,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                   <>
                     <div className="p-5 rounded-[2px] bg-emerald-950/20 border border-emerald-500/30 text-left space-y-1.5">
                       <div className="text-xs font-sans text-emerald-400 font-bold flex items-center gap-2">
-                        <IconCheck size={16} stroke={2} />
+                        <Check size={16} weight="bold" />
                         <span>SOW Ready for Signing</span>
                       </div>
                       <p className="text-xs text-white/70 font-sans leading-relaxed">
@@ -808,7 +808,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                           size="md"
                           className="w-full min-h-[42px] font-sans text-xs font-semibold flex items-center justify-center gap-2 bg-[#CC6600] hover:bg-[#E67300] text-white"
                         >
-                          <IconFileCertificate size={16} stroke={2} />
+                          <Certificate size={16} weight="fill" />
                           <span>Sign Statement of Work Now →</span>
                         </Button>
                       </Link>
@@ -819,7 +819,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                           size="md"
                           className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
                         >
-                          <IconArrowLeft size={15} stroke={1.5} />
+                          <ArrowLeft size={15} weight="bold" />
                           <span>Return to Study Details</span>
                         </Button>
                       </Link>
@@ -831,7 +831,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
               <div className="space-y-4">
                 <div className="p-5 rounded-[2px] bg-amber-950/20 border border-amber-500/30 text-left space-y-1.5">
                   <div className="text-xs font-sans text-amber-300 font-bold flex items-center gap-2">
-                    <IconClock size={16} stroke={2} />
+                    <Clock size={16} weight="fill" />
                     <span>Proposal Declined</span>
                   </div>
                   <p className="text-xs text-white/70 font-sans leading-relaxed">
@@ -845,7 +845,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                     size="md"
                     className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <IconArrowLeft size={15} stroke={1.5} />
+                    <ArrowLeft size={15} weight="bold" />
                     <span>Return to Study Details</span>
                   </Button>
                 </Link>
@@ -854,7 +854,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
               <div className="space-y-4">
                 <div className="p-5 rounded-[2px] bg-rose-950/20 border border-rose-500/30 text-left space-y-1.5">
                   <div className="text-xs font-sans text-rose-400 font-bold flex items-center gap-2">
-                    <IconAlertTriangle size={16} stroke={2} />
+                    <Warning size={16} weight="fill" />
                     <span>Proposal Expired</span>
                   </div>
                   <p className="text-xs text-white/70 font-sans leading-relaxed">
@@ -868,7 +868,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                     size="md"
                     className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <IconArrowLeft size={15} stroke={1.5} />
+                    <ArrowLeft size={15} weight="bold" />
                     <span>Return to Study Details</span>
                   </Button>
                 </Link>
@@ -956,7 +956,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
               disabled={isPending}
               className="gap-2 bg-[#CC6600] text-white hover:bg-[#E67300] font-sans text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
             >
-              <IconCheck size={16} stroke={2.5} />
+              <Check size={16} weight="bold" />
               <span>{isPending ? "Approving..." : "Confirm & Accept Quote"}</span>
             </Button>
           </ModalFooter>

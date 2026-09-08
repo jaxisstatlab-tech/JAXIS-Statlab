@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { IconCheck, IconCopy } from "@tabler/icons-react";
+import { Check, Copy } from "@phosphor-icons/react";
 import { cn } from "./utils";
 
 export interface CopyButtonProps
@@ -88,9 +88,9 @@ export function CopyButton({
       {...props}
     >
       {hasCopied ? (
-        <IconCheck size={13} stroke={2.5} className="text-[#10B981] shrink-0" />
+        <Check size={13} weight="bold" className="text-[#10B981] shrink-0" />
       ) : (
-        <IconCopy size={12} stroke={1.5} className="opacity-60 hover:opacity-100 shrink-0 transition-opacity" />
+        <Copy size={12} weight="fill" className="opacity-60 hover:opacity-100 shrink-0 transition-opacity" />
       )}
       {!iconOnly && (
         <span className="leading-none">

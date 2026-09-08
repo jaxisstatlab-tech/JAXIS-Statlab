@@ -13,13 +13,13 @@ import {
   DropdownMenuSeparator,
 } from "@repo/ui";
 import {
-  IconChevronDown,
-  IconUser,
-  IconCalendarTime,
-  IconLogout,
-  IconMenu2,
-  IconSchool,
-} from "@tabler/icons-react";
+  CaretDown,
+  User,
+  CalendarCheck,
+  SignOut,
+  List,
+  GraduationCap,
+} from "@phosphor-icons/react";
 import { DutyClockWidget } from "@/features/attendance/components/DutyClockWidget";
 import type { ActiveShiftStatus } from "@/features/attendance/schemas";
 import { NotificationDrawer } from "../notifications/NotificationDrawer";
@@ -95,7 +95,7 @@ export const Topbar: React.FC<TopbarProps> = ({
 
   return (
     <header
-      className={`h-16 sm:h-18 w-full bg-[#010114] border-b border-white/10 px-3.5 sm:px-6 lg:px-10 flex items-center justify-between z-30 select-none ${className}`}
+      className={`h-14 sm:h-16 w-full bg-[#010114] border-b border-white/10 px-3.5 sm:px-6 flex items-center justify-between z-30 select-none lg:hidden ${className}`}
     >
       {/* Brand logo mark & title */}
       <div className="flex items-center gap-2 sm:gap-4 shrink-0 min-w-0">
@@ -156,9 +156,9 @@ export const Topbar: React.FC<TopbarProps> = ({
                 {userFullName}
               </span>
 
-              <IconChevronDown
-                size={16}
-                stroke={2}
+              <CaretDown
+                size={14}
+                weight="fill"
                 className="hidden md:inline text-white/50 group-hover:text-white/80 transition-transform duration-150"
               />
             </button>
@@ -193,9 +193,9 @@ export const Topbar: React.FC<TopbarProps> = ({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {isClient ? (
-                    <IconSchool size={18} stroke={1.5} className="text-white/60 shrink-0" />
+                    <GraduationCap size={18} weight="fill" className="text-white/60 shrink-0" />
                   ) : (
-                    <IconUser size={18} stroke={1.5} className="text-white/60 shrink-0" />
+                    <User size={18} weight="fill" className="text-white/60 shrink-0" />
                   )}
                   <span className="truncate">
                     {isClient ? "School & Profile" : "My Profile"}
@@ -215,7 +215,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                     href="/dashboard/staff/hr"
                     className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
                   >
-                    <IconCalendarTime size={18} stroke={1.5} className="text-white/60 shrink-0" />
+                    <CalendarCheck size={18} weight="fill" className="text-white/60 shrink-0" />
                     <span>My HR & Timeclock</span>
                   </Link>
                 </DropdownMenuItem>
@@ -232,7 +232,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                 {isLoggingOut ? (
                   <span className="h-4 w-4 border-2 border-white/20 border-t-red-400 rounded-full animate-spin mr-1 shrink-0" />
                 ) : (
-                  <IconLogout size={18} stroke={1.5} className="text-red-400 shrink-0" />
+                  <SignOut size={18} weight="fill" className="text-red-400 shrink-0" />
                 )}
                 <span>Sign Out</span>
               </DropdownMenuItem>
@@ -246,7 +246,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           className="lg:hidden p-2 rounded-[2px] text-white/70 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer border border-white/10 outline-none focus:outline-none focus:ring-0 ring-0"
           aria-label="Toggle navigation menu"
         >
-          <IconMenu2 size={20} stroke={1.5} />
+          <List size={20} weight="bold" />
         </button>
       </div>
     </header>

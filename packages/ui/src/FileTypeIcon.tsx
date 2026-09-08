@@ -2,16 +2,16 @@
 
 import * as React from "react";
 import {
-  IconFileTypePdf,
-  IconFileTypeDocx,
-  IconFileTypeXls,
-  IconFileTypeCsv,
-  IconFileZip,
-  IconFileCode,
-  IconPhoto,
-  IconFileText,
-  IconDatabase,
-} from "@tabler/icons-react";
+  FilePdf,
+  FileDoc,
+  FileXls,
+  FileCsv,
+  FileArchive,
+  FileCode,
+  Image as ImageIcon,
+  FileText,
+  Database,
+} from "@phosphor-icons/react";
 import { cn } from "./utils";
 
 export type FileTypeCategory =
@@ -65,7 +65,6 @@ export function FileTypeIcon({
   type,
   filename,
   size = 20,
-  stroke = 1.5,
   className = "",
 }: FileTypeIconProps) {
   const resolved = resolveFileType(filename, type);
@@ -73,73 +72,73 @@ export function FileTypeIcon({
   switch (resolved) {
     case "pdf":
       return (
-        <IconFileTypePdf
+        <FilePdf
           size={size}
-          stroke={stroke}
+          weight="fill"
           className={cn("text-red-400 shrink-0", className)}
         />
       );
     case "doc":
       return (
-        <IconFileTypeDocx
+        <FileDoc
           size={size}
-          stroke={stroke}
+          weight="fill"
           className={cn("text-sky-400 shrink-0", className)}
         />
       );
     case "sheet":
       return (
-        <IconFileTypeXls
+        <FileXls
           size={size}
-          stroke={stroke}
+          weight="fill"
           className={cn("text-emerald-400 shrink-0", className)}
         />
       );
     case "csv":
       return (
-        <IconFileTypeCsv
+        <FileCsv
           size={size}
-          stroke={stroke}
+          weight="fill"
           className={cn("text-teal-400 shrink-0", className)}
         />
       );
     case "data":
       return (
-        <IconDatabase
+        <Database
           size={size}
-          stroke={stroke}
+          weight="fill"
           className={cn("text-[#CC6600] shrink-0", className)}
         />
       );
     case "code":
       return (
-        <IconFileCode
+        <FileCode
           size={size}
-          stroke={stroke}
+          weight="fill"
           className={cn("text-purple-400 shrink-0", className)}
         />
       );
     case "archive":
       return (
-        <IconFileZip
+        <FileArchive
           size={size}
-          stroke={stroke}
+          weight="fill"
           className={cn("text-amber-400 shrink-0", className)}
         />
       );
     case "image":
       return (
-        <IconPhoto
+        <ImageIcon
           size={size}
-          stroke={stroke}
+          weight="fill"
           className={cn("text-teal-400 shrink-0", className)}
         />
       );
     default:
       return (
-        <IconFileText
+        <FileText
           size={size}
-          stroke={stroke}
+          weight="fill"
           className={cn("text-white/60 shrink-0", className)}
         />
       );

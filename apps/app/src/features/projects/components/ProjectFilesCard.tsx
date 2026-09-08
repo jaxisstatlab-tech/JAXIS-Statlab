@@ -3,12 +3,12 @@
 import React, { useState } from "react";
 import { Card, Button, Toast, FileTypeIcon } from "@repo/ui";
 import {
-  IconDownload,
-  IconCheck,
-  IconEye,
-  IconTrash,
-  IconLoader2,
-} from "@tabler/icons-react";
+  DownloadSimple,
+  Check,
+  Eye,
+  Trash,
+  CircleNotch,
+} from "@phosphor-icons/react";
 import {
   getFileMeta,
   formatFileCategory,
@@ -102,7 +102,7 @@ export function ProjectFilesCard({
               onClick={handleBatchDownloadAll}
               loading={isBatchDownloading}
             >
-              <IconDownload size={15} stroke={1.5} className="text-amber-400" />
+              <DownloadSimple size={15} weight="bold" className="text-amber-400" />
               <span>Download All</span>
             </Button>
           )}
@@ -194,7 +194,7 @@ export function ProjectFilesCard({
                     aria-label={`Preview ${file.fileName}`}
                     className="inline-flex items-center justify-center h-9 w-9 rounded-[2px] bg-white/[0.04] hover:bg-white/[0.09] active:scale-[0.95] text-sky-400 hover:text-white border border-white/15 hover:border-sky-400/50 transition-all cursor-pointer select-none shadow-sm"
                   >
-                    <IconEye size={17} stroke={1.5} />
+                    <Eye size={17} weight="fill" />
                   </button>
 
                   {/* Download Action (Icon Only) */}
@@ -211,11 +211,11 @@ export function ProjectFilesCard({
                     }`}
                   >
                     {isDownloading ? (
-                      <IconLoader2 size={16} stroke={2.5} className="animate-spin text-white" />
+                      <CircleNotch size={16} className="animate-spin text-white" />
                     ) : isSuccess ? (
-                      <IconCheck size={17} stroke={2.5} className="text-emerald-400" />
+                      <Check size={17} weight="bold" className="text-emerald-400" />
                     ) : (
-                      <IconDownload size={17} stroke={1.5} />
+                      <DownloadSimple size={17} weight="bold" />
                     )}
                   </button>
 
@@ -228,7 +228,7 @@ export function ProjectFilesCard({
                       aria-label={`Remove ${file.fileName}`}
                       className="inline-flex items-center justify-center h-9 w-9 rounded-[2px] text-rose-400 bg-rose-500/10 hover:bg-rose-500/25 active:scale-[0.95] border border-rose-500/30 hover:border-rose-400 transition-all cursor-pointer select-none shadow-sm"
                     >
-                      <IconTrash size={16} stroke={1.5} />
+                      <Trash size={16} weight="fill" />
                     </button>
                   )}
                 </div>

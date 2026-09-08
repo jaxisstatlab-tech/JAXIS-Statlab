@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useRef, useEffect } from "react";
-import { IconSearch, IconX, IconChevronDown, IconRefresh } from "@tabler/icons-react";
+import { MagnifyingGlass, X, CaretDown, ArrowCounterClockwise } from "@phosphor-icons/react";
 
 /* ─── Types ─── */
 
@@ -60,7 +60,7 @@ const INPUT_CONTAINER_STYLE: React.CSSProperties = {
   padding: "0 0.875rem",
   backgroundColor: "rgba(1, 27, 56, 0.7)",
   border: "1px solid rgba(255, 255, 255, 0.10)",
-  borderRadius: "3px",
+  borderRadius: "2px",
 };
 
 const SELECT_STYLE: React.CSSProperties = {
@@ -69,7 +69,7 @@ const SELECT_STYLE: React.CSSProperties = {
   paddingRight: "1.75rem",
   backgroundColor: "rgba(1, 27, 56, 0.7)",
   border: "1px solid rgba(255, 255, 255, 0.10)",
-  borderRadius: "3px",
+  borderRadius: "2px",
   fontSize: "0.75rem",
   color: "rgba(255, 255, 255, 0.75)",
 };
@@ -102,22 +102,22 @@ const CHEVRON_STYLE: React.CSSProperties = {
 /* ─── Sub-components ─── */
 
 const SearchIcon = () => (
-  <IconSearch className="w-3.5 h-3.5 flex-shrink-0 text-white/30" size={14} stroke={1.5} />
+  <MagnifyingGlass className="w-3.5 h-3.5 flex-shrink-0 text-white/30" size={14} weight="bold" />
 );
 
 const ClearIcon = () => (
-  <IconX className="w-3 h-3 flex-shrink-0" size={12} stroke={2} />
+  <X className="w-3 h-3 flex-shrink-0" size={12} weight="bold" />
 );
 
 const ChevronIcon = () => (
-  <IconChevronDown className="w-3 h-3 text-white/25" size={12} stroke={2} />
+  <CaretDown className="w-3 h-3 text-white/25" size={12} weight="fill" />
 );
 
 const ResetIcon = () => (
-  <IconRefresh
+  <ArrowCounterClockwise
     className="w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 group-hover:-rotate-90"
     size={14}
-    stroke={1.5}
+    weight="bold"
   />
 );
 

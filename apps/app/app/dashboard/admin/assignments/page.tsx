@@ -7,6 +7,8 @@ export const metadata = {
   description: "Assign Lead Statisticians and QA Leads to paid studies and manage workload.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminAssignmentsPage() {
   const [projRes, capRes] = await Promise.all([
     getProjects({ status: "ACTIVE" }),

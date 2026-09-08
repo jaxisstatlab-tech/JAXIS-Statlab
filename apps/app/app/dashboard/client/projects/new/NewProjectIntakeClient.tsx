@@ -15,16 +15,16 @@ import {
   LoadingState,
 } from "@repo/ui";
 import {
-  IconCheck,
-  IconLock,
-  IconFileText,
-  IconDatabase,
-  IconListCheck,
-  IconCloudUpload,
-  IconShieldCheck,
-  IconArrowRight,
-  IconCalendarEvent,
-} from "@tabler/icons-react";
+  Check,
+  Lock,
+  FileText,
+  Database,
+  ListChecks,
+  CloudArrowUp,
+  ShieldCheck,
+  ArrowRight,
+  CalendarBlank,
+} from "@phosphor-icons/react";
 import { createProject } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { QuickProfileModal } from "@/features/client-profile/components/QuickProfileModal";
@@ -537,7 +537,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               className="inline-flex items-center gap-1.5 text-xs text-white/60 hover:text-white transition-colors font-sans py-1.5"
             >
               <span>Full Profile Settings</span>
-              <IconArrowRight size={13} stroke={1.5} />
+              <ArrowRight size={13} weight="bold" />
             </Link>
           </div>
         </Card>
@@ -554,7 +554,10 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
+    <div
+      data-portal="client"
+      className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade"
+    >
       <PageHeader
         title="New Research Project Intake"
         description="Submit your thesis or research study for review, statistical planning, and pricing."
@@ -658,8 +661,8 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                     onChange={(e) => setDeadlineRequested(e.target.value)}
                     error={fieldErrors.deadlineRequested?.[0]}
                   />
-                  <div className="p-3.5 rounded-[4px] bg-white/[0.03] border border-white/10 text-xs text-white/60 font-sans leading-relaxed flex items-start gap-2.5">
-                    <IconCalendarEvent size={16} stroke={1.5} className="text-[#CC6600] shrink-0 mt-0.5" />
+                  <div className="p-3.5 rounded-[2px] bg-white/[0.03] border border-white/10 text-xs text-white/60 font-sans leading-relaxed flex items-start gap-2.5">
+                    <CalendarBlank size={16} weight="fill" className="text-[#CC6600] shrink-0 mt-0.5" />
                     <span>
                       Helps our team make sure your statistical analysis is completed on time for your defense.
                     </span>
@@ -697,7 +700,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
             {/* Confidentiality Pill */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-[2px] bg-white/[0.03] border border-white/[0.08] text-white/60 text-xs self-start sm:self-auto flex-shrink-0">
-              <IconLock size={14} className="text-[#CC6600]" stroke={2} />
+              <Lock size={14} className="text-[#CC6600]" weight="fill" />
               <span className="font-mono text-[0.688rem] uppercase tracking-wider">NDA Encrypted</span>
             </div>
           </div>
@@ -739,7 +742,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                     className="w-8 h-8 rounded-[2px] bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-sky-400"
                     style={{ width: "2rem", height: "2rem", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "2px" }}
                   >
-                    <IconFileText size={18} stroke={1.75} />
+                    <FileText size={18} weight="fill" />
                   </div>
                   <span
                     className="text-[0.625rem] font-mono font-bold uppercase px-2 py-0.5 rounded-[2px] bg-sky-500/10 text-sky-300 border border-sky-500/20"
@@ -765,7 +768,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0 animate-pulse">
-                        <IconCloudUpload size={16} stroke={1.75} />
+                        <CloudArrowUp size={16} weight="fill" />
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="font-mono text-xs font-bold text-white truncate">
@@ -804,7 +807,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0">
-                        <IconFileText size={16} stroke={1.75} />
+                        <FileText size={16} weight="fill" />
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="font-mono text-xs font-bold text-white truncate" title={filesList.find((f) => f.category === "RESEARCH_DOCUMENT")?.name}>
@@ -856,7 +859,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                     onChange={(e) => handleFileInputChange(e, "RESEARCH_DOCUMENT")}
                   />
                   <div className="w-8 h-8 rounded-full bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-white/40 group-hover:text-[#FFA040] group-hover:border-[#CC6600]/40 transition-colors">
-                    <IconCloudUpload size={18} stroke={1.75} />
+                    <CloudArrowUp size={18} weight="fill" />
                   </div>
                   <div className="flex flex-col gap-0.5 text-center">
                     <span className="text-xs font-mono font-semibold text-white/80 group-hover:text-white transition-colors">
@@ -899,7 +902,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                     className="w-8 h-8 rounded-[2px] bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-emerald-400"
                     style={{ width: "2rem", height: "2rem", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "2px" }}
                   >
-                    <IconDatabase size={18} stroke={1.75} />
+                    <Database size={18} weight="fill" />
                   </div>
                   <span
                     className="text-[0.625rem] font-mono font-bold uppercase px-2 py-0.5 rounded-[2px] bg-sky-500/10 text-sky-300 border border-sky-500/20"
@@ -925,7 +928,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0 animate-pulse">
-                        <IconCloudUpload size={16} stroke={1.75} />
+                        <CloudArrowUp size={16} weight="fill" />
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="font-mono text-xs font-bold text-white truncate">
@@ -964,7 +967,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0">
-                        <IconDatabase size={16} stroke={1.75} />
+                        <Database size={16} weight="fill" />
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="font-mono text-xs font-bold text-white truncate" title={filesList.find((f) => f.category === "DATASET")?.name}>
@@ -1016,7 +1019,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                     onChange={(e) => handleFileInputChange(e, "DATASET")}
                   />
                   <div className="w-8 h-8 rounded-full bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-white/40 group-hover:text-[#FFA040] group-hover:border-[#CC6600]/40 transition-colors">
-                    <IconCloudUpload size={18} stroke={1.75} />
+                    <CloudArrowUp size={18} weight="fill" />
                   </div>
                   <div className="flex flex-col gap-0.5 text-center">
                     <span className="text-xs font-mono font-semibold text-white/80 group-hover:text-white transition-colors">
@@ -1059,7 +1062,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                     className="w-8 h-8 rounded-[2px] bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-amber-400"
                     style={{ width: "2rem", height: "2rem", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "2px" }}
                   >
-                    <IconListCheck size={18} stroke={1.75} />
+                    <ListChecks size={18} weight="fill" />
                   </div>
                   <span
                     className="text-[0.625rem] font-mono uppercase px-2 py-0.5 rounded-[2px] bg-white/[0.04] text-white/40 border border-white/[0.08]"
@@ -1085,7 +1088,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0 animate-pulse">
-                        <IconCloudUpload size={16} stroke={1.75} />
+                        <CloudArrowUp size={16} weight="fill" />
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="font-mono text-xs font-bold text-white truncate">
@@ -1124,7 +1127,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0">
-                        <IconListCheck size={16} stroke={1.75} />
+                        <ListChecks size={16} weight="fill" />
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="font-mono text-xs font-bold text-white truncate" title={filesList.find((f) => f.category === "QUESTIONNAIRE")?.name}>
@@ -1176,7 +1179,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                     onChange={(e) => handleFileInputChange(e, "QUESTIONNAIRE")}
                   />
                   <div className="w-8 h-8 rounded-full bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-white/40 group-hover:text-[#FFA040] group-hover:border-[#CC6600]/40 transition-colors">
-                    <IconCloudUpload size={18} stroke={1.75} />
+                    <CloudArrowUp size={18} weight="fill" />
                   </div>
                   <div className="flex flex-col gap-0.5 text-center">
                     <span className="text-xs font-mono font-semibold text-white/80 group-hover:text-white transition-colors">
@@ -1352,7 +1355,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 flexShrink: 0,
               }}
             >
-              {integrityAgreed && <IconCheck size={15} stroke={3} style={{ color: "#FFFFFF" }} />}
+              {integrityAgreed && <Check size={15} weight="bold" style={{ color: "#FFFFFF" }} />}
             </div>
 
             <div
@@ -1380,7 +1383,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 className="flex items-center gap-1.5 text-[0.688rem] font-mono text-emerald-400/90 pt-1"
                 style={{ display: "flex", alignItems: "center", gap: "0.375rem", paddingTop: "0.25rem", color: "#34D399" }}
               >
-                <IconShieldCheck size={14} stroke={2} />
+                <ShieldCheck size={14} weight="fill" />
                 <span>NDA & Non-Disclosure Protected · Peer Review Standard</span>
               </div>
             </div>

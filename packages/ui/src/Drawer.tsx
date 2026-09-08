@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { IconX } from "@tabler/icons-react";
+import { X } from "@phosphor-icons/react";
 
 export interface DrawerProps {
   isOpen: boolean;
@@ -108,7 +108,7 @@ export const Drawer: React.FC<DrawerProps> = ({
               className="rounded-md p-1.5 text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors flex-shrink-0 cursor-pointer"
               aria-label="Close panel"
             >
-              <IconX size={20} stroke={1.5} />
+              <X size={20} weight="bold" />
             </button>
           </div>
 

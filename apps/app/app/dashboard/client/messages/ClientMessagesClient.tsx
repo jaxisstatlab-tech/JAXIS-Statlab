@@ -6,15 +6,15 @@ import { PageHeader, Card, Badge } from "@repo/ui";
 import type { ProjectThreadSummaryDTO } from "@/features/messaging/schemas";
 import { MessageThread, type InitialThreadData } from "@/features/messaging/components/MessageThread";
 import {
-  IconMessages,
-  IconFolder,
-  IconShieldCheck,
-  IconClock,
-  IconArrowRight,
-  IconLock,
-  IconSearch,
-  IconX,
-} from "@tabler/icons-react";
+  ChatCenteredText,
+  Folder,
+  ShieldCheck,
+  Clock,
+  ArrowRight,
+  Lock,
+  MagnifyingGlass,
+  X,
+} from "@phosphor-icons/react";
 
 interface ClientMessagesClientProps {
   initialThreads: ProjectThreadSummaryDTO[];
@@ -73,7 +73,10 @@ export function ClientMessagesClient({
     null;
 
   return (
-    <div className="h-full flex-1 flex flex-col min-h-0 gap-3 w-full animate-content-fade font-sans overflow-hidden">
+    <div
+      data-portal="client"
+      className="h-full flex-1 flex flex-col min-h-0 gap-3 w-full animate-content-fade font-sans overflow-hidden"
+    >
       {/* Standardized PageHeader (Compact & Responsive) */}
       <div className={`flex-shrink-0 ${mobileView === "chat" ? "hidden lg:block" : "block"}`}>
         <PageHeader
@@ -88,7 +91,7 @@ export function ClientMessagesClient({
           actions={
             <div className="flex items-center gap-2">
               <Badge variant="emerald" className="text-[0.688rem] font-mono flex items-center gap-1">
-                <IconShieldCheck size={13} stroke={2} />
+                <ShieldCheck size={13} weight="fill" />
                 <span>Private &amp; Secure</span>
               </Badge>
             </div>
@@ -106,7 +109,7 @@ export function ClientMessagesClient({
           {/* Search & Filter Header */}
           <div className="flex flex-col gap-2 flex-shrink-0">
             <div className="relative">
-              <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+              <MagnifyingGlass size={14} weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
@@ -122,7 +125,7 @@ export function ClientMessagesClient({
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white cursor-pointer outline-none focus:outline-none focus:ring-0 ring-0"
                   aria-label="Clear search"
                 >
-                  <IconX size={13} stroke={2} />
+                  <X size={13} weight="bold" />
                 </button>
               )}
             </div>
@@ -232,7 +235,7 @@ export function ClientMessagesClient({
 
                     <div className="pt-1.5 border-t border-white/[0.06] flex items-center justify-between text-[0.625rem] text-white/40 font-mono">
                       <span className="flex items-center gap-1">
-                        <IconFolder size={11} stroke={1.5} className="text-white/30" />
+                        <Folder size={11} weight="fill" className="text-white/30" />
                         <span className="truncate max-w-[140px] text-white/50">
                           {t.statisticianName || "Awaiting Expert"}
                         </span>
@@ -241,23 +244,23 @@ export function ClientMessagesClient({
                         isAssigned ? (
                           <span className="text-white/70 font-medium flex items-center gap-0.5">
                             <span>ACTIVE</span>
-                            <IconArrowRight size={10} stroke={2} className="text-white/50" />
+                            <ArrowRight size={10} weight="bold" className="text-white/50" />
                           </span>
                         ) : (
                           <span className="text-white/40 font-medium flex items-center gap-1">
-                            <IconLock size={10} stroke={1.5} />
+                            <Lock size={10} weight="fill" />
                             <span>LOCKED</span>
                           </span>
                         )
                       ) : (
                         !isAssigned ? (
                           <span className="text-white/30 flex items-center gap-1">
-                            <IconLock size={10} stroke={1.5} />
+                            <Lock size={10} weight="fill" />
                             <span>LOCKED</span>
                           </span>
                         ) : t.lastMessage ? (
                           <span className="flex items-center gap-1 text-white/35">
-                            <IconClock size={11} stroke={1.5} />
+                            <Clock size={11} weight="fill" />
                             <span>{new Date(t.lastMessage.sentAt).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}</span>
                           </span>
                         ) : null
@@ -279,7 +282,7 @@ export function ClientMessagesClient({
           {threads.length === 0 ? (
             <Card className="h-full min-h-0 p-12 bg-[#01142B] border-white/10 flex flex-col items-center justify-center text-center gap-3">
               <div className="h-14 w-14 rounded-full bg-white/[0.04] border border-white/10 flex items-center justify-center text-white/40">
-                <IconMessages size={28} stroke={1.5} />
+                <ChatCenteredText size={28} weight="fill" />
               </div>
               <div className="max-w-md">
                 <h3 className="text-sm font-bold text-white">No Active Study Threads</h3>
@@ -300,7 +303,7 @@ export function ClientMessagesClient({
             />
           ) : (
             <Card className="h-full min-h-0 p-12 bg-[#01142B] border-white/10 flex flex-col items-center justify-center text-center">
-              <IconArrowRight size={24} stroke={1.5} className="text-white/40 mb-2" />
+              <ArrowRight size={24} weight="bold" className="text-white/40 mb-2" />
               <span className="text-xs text-white font-semibold">Select a study thread on the left to begin chatting</span>
             </Card>
           )}

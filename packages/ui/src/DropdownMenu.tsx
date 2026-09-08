@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { IconCheck, IconChevronRight, IconCircle, IconDotsVertical } from "@tabler/icons-react";
+import { Check, CaretRight, Circle, DotsThreeVertical } from "@phosphor-icons/react";
 import { cn } from "./utils";
 
 export const DropdownMenuRoot = DropdownMenuPrimitive.Root;
@@ -28,7 +28,7 @@ export const DropdownMenuSubTrigger = React.forwardRef<
     {...props}
   >
     {children}
-    <IconChevronRight size={16} stroke={1.5} className="ml-auto text-white/50" />
+    <CaretRight size={16} weight="fill" className="ml-auto text-white/50" />
   </DropdownMenuPrimitive.SubTrigger>
 ));
 DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName;
@@ -117,7 +117,7 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
   >
     <span className="absolute left-2.5 flex h-4 w-4 items-center justify-center">
       <DropdownMenuPrimitive.ItemIndicator>
-        <IconCheck size={16} stroke={2.5} className="text-[#CC6600]" />
+        <Check size={16} weight="bold" className="text-[#CC6600]" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}
@@ -139,7 +139,7 @@ export const DropdownMenuRadioItem = React.forwardRef<
   >
     <span className="absolute left-2.5 flex h-4 w-4 items-center justify-center">
       <DropdownMenuPrimitive.ItemIndicator>
-        <IconCircle size={8} className="fill-current text-[#CC6600]" />
+        <Circle size={8} weight="fill" className="fill-current text-[#CC6600]" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}
@@ -234,7 +234,7 @@ export function DropdownMenu({
             type="button"
             className="flex h-9 w-9 items-center justify-center rounded-[4px] border border-white/15 bg-white/5 text-white/70 transition-colors hover:border-white/30 hover:bg-white/10 hover:text-white cursor-pointer"
           >
-            <IconDotsVertical size={18} stroke={1.5} />
+            <DotsThreeVertical size={18} weight="bold" />
           </button>
         )}
       </DropdownMenuPrimitive.Trigger>

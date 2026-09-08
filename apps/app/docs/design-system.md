@@ -22,12 +22,13 @@ JAXIS StatLab follows a high-precision, industrial-scientific design system tail
 | **Escrow / Attention** | `#F59E0B` (Amber) | Escrow locked indicators, pending recalculation stages, urgent QA queue. |
 | **Border Division** | `rgba(255, 255, 255, 0.08)` / `border-white/10` | Hairline dividers, table row borders, card perimeter lines. |
 
-### 1.2. Iconography & Strict Visual Standard (TABLER ICONS ONLY — NO EMOJIS)
-- **Mandatory Icon Library — Tabler Icons (`@tabler/icons-react`)**: All icons across the entire project (in `@repo/ui` and `apps/app`) **must exclusively use Tabler Icons** from `@tabler/icons-react` (e.g., `IconDownload`, `IconEye`, `IconFileDescription`, `IconSearch`, `IconCheck`, `IconUser`, `IconTrash`, `IconFolder`, `IconClock`, `IconAlertTriangle`, etc.).
+### 1.2. Iconography & Strict Visual Standard (PHOSPHOR FILL ICONS ONLY — SOLID FILL GLYPHS, NO LINE ICONS, NO EMOJIS)
+- **Mandatory Icon Library — Phosphor Icons (`@phosphor-icons/react`)**: All icons across the entire project (in `@repo/ui` and `apps/app`) **must exclusively use Phosphor Icons with `weight="fill"`** (e.g., `House`, `Eye`, `FileText`, `MagnifyingGlass`, `CheckCircle`, `User`, `Trash`, `Folder`, `Clock`, `Warning`, `Star`, `ChartBar`, `CaretDown`, etc.).
+- **Fill Icons Only (No Line/Outline Icons)**: Following the Dashdark X dark-mode benchmark reference, all dashboard navigation, KPI telemetry, action buttons, and status indicators must be rendered as solid filled glyphs (`weight="fill"`). Hollow line icons, thin stroke wireframes, or outlined SVGs are strictly forbidden.
 - **Strict Prohibition on Emojis**: Emojis (e.g. 🔍, ⏸, ⛔, 📋, 🚀, 💡, 📁, 📄, 🔒) are **strictly forbidden** across the entire UI codebase, dropdown menus, action items, buttons, notifications, toasts, table columns, and form labels.
-- **No Ad-Hoc Inline SVGs or Other Icon Libraries**: Do not introduce miscellaneous icon packages or raw inline SVGs when a Tabler icon is available. Always import standard icons from `@tabler/icons-react`.
+- **No Ad-Hoc Inline SVGs or Other Icon Libraries**: Do not introduce miscellaneous icon packages or raw inline SVGs when a Phosphor fill icon is available. Always import standard icons from `@phosphor-icons/react` with `weight="fill"`.
 - **Icon Styling Standards**:
-  - Use `stroke={1.5}` or `stroke={2}` for consistent optical weight.
+  - Always enforce `weight="fill"` for uniform optical presence.
   - Scale with `size={16}` (micro/badges), `size={18}` / `size={20}` (standard buttons/inputs), or `size={24}` (featured cards).
   - Use Tailwind color classes (e.g., `className="text-[#CC6600]"`, `className="text-sky-400"`, `className="text-white/60"`).
 - **Zero Glow Policy**: Blurry box-shadow glows (`shadow-[0_0_...px]`) are prohibited. Use crisp, high-contrast flat borders (`border-white/10` to `border-white/20`) and calibrated opacity tints (`bg-white/[0.04]` or `bg-sky-500/10`).
@@ -82,6 +83,60 @@ Every dashboard page and future module (`/dashboard/*`) runs inside the unified 
 - **Server Component (RSC) Pre-loading**: Persistent shell widgets (such as `DutyClockWidget`) must receive pre-fetched status (`initialActiveShift`) from async Server Components (`app/dashboard/layout.tsx`). This eliminates client-side fetch delays on initial load, guaranteeing 0ms first-paint without flashing incorrect states or spinners.
 - **0ms Optimistic UI Transitions**: Interactive duty changes (Clock In, Clock Out) update local state, local cache (`jaxis_active_shift`), and global event dispatchers (`shift-status-updated`) **immediately (0ms)** before server mutations complete. In the rare event of a network or validation failure, the state rolls back cleanly with a toast notification.
 - **Wall-Clock High-Precision Timers**: Active shift timers must compute elapsed time via wall-clock math (`Date.now() - clockInMs`) rather than naive interval incrementation. This prevents time drift caused by background tab throttling, minimized windows, or laptop sleep.
+
+### 2.4. Canonical Dashboard Bento Layout & Arrangement (Dashdark X Precision Architecture)
+To deliver world-class SaaS clarity, visual hierarchy, and spatial rhythm, primary role dashboards must follow the **Asymmetric Bento Grid Architecture** codified from premier dark-mode designs like *Dashdark X* and documented in the master design skill [.agents/skills/dashdark-precision-ui/SKILL.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/.agents/skills/dashdark-precision-ui/SKILL.md), strictly anchored to our **Dark Precision Terminal standard (`rounded-[2px]`)**:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ TIER 1: PAGE HEADER & DUAL-ACTION TOOLBAR                                              │
+│ Welcome back, [Name]                        [Secondary Action ↓]  [+ Primary Action]  │
+│ Plain-English context description                                                     │
+├───────────────────┬───────────────────┬───────────────────┬────────────────────────────┤
+│ TIER 2: 4-COLUMN BALANCED KPI METRIC BENTO                                             │
+│ [👁 Pageviews ...] │ [👤 Monthly users] │ [➕ New sign ups]  │ [⭐ Subscriptions]         │
+│  50.8K [28.4% ↗]  │  23.6K [12.6% ↘]  │  756 [3.1% ↗]     │  2.3K [11.3% ↗]            │
+│  Subtle subtext   │  Subtle subtext   │  Subtle subtext   │  Subtle subtext            │
+├───────────────────┴───────────────────┴───────────────────┴────────────────────────────┤
+│ TIER 3: THE 2:1 ASYMMETRIC FOCAL BENTO (8 COLS vs 4 COLS)                              │
+│ ┌───────────────────────────────────────────────┐ ┌──────────────────────────────────┐ │
+│ │ PRIMARY HERO CARD (8 COLS / ~66% WIDTH)       │ │ AUXILIARY STACK (4 COLS / ~33%)  │ │
+│ │ Metric Header: Total Revenue $240.8K [24.6% ↗]│ │ ┌──────────────────────────────┐ │ │
+│ │ Controls: ● Series A  ● Series B  [Jan-Dec ⌵] │ │ │ Total Profit $144.6K [28.5% ↗]│ │ │
+│ │                                               │ │ │ High-Density Micro Bar Chart │ │ │
+│ │ Deep Spline Area Chart / 5-Stage Stepper Desk │ │ │ Last 12 mos     View report →│ │ │
+│ │                                               │ │ └──────────────────────────────┘ │ │
+│ │ Interactive Tooltip Pin: $125.2k [12.6% ↗]    │ │ ┌──────────────────────────────┐ │ │
+│ │ Faint Horizontal Dividers (border-white/[0.04]│ │ │ Total Sessions 400 [16.8% ↗] │ │ │
+│ │ Jan Feb Mar Apr May Jun Jul Aug Sep Oct NovDec│ │ │ Sparkline Wave · [● Live]      │ │ │
+│ └───────────────────────────────────────────────┘ └──────────────────────────────────┘ │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ TIER 4: SECTION COMMAND RIBBON                                                         │
+│ Reports Overview / Active Studies    [All] [In Progress] [Delivered]    [Search... /]  │
+├───────────────────────────────────┬────────────────────────────────────────────────────┤
+│ TIER 5: LOWER BENTO COMPOSITION   │                                                    │
+│ ┌───────────────────────────────┐ │ ┌────────────────────────────────────────────────┐ │
+│ │ PROGRESS GAUGE / DONUT METER  │ │ │ HIGH-PRECISION RECENT STUDIES / ORDERS TABLE   │ │
+│ │ 23,648 Studies by Stage       │ │ │ ID        Title       Status     Total  Actions│ │
+│ │ Centered Arc / Donut Meter    │ │ │ JX-001    Genomics    ● Analysis ₱45K   [View] │ │
+│ │ · Desktop: 15,624 (65%)       │ │ │ JX-002    Nursing     ● Quoted   ₱28K   [Sign] │ │
+│ │ · Mobile: 5,546 (25%)         │ │ │ JX-003    Business    ● Closed   ₱60K   [File] │ │
+│ └───────────────────────────────┘ │ └────────────────────────────────────────────────┘ │
+└───────────────────────────────────┴────────────────────────────────────────────────────┘
+```
+
+#### Key Directives for Bento Orchestration:
+1. **Strictly No Rounded Bubbly Corners (`rounded-[2px]`)**: Never use Webflow `rounded-2xl` or `rounded-xl`. Maintain the crisp architectural precision of `rounded-[2px]` on all cards and tables.
+2. **The 2:1 Asymmetric Focal Ratio**: The primary telemetry chart or active research milestone stepper takes 8 columns (`lg:col-span-8`), flanked on the right by two stacked cards (`lg:col-span-4`) whose combined vertical height matches the hero card.
+3. **Micro-Anatomy of KPI Cards**: Top icon + label, bold monospace metric numeral, inline micro status/trend pill (`bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono font-bold`), and calm subtitle.
+4. **Lower Bento Split**: Pair a circular/semi-circular progress gauge or donut breakdown card (4–5 cols) with a dense, compact data table or study feed (7–8 cols).
+5. **Hairline Division**: Borders are strictly flat 1px `border-white/10` to `border-white/15`. Blurry glowing drop shadows are strictly forbidden.
+6. **The 3-Level Substrate Elevation Hierarchy**:
+   - `L0 Master Canvas` (`#010114`): 95% foundation; recedes completely.
+   - `L1 Surface Card` (`#01142B` / `rgba(1, 20, 43, 0.85)`): Elevated with 1px `border-white/10`.
+   - `L2 Control Insets & Wells` (`#010D1F`): Recessed controls, date dropdowns, search inputs, and table headers.
+7. **Two-Line Primary Table Cells**: Primary entity cells (Client, Study Topic, Specialist) use a two-line hierarchy: Line 1 bold white title (`font-sans font-semibold text-xs text-white`), Line 2 metadata subtext (`font-sans text-[11px] text-white/40`).
+8. **Continuous Column Banding (Pricing / Comparison Matrices)**: In multi-tier pricing and service matrices, the recommended / featured column maintains an unbroken vertical tinted substrate (`bg-[#CC6600]/10` with `border-[#CC6600]/30`) from the top pricing card down through every row of the comparison table.
 
 ---
 
@@ -142,39 +197,67 @@ All telemetry, financial, and operational index cards across all roles and pages
 1. **Header Label**: `text-xs font-mono font-semibold uppercase tracking-wider text-white/50 select-none truncate`. Never use `font-sans` or microscopic fonts for metric labels.
 2. **Metric Value**: `font-mono font-bold tracking-tight text-2xl sm:text-3xl` (scaled dynamically for large numbers). In 90% of cases, values must default to crisp bold white (`variant="default"`).
 3. **Color Restraint & Anti-Rainbow Mandate**: Never render rainbow rows where each adjacent card has a different hue (e.g. Amber, Green, Sky, Orange). Reserve accent colors strictly for urgent, actionable states when count > 0.
-4. **Unit Suffix**: Rendered cleanly inline as `text-xs font-mono text-white/40 select-none` (e.g. `hrs`, `specialists`, `shifts`, `completed`).
-5. **Description / Subtitle**: `text-xs font-sans text-white/50 select-none truncate` preceded by a calibrated `1.5` dot indicator.
-6. **Border & Substrate**: Solid elevated substrate `bg-[#01142B] border border-white/10 hover:border-white/20 rounded-[2px] p-5 sm:p-6 shadow-xl`.
+4. **Typography-First Standard (Anti-Icon-Clutter Policy)**:
+   - **No Decorative Icons on Informational Cards**: Standard overview KPI cards (`Total Studies`, `In Progress / QA`, `Delivered / Completed`, `Purchased Hours`) **MUST NOT** render decorative icons (`icon={...}`). High-impact numerals and uppercase monospace labels speak for themselves with executive authority (modeled after Linear and Stripe).
+   - **Icons Strictly Reserved for Active Alerts**: The `icon` prop is permitted on `<KpiCard />` **ONLY** when communicating an actionable alert state where user intervention is required and count > 0 (e.g. `<Clock weight="fill" className="text-amber-400" />` when `Action Required > 0`). When count is 0, the card remains quiet without an icon.
+   - **Functional Cards Retain Icons**: Tool cards, interactive desks (*DefenseLab Practice*, *Consultation Desk*), file dropzones, and navigation rails continue to use canonical Phosphor fill icons.
+5. **Unit Suffix**: Rendered cleanly inline as `text-xs font-mono text-white/40 select-none` (e.g. `hrs`, `specialists`, `shifts`, `completed`).
+6. **Description / Subtitle**: `text-xs font-sans text-white/50 select-none truncate` preceded by a calibrated `1.5` dot indicator.
+7. **Border & Substrate**: Solid elevated substrate `bg-[#01142B] border border-white/10 hover:border-white/20 rounded-[2px] p-5 sm:p-6 shadow-xl`.
+8. **Inline Micro-Pill & Micro-Action (Dashdark X Standard)**:
+     - Beside or directly below the bold numeral, pair a compact status or percentage trend pill (`rounded-[2px] text-[10px] font-mono font-bold px-1.5 py-0.5`):
+       - Positive / Active: `bg-emerald-500/15 text-emerald-400 border border-emerald-500/20` (e.g. `28.4% ↗` or `ACTIVE`)
+       - Action Required / Warning: `bg-amber-500/15 text-amber-400 border border-amber-500/20` (e.g. `12.6% ↘` or `ACTION NEEDED`)
+     - On the right side of the card header, pair an optional quiet status badge (e.g. `ALL TIME`, `ACTIVE`, `DELIVERED`).
 
 ```tsx
 import { KpiCard } from "@repo/ui";
-import { IconClock, IconBuildingBank } from "@tabler/icons-react";
+import { Clock } from "@phosphor-icons/react";
 
 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  {/* Standard informational card: Clean, typography-first, no decorative icon */}
   <KpiCard
-    label="Active Studies"
+    label="Total Studies"
     value={24}
     variant="default"
-    description="12 In Progress · 4 In QA Review"
+    badge="ALL TIME"
+    badgeColor="default"
+    description="Cumulative research portfolio"
   />
 
+  {/* Active Alert card: Displays icon strictly because action is required */}
   <KpiCard
-    label="Verified Duty Hours"
-    value="42.5"
-    unit="hrs"
-    icon={<IconClock size={16} stroke={1.5} />}
-    description="@ ₱450.00 / hour standard"
+    label="Action Required"
+    value={actionCount}
+    variant={actionCount > 0 ? "amber" : "default"}
+    icon={actionCount > 0 ? <Clock size={16} weight="fill" className="text-amber-400" /> : undefined}
+    badge={actionCount > 0 ? "ACTION NEEDED" : "CLEAR"}
+    badgeColor={actionCount > 0 ? "amber" : "default"}
+    description={actionCount > 0 ? "Proposals or documents awaiting input" : "All scopes verified and active"}
   />
 
+  {/* Operational progress card: Bold white numeral with status pill */}
   <KpiCard
-    label="Total Escrow Vault"
-    value="₱184,500.00"
+    label="In Progress / QA"
+    value={12}
     variant="default"
-    icon={<IconBuildingBank size={16} stroke={1.5} />}
-    description="Secured in dual-signatory escrow"
+    badge="ACTIVE"
+    badgeColor="sky"
+    description="Under active computation and review"
+  />
+
+  {/* Delivered milestone card: Bold white numeral with delivery pill */}
+  <KpiCard
+    label="Defense Ready"
+    value={8}
+    variant="default"
+    badge="DELIVERED"
+    badgeColor="emerald"
+    description="Final statistical packages delivered"
   />
 </div>
 ```
+
 
 ---
 
@@ -226,12 +309,12 @@ All continuous telemetry, activity, and milestone time-series curves must use th
 
 ```tsx
 import { AreaChart, Card } from "@repo/ui";
-import { IconActivity } from "@tabler/icons-react";
+import { ChartLineUp } from "@phosphor-icons/react";
 
 <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-4">
   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
     <div className="flex items-center gap-2">
-      <IconActivity size={18} stroke={2} className="text-[#CC6600]" />
+      <ChartLineUp size={18} weight="fill" className="text-[#CC6600]" />
       <h3 className="text-sm font-bold text-white font-sans">
         Research Pipeline & Milestone Activity
       </h3>
@@ -321,12 +404,12 @@ Use this matrix to select the correct UI component pattern for each interaction 
 
 #### The 4 Semantic Toast Variants
 
-| Variant | Accent Color | Border & Gradient Surface | Icon (`@tabler/icons-react`) | Primary Use Cases |
+| Variant | Accent Color | Border & Gradient Surface | Icon (`@phosphor-icons/react`) | Primary Use Cases |
 | :--- | :--- | :--- | :--- | :--- |
-| `info` | Analytical Sky (`#38BDF8`) | `bg-gradient-to-r from-sky-950/90 to-[#010D1F] border-sky-500/35` | `<IconInfoCircle size={18} stroke={2} />` | Clipboard copies, download starts, non-destructive notifications, session events. |
-| `success` | Verification Emerald (`#10B981`) | `bg-gradient-to-r from-emerald-950/90 to-[#010D1F] border-emerald-500/35` | `<IconCircleCheck size={18} stroke={2} />` | Form saves, project creation, profile updates, file attachments, QA approvals, status advancements. |
-| `warning` | Enterprise Amber (`#CC6600` / `#FBBF24`) | `bg-gradient-to-r from-amber-950/90 to-[#010D1F] border-amber-500/35` | `<IconAlertTriangle size={18} stroke={2} />` | Missing information requests sent, staff suspensions, revision requests returned to statistician. |
-| `danger` | Crimson Alert (`#EF4444` / `#F87171`) | `bg-gradient-to-r from-rose-950/90 to-[#010D1F] border-rose-500/35` | `<IconAlertCircle size={18} stroke={2} />` | Action failures, network errors, file size >15MB limit exceeded, invalid file formats, account termination. |
+| `info` | Analytical Sky (`#38BDF8`) | `bg-gradient-to-r from-sky-950/90 to-[#010D1F] border-sky-500/35` | `<Info size={18} weight="fill" />` | Clipboard copies, download starts, non-destructive notifications, session events. |
+| `success` | Verification Emerald (`#10B981`) | `bg-gradient-to-r from-emerald-950/90 to-[#010D1F] border-emerald-500/35` | `<CheckCircle size={18} weight="fill" />` | Form saves, project creation, profile updates, file attachments, QA approvals, status advancements. |
+| `warning` | Enterprise Amber (`#CC6600` / `#FBBF24`) | `bg-gradient-to-r from-amber-950/90 to-[#010D1F] border-amber-500/35` | `<Warning size={18} weight="fill" />` | Missing information requests sent, staff suspensions, revision requests returned to statistician. |
+| `danger` | Crimson Alert (`#EF4444` / `#F87171`) | `bg-gradient-to-r from-rose-950/90 to-[#010D1F] border-rose-500/35` | `<WarningOctagon size={18} weight="fill" />` | Action failures, network errors, file size >15MB limit exceeded, invalid file formats, account termination. |
 
 #### The 5 Golden Rules of Toasts (Mandatory for All Future Desks)
 
@@ -345,7 +428,7 @@ Use this matrix to select the correct UI component pattern for each interaction 
    - **Download Initiated:** Fire `info` Toast (`"Download Started"`).
 
 4. **Rule 4: Zero Emojis Policy**
-   - Never use emojis in `message` or `description`. Icons are handled automatically by the `Toast` component using `@tabler/icons-react`.
+   - Never use emojis in `message` or `description`. Icons are handled automatically by the `Toast` component using `@phosphor-icons/react` with `weight="fill"`.
 
 5. **Rule 5: Concise & Meaningful Copy**
    - `message`: 2 to 4 words, Title Case (e.g. `Profile Saved Successfully`, `Information Request Sent`).
@@ -411,7 +494,7 @@ setToastMessage({
         </tr>
       </thead>
       <tbody className="divide-y divide-white/[0.04]">
-        {/* Table Rows with Tabler icon buttons */}
+        {/* Table Rows with Phosphor fill icon buttons */}
       </tbody>
     </table>
   </div>
@@ -537,7 +620,7 @@ All action buttons placed in form footers must use `className="w-full sm:w-auto 
 ---
 
 ### 6.6. Status Telemetry: `StatusBadge` & `Badge`
-- **Mandatory Icon Standard**: Always pair status labels with appropriate `@tabler/icons-react` components (`IconCircleCheck`, `IconClock`, `IconAlertTriangle`, `IconLock`). Zero emojis.
+- **Mandatory Icon Standard**: Always pair status labels with appropriate `@phosphor-icons/react` components (`CheckCircle`, `Clock`, `Warning`, `Lock`) using `weight="fill"`. Zero emojis.
 - **Color Coding**:
   - `ACTIVE` / `IN_PROGRESS` / `OPEN`: Sky Blue (`#38BDF8` / `bg-sky-500/10`)
   - `FOR_QA` / `AWAITING_INFORMATION`: Amber (`#F59E0B` / `bg-amber-500/10`)
@@ -619,7 +702,7 @@ Raw character placeholders (such as `∅`) and plain unstyled text are **strictl
 ```
 
 #### **Props & Standards:**
-* **`icon`**: Tabler Icon component (`IconFolderOff`, `IconFileSearch`, `IconReceiptOff`, `IconInbox`). Defaults to `IconFolderOff`.
+* **`icon`**: Phosphor Fill Icon component (`FolderDashed`, `FileSearch`, `Receipt`, `Tray` with `weight="fill"`). Defaults to `FolderDashed`.
 * **`title`**: Clear, concise status header (e.g., `"No Research Studies Found"`).
 * **`description`**: Context-aware subtext explaining how to resolve or why the list is empty.
 * **`action`**: Optional primary CTA button directing the researcher to action (e.g. `+ Submit Study Intake →`).
@@ -648,22 +731,22 @@ For switching between sub-views, nested records, or segmented catalog categories
   - **Active State (`variant="default"`):** High-contrast Enterprise Orange (`data-[state=active]:bg-[#CC6600] data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:shadow-sm`).
   - **Active State (`variant="underline"`):** Hairline bottom border in Enterprise Orange (`data-[state=active]:border-[#CC6600] data-[state=active]:text-white`).
   - **Hover & Passive:** `text-white/60 hover:text-white hover:bg-white/[0.04]` with smooth transition.
-  - **Iconography:** Optional leading Tabler Icon scaled to `size={16}` with `stroke={1.5}`.
+  - **Iconography:** Optional leading Phosphor Fill Icon scaled to `size={16}` with `weight="fill"`.
 - **Content Panel (`TabsContent`):** Automatically applies `mt-4 animate-content-fade` for smooth content swapping without layout jitter.
 
 #### **Usage Example (Segmented / Pill Standard):**
 ```tsx
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@repo/ui";
-import { IconPackage, IconBolt } from "@tabler/icons-react";
+import { Package, Lightning } from "@phosphor-icons/react";
 
 <Tabs defaultValue="packages" className="w-full">
   <TabsList>
     <TabsTrigger value="packages">
-      <IconPackage size={16} stroke={1.5} />
+      <Package size={16} weight="fill" />
       <span>Service Packages</span>
     </TabsTrigger>
     <TabsTrigger value="addons">
-      <IconBolt size={16} stroke={1.5} />
+      <Lightning size={16} weight="fill" />
       <span>Priority Add-Ons</span>
     </TabsTrigger>
   </TabsList>

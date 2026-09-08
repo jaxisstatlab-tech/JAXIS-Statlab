@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import Link from "next/link";
-import { IconAlertTriangle, IconRefresh, IconHome } from "@tabler/icons-react";
+import { Warning, ArrowClockwise, House } from "@phosphor-icons/react";
 
 export default function DashboardError({
   error,
@@ -19,7 +19,7 @@ export default function DashboardError({
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center animate-content-fade">
       <div className="max-w-md w-full p-8 sm:p-10 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col items-center gap-6">
         <div className="w-14 h-14 rounded-[2px] bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
-          <IconAlertTriangle size={28} stroke={1.5} />
+          <Warning size={28} weight="fill" />
         </div>
 
         <div className="flex flex-col gap-2">
@@ -45,14 +45,14 @@ export default function DashboardError({
             onClick={() => reset()}
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#CC6600] hover:bg-[#B35500] text-white font-sans font-medium text-sm rounded-[2px] transition-colors focus:outline-none focus:ring-0"
           >
-            <IconRefresh size={16} stroke={2} />
+            <ArrowClockwise size={16} weight="bold" />
             <span>Try Again</span>
           </button>
           <Link
             href="/dashboard"
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 font-sans font-medium text-sm rounded-[2px] transition-colors focus:outline-none focus:ring-0"
           >
-            <IconHome size={16} stroke={1.5} />
+            <House size={16} weight="fill" />
             <span>Go to Workspace</span>
           </Link>
         </div>

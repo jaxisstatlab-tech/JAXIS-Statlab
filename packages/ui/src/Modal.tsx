@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { IconX } from "@tabler/icons-react";
+import { X } from "@phosphor-icons/react";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
 
@@ -261,7 +261,7 @@ export const Modal: React.FC<ModalProps> = ({
             }}
             aria-label="Close modal"
           >
-            <IconX size={20} stroke={1.5} />
+            <X size={20} weight="bold" />
           </button>
         </div>
 

@@ -3,20 +3,20 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
-  IconX,
-  IconChevronLeft,
-  IconChevronRight,
-  IconDownload,
-  IconZoomIn,
-  IconZoomOut,
-  IconFileTypePdf,
-  IconFileTypeDocx,
-  IconFileTypeCsv,
-  IconFileTypeXls,
-  IconFileText,
-  IconCheck,
-  IconPrinter,
-} from "@tabler/icons-react";
+  X,
+  CaretLeft,
+  CaretRight,
+  DownloadSimple,
+  MagnifyingGlassPlus,
+  MagnifyingGlassMinus,
+  FilePdf,
+  FileDoc,
+  FileCsv,
+  FileXls,
+  FileText,
+  Check,
+  Printer,
+} from "@phosphor-icons/react";
 import {
   getFileMeta,
   formatFileCategory,
@@ -695,15 +695,15 @@ export function DocumentViewerLightbox({
         <div className="flex items-center gap-3.5 min-w-0 max-w-[45%]">
           <div className="h-9 w-9 rounded-[2px] bg-[#011B38] border border-white/15 flex items-center justify-center flex-shrink-0">
             {meta.iconType === "pdf" ? (
-              <IconFileTypePdf size={20} stroke={1.5} className="text-rose-400" />
+              <FilePdf size={20} weight="fill" className="text-rose-400" />
             ) : meta.iconType === "doc" ? (
-              <IconFileTypeDocx size={20} stroke={1.5} className="text-sky-400" />
+              <FileDoc size={20} weight="fill" className="text-sky-400" />
             ) : meta.iconType === "data" ? (
-              <IconFileTypeCsv size={20} stroke={1.5} className="text-emerald-400" />
+              <FileCsv size={20} weight="fill" className="text-emerald-400" />
             ) : meta.iconType === "sheet" ? (
-              <IconFileTypeXls size={20} stroke={1.5} className="text-emerald-400" />
+              <FileXls size={20} weight="fill" className="text-emerald-400" />
             ) : (
-              <IconFileText size={20} stroke={1.5} className="text-white/70" />
+              <FileText size={20} weight="fill" className="text-white/70" />
             )}
           </div>
           <div className="flex flex-col min-w-0 gap-0.5">
@@ -733,7 +733,7 @@ export function DocumentViewerLightbox({
                 title="Previous Document (← or [)"
                 aria-label="Previous Document"
               >
-                <IconChevronLeft size={15} stroke={2} />
+                <CaretLeft size={15} weight="bold" />
               </button>
               <span className="text-[10px] font-mono text-white/40 px-1">
                 {currentFileIndex + 1}/{files!.length}
@@ -745,7 +745,7 @@ export function DocumentViewerLightbox({
                 title="Next Document (→ or ])"
                 aria-label="Next Document"
               >
-                <IconChevronRight size={15} stroke={2} />
+                <CaretRight size={15} weight="bold" />
               </button>
             </div>
           )}
@@ -773,7 +773,7 @@ export function DocumentViewerLightbox({
               className="p-1 rounded-[2px] hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none text-white/70 hover:text-white transition-colors cursor-pointer"
               title="Previous Page (Left Arrow)"
             >
-              <IconChevronLeft size={16} stroke={1.5} />
+              <CaretLeft size={16} weight="bold" />
             </button>
             <button
               type="button"
@@ -782,7 +782,7 @@ export function DocumentViewerLightbox({
               className="p-1 rounded-[2px] hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none text-white/70 hover:text-white transition-colors cursor-pointer"
               title="Next Page (Right Arrow)"
             >
-              <IconChevronRight size={16} stroke={1.5} />
+              <CaretRight size={16} weight="bold" />
             </button>
 
             <div className="h-4 w-[1px] bg-white/15 mx-1" />
@@ -795,7 +795,7 @@ export function DocumentViewerLightbox({
               className="p-1 rounded-[2px] hover:bg-white/10 disabled:opacity-30 text-white/70 hover:text-white transition-colors cursor-pointer"
               title="Zoom Out"
             >
-              <IconZoomOut size={16} stroke={1.5} />
+              <MagnifyingGlassMinus size={16} weight="bold" />
             </button>
             <button
               type="button"
@@ -812,7 +812,7 @@ export function DocumentViewerLightbox({
               className="p-1 rounded-[2px] hover:bg-white/10 disabled:opacity-30 text-white/70 hover:text-white transition-colors cursor-pointer"
               title="Zoom In"
             >
-              <IconZoomIn size={16} stroke={1.5} />
+              <MagnifyingGlassPlus size={16} weight="bold" />
             </button>
           </div>
         ) : null}
@@ -825,7 +825,7 @@ export function DocumentViewerLightbox({
             className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-[2px] text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/15 hover:border-white/30 transition-colors cursor-pointer"
             title="Print Document"
           >
-            <IconPrinter size={16} stroke={1.5} />
+            <Printer size={16} weight="fill" />
           </button>
 
           <button
@@ -840,7 +840,7 @@ export function DocumentViewerLightbox({
           >
             {downloadSuccess ? (
               <>
-                <IconCheck size={15} stroke={2.5} className="text-emerald-400" />
+                <Check size={15} weight="bold" className="text-emerald-400" />
                 <span>Saved</span>
               </>
             ) : isDownloading ? (
@@ -857,7 +857,7 @@ export function DocumentViewerLightbox({
               </>
             ) : (
               <>
-                <IconDownload size={15} stroke={1.5} />
+                <DownloadSimple size={15} weight="bold" />
                 <span>Download</span>
               </>
             )}
@@ -869,7 +869,7 @@ export function DocumentViewerLightbox({
             className="h-9 w-9 inline-flex items-center justify-center rounded-[2px] text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/15 hover:border-white/30 transition-colors cursor-pointer select-none"
             title="Close Preview (Esc)"
           >
-            <IconX size={18} stroke={1.5} />
+            <X size={18} weight="bold" />
           </button>
         </div>
       </header>
@@ -887,7 +887,7 @@ export function DocumentViewerLightbox({
             className="fixed left-4 sm:left-8 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#011B38]/90 backdrop-blur-sm hover:bg-[#02254B] border border-white/20 hover:border-sky-400/50 text-white/70 hover:text-white flex items-center justify-center transition-all shadow-2xl z-30 cursor-pointer hover:scale-105 print:hidden"
             title="Previous Page"
           >
-            <IconChevronLeft size={24} stroke={2} />
+            <CaretLeft size={24} weight="bold" />
           </button>
         )}
 
@@ -899,7 +899,7 @@ export function DocumentViewerLightbox({
             className="fixed right-4 sm:right-8 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#011B38]/90 backdrop-blur-sm hover:bg-[#02254B] border border-white/20 hover:border-sky-400/50 text-white/70 hover:text-white flex items-center justify-center transition-all shadow-2xl z-30 cursor-pointer hover:scale-105 print:hidden"
             title="Next Page"
           >
-            <IconChevronRight size={24} stroke={2} />
+            <CaretRight size={24} weight="bold" />
           </button>
         )}
 
@@ -1039,7 +1039,7 @@ export function DocumentViewerLightbox({
               <div className="w-full max-w-5xl bg-[#01142B] border border-white/15 rounded-[2px] shadow-2xl p-6 flex flex-col gap-4">
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
                   <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 font-bold">
-                    <IconFileTypeCsv size={16} stroke={1.5} />
+                    <FileCsv size={16} weight="fill" />
                     <span>STRUCTURED DATASET MATRIX (PREVIEW)</span>
                   </div>
                   <span className="text-xs font-mono text-white/50">{file.fileName}</span>
@@ -1092,7 +1092,7 @@ export function DocumentViewerLightbox({
                 style={{ padding: "2.5rem 2rem" }}
               >
                 <div className="h-16 w-16 rounded-[2px] bg-white/[0.05] border border-white/15 flex items-center justify-center text-sky-400 mb-1">
-                  <IconFileText size={32} stroke={1.5} />
+                  <FileText size={32} weight="fill" />
                 </div>
                 <div className="flex flex-col items-center gap-2.5 max-w-sm">
                   <h3 className="font-mono font-bold text-base sm:text-lg text-white break-all">
@@ -1107,7 +1107,7 @@ export function DocumentViewerLightbox({
                   onClick={handleDownload}
                   className="mt-3 inline-flex items-center gap-2 px-7 py-3 rounded-[2px] bg-gradient-to-b from-[#E67300] to-[#CC6600] text-white border border-[#CC6600] border-t-[#FFA040]/70 border-b-[#994D00] font-mono text-xs font-bold uppercase tracking-wider hover:shadow-[0_2px_12px_rgba(204,102,0,0.4)] transition-all cursor-pointer"
                 >
-                  <IconDownload size={15} stroke={2} />
+                  <DownloadSimple size={15} weight="bold" />
                   <span>Download Artifact</span>
                 </button>
               </div>

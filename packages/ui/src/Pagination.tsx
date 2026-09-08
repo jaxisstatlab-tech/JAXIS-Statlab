@@ -2,12 +2,12 @@
 
 import React, { useMemo } from "react";
 import {
-  IconChevronLeft,
-  IconChevronRight,
-  IconChevronsLeft,
-  IconChevronsRight,
-  IconChevronDown,
-} from "@tabler/icons-react";
+  CaretLeft,
+  CaretRight,
+  CaretDoubleLeft,
+  CaretDoubleRight,
+  CaretDown,
+} from "@phosphor-icons/react";
 import { cn } from "./utils";
 
 export interface PaginationProps {
@@ -112,9 +112,9 @@ export function Pagination({
                   </option>
                 ))}
               </select>
-              <IconChevronDown
+              <CaretDown
                 size={12}
-                stroke={2}
+                weight="fill"
                 className="absolute right-1.5 text-white/40 pointer-events-none"
               />
             </div>
@@ -132,7 +132,7 @@ export function Pagination({
           title="First Page"
           className="h-7 w-7 flex items-center justify-center rounded-[2px] border border-white/10 text-white/60 hover:text-white hover:bg-white/[0.06] disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
         >
-          <IconChevronsLeft size={13} stroke={2} />
+          <CaretDoubleLeft size={13} weight="bold" />
         </button>
 
         {/* Previous Page */}
@@ -143,7 +143,7 @@ export function Pagination({
           title="Previous Page"
           className="h-7 px-2 flex items-center gap-1 rounded-[2px] border border-white/10 text-white/60 hover:text-white hover:bg-white/[0.06] disabled:opacity-30 disabled:pointer-events-none transition-colors text-xs font-sans font-medium cursor-pointer"
         >
-          <IconChevronLeft size={13} stroke={2} />
+          <CaretLeft size={13} weight="bold" />
           <span className="hidden sm:inline">Prev</span>
         </button>
 
@@ -189,7 +189,7 @@ export function Pagination({
           className="h-7 px-2 flex items-center gap-1 rounded-[2px] border border-white/10 text-white/60 hover:text-white hover:bg-white/[0.06] disabled:opacity-30 disabled:pointer-events-none transition-colors text-xs font-sans font-medium cursor-pointer"
         >
           <span className="hidden sm:inline">Next</span>
-          <IconChevronRight size={13} stroke={2} />
+          <CaretRight size={13} weight="bold" />
         </button>
 
         {/* Last Page */}
@@ -200,7 +200,7 @@ export function Pagination({
           title="Last Page"
           className="h-7 w-7 flex items-center justify-center rounded-[2px] border border-white/10 text-white/60 hover:text-white hover:bg-white/[0.06] disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
         >
-          <IconChevronsRight size={13} stroke={2} />
+          <CaretDoubleRight size={13} weight="bold" />
         </button>
       </div>
     </div>

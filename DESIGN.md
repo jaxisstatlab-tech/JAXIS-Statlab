@@ -187,16 +187,16 @@ The public-facing marketing and landing pages (like the Hero section) employ a s
 
 ## 9. Global Toast Notification Architecture & Usage Rules
 
-JAXIS StatLab incorporates a mission-critical, portaled toast alert system (`@repo/ui/Toast` rendered to `document.body` at `z-[9999]`) with ambient gradients, colored Tabler icons, hardware-accelerated countdown timers, and pause-on-hover mechanics.
+JAXIS StatLab incorporates a mission-critical, portaled toast alert system (`@repo/ui/Toast` rendered to `document.body` at `z-[9999]`) with ambient gradients, colored Phosphor fill icons (`weight="fill"`), hardware-accelerated countdown timers, and pause-on-hover mechanics.
 
 ### A. The 4 Semantic Toast Variants
 
-| Variant | Accent Color | Border & Gradient Surface | Icon (`@tabler/icons-react`) | Primary Use Cases |
+| Variant | Accent Color | Border & Gradient Surface | Icon (`@phosphor-icons/react`) | Primary Use Cases |
 | :--- | :--- | :--- | :--- | :--- |
-| `info` | Analytical Sky (`#38BDF8`) | `bg-gradient-to-r from-sky-950/90 to-[#010D1F] border-sky-500/35` | `<IconInfoCircle size={18} stroke={2} />` | Clipboard copies, download starts, non-destructive notifications, session events. |
-| `success` | Verification Emerald (`#10B981`) | `bg-gradient-to-r from-emerald-950/90 to-[#010D1F] border-emerald-500/35` | `<IconCircleCheck size={18} stroke={2} />` | Form saves, project creation, profile updates, file attachments, QA approvals, status advancements. |
-| `warning` | Enterprise Amber (`#CC6600` / `#FBBF24`) | `bg-gradient-to-r from-amber-950/90 to-[#010D1F] border-amber-500/35` | `<IconAlertTriangle size={18} stroke={2} />` | Missing information requests sent, staff suspensions, revision requests returned to statistician. |
-| `danger` | Crimson Alert (`#EF4444` / `#F87171`) | `bg-gradient-to-r from-rose-950/90 to-[#010D1F] border-rose-500/35` | `<IconAlertCircle size={18} stroke={2} />` | Action failures, network errors, file size >15MB limit exceeded, invalid file formats, account termination. |
+| `info` | Analytical Sky (`#38BDF8`) | `bg-gradient-to-r from-sky-950/90 to-[#010D1F] border-sky-500/35` | `<Info size={18} weight="fill" />` | Clipboard copies, download starts, non-destructive notifications, session events. |
+| `success` | Verification Emerald (`#10B981`) | `bg-gradient-to-r from-emerald-950/90 to-[#010D1F] border-emerald-500/35` | `<CheckCircle size={18} weight="fill" />` | Form saves, project creation, profile updates, file attachments, QA approvals, status advancements. |
+| `warning` | Enterprise Amber (`#CC6600` / `#FBBF24`) | `bg-gradient-to-r from-amber-950/90 to-[#010D1F] border-amber-500/35` | `<Warning size={18} weight="fill" />` | Missing information requests sent, staff suspensions, revision requests returned to statistician. |
+| `danger` | Crimson Alert (`#EF4444` / `#F87171`) | `bg-gradient-to-r from-rose-950/90 to-[#010D1F] border-rose-500/35` | `<WarningOctagon size={18} weight="fill" />` | Action failures, network errors, file size >15MB limit exceeded, invalid file formats, account termination. |
 
 ### B. Mandatory Rules for When & Where to Trigger Toasts
 
@@ -217,7 +217,7 @@ When building new features, expanding desks, or adding buttons, apply these mand
    - **Download Initiated:** Fire `info` Toast (`"Download Started"`).
 
 4. **Rule 4: Zero Emojis Policy**
-   - Never use emojis in `message` or `description`. Icons are handled automatically by the `Toast` component using `@tabler/icons-react`.
+   - Never use emojis in `message` or `description`. Icons are handled automatically by the `Toast` component using `@phosphor-icons/react` with `weight="fill"`.
 
 5. **Rule 5: Concise & Meaningful Copy**
    - `message`: 2 to 4 words, Title Case (e.g. `Profile Saved Successfully`, `Information Request Sent`).

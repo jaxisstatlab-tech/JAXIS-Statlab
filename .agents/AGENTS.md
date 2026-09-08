@@ -1,8 +1,8 @@
 # JAXIS StatLab — Agent & Developer Rules
 
-This workspace configuration is anchored to the canonical design specification defined in [apps/app/docs/design-system.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/docs/design-system.md).
+This workspace configuration is anchored to the canonical design specification defined in [apps/app/docs/design-system.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/docs/design-system.md) and the master Dashdark precision design skill in [.agents/skills/dashdark-precision-ui/SKILL.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/.agents/skills/dashdark-precision-ui/SKILL.md).
 
-All AI coding assistants and developers MUST strictly follow the design system and the mandatory guardrails below.
+All AI coding assistants and developers MUST strictly follow the design system, the dashdark-precision-ui skill, and the mandatory guardrails below.
 
 ---
 
@@ -13,6 +13,7 @@ All AI coding assistants and developers MUST strictly follow the design system a
 - **Zero Glow Policy**: Never use blurry box-shadow glows (`shadow-[0_0_...px]`). Use crisp, high-contrast flat borders (`border-white/10` to `border-white/20`) and calibrated opacity tints.
 - **No Awkward Gradients**: Do not use heavy gradient fills (`bg-gradient-to-r`) on action bars, banners, or modal headers. Rely on solid substrates (`#01142B` / `#011B38`) with calibrated borders.
 - **Color Restraint & Anti-Rainbow Mandate**: Reduce the use of colors unless strictly necessary. Color is a scarce cognitive resource. In 90% of cases, `<KpiCard />` metric numbers must default to crisp bold white (`variant="default"`). Never render rainbow rows where 4 adjacent cards each have a different neon hue (Amber, Green, Sky, Orange). In data tables, financial figures must default to bold white; never stack cyan, green, and yellow within a single table cell.
+- **Typography-First KPI Standard (No Decorative Icons on Metric Cards)**: Top-level informational KPI cards must NOT render decorative icons (`icon={...}`). High-contrast monospace numerals and uppercase labels carry the hierarchy cleanly with executive authority. Reserve the `icon` prop exclusively for active alert states where user intervention is required (e.g., `<Clock weight="fill" className="text-amber-400" />` when `Action Required > 0`).
 
 ---
 
@@ -56,11 +57,12 @@ All AI coding assistants and developers MUST strictly follow the design system a
 
 ---
 
-## 5. Iconography & Visual Standard (CRITICAL)
-- **Mandatory Icon Library**: Use **Tabler Icons (`@tabler/icons-react`) exclusively** across `@repo/ui` and `apps/app`.
+## 5. Iconography & Visual Standard (PHOSPHOR FILL ICONS EXCLUSIVELY — CRITICAL)
+- **Mandatory Icon Library**: Use **Phosphor Icons (`@phosphor-icons/react`) exclusively with `weight="fill"`** across `@repo/ui` and `apps/app`.
+- **Fill Icons Only (No Line/Outline Icons)**: To achieve the high-end, authoritative aesthetic of the Dashdark X dark-mode reference, all icons must be solid filled glyphs (e.g. `<House weight="fill" />`, `<Users weight="fill" />`, `<Eye weight="fill" />`, `<Star weight="fill" />`, `<Gear weight="fill" />`, `<Clock weight="fill" />`, `<CheckCircle weight="fill" />`, `<WarningCircle weight="fill" />`, `<FileText weight="fill" />`, `<CurrencyDollar weight="fill" />`, `<TrendUp weight="fill" />`). Never render hollow line or thin outline icons.
 - **Zero Emojis Policy**: Emojis (e.g. 🔍, ⏸, ⛔, 📋, 🚀, 💡, 📁, 📄, 🔒) are **strictly forbidden** anywhere in the UI, labels, menus, tables, buttons, or toasts.
-- **No Ad-Hoc Raw SVGs**: When an icon is needed, always import the appropriate `Icon*` component from `@tabler/icons-react`.
-- **Styling**: Use `stroke={1.5}` or `stroke={2}`, specify `size={16|18|20|24}`, and use Tailwind classes for colors.
+- **No Ad-Hoc Raw SVGs**: When an icon is needed, always import the appropriate component from `@phosphor-icons/react` with `weight="fill"`.
+- **Styling & Sizing**: Always set `weight="fill"`, specify `size={16|18|20|24}`, and use Tailwind classes for colors (`text-white/70`, `text-[#CC6600]`, `text-emerald-400`, `text-sky-400`).
 
 ---
 
@@ -132,12 +134,12 @@ All AI coding assistants and developers MUST strictly follow the design system a
 
 ---
 
-## 11. Single Identity Anchor & Anti-Redundancy Standard (CRITICAL)
+## 11. Dashdark X Sidebar-First Identity Anchor & Zero Desktop Topbar Standard (CRITICAL)
 - **Mandatory Policy**:
-  1. All session identity, role display tags, role-specific profile routing, and sign-out controls **MUST live exclusively in the Topbar dropdown menu (`Topbar.tsx`)**.
-  2. Sidebars (`Sidebar.tsx`) **MUST NEVER duplicate user cards**, avatar initials, email addresses, or logout buttons at their footer across any role.
-  3. Reclaim the ~70px of fixed vertical height in sidebars to prevent navigation links from clipping or requiring awkward scrollbars on 13"–14" laptops.
-  4. The sidebar footer must strictly be reserved for a clean, minimal operational status badge (`● System Operational v2.4.0`).
+  1. **Zero Desktop Topbar**: Desktop main canvas operates with zero horizontal topbar. Workspace starts at $y = 0$, giving `<PageHeader>` immediate top prominence without wasted vertical space. On mobile viewports (`< lg`), a lean `h-14` header bar remains for the drawer trigger and mobile controls.
+  2. **Sidebar-First Identity Anchor**: All session identity, role display tags, role-specific profile routing, and sign-out controls **live directly in the Sidebar footer profile card** (`Sidebar.tsx`).
+  3. **Collapsible Rail Identity Support**: In expanded mode (`w-[17.5rem]`), user avatar, name, role/account settings, and dropdown caret are displayed. In collapsed mode (`w-[5rem]`), the circular avatar operates as the Radix dropdown trigger.
+  4. **Footer Grounding**: Below the identity card, a subtle operational status footer (`● System Operational v2.4.0` in expanded mode; `●` dot in collapsed mode) provides clean visual grounding.
 
 ---
 
@@ -151,7 +153,7 @@ All AI coding assistants and developers MUST strictly follow the design system a
 
 ## 13. System-First UI Upgrade & Anti-AI-Slop Standard (CRITICAL)
 - **Mandatory Policy**:
-  1. All page and view upgrades must strictly follow [apps/app/docs/ui-design-upgrade.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/docs/ui-design-upgrade.md) and [.agents/skills/ui-design-upgrade/SKILL.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/.agents/skills/ui-design-upgrade/SKILL.md).
+  1. All page and view upgrades must strictly follow [apps/app/docs/ui-design-upgrade.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/docs/ui-design-upgrade.md), [.agents/skills/ui-design-upgrade/SKILL.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/.agents/skills/ui-design-upgrade/SKILL.md), and [.agents/skills/dashdark-precision-ui/SKILL.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/.agents/skills/dashdark-precision-ui/SKILL.md).
   2. **Hard Constraint — Frontend Only**: Zero modifications to backend schemas, database queries, server actions, API routes, authentication logic, or business workflows. Present existing data with peak elegance and clarity.
   3. **Current Theme Grounding**: Anchor strictly to Master Canvas (`#010114`), Surface Cards (`rgba(1, 22, 46, 0.75)` / `#01142B`), Enterprise Orange (`#CC6600`, 5–10% max visual weight), and crisp 1px borders (`border-white/10`).
   4. **Anti-AI-Slop Mandate**: Zero awkward multi-stop gradients, zero blurry box-shadow glows, zero robotic buzzwords, zero double slashes (`//`), zero broken text truncations (`...`), and zero ALL-CAPS shouting buttons.
@@ -175,3 +177,12 @@ All AI coding assistants and developers MUST strictly follow the design system a
   3. **Smart 1-Click "Reset Filters"**: Search queries or filter tabs that return 0 results must display a helpful empty state card with a 1-click **"Clear Filters"** button. Never leave users stranded in empty views.
   4. **Multi-Document Lightbox Navigation**: Document viewers must support left/right arrows or `[` / `]`, document counter badges, and instant `Esc` dismissal.
   5. **1-Click Copy Badges (`<CopyButton variant="badge" />`)**: Study IDs (`JAXIS-...`) and transaction reference numbers must provide instant 1-click copy with tactile scale compression and emerald checkmark (`Copied!`) confirmation.
+
+---
+
+## 19. Canonical Dashboard Bento Architecture (Dashdark X Precision Standard) (CRITICAL)
+- **Mandatory Policy**:
+  1. **Asymmetric 2:1 Bento Arrangement**: All primary role dashboards across all roles (Client, Statistician, QA Lead, CEO/Admin) must adopt the 2:1 Asymmetric Bento Grid codified in [apps/app/docs/ui-design-upgrade.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/docs/ui-design-upgrade.md) Section 10 and [.agents/skills/dashdark-precision-ui/SKILL.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/.agents/skills/dashdark-precision-ui/SKILL.md): (1) Greeting + dual-action toolbar, (2) 4-column balanced KPI row with inline micro status pills, (3) 2:1 Asymmetric Focal Hero Section (8 cols hero card + 4 cols double-stacked auxiliary intelligence cards), (4) Section command ribbon with filter tabs and `/` search, and (5) Lower bento composition (progress gauge / donut meter + high-precision data table/feed).
+  2. **Strictly No Rounded Bubbly Corners (`rounded-[2px]`)**: Never use Webflow `rounded-xl` or `rounded-2xl`. Maintain the crisp architectural precision of `rounded-[2px]` across all cards, containers, tables, and buttons.
+  3. **Dark Precision Substrates**: Anchor strictly to `#010114` master canvas, `#01142B` flat card substrates, and hairline flat 1px `border-white/10` divisions (zero blurry box-shadow glows).
+

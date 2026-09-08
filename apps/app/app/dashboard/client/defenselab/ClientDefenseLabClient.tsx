@@ -13,19 +13,18 @@ import {
   Peso,
 } from "@repo/ui";
 import {
-  IconVideo,
-  IconCalendar,
-  IconClock,
-  IconAlertTriangle,
-  IconCheck,
-  IconDownload,
-  IconInfoCircle,
-  IconLoader2,
-  IconMicrophone,
-  IconPlus,
-  IconCalendarEvent,
-  IconShieldCheck,
-} from "@tabler/icons-react";
+  VideoCamera,
+  CalendarBlank,
+  Clock,
+  Warning,
+  Check,
+  DownloadSimple,
+  Info,
+  CircleNotch,
+  Microphone,
+  Plus,
+  ShieldCheck,
+} from "@phosphor-icons/react";
 import {
   getClientDefenseLabData,
   bookDefenseLabSession,
@@ -226,7 +225,10 @@ export function ClientDefenseLabClient({
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
+    <div
+      data-portal="client"
+      className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans"
+    >
       {toast && (
         <Toast
           message={toast.message}
@@ -252,7 +254,7 @@ export function ClientDefenseLabClient({
             disabled={totalRemainingHours === 0 && entitlements.length === 0}
             className="flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
           >
-            <IconPlus size={15} stroke={2} />
+            <Plus size={15} weight="bold" />
             <span>Schedule Mock Defense</span>
           </Button>
         }
@@ -296,7 +298,7 @@ export function ClientDefenseLabClient({
 
           {/* 12-HOUR RESCHEDULING POLICY BANNER */}
           <div className="p-4 bg-[#01142B] border border-sky-500/30 rounded-[2px] flex items-start gap-3 text-xs text-sky-200 animate-card-reveal stagger-5">
-            <IconInfoCircle size={18} stroke={2} className="text-sky-400 shrink-0 mt-0.5" />
+            <Info size={18} weight="fill" className="text-sky-400 shrink-0 mt-0.5" />
             <div className="flex flex-col gap-1">
               <span className="font-semibold text-white">
                 Official DefenseLab 12-Hour Rescheduling Notice Policy (DEF-F03 &amp; DEF-F04)
@@ -312,7 +314,7 @@ export function ClientDefenseLabClient({
           <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-4 animate-card-reveal stagger-6">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div className="flex items-center gap-2">
-                <IconShieldCheck size={18} stroke={2} className="text-emerald-400" />
+                <ShieldCheck size={18} weight="fill" className="text-emerald-400" />
                 <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
                   Entitled Research Studies &amp; Purchased Hours
                 </h2>
@@ -324,7 +326,7 @@ export function ClientDefenseLabClient({
 
             {entitlements.length === 0 ? (
               <div className="p-8 text-center bg-[#01142B] rounded-[2px] border border-white/10 flex flex-col items-center gap-3">
-                <IconMicrophone size={32} stroke={1.5} className="text-white/30" />
+                <Microphone size={32} weight="fill" className="text-white/30" />
                 <p className="text-sm font-semibold text-white">No DefenseLab Add-on Detected</p>
                 <p className="text-xs text-white/60 max-w-md">
                   DefenseLab mock defense rehearsals are an add-on service. When receiving your study proposal quotation, ensure the DefenseLab add-on is included or contact your administrator.
@@ -392,7 +394,7 @@ export function ClientDefenseLabClient({
           <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-4 animate-card-reveal stagger-7">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div className="flex items-center gap-2">
-                <IconCalendarEvent size={18} stroke={2} className="text-[#CC6600]" />
+                <CalendarBlank size={18} weight="fill" className="text-[#CC6600]" />
                 <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
                   Upcoming Mock Defense Rehearsals ({activeSessions.length})
                 </h2>
@@ -435,7 +437,7 @@ export function ClientDefenseLabClient({
 
                         <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-white/70">
                           <span className="flex items-center gap-1.5 text-white/90">
-                            <IconCalendar size={14} stroke={1.5} className="text-[#CC6600]" />
+                            <CalendarBlank size={14} weight="fill" className="text-[#CC6600]" />
                             {sessionDate.toLocaleDateString("en-US", {
                               weekday: "short",
                               month: "short",
@@ -449,7 +451,7 @@ export function ClientDefenseLabClient({
                             })}
                           </span>
                           <span className="flex items-center gap-1 text-white/60">
-                            <IconClock size={14} stroke={1.5} />
+                            <Clock size={14} weight="fill" />
                             Duration: {s.durationHours} {s.durationHours === 1 ? "Hour" : "Hours"}
                           </span>
                           <span>Panelist: {s.expertName}</span>
@@ -475,7 +477,7 @@ export function ClientDefenseLabClient({
                               size="sm"
                               className="flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
                             >
-                              <IconVideo size={15} stroke={2} />
+                              <VideoCamera size={15} weight="fill" />
                               <span>Join Video Call</span>
                             </Button>
                           </a>
@@ -508,7 +510,7 @@ export function ClientDefenseLabClient({
           <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-4 animate-card-reveal stagger-8">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div className="flex items-center gap-2">
-                <IconDownload size={18} stroke={2} className="text-emerald-400" />
+                <DownloadSimple size={18} weight="bold" className="text-emerald-400" />
                 <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
                   Completed Rehearsals &amp; Recording Vault ({completedSessions.length})
                 </h2>
@@ -567,7 +569,7 @@ export function ClientDefenseLabClient({
                             size="sm"
                             className="flex items-center gap-1.5 rounded-[2px]"
                           >
-                            <IconDownload size={15} stroke={2} />
+                            <DownloadSimple size={15} weight="bold" />
                             <span>Access Session Recording</span>
                           </Button>
                         </a>
@@ -616,12 +618,12 @@ export function ClientDefenseLabClient({
               >
                 {isSubmittingBook ? (
                   <div className="flex items-center gap-1.5">
-                    <IconLoader2 size={14} stroke={2.5} className="animate-spin" />
+                    <CircleNotch size={14} weight="bold" className="animate-spin" />
                     <span>Booking Session...</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5">
-                    <IconCheck size={15} stroke={2} />
+                    <Check size={15} weight="bold" />
                     <span>Confirm Booking</span>
                   </div>
                 )}
@@ -700,7 +702,7 @@ export function ClientDefenseLabClient({
 
             {/* Policy Notice */}
             <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-[2px] flex items-start gap-2.5 text-amber-200">
-              <IconAlertTriangle size={16} stroke={2} className="text-amber-400 shrink-0 mt-0.5" />
+              <Warning size={16} weight="fill" className="text-amber-400 shrink-0 mt-0.5" />
               <span>
                 Once confirmed, your statistician will reserve this slot. Ensure any cancellations or reschedule requests are submitted at least 12 hours prior to start.
               </span>
@@ -736,7 +738,7 @@ export function ClientDefenseLabClient({
               >
                 {isSubmittingReschedule ? (
                   <div className="flex items-center gap-1.5">
-                    <IconLoader2 size={14} stroke={2.5} className="animate-spin" />
+                    <CircleNotch size={14} weight="bold" className="animate-spin" />
                     <span>Processing...</span>
                   </div>
                 ) : (
@@ -782,7 +784,7 @@ export function ClientDefenseLabClient({
             </div>
 
             <div className="p-3 bg-rose-950/30 border border-rose-500/30 rounded-[2px] flex items-start gap-2.5 text-rose-200">
-              <IconAlertTriangle size={16} stroke={2} className="text-rose-400 shrink-0 mt-0.5" />
+              <Warning size={16} weight="fill" className="text-rose-400 shrink-0 mt-0.5" />
               <span>
                 <strong>12-Hour Policy Alert:</strong> If this request is submitted within 12 hours of the current appointment, the session will be marked as a late cancellation (No-Show) without refund.
               </span>

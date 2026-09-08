@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { IconLoader2 } from "@tabler/icons-react";
+import { CircleNotch } from "@phosphor-icons/react";
 import { cn } from "./utils";
 
 export const buttonVariants = cva(
@@ -89,9 +89,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {loading && (
-          <IconLoader2
+          <CircleNotch
             size={size === "sm" ? 14 : size === "lg" ? 18 : 16}
-            stroke={2.5}
+            weight="bold"
             className="animate-spin text-white/90 shrink-0"
           />
         )}

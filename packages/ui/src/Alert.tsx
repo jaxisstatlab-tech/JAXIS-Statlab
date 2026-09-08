@@ -3,12 +3,12 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import {
-  IconAlertOctagon,
-  IconAlertTriangle,
-  IconCircleCheck,
-  IconInfoCircle,
-  IconX,
-} from "@tabler/icons-react";
+  WarningOctagon,
+  Warning,
+  CheckCircle,
+  Info,
+  X,
+} from "@phosphor-icons/react";
 import { cn } from "./utils";
 
 export const alertVariants = cva(
@@ -36,12 +36,12 @@ export const alertVariants = cva(
 );
 
 const defaultIcons = {
-  default: IconInfoCircle,
-  info: IconInfoCircle,
-  success: IconCircleCheck,
-  warning: IconAlertTriangle,
-  destructive: IconAlertOctagon,
-  danger: IconAlertOctagon,
+  default: Info,
+  info: Info,
+  success: CheckCircle,
+  warning: Warning,
+  destructive: WarningOctagon,
+  danger: WarningOctagon,
 };
 
 export type AlertVariant = "default" | "info" | "success" | "warning" | "destructive" | "danger";
@@ -81,7 +81,7 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
         <div className="flex items-start gap-3">
           {showIcon && Icon && (
             <div className="shrink-0 mt-0.5">
-              <Icon size={18} stroke={2} />
+              <Icon size={18} weight="fill" />
             </div>
           )}
 
@@ -109,7 +109,7 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
               onClick={onClose}
               className="shrink-0 rounded-[2px] p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
             >
-              <IconX size={14} stroke={2} />
+              <X size={14} weight="bold" />
               <span className="sr-only">Dismiss</span>
             </button>
           )}

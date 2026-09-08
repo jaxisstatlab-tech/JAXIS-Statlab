@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { IconCheck } from "@tabler/icons-react";
+import { Check } from "@phosphor-icons/react";
 import { cn } from "./utils";
 
 export const Checkbox = React.forwardRef<
@@ -20,7 +20,7 @@ export const Checkbox = React.forwardRef<
     <CheckboxPrimitive.Indicator
       className={cn("flex items-center justify-center text-current")}
     >
-      <IconCheck size={12} stroke={3} />
+      <Check size={12} weight="bold" />
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
 ));

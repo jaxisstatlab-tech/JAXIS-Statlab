@@ -23,19 +23,19 @@ import type {
   DisputeGrounds,
 } from "@/features/disputes/schemas";
 import {
-  IconAlertTriangle,
-  IconCheck,
-  IconClock,
-  IconFileText,
-  IconGavel,
-  IconInfoCircle,
-  IconPlus,
-  IconScale,
-  IconShieldExclamation,
-  IconShieldCheck,
-  IconX,
-  IconUpload,
-} from "@tabler/icons-react";
+  Warning,
+  Check,
+  Clock,
+  FileText,
+  Gavel,
+  Info,
+  Plus,
+  Scales,
+  ShieldWarning,
+  ShieldCheck,
+  X,
+  UploadSimple,
+} from "@phosphor-icons/react";
 
 interface ClientDisputesClientProps {
   initialData?: {
@@ -205,35 +205,35 @@ export function ClientDisputesClient({
       case "OPEN":
         return (
           <Badge variant="sky" className="text-[0.688rem] font-mono flex items-center gap-1">
-            <IconClock size={13} stroke={2} />
+            <Clock size={13} weight="fill" />
             <span>New Claim</span>
           </Badge>
         );
       case "UNDER_REVIEW":
         return (
           <Badge variant="amber" className="text-[0.688rem] font-mono flex items-center gap-1">
-            <IconScale size={13} stroke={2} />
+            <Scales size={13} weight="fill" />
             <span>Under Review</span>
           </Badge>
         );
       case "RESOLVED_REFUND":
         return (
           <Badge variant="emerald" className="text-[0.688rem] font-mono flex items-center gap-1">
-            <IconCheck size={13} stroke={2} />
+            <Check size={13} weight="bold" />
             <span>Refund Approved</span>
           </Badge>
         );
       case "RESOLVED_NO_REFUND":
         return (
           <Badge variant="muted" className="text-[0.688rem] font-mono flex items-center gap-1">
-            <IconCheck size={13} stroke={2} />
+            <Check size={13} weight="bold" />
             <span>Study Upheld</span>
           </Badge>
         );
       case "CHARGEBACK":
         return (
           <Badge variant="danger" className="text-[0.688rem] font-mono flex items-center gap-1">
-            <IconAlertTriangle size={13} stroke={2} />
+            <Warning size={13} weight="fill" />
             <span>Study Halted</span>
           </Badge>
         );
@@ -255,7 +255,10 @@ export function ClientDisputesClient({
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
+    <div
+      data-portal="client"
+      className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans"
+    >
       {/* Standardized PageHeader */}
       <PageHeader
         breadcrumbs={[
@@ -272,7 +275,7 @@ export function ClientDisputesClient({
             onClick={() => handleOpenFilingModal()}
             disabled={openEligibleProjects.length === 0}
           >
-            <IconPlus size={15} stroke={2} />
+            <Plus size={15} weight="bold" />
             <span>File New Claim</span>
           </Button>
         }
@@ -295,7 +298,7 @@ export function ClientDisputesClient({
           </div>
         ) : eligibleProjects.length === 0 ? (
           <Card className="p-8 text-center text-xs text-white/40 flex flex-col items-center gap-2 bg-[#01142B] border border-white/10 rounded-[2px]">
-            <IconShieldCheck size={28} stroke={1.5} className="text-white/20" />
+            <ShieldCheck size={28} weight="fill" className="text-white/20" />
             <span>No delivered studies found. Claims can only be filed once your study deliverables are released.</span>
           </Card>
         ) : (
@@ -377,7 +380,7 @@ export function ClientDisputesClient({
           </div>
         ) : disputes.length === 0 ? (
           <div className="py-12 text-center text-xs text-white/40 flex flex-col items-center gap-2">
-            <IconCheck size={28} stroke={1.5} className="text-white/20" />
+            <Check size={28} weight="bold" className="text-white/20" />
             <span>You have no active or historical study claims.</span>
           </div>
         ) : (
@@ -466,14 +469,14 @@ export function ClientDisputesClient({
           <div className="bg-[#01142B] border border-white/15 rounded-[2px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2.5">
-                <IconShieldExclamation size={22} className="text-amber-400" />
+                <ShieldWarning size={22} weight="fill" className="text-amber-400" />
                 <h3 className="text-lg font-bold text-white">File a Study Claim</h3>
               </div>
               <button
                 onClick={() => setIsFilingModalOpen(false)}
                 className="text-white/50 hover:text-white transition-colors"
               >
-                <IconX size={20} />
+                <X size={20} weight="bold" />
               </button>
             </div>
 
@@ -555,7 +558,7 @@ export function ClientDisputesClient({
                     onClick={handleAddEvidence}
                     className="text-xs flex items-center gap-1"
                   >
-                    <IconUpload size={14} />
+                    <UploadSimple size={14} weight="bold" />
                     <span>Add Link</span>
                   </Button>
                 </div>
@@ -571,7 +574,7 @@ export function ClientDisputesClient({
                           onClick={() => handleRemoveEvidence(idx)}
                           className="text-red-400 hover:text-red-300 ml-2"
                         >
-                          <IconX size={14} />
+                          <X size={14} weight="bold" />
                         </button>
                       </div>
                     ))}
@@ -608,14 +611,14 @@ export function ClientDisputesClient({
           <div className="bg-[#01142B] border border-white/15 rounded-[2px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
-                <IconFileText size={22} className="text-sky-400" />
+                <FileText size={22} weight="fill" className="text-sky-400" />
                 <h3 className="text-base font-bold text-white">Claim Details: {selectedDispute.projectIntakeId}</h3>
               </div>
               <button
                 onClick={() => setSelectedDispute(null)}
                 className="text-white/50 hover:text-white transition-colors"
               >
-                <IconX size={20} />
+                <X size={20} weight="bold" />
               </button>
             </div>
 
@@ -673,7 +676,7 @@ export function ClientDisputesClient({
               {selectedDispute.resolutionType ? (
                 <div className="bg-[#011B38] border border-emerald-500/20 rounded-[2px] p-4 flex flex-col gap-2">
                   <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                    <IconGavel size={16} />
+                    <Gavel size={16} weight="fill" />
                     <span>CEO Decision</span>
                   </div>
                   <div className="flex justify-between text-[0.688rem] text-white/60">
@@ -686,7 +689,7 @@ export function ClientDisputesClient({
                 </div>
               ) : (
                 <div className="bg-sky-500/10 border border-sky-500/20 rounded-[2px] p-4 text-sky-300 flex items-center gap-2.5">
-                  <IconInfoCircle size={20} className="shrink-0" />
+                  <Info size={20} weight="fill" className="shrink-0" />
                   <span>Your claim is currently being investigated by our review lead and CEO. You will receive an update once a decision is made.</span>
                 </div>
               )}

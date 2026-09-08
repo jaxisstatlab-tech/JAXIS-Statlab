@@ -16,7 +16,17 @@ import {
   Pagination,
   CopyButton,
 } from "@repo/ui";
-import { IconDownload, IconFolderOff, IconFileSearch, IconPlus, IconArrowRight } from "@tabler/icons-react";
+import {
+  DownloadSimple,
+  FolderDashed,
+  MagnifyingGlass,
+  Plus,
+  ArrowRight,
+  Eye,
+  Clock,
+  CheckCircle,
+  ShieldCheck,
+} from "@phosphor-icons/react";
 import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { QuickProfileModal } from "@/features/client-profile/components/QuickProfileModal";
@@ -186,9 +196,12 @@ export function ClientProjectsListClient({
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-20 w-full animate-content-fade">
+    <div
+      data-portal="client"
+      className="flex flex-col gap-8 max-w-7xl mx-auto pb-20 w-full animate-content-fade"
+    >
       <PageHeader
-        title="My Research Projects & Active Studies"
+        title="Research Studies Desk"
         description="Track your research studies, review methodology updates, and download defense-ready statistical packages."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
@@ -201,7 +214,7 @@ export function ClientProjectsListClient({
               variant="primary"
               size="sm"
               disabled
-              className="opacity-50 cursor-wait pointer-events-none"
+              className="opacity-50 cursor-wait pointer-events-none rounded-[2px]"
             >
               <LoadingState variant="inline" label="Loading..." />
             </Button>
@@ -210,15 +223,15 @@ export function ClientProjectsListClient({
               variant="primary"
               size="sm"
               onClick={() => setIsProfileModalOpen(true)}
-              className="animate-content-fade"
+              className="animate-content-fade rounded-[2px]"
             >
               <span>Setup Profile First</span>
-              <IconArrowRight size={14} stroke={2} />
+              <ArrowRight size={14} weight="bold" />
             </Button>
           ) : (
             <Link href="/dashboard/client/projects/new" className="animate-content-fade">
-              <Button variant="primary" size="sm">
-                <IconPlus size={15} stroke={2} />
+              <Button variant="primary" size="sm" className="bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px]">
+                <Plus size={15} weight="bold" />
                 <span>New Project Intake</span>
               </Button>
             </Link>
@@ -226,13 +239,16 @@ export function ClientProjectsListClient({
         }
       />
 
-      {/* ── Top KPI Metrics Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+      {/* ── Top KPI Metrics Grid (Dashdark X Precision Standard) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 items-stretch">
         <KpiCard
           label="Total Studies"
           value={kpis.total}
           variant="default"
+          badge="ALL TIME"
+          badgeColor="gray"
           description="All client submitted research scopes"
+          icon={<Eye size={16} weight="fill" className="text-white/60" />}
           className="animate-card-reveal stagger-1"
         />
 
@@ -240,12 +256,19 @@ export function ClientProjectsListClient({
           label="Action Required"
           value={kpis.awaitingInfo}
           variant={kpis.awaitingInfo > 0 ? "orange" : "default"}
-          badge={kpis.awaitingInfo > 0 ? "CLIENT ACTION" : undefined}
+          badge={kpis.awaitingInfo > 0 ? "ACTION NEEDED" : undefined}
           badgeColor={kpis.awaitingInfo > 0 ? "orange" : "gray"}
           description={
             kpis.awaitingInfo > 0
               ? "Clarification or dataset needed"
               : "No pending information requests"
+          }
+          icon={
+            <Clock
+              size={16}
+              weight="fill"
+              className={kpis.awaitingInfo > 0 ? "text-[#FFA040]" : "text-white/60"}
+            />
           }
           className="animate-card-reveal stagger-2"
         />
@@ -254,7 +277,10 @@ export function ClientProjectsListClient({
           label="Under Evaluation"
           value={kpis.underEvaluation}
           variant="default"
+          badge="UNDER REVIEW"
+          badgeColor="sky"
           description="Methodology & pricing assessment"
+          icon={<ShieldCheck size={16} weight="fill" className="text-sky-400" />}
           className="animate-card-reveal stagger-3"
         />
 
@@ -262,7 +288,10 @@ export function ClientProjectsListClient({
           label="Active & QA"
           value={kpis.active + kpis.delivered}
           variant="default"
+          badge="ACTIVE"
+          badgeColor="emerald"
           description={`${kpis.active} running · ${kpis.delivered} delivered`}
+          icon={<CheckCircle size={16} weight="fill" className="text-emerald-400" />}
           className="animate-card-reveal stagger-4"
         />
       </div>
@@ -349,30 +378,41 @@ export function ClientProjectsListClient({
           }}
         />
 
-        {/* ── Table Container ── */}
-        <div className="p-4 sm:p-6">
-          <div className="w-full overflow-x-auto rounded-[3px] border border-white/[0.08]">
-            <table className="data-table">
-              <thead>
+        {/* ── Table Container (Dashdark X Precision Standard) ── */}
+        <div className="p-0">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-[#010D1F] border-b border-white/10">
                 <tr>
-                  <th>Research Study &amp; Intake</th>
-                  <th className="w-[140px] whitespace-nowrap">Target Deadline</th>
-                  <th className="w-[140px] whitespace-nowrap">Status</th>
-                  <th className="w-[140px] text-right whitespace-nowrap">Actions</th>
+                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[140px] whitespace-nowrap">
+                    Study ID
+                  </th>
+                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold">
+                    Research Study
+                  </th>
+                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[150px] whitespace-nowrap">
+                    Target Date
+                  </th>
+                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[160px] whitespace-nowrap">
+                    Status
+                  </th>
+                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[150px] text-right whitespace-nowrap">
+                    Actions
+                  </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-white/[0.06]">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={4} className="py-16 text-center">
+                    <td colSpan={5} className="py-16 text-center">
                       <LoadingState variant="table" label="Loading research studies..." />
                     </td>
                   </tr>
                 ) : filteredProjects.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="py-16 text-center">
+                    <td colSpan={5} className="py-16 text-center">
                       <EmptyState
-                        icon={searchQuery || statusFilter !== "ALL" ? IconFileSearch : IconFolderOff}
+                        icon={searchQuery || statusFilter !== "ALL" ? MagnifyingGlass : FolderDashed}
                         title="No Research Studies Found"
                         description={
                           searchQuery || statusFilter !== "ALL"
@@ -382,7 +422,7 @@ export function ClientProjectsListClient({
                         action={
                           !searchQuery && statusFilter === "ALL" ? (
                             <Link href="/dashboard/client/projects/new">
-                              <Button variant="primary" size="sm" className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] active:scale-[0.97] transition-transform">
+                              <Button variant="primary" size="sm" className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#B35500] active:scale-[0.97] transition-transform rounded-[2px]">
                                 + Submit Study Request →
                               </Button>
                             </Link>
@@ -395,7 +435,7 @@ export function ClientProjectsListClient({
                                 setSearchQuery("");
                                 setCurrentPage(1);
                               }}
-                              className="font-sans text-xs font-semibold px-4 py-2 active:scale-[0.97] transition-transform"
+                              className="font-sans text-xs font-semibold px-4 py-2 active:scale-[0.97] transition-transform rounded-[2px]"
                             >
                               Clear Filters
                             </Button>
@@ -411,83 +451,71 @@ export function ClientProjectsListClient({
                     return (
                       <tr
                         key={p.id}
-                        className={`group transition-colors ${
-                          isAwaiting ? "bg-amber-500/[0.03] hover:bg-amber-500/[0.06]" : ""
+                        className={`group hover:bg-white/[0.02] transition-colors ${
+                          isAwaiting ? "bg-amber-500/[0.03]" : ""
                         }`}
                       >
-                        {/* 1. Research Study & Intake */}
-                        <td className="max-w-[440px] min-w-0">
-                          <div className="flex flex-col gap-1.5 py-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <CopyButton
-                                variant="badge"
-                                value={p.intakeId}
-                                label={p.intakeId}
-                                onCopy={() =>
-                                  setToastMessage({
-                                    message: "Study ID Copied",
-                                    description: `"${p.intakeId}" has been copied to your clipboard.`,
-                                    variant: "info",
-                                  })
-                                }
-                              />
-                              <span className="font-mono text-[0.65rem] text-sky-300 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded-[2px] whitespace-nowrap">
-                                {p.files.length} {p.files.length === 1 ? "doc" : "docs"}
-                              </span>
-                              <span className="text-[0.6875rem] font-mono text-white/40 whitespace-nowrap">
-                                Submitted {new Date(p.createdAt).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })} · {new Date(p.createdAt).toLocaleTimeString("en-US", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                })}
-                              </span>
-                            </div>
+                        {/* 1. Study ID */}
+                        <td className="py-3.5 px-4 font-mono text-xs whitespace-nowrap align-middle">
+                          <CopyButton
+                            variant="badge"
+                            value={p.intakeId}
+                            label={p.intakeId}
+                            onCopy={() =>
+                              setToastMessage({
+                                message: "Study ID Copied",
+                                description: `"${p.intakeId}" has been copied to your clipboard.`,
+                                variant: "info",
+                              })
+                            }
+                          />
+                        </td>
 
+                        {/* 2. Research Study & Intake (Two-Line Hierarchy) */}
+                        <td className="py-3.5 px-4 max-w-[420px] min-w-0 align-middle">
+                          <div className="flex flex-col gap-0.5 pr-2 min-w-0">
                             <Link
                               href={`/dashboard/client/projects/${p.id}`}
-                              className="text-xs font-semibold text-white group-hover:text-[#FF9433] transition-colors leading-snug line-clamp-2"
+                              className="text-sm font-semibold text-white group-hover:text-[#FFA040] transition-colors leading-snug line-clamp-1 font-sans"
                               title={p.researchTitle}
                             >
                               {p.researchTitle}
                             </Link>
-
-                            {/* Missing Info Request Highlight */}
-                            {isAwaiting && p.missingInfoReason && (
-                              <div
-                                className="flex items-center gap-1.5 text-[0.6875rem] font-mono text-amber-300 mt-0.5 min-w-0 max-w-full"
+                            {isAwaiting && p.missingInfoReason ? (
+                              <span
+                                className="text-xs text-amber-300/90 font-sans truncate italic block min-w-0"
                                 title={`Action Required: ${p.missingInfoReason}`}
                               >
-                                <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
-                                <span className="truncate italic block min-w-0">
-                                  Action Required: {p.missingInfoReason}
-                                </span>
+                                Action Required: {p.missingInfoReason}
+                              </span>
+                            ) : (
+                              <div className="flex items-center gap-2 text-xs text-white/40 font-sans">
+                                <span>{p.client?.clientProfile?.institutionSchool || "JAXIS Statistical Research"}</span>
+                                <span>·</span>
+                                <span className="font-mono text-[11px]">{p.files.length} {p.files.length === 1 ? "doc" : "docs"}</span>
                               </div>
                             )}
                           </div>
                         </td>
 
-                        {/* 2. Target Deadline */}
-                        <td className="whitespace-nowrap">
+                        {/* 3. Target Deadline */}
+                        <td className="py-3.5 px-4 whitespace-nowrap align-middle">
                           <div className="flex flex-col gap-0.5">
-                            <span className="font-mono text-xs font-bold text-amber-400">
+                            <span className="text-sm font-sans text-white font-medium">
                               {new Date(p.deadlineRequested).toLocaleDateString("en-US", {
                                 month: "short",
                                 day: "numeric",
                                 year: "numeric",
                               })}
                             </span>
-                            <span className="font-mono text-[0.65rem] text-white/40">
-                              Requested SLA
+                            <span className="text-[11px] font-sans text-white/40">
+                              Target Date
                             </span>
                           </div>
                         </td>
 
-                        {/* 3. Status */}
-                        <td className="whitespace-nowrap">
+                        {/* 4. Status */}
+                        <td className="py-3.5 px-4 whitespace-nowrap align-middle">
                           {(() => {
                             const displayStatus = getProjectDisplayStatus(p);
                             return (
@@ -500,14 +528,14 @@ export function ClientProjectsListClient({
                           })()}
                         </td>
 
-                        {/* 4. Actions */}
-                        <td className="text-right whitespace-nowrap">
+                        {/* 5. Actions */}
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap align-middle">
                           <div className="flex items-center justify-end gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => setSelectedStudyForInspect(p)}
-                              className="font-sans text-xs font-semibold px-3 py-1.5 active:scale-[0.97] transition-transform min-h-[36px]"
+                              className="font-sans text-xs font-semibold px-3 py-1.5 active:scale-[0.97] transition-all rounded-[2px]"
                             >
                               Details
                             </Button>
@@ -515,7 +543,7 @@ export function ClientProjectsListClient({
                               <Button
                                 variant={isAwaiting ? "primary" : "secondary"}
                                 size="sm"
-                                className="font-sans text-xs font-semibold px-3 py-1.5 active:scale-[0.97] transition-transform min-h-[36px]"
+                                className="font-sans text-xs font-semibold px-3.5 py-1.5 active:scale-[0.97] transition-all rounded-[2px]"
                               >
                                 {isAwaiting ? "Resolve →" : "Open Desk →"}
                               </Button>
@@ -698,7 +726,7 @@ export function ClientProjectsListClient({
                           }}
                           className="px-4 py-2 rounded-[2px] bg-[#CC6600]/20 hover:bg-[#CC6600]/35 text-white border border-[#CC6600]/60 hover:border-[#CC6600] text-xs font-sans font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer active:scale-[0.97] min-h-[36px]"
                         >
-                          <IconDownload size={14} stroke={1.5} className="text-[#FFA040]" aria-hidden="true" />
+                          <DownloadSimple size={14} weight="bold" className="text-[#FFA040]" aria-hidden="true" />
                           <span>Download</span>
                         </button>
                       </div>
