@@ -26,7 +26,7 @@ export default async function ClientDashboardPage() {
   const initialIsProfileComplete = Boolean(
     profile && profile.institutionSchool && profile.contactNumber
   );
-  const userName = session?.user?.name || undefined;
+  const userName = session?.user?.fullName || session?.user?.name || undefined;
 
   return (
     <Suspense

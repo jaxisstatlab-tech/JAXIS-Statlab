@@ -10,7 +10,6 @@ import {
   KpiCard,
   Toast,
   LoadingState,
-  EmptyState,
   CopyButton,
 } from "@repo/ui";
 import {
@@ -26,7 +25,6 @@ import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { QuickProfileModal } from "@/features/client-profile/components/QuickProfileModal";
 import { HowToUseModal } from "@/features/client-onboarding/components/HowToUseModal";
-import { ClientWelcomeBanner } from "@/features/client-onboarding/components/ClientWelcomeBanner";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 
 const RESEARCH_STAGES = [
@@ -360,14 +358,6 @@ export function ClientDashboardClient({
         }
       />
 
-      {/* ── First-Time Onboarding Guide (When No Active Studies or Profile Incomplete) ── */}
-      {(projects.length === 0 || isProfileComplete === false) && (
-        <ClientWelcomeBanner
-          isProfileComplete={isProfileComplete}
-          onOpenProfileModal={() => setIsProfileModalOpen(true)}
-          onOpenHowToUseModal={() => setIsHowToUseModalOpen(true)}
-        />
-      )}
 
       {/* ── High-Priority Pending Quotation Alert Banner ── */}
       {pendingQuoteProjects.length > 0 && (
@@ -511,258 +501,385 @@ export function ClientDashboardClient({
 
 
       {/* ── Asymmetric 2:1 Bento Architecture (Dashdark X Precision Standard) ── */}
-      {primaryStudy && stageInfo && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch animate-card-reveal stagger-5">
-          {/* 8-Col Primary Hero: Live Research Journey & 5-Stage Stepper */}
-          <div className="lg:col-span-8 flex flex-col">
-            <Card className="p-6 sm:p-7 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-5 h-full">
-              {/* Category Micro-Label */}
-              <div className="flex items-center justify-between text-[11px] font-mono font-semibold text-white/50 tracking-wider uppercase border-b border-white/[0.06] pb-3">
-                <span className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#CC6600]" />
-                  Active Research Journey
-                </span>
-                <span className="text-white/40 font-mono text-[10px]">
-                  Stage {stageInfo.stageIndex + 1} of 5
-                </span>
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch animate-card-reveal stagger-5">
+        {/* 8-Col Primary Hero: Live Research Journey & 5-Stage Stepper */}
+        <div className="lg:col-span-8 flex flex-col">
+          <Card className="p-6 sm:p-7 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-5 h-full">
+            {primaryStudy && stageInfo ? (
+              <>
+                {/* Category Micro-Label */}
+                <div className="flex items-center justify-between text-[11px] font-mono font-semibold text-white/50 tracking-wider uppercase border-b border-white/[0.06] pb-3">
+                  <span className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#CC6600]" />
+                    Active Research Journey
+                  </span>
+                  <span className="text-white/40 font-mono text-[10px]">
+                    Stage {stageInfo.stageIndex + 1} of 5
+                  </span>
+                </div>
 
-              {/* Study Metadata & Direct Action Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-                  <div className="w-10 h-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] shrink-0">
-                    <Target size={20} weight="fill" />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <CopyButton
-                        variant="badge"
-                        value={primaryStudy.intakeId}
-                        label={primaryStudy.intakeId}
-                      />
-                      <span className="text-white/30 text-xs font-mono">·</span>
-                      <span className="text-xs font-sans text-white/50">
-                        Target: {new Date(primaryStudy.deadlineRequested).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
-                      </span>
+                {/* Study Metadata & Direct Action Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] shrink-0">
+                      <Target size={20} weight="fill" />
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold text-white font-sans truncate mt-1" title={primaryStudy.researchTitle}>
-                      {primaryStudy.researchTitle}
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
-                  <Link href={`/dashboard/client/projects/${primaryStudy.id}${stageInfo.actionPath}`}>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md"
-                    >
-                      <span>{stageInfo.actionText} →</span>
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              {/* 5-Stage Visual Stepper Container (Recessed Well L2) */}
-              <div className="bg-[#010D1F] border border-white/10 rounded-[2px] p-3.5 sm:p-4 my-auto">
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                  {RESEARCH_STAGES.map((stg, i) => {
-                    const isCompleted = i < stageInfo.stageIndex;
-                    const isCurrent = i === stageInfo.stageIndex;
-
-                    return (
-                      <div
-                        key={stg.id}
-                        className={`p-3 rounded-[2px] border transition-all flex flex-col justify-between gap-2.5 ${
-                          isCurrent
-                            ? "bg-[#011C38] border-[#CC6600]/80 shadow-md ring-1 ring-[#CC6600]/40"
-                            : isCompleted
-                            ? "bg-emerald-500/[0.04] border-emerald-500/25 text-white/80"
-                            : "bg-white/[0.01] border-white/[0.06] text-white/40"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={`w-5 h-5 rounded-full text-[10px] font-mono font-bold flex items-center justify-center ${
-                              isCurrent
-                                ? "bg-[#CC6600] text-white"
-                                : isCompleted
-                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                                : "bg-white/[0.05] text-white/40 border border-white/10"
-                            }`}
-                          >
-                            {isCompleted ? <Check size={12} weight="bold" /> : i + 1}
-                          </span>
-
-                          <span className="text-[9px] font-mono tracking-wider uppercase font-semibold">
-                            {isCompleted ? (
-                              <span className="text-emerald-400">Done</span>
-                            ) : isCurrent ? (
-                              <span className="text-[#FFA040] animate-pulse">Active</span>
-                            ) : (
-                              <span className="text-white/30">Next</span>
-                            )}
-                          </span>
-                        </div>
-
-                        <div>
-                          <h4
-                            className={`text-xs font-sans font-semibold leading-snug ${
-                              isCurrent ? "text-white" : isCompleted ? "text-white/90" : "text-white/40"
-                            }`}
-                          >
-                            {stg.title}
-                          </h4>
-                          <p className="text-[10px] font-sans text-white/50 mt-0.5 line-clamp-1">
-                            {stg.desc}
-                          </p>
-                        </div>
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <CopyButton
+                          variant="badge"
+                          value={primaryStudy.intakeId}
+                          label={primaryStudy.intakeId}
+                        />
+                        <span className="text-white/30 text-xs font-mono">·</span>
+                        <span className="text-xs font-sans text-white/50">
+                          Target: {new Date(primaryStudy.deadlineRequested).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Bottom Status Ribbon */}
-              <div className="flex items-center justify-between text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#CC6600] animate-pulse" />
-                  <span>Current Status: <strong className="text-white font-medium">{stageInfo.statusLabel}</strong></span>
-                </div>
-                <div className="flex items-center gap-4">
-                  {projects.length > 1 && (
-                    <Link
-                      href="/dashboard/client/projects"
-                      className="text-white/60 hover:text-white transition-colors font-sans text-xs font-medium"
-                    >
-                      All Studies ({projects.length}) →
-                    </Link>
-                  )}
-                  <Link
-                    href={`/dashboard/client/projects/${primaryStudy.id}`}
-                    className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium"
-                  >
-                    View Full Study Details →
-                  </Link>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* 4-Col Double-Stacked Auxiliary Intelligence Cards */}
-          <div className="lg:col-span-4 flex flex-col gap-5 sm:gap-6">
-            {/* Auxiliary Card 1: Statistical Consultation Desk */}
-            <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-[2px] bg-sky-500/10 border border-sky-500/25 flex items-center justify-center text-sky-400 shrink-0">
-                    <ChatCenteredText size={18} weight="fill" />
+                      <h3 className="text-base sm:text-lg font-bold text-white font-sans truncate mt-1" title={primaryStudy.researchTitle}>
+                        {primaryStudy.researchTitle}
+                      </h3>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white font-sans leading-snug">
-                      Statistical Consultation
-                    </h4>
-                    <span className="text-xs font-sans text-white/50">
-                      Assigned Statistical Team
+
+                  <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+                    <Link href={`/dashboard/client/projects/${primaryStudy.id}${stageInfo.actionPath}`}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md"
+                      >
+                        <span>{stageInfo.actionText} →</span>
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* 5-Stage Visual Stepper Container (Recessed Well L2) */}
+                <div className="bg-[#010D1F] border border-white/10 rounded-[2px] p-3.5 sm:p-4 my-auto">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                    {RESEARCH_STAGES.map((stg, i) => {
+                      const isCompleted = i < stageInfo.stageIndex;
+                      const isCurrent = i === stageInfo.stageIndex;
+
+                      return (
+                        <div
+                          key={stg.id}
+                          className={`p-3 rounded-[2px] border transition-all flex flex-col justify-between gap-2.5 ${
+                            isCurrent
+                              ? "bg-[#011C38] border-[#CC6600]/80 shadow-md ring-1 ring-[#CC6600]/40"
+                              : isCompleted
+                              ? "bg-emerald-500/[0.04] border-emerald-500/25 text-white/80"
+                              : "bg-white/[0.01] border-white/[0.06] text-white/40"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`w-5 h-5 rounded-full text-[10px] font-mono font-bold flex items-center justify-center ${
+                                isCurrent
+                                  ? "bg-[#CC6600] text-white"
+                                  : isCompleted
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                                  : "bg-white/[0.05] text-white/40 border border-white/10"
+                              }`}
+                            >
+                              {isCompleted ? <Check size={12} weight="bold" /> : i + 1}
+                            </span>
+
+                            <span className="text-[9px] font-mono tracking-wider uppercase font-semibold">
+                              {isCompleted ? (
+                                <span className="text-emerald-400">Done</span>
+                              ) : isCurrent ? (
+                                <span className="text-[#FFA040] animate-pulse">Active</span>
+                              ) : (
+                                <span className="text-white/30">Next</span>
+                              )}
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4
+                              className={`text-xs font-sans font-semibold leading-snug ${
+                                isCurrent ? "text-white" : isCompleted ? "text-white/90" : "text-white/40"
+                              }`}
+                            >
+                              {stg.title}
+                            </h4>
+                            <p className="text-[10px] font-sans text-white/50 mt-0.5 line-clamp-1">
+                              {stg.desc}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Bottom Status Ribbon */}
+                <div className="flex items-center justify-between text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#CC6600] animate-pulse" />
+                    <span>Current Status: <strong className="text-white font-medium">{stageInfo.statusLabel}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {projects.length > 1 && (
+                      <Link
+                        href="/dashboard/client/projects"
+                        className="text-white/60 hover:text-white transition-colors font-sans text-xs font-medium"
+                      >
+                        All Studies ({projects.length}) →
+                      </Link>
+                    )}
+                    <Link
+                      href={`/dashboard/client/projects/${primaryStudy.id}`}
+                      className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium"
+                    >
+                      View Full Study Details →
+                    </Link>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Category Micro-Label */}
+                <div className="flex items-center justify-between text-[11px] font-mono font-semibold text-white/50 tracking-wider uppercase border-b border-white/[0.06] pb-3">
+                  <span className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#CC6600]" />
+                    Active Research Journey
+                  </span>
+                  <span className="text-white/40 font-mono text-[10px]">
+                    Stage 1 of 5
+                  </span>
+                </div>
+
+                {/* Study Metadata & Direct Action Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] shrink-0">
+                      <Target size={20} weight="fill" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 font-semibold">
+                          NEW STUDY
+                        </span>
+                        <span className="text-white/30 text-xs font-mono">·</span>
+                        <span className="text-xs font-sans text-white/50">
+                          Turnaround: 2–5 days
+                        </span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold text-white font-sans truncate mt-1">
+                        {isProfileComplete === false
+                          ? "Setup Your School Profile to Begin"
+                          : "Commission Your First Research Study"}
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+                    {isProfileComplete === false ? (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => setIsProfileModalOpen(true)}
+                        className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md"
+                      >
+                        <span>1. Setup School First →</span>
+                      </Button>
+                    ) : (
+                      <Link href="/dashboard/client/projects/new">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md"
+                        >
+                          <Plus size={14} weight="bold" />
+                          <span>Start Study Request →</span>
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                {/* 5-Stage Visual Stepper Container (Recessed Well L2) */}
+                <div className="bg-[#010D1F] border border-white/10 rounded-[2px] p-3.5 sm:p-4 my-auto">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                    {RESEARCH_STAGES.map((stg, i) => {
+                      const isCurrent = i === 0;
+
+                      return (
+                        <div
+                          key={stg.id}
+                          className={`p-3 rounded-[2px] border transition-all flex flex-col justify-between gap-2.5 ${
+                            isCurrent
+                              ? "bg-[#011C38] border-[#CC6600]/80 shadow-md ring-1 ring-[#CC6600]/40"
+                              : "bg-white/[0.01] border-white/[0.06] text-white/40"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`w-5 h-5 rounded-full text-[10px] font-mono font-bold flex items-center justify-center ${
+                                isCurrent
+                                  ? "bg-[#CC6600] text-white"
+                                  : "bg-white/[0.05] text-white/40 border border-white/10"
+                              }`}
+                            >
+                              {i + 1}
+                            </span>
+
+                            <span className="text-[9px] font-mono tracking-wider uppercase font-semibold">
+                              {isCurrent ? (
+                                <span className="text-[#FFA040] animate-pulse">Active</span>
+                              ) : (
+                                <span className="text-white/30">Next</span>
+                              )}
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4
+                              className={`text-xs font-sans font-semibold leading-snug ${
+                                isCurrent ? "text-white" : "text-white/40"
+                              }`}
+                            >
+                              {stg.title}
+                            </h4>
+                            <p className="text-[10px] font-sans text-white/50 mt-0.5 line-clamp-1">
+                              {stg.desc}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Bottom Status Ribbon */}
+                <div className="flex items-center justify-between text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#CC6600] animate-pulse" />
+                    <span>
+                      Current Status:{" "}
+                      <strong className="text-white font-medium">
+                        {isProfileComplete === false
+                          ? "Profile Setup Required"
+                          : "Ready for Intake Submission"}
+                      </strong>
                     </span>
                   </div>
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsHowToUseModalOpen(true)}
+                      className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium cursor-pointer"
+                    >
+                      How It Works Guide →
+                    </button>
+                  </div>
                 </div>
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[2px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-semibold shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  ACTIVE
-                </span>
-              </div>
+              </>
+            )}
+          </Card>
+        </div>
 
-              <p className="text-xs text-white/70 font-sans leading-relaxed">
-                {primaryStudy.masterStatus === "ACTIVE" ||
+        {/* 4-Col Double-Stacked Auxiliary Intelligence Cards */}
+        <div className="lg:col-span-4 flex flex-col gap-5 sm:gap-6">
+          {/* Auxiliary Card 1: Statistical Consultation Desk */}
+          <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-[2px] bg-sky-500/10 border border-sky-500/25 flex items-center justify-center text-sky-400 shrink-0">
+                  <ChatCenteredText size={18} weight="fill" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white font-sans leading-snug">
+                    Statistical Consultation
+                  </h4>
+                  <span className="text-xs font-sans text-white/50">
+                    Assigned Statistical Team
+                  </span>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[2px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-semibold shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                ACTIVE
+              </span>
+            </div>
+
+            <p className="text-xs text-white/70 font-sans leading-relaxed">
+              {primaryStudy &&
+              (primaryStudy.masterStatus === "ACTIVE" ||
                 primaryStudy.masterStatus === "EXPERT_ASSIGNED" ||
                 primaryStudy.masterStatus === "IN_PROGRESS" ||
-                primaryStudy.masterStatus === "FOR_QA"
-                  ? "Your assigned statistician is actively computing model estimates and QA verification."
-                  : "Our triage team reviews your study specifications and methodological requirements."}
-              </p>
+                primaryStudy.masterStatus === "FOR_QA")
+                ? "Your assigned statistician is actively computing model estimates and QA verification."
+                : "Our triage team reviews your study specifications and methodological requirements."}
+            </p>
 
-              <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
-                <span className="text-xs font-mono text-white/40">
-                  Turnaround: 2–4 hrs
-                </span>
-                <Link href={`/dashboard/client/messages?projectId=${primaryStudy.id}`}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs font-sans font-semibold py-1.5 px-3 h-auto border-white/15 hover:bg-white/[0.06] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5"
-                  >
-                    <span>Message Desk →</span>
-                  </Button>
-                </Link>
-              </div>
-            </Card>
-
-            {/* Auxiliary Card 2: DefenseLab Oral Defense Simulator */}
-            <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] shrink-0">
-                    <GraduationCap size={18} weight="fill" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white font-sans leading-snug">
-                      DefenseLab Practice
-                    </h4>
-                    <span className="text-xs font-sans text-white/50">
-                      Oral Defense Simulator
-                    </span>
-                  </div>
-                </div>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] bg-white/[0.06] border border-white/10 text-white/70 text-[10px] font-mono font-semibold shrink-0">
-                  READY
-                </span>
-              </div>
-
-              <p className="text-xs text-white/70 font-sans leading-relaxed">
-                Practice defense questions on methodology, sample formulas, and test interpretation before facing your panel.
-              </p>
-
-              <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
-                <span className="text-xs font-mono text-white/40">
-                  5 Mock Questions
-                </span>
-                <Link href="/dashboard/client/defenselab">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="text-xs font-sans font-semibold py-1.5 px-3 h-auto bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md"
-                  >
-                    <span>Launch Simulator →</span>
-                  </Button>
-                </Link>
-              </div>
-            </Card>
-          </div>
-        </div>
-      )}
-
-      {/* ── Empty State if Client Has No Active Research Studies ── */}
-      {!primaryStudy && !isLoading && (
-        <Card className="p-10 sm:p-14 text-center border border-white/10 bg-[#01142B] rounded-[2px] shadow-xl animate-card-reveal stagger-5">
-          <EmptyState
-            title="No Active Research Studies"
-            description="Submit your thesis, dissertation, or statistical research specifications to begin working with your assigned statistical team."
-            action={
-              <Link href="/dashboard/client/projects/new">
+            <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
+              <span className="text-xs font-mono text-white/40">
+                Turnaround: 2–4 hrs
+              </span>
+              <Link
+                href={
+                  primaryStudy
+                    ? `/dashboard/client/messages?projectId=${primaryStudy.id}`
+                    : "/dashboard/client/messages"
+                }
+              >
                 <Button
-                  variant="primary"
-                  size="md"
-                  className="font-sans text-xs sm:text-sm font-bold tracking-wider px-5 py-2.5 bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] shadow-lg active:scale-[0.97] transition-all"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs font-sans font-semibold py-1.5 px-3 h-auto border-white/15 hover:bg-white/[0.06] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5"
                 >
-                  + Submit Your First Study Request →
+                  <span>Message Desk →</span>
                 </Button>
               </Link>
-            }
-          />
-        </Card>
-      )}
+            </div>
+          </Card>
+
+          {/* Auxiliary Card 2: DefenseLab Oral Defense Simulator */}
+          <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] shrink-0">
+                  <GraduationCap size={18} weight="fill" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white font-sans leading-snug">
+                    DefenseLab Practice
+                  </h4>
+                  <span className="text-xs font-sans text-white/50">
+                    Oral Defense Simulator
+                  </span>
+                </div>
+              </div>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] bg-white/[0.06] border border-white/10 text-white/70 text-[10px] font-mono font-semibold shrink-0">
+                READY
+              </span>
+            </div>
+
+            <p className="text-xs text-white/70 font-sans leading-relaxed">
+              Practice defense questions on methodology, sample formulas, and test interpretation before facing your panel.
+            </p>
+
+            <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
+              <span className="text-xs font-mono text-white/40">
+                5 Mock Questions
+              </span>
+              <Link href="/dashboard/client/defenselab">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="text-xs font-sans font-semibold py-1.5 px-3 h-auto bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md"
+                >
+                  <span>Launch Simulator →</span>
+                </Button>
+              </Link>
+            </div>
+          </Card>
+        </div>
+      </div>
 
       {/* ── Initial Page Loader if Data is Fetching ── */}
       {isLoading && projects.length === 0 && (
