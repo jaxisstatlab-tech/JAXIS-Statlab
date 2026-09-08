@@ -1,4 +1,5 @@
 export type EmailTemplateName =
+  | "PasswordReset"
   | "NewIntake"
   | "SOWReady"
   | "SOWSigned"
@@ -27,6 +28,7 @@ export interface EmailRenderResult {
 }
 
 export const EMAIL_SUBJECTS: Record<EmailTemplateName, (data: any) => string> = {
+  PasswordReset: () => "Reset Your JAXIS StatLab Password",
   NewIntake: (d) => `New Study Intake Received: ${d.intakeId || "Study"} — ${d.researchTitle || "Review Required"}`,
   SOWReady: (d) => `Scope of Work Ready for Review: ${d.intakeId || "Study"}`,
   SOWSigned: (d) => `Scope of Work Signed & Study Confirmed: ${d.intakeId || "Study"}`,

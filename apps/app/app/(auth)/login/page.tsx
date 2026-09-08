@@ -20,6 +20,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const isRegistered = searchParams.get("registered") === "true";
+  const isResetSuccess = searchParams.get("reset") === "true";
 
   const [email, setEmail] = useState("admin@jaxis.dev");
   const [password, setPassword] = useState("JaxisAdmin2026!");
@@ -110,6 +111,11 @@ function LoginForm() {
       {isRegistered && (
         <Alert variant="success" title="Account Created">
           Your account is ready. Sign in with your credentials.
+        </Alert>
+      )}
+      {isResetSuccess && (
+        <Alert variant="success" title="Password Updated">
+          Your password has been reset successfully. Please sign in with your new credentials.
         </Alert>
       )}
 
@@ -226,16 +232,12 @@ function LoginForm() {
             />
             <span>Remember session</span>
           </label>
-          <a
-            href="#forgot-password"
-            onClick={(e) => {
-              e.preventDefault();
-              alert("Password reset is managed by JAXIS System Admin in development.");
-            }}
+          <Link
+            href="/forgot-password"
             className="text-[#38BDF8] hover:text-[#7DD3FC] hover:underline font-sans text-xs transition-colors cursor-pointer select-none"
           >
             Forgot your password?
-          </a>
+          </Link>
         </div>
 
         <div style={{ paddingTop: "0.25rem" }}>

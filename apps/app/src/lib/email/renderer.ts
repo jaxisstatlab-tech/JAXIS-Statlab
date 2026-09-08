@@ -152,6 +152,23 @@ export function renderEmailTemplate(
   let metaRows: Array<{ label: string; value: string }> = [];
 
   switch (template) {
+    case "PasswordReset":
+      badgeText = "SECURITY RECOVERY";
+      badgeColor = "#CC6600";
+      bodyHtml = `
+        <p>We received a request to reset the password for your JAXIS StatLab account (<strong>${data.email || name}</strong>).</p>
+        <p>Click the button below to choose a new password. For your security, this recovery link will expire in <strong>60 minutes</strong>.</p>
+        <p style="margin-top: 18px; font-size: 12px; color: rgba(255, 255, 255, 0.5);">If you did not make this request, you can safely ignore this email. Your password will remain unchanged.</p>
+      `;
+      metaRows = [
+        { label: "Account", value: data.email || name },
+        { label: "Valid For", value: "60 Minutes" },
+        { label: "Security", value: "Single-Use Recovery Link" },
+      ];
+      ctaText = "Reset Password";
+      ctaUrl = `${appUrl}/reset-password?token=${data.resetToken}`;
+      break;
+
     case "NewIntake":
       badgeText = "NEW STUDY INTAKE";
       badgeColor = "#38BDF8";

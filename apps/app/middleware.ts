@@ -24,7 +24,9 @@ export default auth((req) => {
 
   const isAuthRoute =
     nextUrl.pathname.startsWith("/login") ||
-    nextUrl.pathname.startsWith("/register");
+    nextUrl.pathname.startsWith("/register") ||
+    nextUrl.pathname.startsWith("/forgot-password") ||
+    nextUrl.pathname.startsWith("/reset-password");
   const isDashboardRoute = nextUrl.pathname.startsWith("/dashboard");
 
   // 1. If already logged in and visiting /login or /register -> redirect to role dashboard
@@ -87,5 +89,7 @@ export const config = {
     "/dashboard/:path*",
     "/login",
     "/register",
+    "/forgot-password",
+    "/reset-password",
   ],
 };

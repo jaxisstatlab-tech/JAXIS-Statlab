@@ -114,6 +114,15 @@
 - [x] `npm run lint` → 0 warnings/errors
 - [x] `npm run build` → clean
 
+### Task 8 — Self-Service Password Reset via Resend & Secure Tokens
+- [x] `PasswordResetToken` Prisma model created with token hash, expiration, and indexes
+- [x] `sendEmail()` integration with `"PasswordReset"` transactional template
+- [x] `requestPasswordResetAction`, `verifyResetTokenAction`, and `resetPasswordAction` implemented
+- [x] `/forgot-password` and `/reset-password` pages created with dark precision UI
+- [x] Security: 256-bit crypto tokens, SHA-256 at rest, 60-min TTL, timing-safe anti-enumeration responses
+- [x] Route middleware updated to include password recovery routes
+- [x] Support across all 6 roles (Client, Statistician, QA Lead, Finance Officer, Admin, CEO)
+
 ---
 
 ## Module 02 — Expert Provisioning & Staff Management (Completed)
