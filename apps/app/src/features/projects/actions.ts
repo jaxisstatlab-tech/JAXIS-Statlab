@@ -483,6 +483,92 @@ const fetchCachedProjectsDb = unstable_cache(
 );
 
 /**
+ * Cached single project detail retrieval.
+ * In-memory fast path for Server Component preloading and SPA detail navigation.
+ * Revalidates every 30 seconds or immediately when CACHE_TAGS.PROJECTS is invalidated.
+ */
+const fetchCachedProjectDetailDb = unstable_cache(
+  async (idOrIntakeId: string) => {
+    return withDbTimeout(
+      db.project.findFirst({
+        where: {
+          OR: [{ id: idOrIntakeId }, { intakeId: idOrIntakeId }],
+        },
+        select: {
+          id: true,
+          intakeId: true,
+          clientId: true,
+          researchTitle: true,
+          researchQuestions: true,
+          researchObjectives: true,
+          hypotheses: true,
+          deadlineRequested: true,
+          chapters13: true,
+          questionnaire: true,
+          masterStatus: true,
+          packageName: true,
+          missingInfoReason: true,
+          deliveredAt: true,
+          filesPurgeAt: true,
+          filesPurged: true,
+          hasActiveDispute: true,
+          hasPendingRefund: true,
+          createdAt: true,
+          updatedAt: true,
+          client: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              clientProfile: {
+                select: {
+                  institutionSchool: true,
+                  academicProgram: true,
+                  contactNumber: true,
+                  region: true,
+                },
+              },
+            },
+          },
+          files: {
+            select: {
+              id: true,
+              projectId: true,
+              fileName: true,
+              filePath: true,
+              fileType: true,
+              fileCategory: true,
+              uploadedAt: true,
+            },
+          },
+          payments: {
+            select: {
+              id: true,
+              amountSubmitted: true,
+              paymentStatus: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: "desc" },
+          },
+          quotations: {
+            select: {
+              id: true,
+              totalAmount: true,
+              downpaymentRequired: true,
+              status: true,
+            },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+        },
+      })
+    );
+  },
+  ["cached-project-detail-single"],
+  { revalidate: 30, tags: [CACHE_TAGS.PROJECTS] }
+);
+
+/**
  * 2. Get role-scoped list of projects.
  * - CLIENT: sees only their own projects (using indexed clientId lookup).
  * - ADMIN / CEO: sees all projects.
@@ -613,80 +699,7 @@ export async function getProjectById(
   }
 
   try {
-    const project = await withDbTimeout(
-      db.project.findFirst({
-        where: {
-          OR: [{ id }, { intakeId: id }],
-        },
-        select: {
-          id: true,
-          intakeId: true,
-          clientId: true,
-          researchTitle: true,
-          researchQuestions: true,
-          researchObjectives: true,
-          hypotheses: true,
-          deadlineRequested: true,
-          chapters13: true,
-          questionnaire: true,
-          masterStatus: true,
-          packageName: true,
-          missingInfoReason: true,
-          deliveredAt: true,
-          filesPurgeAt: true,
-          filesPurged: true,
-          hasActiveDispute: true,
-          hasPendingRefund: true,
-          createdAt: true,
-          updatedAt: true,
-          client: {
-            select: {
-              id: true,
-              fullName: true,
-              email: true,
-              clientProfile: {
-                select: {
-                  institutionSchool: true,
-                  academicProgram: true,
-                  contactNumber: true,
-                  region: true,
-                },
-              },
-            },
-          },
-          files: {
-            select: {
-              id: true,
-              projectId: true,
-              fileName: true,
-              filePath: true,
-              fileType: true,
-              fileCategory: true,
-              uploadedAt: true,
-            },
-          },
-          payments: {
-            select: {
-              id: true,
-              amountSubmitted: true,
-              paymentStatus: true,
-              createdAt: true,
-            },
-            orderBy: { createdAt: "desc" },
-          },
-          quotations: {
-            select: {
-              id: true,
-              totalAmount: true,
-              downpaymentRequired: true,
-              status: true,
-            },
-            orderBy: { createdAt: "desc" },
-            take: 1,
-          },
-        },
-      })
-    );
+    const project = await fetchCachedProjectDetailDb(id);
 
     if (!project) {
       return {

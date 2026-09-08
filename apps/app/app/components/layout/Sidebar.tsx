@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -48,9 +48,9 @@ import {
   ShieldWarning,
   PaperPlaneRight,
   Gavel,
-  MagnifyingGlass,
   CaretLeft,
   CaretRight,
+  CaretDown,
   User,
   GraduationCap,
   SignOut,
@@ -568,15 +568,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
   className = "",
   isOpen = false,
   onClose,
-  isCollapsed = false,
+  isCollapsed: propIsCollapsed = false,
   onToggleCollapse,
 }) => {
   const pathname = usePathname();
   const router = useRouter();
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    setIsDesktop(media.matches);
+    const listener = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    media.addEventListener("change", listener);
+    return () => media.removeEventListener("change", listener);
+  }, []);
+
+  // Collapse mode is strictly for desktop viewports (>= 1024px).
+  // Mobile drawer is ALWAYS full-width expanded.
+  const isCollapsed = isDesktop && propIsCollapsed;
+
   const [pendingHref, setPendingHref] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isProfileExpanded, setIsProfileExpanded] = useState<boolean>(false);
+  const profileContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close inline profile dropdown on click outside
+  useEffect(() => {
+    if (!isProfileExpanded) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        profileContainerRef.current &&
+        !profileContainerRef.current.contains(e.target as Node)
+      ) {
+        setIsProfileExpanded(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isProfileExpanded]);
+
+  // Close profile dropdown when navigating or when sidebar collapses
+  useEffect(() => {
+    setIsProfileExpanded(false);
+  }, [pathname, isCollapsed]);
 
   const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(
     initialUnreadMessagesCount ?? 0
@@ -643,32 +677,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     };
   }, [refreshUnreadCount]);
 
-  // Keyboard shortcut: "/" to focus search (and expand sidebar if collapsed), "Esc" to blur/clear
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.key === "/" &&
-        !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)
-      ) {
-        e.preventDefault();
-        if (isCollapsed && onToggleCollapse) {
-          onToggleCollapse();
-        }
-        setTimeout(() => {
-          searchInputRef.current?.focus();
-        }, 60);
-      } else if (
-        e.key === "Escape" &&
-        document.activeElement === searchInputRef.current
-      ) {
-        setSearchQuery("");
-        searchInputRef.current?.blur();
-      }
-    };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isCollapsed, onToggleCollapse]);
 
   // Reset pending state once navigation completes or URL matches target
   useEffect(() => {
@@ -763,19 +772,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }));
   }
 
-  // Live filter groups when user types in sidebar search box
-  const filteredNavGroups = useMemo(() => {
-    if (!searchQuery.trim()) return navGroups;
-    const q = searchQuery.toLowerCase().trim();
-    return navGroups
-      .map((group) => ({
-        ...group,
-        items: group.items.filter((item) =>
-          item.label.toLowerCase().includes(q)
-        ),
-      }))
-      .filter((group) => group.items.length > 0);
-  }, [navGroups, searchQuery]);
+  const filteredNavGroups = navGroups;
 
   return (
     <aside
@@ -783,164 +780,127 @@ export const Sidebar: React.FC<SidebarProps> = ({
         fixed lg:static inset-y-0 left-0 z-50 lg:z-20
         h-full max-h-full bg-[#010114] border-r border-white/[0.08] flex flex-col justify-between
         select-none flex-shrink-0 overflow-hidden
-        transition-[width,transform] duration-300 ease-[cubic-bezier(0.2,0,0,1)] shadow-2xl lg:shadow-none
-        ${isCollapsed ? "lg:w-[5rem] lg:min-w-[5rem] lg:max-w-[5rem]" : "lg:w-[17.5rem] lg:min-w-[17.5rem] lg:max-w-[17.5rem]"}
-        w-[18rem]
+        transition-transform duration-300 ease-in-out lg:transition-none shadow-2xl lg:shadow-none
+        w-[18.5rem] lg:w-full
         ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         ${className}
       `}
     >
       {/* Top Header & Navigation Container */}
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-        {/* ── 1. Header (Logo + Title + Opposing Caret Toggle < >) ── */}
-        {isCollapsed ? (
-          <div className="p-3.5 flex flex-col items-center justify-center border-b border-white/[0.08] shrink-0 gap-2.5">
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              className="flex items-center justify-center p-1 rounded-[2px] hover:bg-white/[0.08] transition-colors cursor-pointer group"
-              title="Expand sidebar"
-            >
-              <Image
-                src="/jaxislogo.png"
-                alt="JAXIS Logo"
-                width={24}
-                height={24}
-                className="h-6 w-auto transition-transform group-hover:scale-110 shrink-0"
-                priority
-              />
-            </button>
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              className="p-1 rounded-[2px] text-white/40 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
-              title="Expand sidebar"
-              aria-label="Expand sidebar"
-            >
-              <CaretRight size={13} weight="bold" />
-            </button>
-          </div>
-        ) : (
-          <div className="px-4 py-4 sm:px-5 flex items-center justify-between border-b border-white/[0.08] shrink-0">
-            <Link href="/dashboard" className="flex items-center gap-2.5 group">
-              <Image
-                src="/jaxislogo.png"
-                alt="JAXIS Logo"
-                width={24}
-                height={24}
-                className="h-6 w-auto transition-transform group-hover:scale-105 shrink-0"
-                priority
-              />
-              <div className="flex items-center gap-1.5 font-sans shrink-0">
-                <span className="font-extrabold text-sm tracking-wider text-white">JAXIS</span>
-                <span className="font-extrabold text-sm tracking-wider text-[#CC6600]">STATLAB</span>
-                <span className="hidden sm:inline-flex items-center text-[0.625rem] font-sans uppercase px-1.5 py-0.2 rounded-[2px] bg-white/[0.08] border border-white/15 text-white/60 font-semibold tracking-wider ml-0.5">
-                  Studio
-                </span>
-              </div>
-            </Link>
-
-            <div className="flex items-center gap-1">
-              {/* Desktop Collapse Opposing Carets Toggle (< >) */}
+        {/* ── 1. Header (Logo + Title + Single Caret Collapse Toggle) ── */}
+        <div className="h-16 flex items-center border-b border-white/[0.08] shrink-0 overflow-hidden px-3.5 justify-between">
+          <div className="flex items-center min-w-0">
+            {/* Logo: Anchored at center x = 34px (px-3.5 [14px] + w-10/2 [20px] = 34px) */}
+            {isCollapsed ? (
               <button
                 type="button"
                 onClick={onToggleCollapse}
-                className="hidden lg:flex items-center justify-center p-1.5 rounded-[2px] text-white/40 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer border border-transparent hover:border-white/10"
-                aria-label="Collapse sidebar"
-                title="Collapse sidebar"
+                className="w-10 h-10 flex items-center justify-center rounded-[2px] hover:bg-white/[0.06] transition-colors cursor-pointer group active:scale-95 outline-none shrink-0"
+                aria-label="Expand sidebar"
+                title="Expand sidebar (Ctrl+B)"
               >
-                <div className="flex items-center -space-x-1">
-                  <CaretLeft size={11} weight="bold" />
-                  <CaretRight size={11} weight="bold" />
-                </div>
+                <Image
+                  src="/jaxislogo.png"
+                  alt="JAXIS Logo"
+                  width={24}
+                  height={24}
+                  className="h-6 w-auto transition-transform group-hover:scale-110 shrink-0"
+                  priority
+                />
               </button>
+            ) : (
+              <Link
+                href="/dashboard"
+                className="w-10 h-10 flex items-center justify-center rounded-[2px] hover:bg-white/[0.06] transition-colors cursor-pointer group active:scale-95 outline-none shrink-0"
+                title="JAXIS StatLab Studio"
+              >
+                <Image
+                  src="/jaxislogo.png"
+                  alt="JAXIS Logo"
+                  width={24}
+                  height={24}
+                  className="h-6 w-auto transition-transform group-hover:scale-105 shrink-0"
+                  priority
+                />
+              </Link>
+            )}
 
-              {/* Mobile Drawer Close Button */}
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex lg:hidden p-1.5 rounded-[2px] text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
-                aria-label="Close navigation drawer"
-              >
-                <X size={18} weight="bold" />
-              </button>
+            {/* Brand Title: Smoothly fades in/out with no layout jump or text wrapping */}
+            <div
+              className={`flex items-center gap-1 font-sans whitespace-nowrap overflow-hidden transition-all duration-200 ${
+                isCollapsed ? "max-w-0 opacity-0 pointer-events-none ml-0" : "max-w-[200px] opacity-100 ml-1.5"
+              }`}
+            >
+              <span className="font-extrabold text-sm tracking-wider text-white">JAXIS</span>
+              <span className="font-extrabold text-sm tracking-wider text-[#CC6600]">STATLAB</span>
+              <span className="inline-flex items-center text-[0.625rem] font-sans uppercase px-1.5 py-0.2 rounded-[2px] bg-white/[0.08] border border-white/15 text-white/60 font-semibold tracking-wider ml-0.5">
+                Studio
+              </span>
             </div>
           </div>
-        )}
 
-        {/* ── 2. Integrated Search Input (Dashdark X Standard) ── */}
-        {isCollapsed ? (
-          <div className="flex justify-center py-2.5 shrink-0">
+          {/* Desktop Caret & Mobile Close Buttons */}
+          <div
+            className={`flex items-center gap-1 shrink-0 transition-all duration-200 ${
+              isCollapsed ? "w-0 opacity-0 pointer-events-none overflow-hidden" : "w-auto opacity-100"
+            }`}
+          >
             <button
               type="button"
-              onClick={() => {
-                if (onToggleCollapse) onToggleCollapse();
-                setTimeout(() => searchInputRef.current?.focus(), 100);
-              }}
-              className="h-9 w-9 rounded-[2px] bg-[#010D1F] border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/20 transition-colors cursor-pointer"
-              title="Search (Press / or click to expand)"
+              onClick={onToggleCollapse}
+              className="hidden lg:flex items-center justify-center p-1.5 text-white/50 hover:text-[#FFA040] transition-colors duration-150 cursor-pointer group active:scale-90 outline-none"
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar (Ctrl+B)"
             >
-              <MagnifyingGlass size={14} weight="bold" />
+              <CaretLeft size={18} weight="bold" className="group-hover:-translate-x-0.5 transition-transform" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex lg:hidden p-1.5 rounded-[2px] text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+              aria-label="Close navigation drawer"
+            >
+              <X size={18} weight="bold" />
             </button>
           </div>
-        ) : (
-          <div className="px-3.5 pt-3 pb-1 shrink-0">
-            <div className="relative flex items-center">
-              <MagnifyingGlass
-                size={14}
-                weight="bold"
-                className="absolute left-2.5 text-white/40 pointer-events-none"
-              />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search for..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-8 pl-8 pr-7 bg-[#010D1F] border border-white/10 rounded-[2px] text-xs font-sans text-white placeholder:text-white/30 focus:outline-none focus:border-[#CC6600]/70 transition-colors"
-              />
-              {searchQuery ? (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2 text-white/40 hover:text-white p-0.5 cursor-pointer"
-                  title="Clear search"
-                >
-                  <X size={12} weight="bold" />
-                </button>
-              ) : (
-                <kbd className="absolute right-2 text-[10px] font-mono px-1 py-0.2 rounded bg-white/[0.06] text-white/40 border border-white/10 select-none">
-                  /
-                </kbd>
-              )}
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* ── 3. Navigation Links List ── */}
-        <div className="p-3 sm:p-3.5 flex flex-col gap-4 overflow-y-auto flex-1 scrollbar-thin">
+        <div className="p-3.5 flex flex-col gap-4 overflow-y-auto flex-1 scrollbar-thin">
           <nav aria-label="Sidebar navigation" className="flex flex-col gap-3">
             {filteredNavGroups.map((group, gIdx) => (
               <div key={gIdx} className="flex flex-col gap-0.5">
-                {isCollapsed ? (
-                  gIdx > 0 && <div className="my-1.5 border-t border-white/[0.08] mx-2" />
-                ) : (
-                  <span className="text-[10px] font-sans font-semibold tracking-wider text-white/40 px-3 uppercase mb-1 mt-1 select-none">
+                <div
+                  className={`overflow-hidden transition-all duration-200 ${
+                    isCollapsed ? "h-0 opacity-0 my-0 pointer-events-none" : "h-6 opacity-100 my-1 px-1 flex items-center"
+                  }`}
+                >
+                  <span className="text-[10px] font-mono font-medium tracking-widest text-white/35 uppercase select-none whitespace-nowrap">
                     {group.groupTitle}
                   </span>
-                )}
+                </div>
 
                 {group.items.map((item) => {
-                  const isActive =
-                    pathname === item.href ||
-                    (item.href !== "/dashboard" &&
-                      item.href !== "/dashboard/admin" &&
-                      item.href !== "/dashboard/ceo" &&
-                      item.href !== "/dashboard/client" &&
-                      item.href !== "/dashboard/statistician" &&
-                      item.href !== "/dashboard/qa" &&
-                      item.href !== "/dashboard/finance" &&
-                      pathname.startsWith(item.href + "/"));
+                  const isExact = pathname === item.href;
+                  const isChild =
+                    item.href !== "/dashboard" &&
+                    item.href !== "/dashboard/admin" &&
+                    item.href !== "/dashboard/ceo" &&
+                    item.href !== "/dashboard/client" &&
+                    item.href !== "/dashboard/statistician" &&
+                    item.href !== "/dashboard/qa" &&
+                    item.href !== "/dashboard/finance" &&
+                    pathname.startsWith(item.href + "/");
+
+                  // Special match: /dashboard/client/projects matches My Studies (/dashboard/client)
+                  const isClientProjectsMatch =
+                    item.href === "/dashboard/client" &&
+                    pathname.startsWith("/dashboard/client/projects") &&
+                    !pathname.startsWith("/dashboard/client/projects/new");
+
+                  const isActive = isExact || isChild || isClientProjectsMatch;
 
                   const isPendingActive =
                     pendingHref !== null &&
@@ -958,35 +918,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   const isDisabled = Boolean(item.disabled);
 
                   if (isDisabled) {
-                    if (isCollapsed) {
-                      return (
-                        <div
-                          key={item.href + item.label}
-                          className="flex items-center justify-center h-10 w-10 mx-auto rounded-[2px] opacity-30 cursor-not-allowed text-white/40"
-                          title={`${item.label} (Coming Soon)`}
-                        >
-                          {item.icon}
-                        </div>
-                      );
-                    }
-
                     return (
                       <div
                         key={item.href + item.label}
-                        className="flex items-center justify-between px-3 py-1.5 text-xs rounded-[2px] select-none opacity-40 cursor-not-allowed border-l-2 border-transparent"
+                        className="w-full h-10 flex items-center text-xs rounded-[2px] select-none opacity-40 cursor-not-allowed overflow-hidden border border-transparent"
                         title={`${item.label} (Under Active Development)`}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
-                          <span className="text-white/30 flex-shrink-0">
+                        <div className="w-10 h-10 shrink-0 flex items-center justify-center">
+                          <span className="text-white/30 flex-shrink-0 w-5 h-5 flex items-center justify-center">
                             {item.icon}
                           </span>
+                        </div>
+                        <div
+                          className={`flex items-center justify-between flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
+                            isCollapsed
+                              ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0"
+                              : "max-w-[220px] opacity-100 ml-1.5 pr-2"
+                          }`}
+                        >
                           <span className="font-sans font-normal text-white/40 text-[0.8125rem] truncate">
                             {item.label}
                           </span>
+                          <span className="text-[10px] font-sans px-1.5 py-0.5 rounded-[2px] border font-medium bg-white/[0.04] text-white/30 border-white/[0.08] shrink-0 ml-auto">
+                            {item.badge || "SOON"}
+                          </span>
                         </div>
-                        <span className="text-[10px] font-sans px-1.5 py-0.5 rounded-[2px] border font-medium bg-white/[0.04] text-white/30 border-white/[0.08]">
-                          {item.badge || "SOON"}
-                        </span>
                       </div>
                     );
                   }
@@ -995,43 +951,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     item.label === "Messages" || item.href.endsWith("/messages");
                   const hasNewMessages = isMessagesLink && unreadMessagesCount > 0;
 
-                  // Collapsed Icon Rail Link
-                  if (isCollapsed) {
-                    return (
-                      <Link
-                        key={`${item.href}-${item.label}`}
-                        href={item.href}
-                        prefetch={true}
-                        onMouseEnter={() => router.prefetch(item.href)}
-                        onClick={(e) => handleNavClick(e, item.href)}
-                        className={`relative flex items-center justify-center h-10 w-10 mx-auto rounded-[2px] transition-all duration-150 group border ${
-                          effectivelyActive
-                            ? "bg-[#CC6600]/15 text-[#FFA040] border-[#CC6600]/40 shadow-sm"
-                            : hasNewMessages
-                            ? "border-[#CC6600]/40 bg-[#CC6600]/[0.08] text-[#FFA040]"
-                            : "border-transparent text-white/50 hover:text-white hover:bg-white/[0.06]"
-                        }`}
-                        title={`${item.label}${item.count ? ` (${item.count})` : ""}${hasNewMessages ? ` (${unreadMessagesCount} new)` : ""}`}
-                      >
-                        <span className="flex-shrink-0">
-                          {item.icon}
-                        </span>
-                        {hasNewMessages && (
-                          <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-80" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#CC6600]" />
-                          </span>
-                        )}
-                        {!hasNewMessages && item.count !== undefined && item.count > 0 && (
-                          <span className="absolute -top-1 -right-1 min-w-[15px] h-3.5 px-0.5 rounded-[2px] bg-white/10 text-white font-mono text-[9px] font-bold flex items-center justify-center border border-white/20">
-                            {item.count}
-                          </span>
-                        )}
-                      </Link>
-                    );
-                  }
-
-                  // Expanded Nav Item Link (Icon + Label + Chevron >)
                   return (
                     <Link
                       key={`${item.href}-${item.label}`}
@@ -1039,30 +958,69 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       prefetch={true}
                       onMouseEnter={() => router.prefetch(item.href)}
                       onClick={(e) => handleNavClick(e, item.href)}
-                      className={`flex items-center justify-between px-3 py-2 text-xs font-medium rounded-[2px] transition-all duration-150 ease-out group border-l-2 active:scale-[0.98] ${
+                      className={`relative flex items-center h-10 w-full rounded-[2px] transition-all duration-150 ease-out group overflow-hidden active:scale-[0.98] border ${
                         effectivelyActive
-                          ? "bg-[#CC6600]/12 text-white font-semibold border-[#CC6600]"
+                          ? "bg-[#CC6600]/12 text-white font-medium border-[#CC6600]/30 shadow-sm"
                           : hasNewMessages
-                          ? "border-[#CC6600] bg-[#CC6600]/[0.08] text-white hover:bg-[#CC6600]/[0.14]"
-                          : "border-transparent text-white/65 hover:text-white hover:bg-white/[0.04]"
+                          ? "border border-[#CC6600]/30 bg-[#CC6600]/[0.08] text-white hover:bg-[#CC6600]/[0.14]"
+                          : "border border-transparent text-white/65 hover:text-white hover:bg-white/[0.05]"
                       }`}
+                      title={
+                        isCollapsed
+                          ? `${item.label}${item.count ? ` (${item.count})` : ""}${hasNewMessages ? ` (${unreadMessagesCount} new)` : ""}`
+                          : undefined
+                      }
                     >
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                      {/* Precision Vertical Accent Bar */}
+                      {effectivelyActive && (
                         <span
+                          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-[2px] bg-[#CC6600]"
+                          aria-hidden="true"
+                        />
+                      )}
+
+                      {/* Nav Icon Container: Anchored on x = 34px axis */}
+                      <div className="w-10 h-10 shrink-0 flex items-center justify-center relative">
+                        <span
+                          style={{
+                            color: effectivelyActive
+                              ? "#FFA040"
+                              : hasNewMessages
+                              ? "#FFA040"
+                              : undefined,
+                          }}
                           className={`${
                             effectivelyActive
-                              ? "text-[#CC6600]"
+                              ? "text-[#FFA040]"
                               : hasNewMessages
                               ? "text-[#FFA040]"
-                              : "text-white/40 group-hover:text-white/80"
-                          } transition-colors flex-shrink-0`}
+                              : "text-white/40 group-hover:text-white/80 group-hover:scale-105"
+                          } transition-all duration-150 flex-shrink-0 flex items-center justify-center`}
                         >
                           {item.icon}
                         </span>
+
+                        {/* Collapsed mode unread ping beacon */}
+                        {isCollapsed && hasNewMessages && (
+                          <span className="absolute top-2 right-2 flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-80" />
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC6600]" />
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Text Label & Badges: Smoothly fades in/out */}
+                      <div
+                        className={`flex items-center justify-between flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
+                          isCollapsed
+                            ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0"
+                            : "max-w-[220px] opacity-100 ml-1.5 pr-2"
+                        }`}
+                      >
                         <span
-                          className={`font-sans text-[0.8125rem] truncate ${
+                          className={`font-sans text-[0.8125rem] truncate transition-colors duration-150 ${
                             effectivelyActive
-                              ? "font-semibold text-white"
+                              ? "font-semibold text-white tracking-wide"
                               : hasNewMessages
                               ? "font-semibold text-white"
                               : "font-normal text-white/70 group-hover:text-white"
@@ -1071,60 +1029,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         >
                           {item.label}
                         </span>
-                      </div>
 
-                      {/* Badges / Dynamic Counters / Right Caret */}
-                      <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
-                        {isPendingActive && !isActive && (
-                          <span
-                            className="h-1.5 w-1.5 rounded-full bg-[#CC6600] animate-ping flex-shrink-0 mr-1"
-                            title="Navigating..."
-                          />
-                        )}
+                        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                          {isPendingActive && !isActive && (
+                            <span
+                              className="h-1.5 w-1.5 rounded-full bg-[#CC6600] animate-ping flex-shrink-0 mr-1"
+                              title="Navigating..."
+                            />
+                          )}
 
-                        {hasNewMessages ? (
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {hasNewMessages ? (
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <span
+                                className="relative flex h-2 w-2 items-center justify-center flex-shrink-0"
+                                aria-label="New unread message activity"
+                              >
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-80" />
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC6600]" />
+                              </span>
+                              <span
+                                className="text-[10px] font-mono px-1.5 py-0.5 rounded-[2px] bg-[#CC6600] text-white font-bold leading-none shadow-sm transition-transform duration-150 active:scale-90 select-none flex-shrink-0 tracking-tight"
+                                title={`${unreadMessagesCount} unread message${unreadMessagesCount > 1 ? "s" : ""}`}
+                              >
+                                {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount} NEW
+                              </span>
+                            </div>
+                          ) : item.count !== undefined && item.count > 0 ? (
                             <span
-                              className="relative flex h-2 w-2 items-center justify-center flex-shrink-0"
-                              aria-label="New unread message activity"
+                              className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full flex-shrink-0 border leading-none ${
+                                effectivelyActive
+                                  ? "bg-[#CC6600]/25 text-[#FFA040] border-[#CC6600]/40 font-bold"
+                                  : "bg-white/[0.06] text-white/60 border-white/10 group-hover:text-white"
+                              }`}
                             >
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-80" />
-                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC6600]" />
+                              {item.count}
                             </span>
+                          ) : item.badge ? (
                             <span
-                              className="text-[10px] font-mono px-1.5 py-0.5 rounded-[2px] bg-[#CC6600] text-white font-bold leading-none shadow-sm transition-transform duration-150 active:scale-90 select-none flex-shrink-0 tracking-tight"
-                              title={`${unreadMessagesCount} unread message${unreadMessagesCount > 1 ? "s" : ""}`}
+                              className={`text-[10px] font-sans px-1.5 py-0.5 rounded-[2px] border font-semibold flex-shrink-0 tracking-wide uppercase ${
+                                BADGE_STYLES[item.badgeColor || "indigo"]
+                              }`}
                             >
-                              {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount} NEW
+                              {item.badge}
                             </span>
-                          </div>
-                        ) : item.count !== undefined && item.count > 0 ? (
-                          <span
-                            className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full flex-shrink-0 border leading-none ${
-                              effectivelyActive
-                                ? "bg-[#CC6600]/25 text-[#FFA040] border-[#CC6600]/40 font-bold"
-                                : "bg-white/[0.06] text-white/60 border-white/10 group-hover:text-white"
-                            }`}
-                          >
-                            {item.count}
-                          </span>
-                        ) : item.badge ? (
-                          <span
-                            className={`text-[10px] font-sans px-1.5 py-0.5 rounded-[2px] border font-semibold flex-shrink-0 tracking-wide uppercase ${
-                              BADGE_STYLES[item.badgeColor || "indigo"]
-                            }`}
-                          >
-                            {item.badge}
-                          </span>
-                        ) : (
-                          <CaretRight
-                            size={11}
-                            weight="bold"
-                            className={`text-white/20 group-hover:text-white/50 transition-transform duration-150 group-hover:translate-x-0.5 ${
-                              effectivelyActive ? "text-[#CC6600]/70" : ""
-                            }`}
-                          />
-                        )}
+                          ) : null}
+                        </div>
                       </div>
                     </Link>
                   );
@@ -1136,65 +1085,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* ── 4. Bottom Identity & Operational Footer (Dashdark X Precision Standard) ── */}
-      <div className="flex flex-col shrink-0 border-t border-white/[0.08] bg-[#010D1F]/60">
-        {/* Operational Strip: Notifications & Duty Clock */}
-        {isCollapsed ? (
-          <div className="py-2.5 flex flex-col items-center gap-2 border-b border-white/[0.08]">
-            <NotificationDrawer />
-            {isInternal && (
-              <DutyClockWidget userRole={role} initialActiveShift={initialActiveShift} />
-            )}
-          </div>
-        ) : (
-          <div className="px-3.5 py-2.5 flex items-center justify-between gap-2 border-b border-white/[0.08]">
-            <div className="flex items-center gap-2">
-              <NotificationDrawer />
-              <span className="text-xs font-sans text-white/50">Alerts</span>
-            </div>
-            {isInternal && (
-              <DutyClockWidget userRole={role} initialActiveShift={initialActiveShift} />
-            )}
+      <div className="flex flex-col shrink-0 border-t border-white/[0.08] bg-[#010D1F]/75 overflow-hidden">
+        {/* Staff Duty Clock (internal staff only) */}
+        {isInternal && (
+          <div className={`p-3.5 border-b border-white/[0.08] overflow-hidden ${isCollapsed ? "flex justify-center" : ""}`}>
+            <DutyClockWidget userRole={role} initialActiveShift={initialActiveShift} />
           </div>
         )}
 
-        {/* User Identity Card with Popover Dropdown Menu */}
-        <div className="p-2">
-          <DropdownMenuRoot>
-            <DropdownMenuTrigger asChild>
-              {isCollapsed ? (
+        {/* Notifications Bar (Alerts & Activity) */}
+        <div className="p-3.5 border-b border-white/[0.08] overflow-hidden">
+          <NotificationDrawer
+            triggerVariant="row"
+            isSidebarCollapsed={isCollapsed}
+            side="right"
+            align="end"
+          />
+        </div>
+
+        {/* User Identity Card: Collapsed Popover (Desktop Rail) vs Expanded Inline Accordion */}
+        <div className="p-3.5 overflow-hidden">
+          {isCollapsed ? (
+            <DropdownMenuRoot>
+              <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="w-full flex items-center justify-center p-1.5 rounded-[2px] hover:bg-white/[0.08] transition-colors cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0 group"
+                  className="w-full flex items-center h-12 rounded-[2px] hover:bg-white/[0.06] border border-transparent hover:border-white/10 transition-all duration-150 cursor-pointer outline-none focus:outline-none group text-left active:scale-[0.98] overflow-hidden"
                   aria-label="User account menu"
                   title={`${userFullName} (${getRoleDisplayLabel(role)})`}
                 >
-                  <div className="relative shrink-0">
-                    <UserAvatar
-                      name={userFullName}
-                      role={role}
-                      size="sm"
-                    />
-                    {isClient && clientProfileIncomplete && (
-                      <span
-                        className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#CC6600] ring-2 ring-[#010114]"
-                        title="Profile setup required"
-                      />
-                    )}
-                  </div>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="w-full flex items-center justify-between p-2 rounded-[2px] hover:bg-white/[0.06] transition-colors cursor-pointer outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0 group text-left"
-                  aria-label="User account menu"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-1">
-                    <div className="relative shrink-0">
-                      <UserAvatar
-                        name={userFullName}
-                        role={role}
-                        size="sm"
-                      />
+                  {/* Avatar: Anchored on x = 34px axis (14px padding + 20px = 34px) */}
+                  <div className="w-10 h-10 shrink-0 flex items-center justify-center">
+                    <div className="relative shrink-0 flex items-center justify-center">
+                      <UserAvatar name={userFullName} role={role} size="sm" />
                       {isClient && clientProfileIncomplete && (
                         <span
                           className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#CC6600] ring-2 ring-[#010114]"
@@ -1202,58 +1125,171 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         />
                       )}
                     </div>
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-xs font-semibold text-white truncate font-sans">
-                        {userFullName}
-                      </span>
-                      <span className="text-[11px] text-white/40 truncate font-sans">
-                        {getRoleDisplayLabel(role)}
-                      </span>
-                    </div>
                   </div>
-                  <CaretRight
-                    size={13}
-                    weight="bold"
-                    className="text-white/30 group-hover:text-white/70 transition-colors shrink-0"
-                  />
                 </button>
-              )}
-            </DropdownMenuTrigger>
+              </DropdownMenuTrigger>
 
-            <DropdownMenuContent
-              side="right"
-              align="end"
-              sideOffset={12}
-              className="w-64 p-2 bg-[#01142B] border border-white/15 shadow-2xl rounded-[2px] backdrop-blur-xl z-50"
-            >
-              {/* Header User Identity */}
-              <div className="px-3 py-2.5 mb-1 flex flex-col gap-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-white truncate font-sans">
-                    {userFullName}
-                  </span>
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 tracking-wider shrink-0">
-                    {getRoleDisplayLabel(role)}
+              <DropdownMenuContent
+                side="right"
+                align="end"
+                sideOffset={12}
+                className="w-64 p-2 bg-[#01142B] border border-white/15 shadow-2xl rounded-[2px] backdrop-blur-xl z-50"
+              >
+                {/* Header User Identity */}
+                <div className="px-3 py-2.5 mb-1 flex flex-col gap-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-white truncate font-sans">
+                      {userFullName}
+                    </span>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 tracking-wider shrink-0">
+                      {getRoleDisplayLabel(role)}
+                    </span>
+                  </div>
+                  <span className="text-xs font-sans font-normal text-white/50 truncate">
+                    {userEmail}
                   </span>
                 </div>
-                <span className="text-xs font-sans font-normal text-white/50 truncate">
-                  {userEmail}
-                </span>
-              </div>
 
-              <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
+                <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
 
-              {/* Menu Options */}
-              <DropdownMenuItem asChild>
+                {/* Menu Options */}
+                <DropdownMenuItem asChild>
+                  <Link
+                    href={getProfileHref(role)}
+                    className="flex items-center justify-between cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {isClient ? (
+                        <GraduationCap size={18} weight="fill" className="text-white/60 shrink-0" />
+                      ) : (
+                        <User size={18} weight="fill" className="text-white/60 shrink-0" />
+                      )}
+                      <span className="truncate">
+                        {isClient ? "School & Profile" : "My Profile"}
+                      </span>
+                    </div>
+                    {isClient && clientProfileIncomplete && (
+                      <span className="text-[9px] font-mono font-bold text-[#FFA040] bg-[#CC6600]/20 border border-[#CC6600]/40 px-1.5 py-0.5 rounded-[2px] shrink-0 ml-2">
+                        SETUP
+                      </span>
+                    )}
+                  </Link>
+                </DropdownMenuItem>
+
+                {isInternal && (
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/dashboard/staff/hr"
+                      className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
+                    >
+                      <CalendarCheck size={18} weight="fill" className="text-white/60 shrink-0" />
+                      <span>My HR & Timeclock</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
+
+                {/* Logout Action */}
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-semibold text-red-400 px-3 py-2.5 rounded-[2px] hover:bg-red-500/10 hover:text-red-300 transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
+                >
+                  {isLoggingOut ? (
+                    <span className="h-4 w-4 border-2 border-white/20 border-t-red-400 rounded-full animate-spin mr-1 shrink-0" />
+                  ) : (
+                    <SignOut size={18} weight="fill" className="text-red-400 shrink-0" />
+                  )}
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenuRoot>
+          ) : (
+            <div ref={profileContainerRef} className="flex flex-col">
+              <button
+                type="button"
+                onClick={() => setIsProfileExpanded((prev) => !prev)}
+                className={`w-full flex items-center h-12 rounded-[2px] border transition-all duration-150 cursor-pointer outline-none focus:outline-none group text-left active:scale-[0.98] ${
+                  isProfileExpanded
+                    ? "bg-white/[0.08] border-white/15"
+                    : "hover:bg-white/[0.06] border-transparent hover:border-white/10"
+                }`}
+                aria-label="User account menu"
+                aria-expanded={isProfileExpanded}
+              >
+                {/* Avatar: Anchored on x = 34px axis (14px padding + 20px = 34px) */}
+                <div className="w-10 h-10 shrink-0 flex items-center justify-center">
+                  <div className="relative shrink-0 flex items-center justify-center">
+                    <UserAvatar name={userFullName} role={role} size="sm" />
+                    {isClient && clientProfileIncomplete && (
+                      <span
+                        className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#CC6600] ring-2 ring-[#010114]"
+                        title="Profile setup required"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* User Details & CaretDown Arrow */}
+                <div className="flex items-center justify-between flex-1 min-w-0 ml-1.5 pr-2">
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-xs font-semibold text-white truncate font-sans group-hover:text-white transition-colors">
+                      {userFullName}
+                    </span>
+                    <span className="text-[11px] text-white/40 truncate font-sans">
+                      {getRoleDisplayLabel(role)}
+                    </span>
+                  </div>
+                  <CaretDown
+                    size={13}
+                    weight="bold"
+                    className={`shrink-0 ml-2 transition-transform duration-200 ${
+                      isProfileExpanded
+                        ? "rotate-180 text-white"
+                        : "text-white/40 group-hover:text-white/70"
+                    }`}
+                  />
+                </div>
+              </button>
+
+              {/* Accordion dropdown body that expands height */}
+              <div
+                className={`overflow-hidden transition-all duration-200 ease-in-out flex flex-col ${
+                  isProfileExpanded
+                    ? "max-h-96 opacity-100 mt-2 p-2 bg-[#01142B] border border-white/15 rounded-[2px]"
+                    : "max-h-0 opacity-0 pointer-events-none p-0 border-0 m-0"
+                }`}
+              >
+                {/* Header User Identity */}
+                <div className="px-2.5 py-1.5 mb-1 flex flex-col gap-0.5 border-b border-white/[0.08] pb-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-white truncate font-sans">
+                      {userFullName}
+                    </span>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 tracking-wider shrink-0">
+                      {getRoleDisplayLabel(role)}
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-sans font-normal text-white/50 truncate">
+                    {userEmail}
+                  </span>
+                </div>
+
+                {/* Profile Link */}
                 <Link
                   href={getProfileHref(role)}
-                  className="flex items-center justify-between cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
+                  onClick={() => {
+                    setIsProfileExpanded(false);
+                    if (onClose) onClose();
+                  }}
+                  className="flex items-center justify-between cursor-pointer w-full text-xs font-sans font-medium text-white/85 px-2.5 py-2 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     {isClient ? (
-                      <GraduationCap size={18} weight="fill" className="text-white/60 shrink-0" />
+                      <GraduationCap size={16} weight="fill" className="text-white/60 shrink-0" />
                     ) : (
-                      <User size={18} weight="fill" className="text-white/60 shrink-0" />
+                      <User size={16} weight="fill" className="text-white/60 shrink-0" />
                     )}
                     <span className="truncate">
                       {isClient ? "School & Profile" : "My Profile"}
@@ -1265,56 +1301,75 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </span>
                   )}
                 </Link>
-              </DropdownMenuItem>
 
-              {isInternal && (
-                <DropdownMenuItem asChild>
+                {/* Staff HR Link */}
+                {isInternal && (
                   <Link
                     href="/dashboard/staff/hr"
-                    className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
+                    onClick={() => {
+                      setIsProfileExpanded(false);
+                      if (onClose) onClose();
+                    }}
+                    className="flex items-center gap-2.5 cursor-pointer w-full text-xs font-sans font-medium text-white/85 px-2.5 py-2 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors"
                   >
-                    <CalendarCheck size={18} weight="fill" className="text-white/60 shrink-0" />
+                    <CalendarCheck size={16} weight="fill" className="text-white/60 shrink-0" />
                     <span>My HR & Timeclock</span>
                   </Link>
-                </DropdownMenuItem>
-              )}
-
-              <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
-
-              {/* Logout Action */}
-              <DropdownMenuItem
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-semibold text-red-400 px-3 py-2.5 rounded-[2px] hover:bg-red-500/10 hover:text-red-300 transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
-              >
-                {isLoggingOut ? (
-                  <span className="h-4 w-4 border-2 border-white/20 border-t-red-400 rounded-full animate-spin mr-1 shrink-0" />
-                ) : (
-                  <SignOut size={18} weight="fill" className="text-red-400 shrink-0" />
                 )}
-                <span>Sign Out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenuRoot>
+
+                <div className="my-1 border-t border-white/[0.08]" />
+
+                {/* Logout Action */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsProfileExpanded(false);
+                    handleLogout();
+                  }}
+                  disabled={isLoggingOut}
+                  className="flex items-center gap-2.5 cursor-pointer w-full text-xs font-sans font-semibold text-red-400 px-2.5 py-2 rounded-[2px] hover:bg-red-500/10 hover:text-red-300 transition-colors text-left"
+                >
+                  {isLoggingOut ? (
+                    <span className="h-3.5 w-3.5 border-2 border-white/20 border-t-red-400 rounded-full animate-spin mr-1 shrink-0" />
+                  ) : (
+                    <SignOut size={16} weight="fill" className="text-red-400 shrink-0" />
+                  )}
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* System Operational Status Badge */}
-        {isCollapsed ? (
+        <div
+          className="h-8 px-3.5 border-t border-white/[0.08] flex items-center text-white/40 shrink-0 bg-white/[0.01] overflow-hidden"
+          title={isCollapsed ? "System Operational v2.4.0" : undefined}
+        >
+          {/* Status Dot: Anchored on x = 34px axis */}
+          <div className="w-10 h-full shrink-0 flex items-center justify-center">
+            <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+            </span>
+          </div>
+
+          {/* Status Text & Version: Smoothly fades in/out */}
           <div
-            className="py-2 border-t border-white/[0.08] flex items-center justify-center text-white/40 shrink-0"
-            title="System Operational v2.4.0"
+            className={`flex items-center justify-between flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
+              isCollapsed
+                ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0"
+                : "max-w-[200px] opacity-100 ml-1.5 pr-1"
+            }`}
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span className="font-sans text-[10px] text-white/50 tracking-tight select-none truncate">
+              System Operational
+            </span>
+            <span className="font-mono text-[9px] text-white/30 tracking-wider select-none ml-2 shrink-0">
+              v2.4.0
+            </span>
           </div>
-        ) : (
-          <div className="px-3.5 py-2 border-t border-white/[0.08] flex items-center justify-between text-white/40 shrink-0 bg-white/[0.01]">
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              <span className="font-sans text-[10px] text-white/50 tracking-tight">System Operational</span>
-            </div>
-            <span className="font-mono text-[9px] text-white/30 tracking-wider">v2.4.0</span>
-          </div>
-        )}
+        </div>
       </div>
     </aside>
   );

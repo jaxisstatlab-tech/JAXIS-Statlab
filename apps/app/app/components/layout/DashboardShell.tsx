@@ -51,6 +51,27 @@ export function DashboardShell({
     });
   }, []);
 
+  // Universal keyboard shortcut: Ctrl+B or Cmd+B to toggle sidebar collapse
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement)?.isContentEditable
+      ) {
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        handleToggleCollapse();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleToggleCollapse]);
+
   return (
     <div
       className="h-[100dvh] max-h-[100dvh] w-full flex flex-col bg-[#010114] text-white overflow-hidden print:h-auto print:max-h-none print:overflow-visible print:bg-white"
@@ -81,7 +102,11 @@ export function DashboardShell({
         )}
 
         {/* Dashdark X Collapsible Sidebar Rail */}
-        <div className="print:hidden h-full flex-shrink-0">
+        <div
+          className={`print:hidden h-full flex-shrink-0 w-0 lg:transition-[width] lg:duration-300 lg:ease-[cubic-bezier(0.2,0,0,1)] ${
+            isSidebarCollapsed ? "lg:w-[4.25rem]" : "lg:w-[18.5rem]"
+          } overflow-hidden will-change-[width]`}
+        >
           <Sidebar
             role={userRole}
             roleLabel={userRole}

@@ -440,116 +440,126 @@ export async function submitQaReview(
 
     const now = new Date();
 
+    // Pre-calculate deadlines outside the transaction to prevent DB pool contention
+    const qaRevisionDueAt = decision === "QA_REJECTED" ? computeQaRevisionDeadline(now) : null;
+    const deliveredAt = decision === "QA_APPROVED" ? now : undefined;
+    const filesPurgeAt = decision === "QA_APPROVED" ? computePurgeDeadline(now, 90) : undefined;
+    const revisionWindowExpiresAt =
+      decision === "QA_APPROVED" ? await computeRevisionWindowExpiry(now, 3) : undefined;
+
     const reviewResult = await withDbTimeout(
-      db.$transaction(async (tx) => {
-        let newProjectStatus = project.masterStatus;
-        let qaRevisionDueAt: Date | null = null;
-        let qaApproved = project.qaApproved;
-        let isLocked = project.isLocked;
+      db.$transaction(
+        async (tx) => {
+          let newProjectStatus = project.masterStatus;
+          let qaApproved = project.qaApproved;
+          let isLocked = project.isLocked;
 
-        if (decision === "QA_APPROVED") {
-          newProjectStatus = "DELIVERED";
-          qaApproved = true;
-        } else if (decision === "QA_REJECTED") {
-          newProjectStatus = "QA_REVISION";
-          qaRevisionDueAt = computeQaRevisionDeadline(now);
+          if (decision === "QA_APPROVED") {
+            newProjectStatus = "DELIVERED";
+            qaApproved = true;
+          } else if (decision === "QA_REJECTED") {
+            newProjectStatus = "QA_REVISION";
 
-          // Increment repeated rejection count
-          if (project.assignment?.statisticianId) {
-            await tx.qARejectionCount.upsert({
-              where: {
-                projectId_statisticianId: {
+            // Increment repeated rejection count
+            if (project.assignment?.statisticianId) {
+              await tx.qARejectionCount.upsert({
+                where: {
+                  projectId_statisticianId: {
+                    projectId: project.id,
+                    statisticianId: project.assignment.statisticianId,
+                  },
+                },
+                create: {
                   projectId: project.id,
                   statisticianId: project.assignment.statisticianId,
+                  count: 1,
+                  lastRejectedAt: now,
                 },
-              },
-              create: {
-                projectId: project.id,
-                statisticianId: project.assignment.statisticianId,
-                count: 1,
-                lastRejectedAt: now,
-              },
-              update: {
-                count: { increment: 1 },
-                lastRejectedAt: now,
-              },
-            });
+                update: {
+                  count: { increment: 1 },
+                  lastRejectedAt: now,
+                },
+              });
+            }
+          } else if (decision === "ESCALATED_TO_CEO") {
+            // RULE_ETH_01: Immediate lock on ethical breach
+            newProjectStatus = "ETHICAL_BREACH";
+            isLocked = true;
           }
-        } else if (decision === "ESCALATED_TO_CEO") {
-          // RULE_ETH_01: Immediate lock on ethical breach
-          newProjectStatus = "ETHICAL_BREACH";
-          isLocked = true;
-        }
 
-        let deliveredAt: Date | undefined = undefined;
-        let filesPurgeAt: Date | undefined = undefined;
-        let revisionWindowExpiresAt: Date | undefined = undefined;
-
-        if (decision === "QA_APPROVED") {
-          newProjectStatus = "DELIVERED";
-          qaApproved = true;
-          deliveredAt = now;
-          filesPurgeAt = computePurgeDeadline(now, 90);
-          revisionWindowExpiresAt = await computeRevisionWindowExpiry(now, 3);
-
-          // Auto-promote approved current analysisFiles to released deliverables
-          for (const af of project.analysisFiles) {
-            const existing = await tx.deliverable.findFirst({
-              where: { projectId: project.id, filePath: af.filePath },
-            });
-            if (existing) continue;
-
-            let cat: DeliverableCategory = "STATISTICAL_OUTPUT";
-            if (af.fileCategory === "PDF_REPORT") cat = "PDF_REPORT";
-            else if (af.fileCategory === "RAW_DATASET") cat = "RAW_DATA_CLEANED";
-            else if (af.fileCategory === "OTHER") cat = "OTHER";
-
-            await tx.deliverable.create({
-              data: {
+          if (decision === "QA_APPROVED" && project.analysisFiles.length > 0) {
+            // Auto-promote approved analysis files in a fast single batch instead of N sequential awaits
+            const filePaths = project.analysisFiles.map((af) => af.filePath);
+            const existingDeliverables = await tx.deliverable.findMany({
+              where: {
                 projectId: project.id,
-                category: cat,
-                fileName: af.fileName,
-                filePath: af.filePath,
-                fileSize: af.fileSize || 1024,
-                fileType: af.fileType || "application/octet-stream",
-                uploadedBy: af.statisticianId || user.id,
-                isFinalReleased: true,
-                releasedAt: now,
-                releasedBy: user.id,
+                filePath: { in: filePaths },
               },
+              select: { filePath: true },
             });
+            const existingSet = new Set(existingDeliverables.map((d) => d.filePath));
+            const toCreate = project.analysisFiles.filter((af) => !existingSet.has(af.filePath));
+
+            if (toCreate.length > 0) {
+              await tx.deliverable.createMany({
+                data: toCreate.map((af) => {
+                  let cat: DeliverableCategory = "STATISTICAL_OUTPUT";
+                  if (af.fileCategory === "PDF_REPORT") cat = "PDF_REPORT";
+                  else if (af.fileCategory === "RAW_DATASET") cat = "RAW_DATA_CLEANED";
+                  else if (af.fileCategory === "OTHER") cat = "OTHER";
+
+                  return {
+                    projectId: project.id,
+                    category: cat,
+                    fileName: af.fileName,
+                    filePath: af.filePath,
+                    fileSize: af.fileSize || 1024,
+                    fileType: af.fileType || "application/octet-stream",
+                    uploadedBy: af.statisticianId || user.id,
+                    isFinalReleased: true,
+                    releasedAt: now,
+                    releasedBy: user.id,
+                  };
+                }),
+              });
+            }
           }
+
+          // Update Project master status and delivery timestamps
+          await tx.project.update({
+            where: { id: project.id },
+            data: {
+              masterStatus: newProjectStatus,
+              qaApproved,
+              isLocked,
+              ...(deliveredAt ? { deliveredAt, filesPurgeAt, revisionWindowExpiresAt } : {}),
+            },
+          });
+
+          // Create QAReview scorecard
+          const review = await tx.qAReview.create({
+            data: {
+              projectId: project.id,
+              reviewerId: user.id,
+              decision,
+              errorClassification: errorClassification || null,
+              comments: comments.trim(),
+              qaRevisionDueAt,
+              reviewedAt: now,
+            },
+            include: {
+              reviewer: { select: { fullName: true } },
+            },
+          });
+
+          return review;
+        },
+        {
+          maxWait: 15000,
+          timeout: 30000,
         }
-
-        // Update Project master status and delivery timestamps
-        await tx.project.update({
-          where: { id: project.id },
-          data: {
-            masterStatus: newProjectStatus,
-            qaApproved,
-            isLocked,
-            ...(deliveredAt ? { deliveredAt, filesPurgeAt, revisionWindowExpiresAt } : {}),
-          },
-        });
-
-        // Create QAReview scorecard
-        const review = await tx.qAReview.create({
-          data: {
-            projectId: project.id,
-            reviewerId: user.id,
-            decision,
-            errorClassification: errorClassification || null,
-            comments: comments.trim(),
-            qaRevisionDueAt,
-            reviewedAt: now,
-          },
-          include: {
-            reviewer: { select: { fullName: true } },
-          },
-        });
-
-        return review;
-      })
+      ),
+      35000
     );
 
     // Dispatch real-time notifications to relevant roles

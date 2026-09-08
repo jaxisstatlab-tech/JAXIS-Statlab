@@ -209,6 +209,83 @@ export async function markAllAlertsReadAction(): Promise<{
   }
 }
 
+export async function deleteAlertAction(rawInput: { alertId: string }): Promise<{
+  success: boolean;
+  error?: { message: string };
+}> {
+  try {
+    const session = await auth();
+    const user = session?.user;
+    if (!user) {
+      return { success: false, error: { message: "Authentication required." } };
+    }
+
+    if (!rawInput?.alertId) {
+      return { success: false, error: { message: "Alert ID is required." } };
+    }
+
+    await withDbTimeout(
+      db.inAppAlert.delete({
+        where: { id: rawInput.alertId },
+      })
+    );
+
+    return { success: true };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to delete alert.";
+    return { success: false, error: { message: msg } };
+  }
+}
+
+export async function clearAllAlertsAction(): Promise<{
+  success: boolean;
+  error?: { message: string };
+}> {
+  try {
+    const session = await auth();
+    const user = session?.user;
+    if (!user) {
+      return { success: false, error: { message: "Authentication required." } };
+    }
+
+    let recipientId = user.id;
+    try {
+      const dbUser = await withDbTimeout(
+        db.user.findFirst({
+          where: {
+            OR: [
+              { id: user.id },
+              ...(user.email ? [{ email: user.email.toLowerCase().trim() }] : []),
+            ],
+          },
+          select: { id: true },
+        }),
+        1000
+      );
+      if (dbUser) recipientId = dbUser.id;
+    } catch {
+      // fallback
+    }
+
+    await withDbTimeout(
+      db.inAppAlert.deleteMany({
+        where: {
+          OR: [
+            { recipientId },
+            ...(recipientId !== user.id ? [{ recipientId: user.id }] : []),
+            { recipientRole: user.role as RoleName },
+          ],
+        },
+      })
+    );
+
+    return { success: true };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to clear alerts.";
+    return { success: false, error: { message: msg } };
+  }
+}
+
 export async function createInAppAlertAction(rawInput: CreateInAppAlertInput): Promise<{
   success: boolean;
   alertId?: string;

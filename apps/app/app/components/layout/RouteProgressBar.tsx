@@ -21,15 +21,17 @@ export function RouteProgressBar() {
     if (timerRef.current) clearInterval(timerRef.current);
 
     setIsVisible(true);
-    setProgress(15);
+    setProgress(25);
 
     timerRef.current = setInterval(() => {
       setProgress((prev) => {
-        if (prev < 65) return prev + Math.random() * 12;
-        if (prev < 85) return prev + Math.random() * 4;
+        if (prev < 55) return prev + 12;
+        if (prev < 78) return prev + 5;
+        if (prev < 90) return prev + 2;
+        if (prev < 96) return prev + 0.6;
         return prev;
       });
-    }, 120);
+    }, 140);
   };
 
   const completeProgress = () => {
@@ -38,8 +40,8 @@ export function RouteProgressBar() {
 
     finishTimerRef.current = setTimeout(() => {
       setIsVisible(false);
-      setProgress(0);
-    }, 250);
+      setTimeout(() => setProgress(0), 200);
+    }, 280);
   };
 
   // Complete progress when pathname or searchParams change
@@ -86,16 +88,18 @@ export function RouteProgressBar() {
   return (
     <div
       aria-hidden="true"
-      className="fixed top-0 left-0 right-0 z-[99999] pointer-events-none h-[2px] bg-transparent"
+      className="fixed top-0 left-0 right-0 z-[99999] pointer-events-none h-[2.5px] overflow-hidden"
     >
       <div
-        className="h-full bg-[#CC6600] transition-all duration-200 ease-out"
+        className="h-full bg-gradient-to-r from-[#CC6600] via-[#E67300] to-[#FFA040] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] relative"
         style={{
           width: `${progress}%`,
           opacity: isVisible ? 1 : 0,
-          boxShadow: "0 0 10px rgba(204, 102, 0, 0.7), 0 0 4px #CC6600",
         }}
-      />
+      >
+        {/* Leading edge laser beam */}
+        <div className="absolute right-0 top-0 bottom-0 w-28 bg-gradient-to-r from-transparent via-white/40 to-white/95" />
+      </div>
     </div>
   );
 }

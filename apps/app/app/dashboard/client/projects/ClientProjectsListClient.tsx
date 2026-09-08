@@ -476,6 +476,7 @@ export function ClientProjectsListClient({
                           <div className="flex flex-col gap-0.5 pr-2 min-w-0">
                             <Link
                               href={`/dashboard/client/projects/${p.id}`}
+                              prefetch={true}
                               className="text-sm font-semibold text-white group-hover:text-[#FFA040] transition-colors leading-snug line-clamp-1 font-sans"
                               title={p.researchTitle}
                             >
@@ -539,7 +540,7 @@ export function ClientProjectsListClient({
                             >
                               Details
                             </Button>
-                            <Link href={`/dashboard/client/projects/${p.id}`}>
+                            <Link href={`/dashboard/client/projects/${p.id}`} prefetch={true}>
                               <Button
                                 variant={isAwaiting ? "primary" : "secondary"}
                                 size="sm"

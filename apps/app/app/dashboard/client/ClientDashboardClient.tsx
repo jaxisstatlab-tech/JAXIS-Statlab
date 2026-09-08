@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   PageHeader,
   Card,
@@ -120,6 +120,7 @@ export function ClientDashboardClient({
   initialIsProfileComplete = true,
 }: ClientDashboardClientProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [projects, setProjects] = useState<ProjectDetailItem[]>(initialProjects);
   const [isProfileComplete, setIsProfileComplete] = useState<boolean>(initialIsProfileComplete);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -625,14 +626,18 @@ export function ClientDashboardClient({
                     {projects.length > 1 && (
                       <Link
                         href="/dashboard/client/projects"
-                        className="text-white/60 hover:text-white transition-colors font-sans text-xs font-medium"
+                        prefetch={true}
+                        onMouseEnter={() => router.prefetch("/dashboard/client/projects")}
+                        className="text-white/60 hover:text-white transition-colors font-sans text-xs font-medium cursor-pointer"
                       >
                         All Studies ({projects.length}) →
                       </Link>
                     )}
                     <Link
                       href={`/dashboard/client/projects/${primaryStudy.id}`}
-                      className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium"
+                      prefetch={true}
+                      onMouseEnter={() => router.prefetch(`/dashboard/client/projects/${primaryStudy.id}`)}
+                      className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium cursor-pointer"
                     >
                       View Full Study Details →
                     </Link>
