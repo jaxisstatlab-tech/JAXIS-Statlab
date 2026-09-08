@@ -77,24 +77,26 @@ export async function sendEmail(payload: EmailPayload): Promise<{
 
   // Record Audit Trail in NotificationLog
   let logRecord: { id: string } | null = null;
-  try {
-    logRecord = await withDbTimeout(
-      db.notificationLog.create({
-        data: {
-          recipientId,
-          email: to,
-          template,
-          projectId: projectId || null,
-          status,
-          attemptCount,
-          errorMessage,
-          lastAttemptAt: new Date(),
-        },
-        select: { id: true },
-      })
-    );
-  } catch (dbErr) {
-    console.error("Failed to save NotificationLog record:", dbErr);
+  if (recipientId) {
+    try {
+      logRecord = await withDbTimeout(
+        db.notificationLog.create({
+          data: {
+            recipientId,
+            email: to,
+            template,
+            projectId: projectId || null,
+            status,
+            attemptCount,
+            errorMessage,
+            lastAttemptAt: new Date(),
+          },
+          select: { id: true },
+        })
+      );
+    } catch (dbErr) {
+      console.error("Failed to save NotificationLog record:", dbErr);
+    }
   }
 
   return {

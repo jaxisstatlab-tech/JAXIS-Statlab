@@ -178,7 +178,7 @@ export async function registerClient(
  */
 export async function requestPasswordResetAction(
   input: unknown
-): Promise<ActionResult<{ sent: boolean }>> {
+): Promise<ActionResult<{ sent: boolean; sandboxNotice?: string; devRecoveryUrl?: string }>> {
   const parsed = ForgotPasswordSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -231,7 +231,7 @@ export async function requestPasswordResetAction(
       console.log(`\n🔑 [PASSWORD RECOVERY LINK]: ${appUrl}/reset-password?token=${rawToken}\n`);
 
       // Dispatch recovery email via Resend abstraction
-      await sendEmail({
+      const emailRes = await sendEmail({
         to: user.email,
         recipientId: user.id,
         template: "PasswordReset",
@@ -253,6 +253,22 @@ export async function requestPasswordResetAction(
           },
         }).catch(() => {})
       );
+
+      const isSandboxRestriction = Boolean(emailRes.error?.includes("only send testing emails"));
+
+      return {
+        success: true,
+        data: {
+          sent: emailRes.success,
+          sandboxNotice: isSandboxRestriction
+            ? "Resend is in sandbox testing mode. Real emails can currently only be delivered to jaxis.statlab@gmail.com until a custom domain is verified at resend.com/domains."
+            : undefined,
+          devRecoveryUrl:
+            process.env.NODE_ENV !== "production" || isSandboxRestriction
+              ? `${appUrl}/reset-password?token=${rawToken}`
+              : undefined,
+        },
+      };
     }
   } catch (err) {
     console.warn("[PasswordReset] Request failed or DB offline:", err);

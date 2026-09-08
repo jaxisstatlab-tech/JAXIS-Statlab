@@ -9,12 +9,16 @@ import { requestPasswordResetAction } from "@/features/auth/actions";
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [sandboxNotice, setSandboxNotice] = useState<string | null>(null);
+  const [devRecoveryUrl, setDevRecoveryUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setSandboxNotice(null);
+    setDevRecoveryUrl(null);
 
     if (!email.trim()) {
       setErrorMessage("Please enter your email address.");
@@ -26,6 +30,12 @@ export default function ForgotPasswordPage() {
         const res = await requestPasswordResetAction({ email });
         if (res.success) {
           setIsSubmitted(true);
+          if (res.data?.sandboxNotice) {
+            setSandboxNotice(res.data.sandboxNotice);
+          }
+          if (res.data?.devRecoveryUrl) {
+            setDevRecoveryUrl(res.data.devRecoveryUrl);
+          }
         } else {
           setErrorMessage(res.error?.message || "Unable to send recovery email. Please try again.");
         }
@@ -73,6 +83,30 @@ export default function ForgotPasswordPage() {
               The link expires in <span className="font-mono text-white/80">60 minutes</span>. If you do not see it shortly, please inspect your spam folder.
             </p>
           </div>
+
+          {sandboxNotice && (
+            <div className="p-4 rounded-[2px] bg-amber-500/10 border border-amber-500/30 flex flex-col gap-2.5 animate-content-fade">
+              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+                <span>⚠️ Resend Sandbox Notice</span>
+              </div>
+              <p className="text-xs font-sans text-white/80 leading-relaxed">
+                {sandboxNotice}
+              </p>
+              {devRecoveryUrl && (
+                <div className="pt-2 border-t border-amber-500/20 flex flex-col gap-1.5">
+                  <span className="text-[11px] font-sans text-white/50">
+                    Testing sandbox bypass link:
+                  </span>
+                  <Link
+                    href={devRecoveryUrl}
+                    className="inline-flex items-center gap-1.5 text-xs font-sans font-semibold text-[#FFA040] hover:text-[#FFB366] underline transition-colors"
+                  >
+                    Open Password Reset Desk Directly →
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-col gap-3 pt-2">
             <Link href="/login" className="w-full">
