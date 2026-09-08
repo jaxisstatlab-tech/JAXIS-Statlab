@@ -36,6 +36,7 @@
 | `AUTH-F12` | **Audit Log (Auth Events)** | Login success, login failure, logout, and registration events written to `AuthAuditLog`. |
 | `AUTH-F13` | **Account Status Gate** | `SUSPENDED` or `TERMINATED` accounts cannot log in. Returns descriptive error. |
 | `AUTH-F14` | **Token Refresh / Session Extension** | JWT auto-rotated on each request within the active session window. |
+| `AUTH-F15` | **Self-Service Password Recovery** | Public `/forgot-password` and `/reset-password` flows with cryptographically secure single-use tokens, 60-min TTL, Resend email dispatch, sandbox testing auto-detection, and direct bypass. |
 
 
 
@@ -126,6 +127,19 @@ model AuthAuditLog {
   @@index([event])
   @@index([createdAt])
   @@map("auth_audit_logs")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  email     String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@index([tokenHash])
+  @@map("password_reset_tokens")
 }
 
 enum AuthEvent {
@@ -357,6 +371,17 @@ All auth errors follow the standard JAXIS error contract:
 - [x] Login attempt for a TERMINATED user returns `ACCOUNT_TERMINATED` (403)
 - [x] Successful login redirects each role to their correct dashboard desk URL
 - [x] Logout destroys session and redirects to `/login`
+
+### Password Recovery & Reset Flow
+
+- [x] Public `/forgot-password` page accepts email and initiates recovery flow
+- [x] Cryptographically random 256-bit token generated and stored as SHA-256 hash with 60-min expiration
+- [x] Transactional email dispatched via Resend (`PasswordReset` template)
+- [x] Resend free testing sandbox auto-detected with direct recovery bypass link (`Open Password Reset Desk Directly →`)
+- [x] Safe unauthenticated audit logging in `notification_logs`
+- [x] Public `/reset-password?token=...` verifies token validity, checks expiration and single-use status
+- [x] Strong password validation enforced before resetting (8+ chars, uppercase, number, match confirmation)
+- [x] Password hashed with bcrypt (salt rounds = 12), token marked as used, user redirected to `/login?reset=success`
 
 ### Session & Middleware
 

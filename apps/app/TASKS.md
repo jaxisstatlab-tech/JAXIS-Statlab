@@ -122,6 +122,9 @@
 - [x] Security: 256-bit crypto tokens, SHA-256 at rest, 60-min TTL, timing-safe anti-enumeration responses
 - [x] Route middleware updated to include password recovery routes
 - [x] Support across all 6 roles (Client, Statistician, QA Lead, Finance Officer, Admin, CEO)
+- [x] Resend sandbox restriction auto-detection (`only send testing emails`) returning clear dev notice
+- [x] Direct recovery bypass button (`Open Password Reset Desk Directly →`) on confirmation screen for smooth QA/testing before custom domain DNS verification
+- [x] Safe `notificationLog` audit persistence ensuring unauthenticated password recovery emails log cleanly without null-constraint errors
 
 ---
 

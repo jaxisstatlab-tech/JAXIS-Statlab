@@ -34,7 +34,8 @@ All 7 tasks and all acceptance criteria from the specification are satisfied. Ze
 | **Route Middleware** | `middleware.ts` protecting `/dashboard/*`, blocking unauthenticated visits, redirecting role violations | [`src/middleware.ts`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/middleware.ts) | ✅ PASS |
 | **Access Rejection Page** | `/unauthorized` with attempt details and contextual one-click recovery link | [`app/unauthorized/page.tsx`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/app/unauthorized/page.tsx) | ✅ PASS |
 | **Role Dashboard Shells** | Dedicated desk landing pages for all 6 roles (`client`, `admin`, `ceo`, `finance`, `qa`, `statistician`) | [`app/dashboard/[role]/page.tsx`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/app/dashboard) | ✅ PASS |
-| **Audit Logging** | Full capture of `REGISTRATION`, `LOGIN_SUCCESS`, `LOGIN_FAILED`, `LOGOUT`, `ACCOUNT_SUSPENDED_BLOCK` | [`src/lib/auth.ts`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/lib/auth.ts), [`src/features/auth/actions.ts`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/features/auth/actions.ts) | ✅ PASS |
+| **Password Recovery Flow** | `/forgot-password`, `/reset-password`, crypto tokens, Resend integration, sandbox bypass, and bcrypt password update | [`app/(auth)/forgot-password/page.tsx`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/app/(auth)/forgot-password/page.tsx), [`app/(auth)/reset-password/page.tsx`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/app/(auth)/reset-password/page.tsx), [`src/features/auth/actions.ts`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/features/auth/actions.ts) | ✅ PASS |
+| **Audit Logging** | Full capture of `REGISTRATION`, `LOGIN_SUCCESS`, `LOGIN_FAILED`, `LOGOUT`, `ACCOUNT_SUSPENDED_BLOCK`, plus notification logs | [`src/lib/auth.ts`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/lib/auth.ts), [`src/features/auth/actions.ts`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/features/auth/actions.ts), [`src/lib/email/index.ts`](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/lib/email/index.ts) | ✅ PASS |
 
 ---
 
@@ -42,7 +43,7 @@ All 7 tasks and all acceptance criteria from the specification are satisfied. Ze
 
 ### 3.1 Scope Boundary Check (No Out-of-Scope Leakage)
 - ❌ **No staff self-registration:** `/register` is restricted to creating `CLIENT` accounts only. Statistician, Senior QA Lead, and Finance Officer accounts cannot self-register; they are provisioned exclusively via Admin in Module 02.
-- ❌ **No password reset email integration:** Deferred strictly to Module 16 (Notifications).
+- ✅ **Password recovery integration:** Implemented with Resend transactional email, single-use SHA-256 tokens, 60-min expiration, and sandbox testing auto-bypass.
 - ❌ **No social OAuth providers:** Authentication is isolated to enterprise credential verification.
 
 ### 3.2 Database Safety & Isolation

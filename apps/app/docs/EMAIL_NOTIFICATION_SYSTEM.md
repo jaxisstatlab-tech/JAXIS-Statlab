@@ -28,6 +28,9 @@ This document outlines the architecture, current implementation, operational con
   - 60-minute time-to-live (TTL); immediately marked `usedAt` on completion.
   - Timing-safe, anti-enumeration response ("If an account exists, a link has been dispatched").
 - **Template Layout:** Dark Precision layout with "SECURITY RECOVERY" badge and `#CC6600` action button linking to `/reset-password?token=...`.
+- **Sandbox Testing Detection & Direct Developer Bypass:**
+  - When Resend operates in free sandbox mode (`onboarding@resend.dev`), Resend rejects recipients other than the verified account owner (`jaxis.statlab@gmail.com`).
+  - The system automatically detects this restriction, logs the attempt safely to `db.notificationLog`, and presents an explanatory alert on the `/forgot-password` confirmation screen along with a direct 1-click bypass button (`Open Password Reset Desk Directly →`) so staging, local development, and manual QA are never blocked.
 
 ### ✅ 2. Administrative Notification Audit Ledger
 - **Status:** **LIVE** at `/dashboard/admin/notifications`
@@ -57,19 +60,23 @@ The following matrix documents all planned transactional emails, their trigger p
 
 ---
 
-## 4. Production Domain Verification Protocol
+## 4. Production Domain Verification & Sandbox Environment
 
-Until custom domain DNS records are configured in Resend, emails sent with default `from: onboarding@resend.dev` will only deliver to the account owner's email (`jaxis.statlab@gmail.com`) or test sandbox addresses (`delivered@resend.dev`).
+### Testing Sandbox vs. Production Deliverability
+
+| Mode | Sender (`from`) | Allowed Recipients | Behavior |
+|---|---|---|---|
+| **Resend Sandbox (Current Dev)** | `onboarding@resend.dev` | `jaxis.statlab@gmail.com` | Only the registered Resend account owner receives real emails. Requests to other emails trigger the UI recovery bypass. |
+| **Verified Custom Domain (Production)** | `noreply@jaxis.dev` or `noreply@jaxisstatlab.com` | **Any recipient** (`@gmail.com`, `@yahoo.com`, corporate, academic) | Full public transactional email deliverability across all user accounts. |
 
 ### Domain Verification Steps:
 1. Navigate to **[resend.com/domains](https://resend.com/domains)**.
-2. Click **Add Domain** and enter your production subdomain:
-   - Primary Recommended: `mail.jaxis.dev` or `notifications.jaxis.dev`
-3. Configure the 3 DNS records provided by Resend in your DNS provider (Cloudflare / Namecheap / Vercel):
-   - **DKIM:** `TXT` record for `resend._domainkey.mail.jaxis.dev`
-   - **SPF:** `MX` record for `feedback.mail.jaxis.dev`
-   - **DMARC:** `TXT` record for `_dmarc.mail.jaxis.dev`
-4. Once verified (typically 2–5 minutes), update the environment variable in production:
+2. Click **Add Domain** and enter your production domain (e.g., `jaxis.dev` or `jaxisstatlab.com`).
+3. Add the 3 DNS records provided by Resend to your domain's DNS provider (Cloudflare, Vercel, GoDaddy, Namecheap):
+   - **DKIM:** `TXT` record for `resend._domainkey`
+   - **SPF:** `MX` record for `bounces` (or subdomain)
+   - **DMARC:** `TXT` record for `_dmarc` (e.g. `v=DMARC1; p=none;`)
+4. Once verified (typically 2–5 minutes), update the environment variable in production (Vercel & `.env`):
    ```bash
-   RESEND_FROM_EMAIL="JAXIS StatLab <notifications@mail.jaxis.dev>"
+   RESEND_FROM_EMAIL="JAXIS StatLab <noreply@yourdomain.com>"
    ```
