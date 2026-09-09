@@ -69,6 +69,38 @@ const ROLE_DISPLAY_NAMES: Record<string, { title: string; subtitle: string }> = 
   },
 };
 
+function generateRoleNotes(config: {
+  compensationType: CompensationType;
+  baseSalaryMonthly: number;
+  commissionPercentagePerStudy: number;
+  hourlyDutyRate: number;
+  fixedPerStudyBonus: number;
+  allowancesMonthly: number;
+}): string {
+  const parts: string[] = [];
+  if (config.compensationType === "PERCENTAGE_PER_STUDY") {
+    parts.push(`${config.commissionPercentagePerStudy}% commission per completed research study`);
+    if (config.fixedPerStudyBonus > 0) {
+      parts.push(`+ ₱${config.fixedPerStudyBonus.toLocaleString()} deliverable bonus`);
+    }
+  } else if (config.compensationType === "FIXED_SALARY") {
+    parts.push(`Fixed base salary of ₱${config.baseSalaryMonthly.toLocaleString()}/month (₱${(config.baseSalaryMonthly / 2).toLocaleString()} per 15-day cut-off)`);
+  } else if (config.compensationType === "HOURLY_DUTY") {
+    parts.push(`₱${config.hourlyDutyRate.toLocaleString()}/hr based on verified clock-in duty`);
+  } else if (config.compensationType === "HYBRID") {
+    parts.push(`₱${config.baseSalaryMonthly.toLocaleString()}/month base + ${config.commissionPercentagePerStudy}% commission per completed study`);
+    if (config.hourlyDutyRate > 0) {
+      parts.push(`+ ₱${config.hourlyDutyRate.toLocaleString()}/hr duty rate`);
+    }
+  }
+
+  if (config.allowancesMonthly > 0) {
+    parts.push(`+ ₱${config.allowancesMonthly.toLocaleString()} monthly allowance`);
+  }
+
+  return parts.join(" ") + ".";
+}
+
 export default function CeoPayrollPolicyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"ROLES" | "STAFF" | "PAYSLIPS">("ROLES");
@@ -168,6 +200,7 @@ export default function CeoPayrollPolicyPage() {
         if (!next.baseSalaryMonthly) next.baseSalaryMonthly = 12000;
         if (!next.commissionPercentagePerStudy) next.commissionPercentagePerStudy = 10;
       }
+      next.notes = generateRoleNotes(next);
       return next;
     });
   };
@@ -213,9 +246,17 @@ export default function CeoPayrollPolicyPage() {
     if (!formConfig) return;
 
     setIsSavingRole(true);
+    const updatedNotes = generateRoleNotes(formConfig);
+    const payload = { ...formConfig, notes: updatedNotes };
+
     try {
-      const res = await saveRoleCompensationConfig(formConfig);
+      const res = await saveRoleCompensationConfig(payload);
       if (res.success) {
+        const savedData = res.data || payload;
+        // Optimistic 0ms local state update
+        setRoleConfigs((prev) =>
+          prev.map((r) => (r.roleName === payload.roleName ? savedData : r))
+        );
         setToast({
           variant: "success",
           message: "Role Compensation Policy Updated",
@@ -891,6 +932,16 @@ export default function CeoPayrollPolicyPage() {
                             })}
                           </div>
                         </div>
+
+                        {(formConfig.roleName === "ADMIN" || formConfig.roleName === "FINANCE_OFFICER") &&
+                          (formConfig.compensationType === "PERCENTAGE_PER_STUDY" || formConfig.compensationType === "HYBRID") && (
+                            <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-[2px] text-xs text-amber-200 flex flex-col gap-1">
+                              <span className="font-semibold text-white">Platform Operations Role:</span>
+                              <p className="text-white/80 leading-relaxed text-[0.688rem]">
+                                {formConfig.roleName === "ADMIN" ? "Operations & Study Admin" : "Finance & HR Officer"} coordinates all research studies platform-wide. Their per-study commission percentage applies across active studies completed during each pay cycle.
+                              </p>
+                            </div>
+                          )}
 
                         {/* Focused Inputs - Show ONLY what is needed for the active model */}
                         <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-4">

@@ -239,9 +239,9 @@ const seedPayout = {
 ## 9. Acceptance Criteria (Done Checklist)
 
 ### Payout Calculation
-- [x] Payout computed correctly: `grossRevenue × ratePercent`
-- [x] QA Lead payout = 10% of Statistician payout
-- [x] Payout rate pulled from `PayoutRateConfig` by package name
+- [x] Payout computed correctly: `grossRevenue × ratePercent` for Statistician, `grossRevenue × qaRatePercent` for QA Lead
+- [x] QA Lead payout rate is customizable per package (replaces legacy hardcoded 10% rule) with live breakdown in `/dashboard/ceo/finance`
+- [x] Payout rates pulled from package configuration (`DEFAULT_PAYOUT_RATES` & `DEFAULT_QA_PAYOUT_RATES`, with CEO override storage)
 - [x] `FinancialLedger` record created on project delivery with correct margin breakdown
 
 ### Disbursement (RULE_PAY_01)

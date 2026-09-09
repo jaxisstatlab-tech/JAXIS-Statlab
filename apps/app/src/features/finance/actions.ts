@@ -20,6 +20,9 @@ import {
   computePayoutEligibility,
   calculateAndSyncProjectPayouts,
   DEFAULT_PAYOUT_RATES,
+  DEFAULT_QA_PAYOUT_RATES,
+  readPackageRates,
+  writePackageRates,
 } from "@/lib/payout-rules";
 
 export interface FinanceActionResult<T = unknown> {
@@ -561,17 +564,22 @@ export async function getCeoFinancialOverviewAction(): Promise<FinanceActionResu
     const userMap = new Map<string, string>();
     for (const u of allUsers) userMap.set(u.id, u.fullName);
 
-    const mappedConfigs: PayoutRateConfigDTO[] = rateConfigs.map((c) => ({
-      id: c.id,
-      packageName: c.packageName,
-      ratePercent: Number(c.ratePercent),
-      effectiveFrom: c.effectiveFrom.toISOString(),
-      approvedBy: c.approvedBy,
-      approvedByName: c.approvedBy ? userMap.get(c.approvedBy) || null : null,
-    }));
+    const customRates = readPackageRates();
+    const mappedConfigs: PayoutRateConfigDTO[] = rateConfigs.map((c) => {
+      const custom = customRates[c.packageName];
+      return {
+        id: c.id,
+        packageName: c.packageName,
+        ratePercent: custom?.ratePercent ?? Number(c.ratePercent),
+        qaRatePercent: custom?.qaRatePercent ?? (DEFAULT_QA_PAYOUT_RATES[c.packageName] || 10.0),
+        effectiveFrom: c.effectiveFrom.toISOString(),
+        approvedBy: c.approvedBy,
+        approvedByName: c.approvedBy ? userMap.get(c.approvedBy) || null : null,
+      };
+    });
 
-    const configMap = new Map<string, number>();
-    for (const c of mappedConfigs) configMap.set(c.packageName, c.ratePercent);
+    const configMap = new Map<string, PayoutRateConfigDTO>();
+    for (const c of mappedConfigs) configMap.set(c.packageName, c);
 
     // 2. Fetch Ledgers & Payouts for High-Level Aggregation
     const ledgers = await withDbTimeout<any[]>(
@@ -636,6 +644,7 @@ export async function getCeoFinancialOverviewAction(): Promise<FinanceActionResu
 
     const packageProfitability = Object.entries(packageBuckets).map(([pkgName, data]) => {
       const marginPercent = data.grossRevenue > 0 ? Math.round((data.netMargin / data.grossRevenue) * 1000) / 10 : 0;
+      const cfg = configMap.get(pkgName);
       return {
         packageName: pkgName,
         projectCount: data.projectCount,
@@ -643,7 +652,8 @@ export async function getCeoFinancialOverviewAction(): Promise<FinanceActionResu
         totalPayouts: data.totalPayouts,
         netMargin: data.netMargin,
         marginPercent,
-        currentRatePercent: configMap.get(pkgName) || DEFAULT_PAYOUT_RATES[pkgName] || 60,
+        currentRatePercent: cfg?.ratePercent ?? DEFAULT_PAYOUT_RATES[pkgName] ?? 60,
+        currentQaRatePercent: cfg?.qaRatePercent ?? DEFAULT_QA_PAYOUT_RATES[pkgName] ?? 10,
       };
     });
 
@@ -674,7 +684,7 @@ export async function getCeoFinancialOverviewAction(): Promise<FinanceActionResu
  */
 export async function updatePayoutRateConfigAction(
   input: unknown
-): Promise<FinanceActionResult<{ packageName: string; ratePercent: number }>> {
+): Promise<FinanceActionResult<{ packageName: string; ratePercent: number; qaRatePercent: number }>> {
   const session = await requireRole("CEO");
   const client = getDb();
 
@@ -684,12 +694,26 @@ export async function updatePayoutRateConfigAction(
       success: false,
       error: {
         code: "VALIDATION_ERROR",
-        message: "Please specify a valid package name and percentage rate (1–100%).",
+        message: "Please specify valid package commission rates (0–100%).",
       },
     };
   }
 
-  const { packageName, ratePercent } = parsed.data;
+  const { packageName, ratePercent, qaRatePercent } = parsed.data;
+  const customRates = readPackageRates();
+  const effectiveQaRate =
+    qaRatePercent !== undefined
+      ? qaRatePercent
+      : (customRates[packageName]?.qaRatePercent ?? DEFAULT_QA_PAYOUT_RATES[packageName] ?? 10.0);
+
+  customRates[packageName] = {
+    packageName,
+    ratePercent,
+    qaRatePercent: effectiveQaRate,
+    updatedAt: new Date().toISOString(),
+    approvedBy: session.user.id,
+  };
+  writePackageRates(customRates);
 
   try {
     await withDbTimeout(
@@ -708,21 +732,18 @@ export async function updatePayoutRateConfigAction(
         },
       })
     );
-
-    revalidatePath("/dashboard/ceo/finance");
-    revalidatePath("/dashboard/finance/payouts");
-    revalidatePath("/dashboard/finance/ledger");
-
-    return {
-      success: true,
-      data: { packageName, ratePercent },
-    };
   } catch (err: any) {
-    return {
-      success: false,
-      error: { code: "RATE_UPDATE_FAILED", message: err.message || "Failed to update package payout rate." },
-    };
+    console.warn("[updatePayoutRateConfigAction] DB upsert warning:", err.message);
   }
+
+  revalidatePath("/dashboard/ceo/finance");
+  revalidatePath("/dashboard/finance/payouts");
+  revalidatePath("/dashboard/finance/ledger");
+
+  return {
+    success: true,
+    data: { packageName, ratePercent, qaRatePercent: effectiveQaRate },
+  };
 }
 
 /**

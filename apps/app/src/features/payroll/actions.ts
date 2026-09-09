@@ -680,6 +680,24 @@ export async function generateBatchPayslips(
           status: a.project.masterStatus,
         });
       }
+    } else if (staff.role === "ADMIN" || staff.role === "FINANCE_OFFICER") {
+      if (config.compensationType === "PERCENTAGE_PER_STUDY" || config.compensationType === "HYBRID") {
+        const studiesToCount = assignments.slice(0, 3);
+        const commPct = config.commissionPercentagePerStudy || (staff.role === "ADMIN" ? 5.0 : 3.0);
+        for (const a of studiesToCount) {
+          const grossAmount = PACKAGE_ESTIMATED_VALUE[a.project.packageName || "JX_03_CORE"] || 28500.0;
+          const commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
+          itemizedStudies.push({
+            projectId: a.projectId,
+            intakeId: a.project.intakeId,
+            researchTitle: a.project.researchTitle,
+            grossAmount,
+            commissionPercentage: commPct,
+            commissionEarned: Math.round(commEarned * 100) / 100,
+            status: a.project.masterStatus,
+          });
+        }
+      }
     }
 
     const completedStudiesGrossValue = itemizedStudies.reduce((sum, s) => sum + s.grossAmount, 0);

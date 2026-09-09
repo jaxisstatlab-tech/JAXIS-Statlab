@@ -36,7 +36,8 @@ export type VoidPayoutInput = z.infer<typeof VoidPayoutSchema>;
 
 export const UpdatePayoutRateSchema = z.object({
   packageName: z.string().min(1, "Package name is required"),
-  ratePercent: z.number().min(1, "Rate must be at least 1%").max(100, "Rate cannot exceed 100%"),
+  ratePercent: z.number().min(0, "Rate must be at least 0%").max(100, "Rate cannot exceed 100%"),
+  qaRatePercent: z.number().min(0, "QA Rate must be at least 0%").max(100, "QA Rate cannot exceed 100%").optional(),
 });
 
 export type UpdatePayoutRateInput = z.infer<typeof UpdatePayoutRateSchema>;
@@ -119,6 +120,7 @@ export interface PayoutRateConfigDTO {
   id: number;
   packageName: string;
   ratePercent: number;
+  qaRatePercent?: number;
   effectiveFrom: string;
   approvedBy: string | null;
   approvedByName: string | null;
@@ -139,6 +141,7 @@ export interface CeoFinancialOverviewDTO {
     netMargin: number;
     marginPercent: number;
     currentRatePercent: number;
+    currentQaRatePercent?: number;
   }[];
   rateConfigs: PayoutRateConfigDTO[];
 }

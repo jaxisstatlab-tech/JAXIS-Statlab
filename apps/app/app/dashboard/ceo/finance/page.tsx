@@ -17,15 +17,10 @@ import {
 } from "@/features/finance/actions";
 import type { CeoFinancialOverviewDTO, PayoutRateConfigDTO } from "@/features/finance/schemas";
 import {
-  IconBuildingBank,
-  IconReceipt,
-  IconPercentage,
   IconEdit,
   IconCheck,
   IconAlertCircle,
   IconShieldLock,
-  IconTrendingUp,
-  IconAward,
 } from "@tabler/icons-react";
 
 export default function CeoFinancePage() {
@@ -35,6 +30,7 @@ export default function CeoFinancePage() {
   // Edit Rate Modal
   const [selectedConfig, setSelectedConfig] = useState<PayoutRateConfigDTO | null>(null);
   const [newRate, setNewRate] = useState<string>("");
+  const [newQaRate, setNewQaRate] = useState<string>("");
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -60,6 +56,7 @@ export default function CeoFinancePage() {
   const handleOpenEditRate = (config: PayoutRateConfigDTO) => {
     setSelectedConfig(config);
     setNewRate(config.ratePercent.toString());
+    setNewQaRate((config.qaRatePercent ?? 10).toString());
     setErrorMsg(null);
     setIsEditModalOpen(true);
   };
@@ -67,8 +64,18 @@ export default function CeoFinancePage() {
   const handleSaveRate = async () => {
     if (!selectedConfig) return;
     const parsedRate = parseFloat(newRate);
-    if (isNaN(parsedRate) || parsedRate <= 0 || parsedRate > 100) {
-      setErrorMsg("Please enter a valid percentage rate between 1% and 100%.");
+    const parsedQaRate = parseFloat(newQaRate);
+
+    if (isNaN(parsedRate) || parsedRate < 0 || parsedRate > 100) {
+      setErrorMsg("Please enter a valid Statistician commission rate between 0% and 100%.");
+      return;
+    }
+    if (isNaN(parsedQaRate) || parsedQaRate < 0 || parsedQaRate > 100) {
+      setErrorMsg("Please enter a valid QA Reviewer commission rate between 0% and 100%.");
+      return;
+    }
+    if (parsedRate + parsedQaRate > 100) {
+      setErrorMsg(`Combined commission (${parsedRate + parsedQaRate}%) exceeds 100% of study fees.`);
       return;
     }
 
@@ -79,16 +86,17 @@ export default function CeoFinancePage() {
       const res = await updatePayoutRateConfigAction({
         packageName: selectedConfig.packageName,
         ratePercent: parsedRate,
+        qaRatePercent: parsedQaRate,
       });
 
       if (res.success) {
         setIsEditModalOpen(false);
         loadData();
       } else {
-        setErrorMsg(res.error?.message || "Failed to update package rate.");
+        setErrorMsg(res.error?.message || "Failed to update package rates.");
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || "An unexpected error occurred.");
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
@@ -175,7 +183,9 @@ export default function CeoFinancePage() {
                 <th className="py-3 px-4 text-right">Expert Payouts</th>
                 <th className="py-3 px-4 text-right">Net Platform Profit</th>
                 <th className="py-3 px-4 text-center">Margin %</th>
-                <th className="py-3 px-4 text-center">Commission Rate</th>
+                <th className="py-3 px-4 text-center">Stat Commission</th>
+                <th className="py-3 px-4 text-center">QA Commission</th>
+                <th className="py-3 px-4 text-center">Total Pool</th>
                 <th className="py-3 px-4 text-right">Action</th>
               </tr>
             </thead>
@@ -217,11 +227,25 @@ export default function CeoFinancePage() {
                       </span>
                     </td>
 
-                    {/* Current Rate */}
+                    {/* Stat Commission Rate */}
                     <td className="py-3.5 px-4 text-center font-mono font-semibold text-white">
                       <Badge variant="sky" className="text-xs">
                         {pkg.currentRatePercent}%
                       </Badge>
+                    </td>
+
+                    {/* QA Commission Rate */}
+                    <td className="py-3.5 px-4 text-center font-mono font-semibold text-white">
+                      <Badge variant="amber" className="text-xs">
+                        {pkg.currentQaRatePercent ?? 10}%
+                      </Badge>
+                    </td>
+
+                    {/* Total Pool */}
+                    <td className="py-3.5 px-4 text-center font-mono font-semibold text-emerald-400">
+                      <span className="text-xs">
+                        {(pkg.currentRatePercent || 0) + (pkg.currentQaRatePercent || 0)}%
+                      </span>
                     </td>
 
                     {/* Edit Rate Action */}
@@ -251,8 +275,8 @@ export default function CeoFinancePage() {
         <Modal
           open={isEditModalOpen}
           onClose={() => !isSubmitting && setIsEditModalOpen(false)}
-          title={`Edit Commission Rate: ${selectedConfig.packageName}`}
-          description="Adjust the baseline percentage of gross study fees allocated to the assigned specialist."
+          title={`Edit Commission Rates: ${selectedConfig.packageName}`}
+          description="Adjust the percentage of study fees allocated to the Lead Statistician and Senior QA Reviewer."
           size="sm"
           footer={
             <div className="flex items-center justify-end gap-3 w-full font-sans">
@@ -271,7 +295,7 @@ export default function CeoFinancePage() {
                 onClick={handleSaveRate}
               >
                 <IconCheck size={15} stroke={2} className="mr-1" />
-                <span>Save Rate</span>
+                <span>Save Rates</span>
               </Button>
             </div>
           }
@@ -284,12 +308,16 @@ export default function CeoFinancePage() {
               </div>
             )}
 
+            {/* Statistician Rate */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-white/60 font-semibold">Specialist Commission Percentage (1% - 100%) *</label>
+              <label className="text-white/80 font-semibold flex items-center justify-between">
+                <span>Lead Research Statistician Commission *</span>
+                <span className="text-white/40 font-mono text-[0.625rem]">Stat Share</span>
+              </label>
               <div className="relative">
                 <input
                   type="number"
-                  min={1}
+                  min={0}
                   max={100}
                   step={0.5}
                   value={newRate}
@@ -300,10 +328,65 @@ export default function CeoFinancePage() {
                   %
                 </span>
               </div>
-              <span className="text-[0.688rem] text-white/40 mt-1 leading-relaxed">
-                Example: Setting 65% will allocate 65% of study gross revenue to the assigned statistician.
+              <span className="text-[0.688rem] text-white/40 leading-relaxed">
+                Percentage of gross study fees disbursed to the Lead Statistician.
               </span>
             </div>
+
+            {/* QA Reviewer Rate */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-white/80 font-semibold flex items-center justify-between">
+                <span>Senior QA Reviewer Commission *</span>
+                <span className="text-white/40 font-mono text-[0.625rem]">QA Share</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={newQaRate}
+                  onChange={(e) => setNewQaRate(e.target.value)}
+                  className="w-full p-2.5 bg-[#010114] border border-white/15 rounded-[2px] text-sm font-mono text-white focus:border-[#CC6600] focus:outline-none pr-8"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 font-mono font-bold">
+                  %
+                </span>
+              </div>
+              <span className="text-[0.688rem] text-white/40 leading-relaxed">
+                Percentage of gross study fees disbursed to the Senior QA Reviewer.
+              </span>
+            </div>
+
+            {/* Live Commission Pool Summary */}
+            {(() => {
+              const sRate = parseFloat(newRate) || 0;
+              const qRate = parseFloat(newQaRate) || 0;
+              const totalPool = Math.round((sRate + qRate) * 10) / 10;
+              const netMargin = Math.round((100 - totalPool) * 10) / 10;
+
+              return (
+                <div className="p-3 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-2">
+                  <span className="text-white/60 font-mono text-[0.688rem] uppercase font-semibold">
+                    Package Payout Breakdown
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2 bg-[#01142B] border border-white/5 rounded-[2px] flex flex-col">
+                      <span className="text-white/50 text-[0.625rem]">Total Expert Pool</span>
+                      <span className="font-mono font-bold text-amber-400 text-sm">
+                        {totalPool}%
+                      </span>
+                    </div>
+                    <div className="p-2 bg-[#01142B] border border-white/5 rounded-[2px] flex flex-col">
+                      <span className="text-white/50 text-[0.625rem]">Net Platform Margin</span>
+                      <span className={`font-mono font-bold text-sm ${netMargin >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                        {netMargin}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </Modal>
       )}

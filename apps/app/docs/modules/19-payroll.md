@@ -31,7 +31,7 @@ Module 19 implements institutional compensation governance, dual-mandate separat
 
 | Feature ID | Feature Description |
 |---|---|
-| `PAY-F01` | **CEO Role Compensation Policy Matrix** — Executive rate matrix desk at `/dashboard/ceo/payroll` allowing the CEO to define active compensation models (`FIXED_SALARY`, `PERCENTAGE_PER_STUDY`, `HOURLY_DUTY`, `HYBRID`) and baseline rates by employee role. |
+| `PAY-F01` | **CEO Role Compensation Policy Matrix** — Executive rate matrix desk at `/dashboard/ceo/payroll` allowing the CEO to define active compensation models (`FIXED_SALARY`, `PERCENTAGE_PER_STUDY`, `HOURLY_DUTY`, `HYBRID`) and baseline rates by employee role with auto-generated dynamic card notes, 0ms optimistic UI synchronization, and operational role per-study commission calculation. |
 | `PAY-F02` | **Corporate Settlement Cadence & Semi-Monthly Controls** — Company-wide settlement frequency configuration: Semi-Monthly (Days 1–15 and Days 16–End) with automatic 50% base salary and allowance division. |
 | `PAY-F03` | **Individual Specialist Bespoke Overrides** — Directory of internal specialists allowing the CEO to tailor bespoke retention terms (custom study %, base salary, or duty rates) with 1-click revert to role default. |
 | `PAY-F04` | **Finance Batch Payroll & Calculation Engine** — Dynamic batch calculation engine at `/dashboard/finance/payroll` calculating gross earnings, verified duty wages, deliverable study commissions, allowances, withholding taxes, and net take-home pay. |

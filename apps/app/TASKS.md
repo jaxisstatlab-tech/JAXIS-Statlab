@@ -650,8 +650,18 @@
 - [x] Installed grounded minimal status footer (`● System Operational v2.4.0`) in [Sidebar.tsx](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/app/components/layout/Sidebar.tsx).
 - [x] Optimized [DutyClockWidget.tsx](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/src/features/attendance/components/DutyClockWidget.tsx): implemented Server Component (RSC) pre-loading in [layout.tsx](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/app/dashboard/layout.tsx) to pass `initialActiveShift` directly to the widget, eliminating flash-of-wrong-state and spinner latency on page load.
 - [x] Built 0ms optimistic visual transitions for Clock-In and Clock-Out actions with `localStorage` persistence, background server synchronization, and automatic rollback on network failure.
-- [x] Upgraded live running duty timer to wall-clock difference math (`Date.now() - clockInMs`), eliminating background tab and OS sleep drift.
-
+### Task 15 — CEO Payroll Settings Policy Sync & Configurable Package QA Commission Split
+- [x] **Issue #1 Fix (CEO Payroll Policy State & Notes Sync)**:
+  - Resolved policy saving disconnect where role cards retained stale seed notes regardless of chosen compensation model (`FIXED_SALARY`, `PERCENTAGE_PER_STUDY`, `HOURLY_DUTY`, `HYBRID`).
+  - Implemented `generateRoleNotes()` in [page.tsx](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/app/dashboard/ceo/payroll/page.tsx) to auto-synthesize transparent, plain-English summaries on state transitions.
+  - Implemented 0ms optimistic local UI state synchronization in `handleSaveRole`, immediately updating cards with active badges, pay structure, and notes without re-fetch lag.
+  - Added support in `generateBatchPayslips()` for Admin and Finance Officer roles when configured with per-study commissions, ensuring pay is accurately calculated across coordinated studies.
+  - Corrected stale seed notes in `dev_data/payroll_configs.json`.
+- [x] **Customizable QA & Statistician Package Commission Split (Image #2)**:
+  - Replaced legacy hardcoded 10% QA review share rule in `src/lib/payout-rules.ts` with package-level configurable rates (`DEFAULT_QA_PAYOUT_RATES` and `package_rates.json` persistence).
+  - Updated `UpdatePayoutRateSchema`, `PayoutRateConfigDTO`, and `CeoFinancialOverviewDTO` in `src/features/finance/schemas.ts` to accept and return `qaRatePercent`.
+  - Updated `getCeoFinancialOverviewAction` and `updatePayoutRateConfigAction` in `src/features/finance/actions.ts` to persist and govern both Statistician and QA Reviewer rates per package.
+  - Upgraded CEO Treasury Governance Desk (`/dashboard/ceo/finance`): added dedicated **Stat Commission**, **QA Commission**, and **Total Pool** table columns, and enhanced the Edit Rate modal with dual rate inputs and live pool/margin calculation.
 ---
 
 ## Roadmap Status Matrix

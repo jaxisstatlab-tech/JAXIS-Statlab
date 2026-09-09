@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { getDb, withDbTimeout } from "@/lib/db";
 
 export const DEFAULT_PAYOUT_RATES: Record<string, number> = {
@@ -8,7 +10,49 @@ export const DEFAULT_PAYOUT_RATES: Record<string, number> = {
   DEFENSELAB: 80.0,
 };
 
-export const QA_LEAD_PAYOUT_PERCENT_OF_STAT = 10.0; // QA Lead receives 10% of the Statistician's payout amount
+export const DEFAULT_QA_PAYOUT_RATES: Record<string, number> = {
+  JX_01_DATACHECK: 5.0,
+  JX_02_START: 5.0,
+  JX_03_CORE: 10.0,
+  JX_04_ADVANCED: 12.0,
+  DEFENSELAB: 15.0,
+};
+
+export const QA_LEAD_PAYOUT_PERCENT_OF_STAT = 10.0; // QA Lead receives 10% of the Statistician's payout amount fallback
+
+const DEV_DATA_DIR = path.join(process.cwd(), "dev_data");
+const PACKAGE_RATES_FILE = path.join(DEV_DATA_DIR, "package_rates.json");
+
+export interface PackageRateRecord {
+  packageName: string;
+  ratePercent: number;
+  qaRatePercent: number;
+  updatedAt?: string;
+  approvedBy?: string;
+}
+
+export function readPackageRates(): Record<string, PackageRateRecord> {
+  try {
+    if (fs.existsSync(PACKAGE_RATES_FILE)) {
+      const content = fs.readFileSync(PACKAGE_RATES_FILE, "utf-8");
+      return JSON.parse(content);
+    }
+  } catch (err) {
+    console.warn("[readPackageRates] Failed to read package rates file", err);
+  }
+  return {};
+}
+
+export function writePackageRates(rates: Record<string, PackageRateRecord>): void {
+  try {
+    if (!fs.existsSync(DEV_DATA_DIR)) {
+      fs.mkdirSync(DEV_DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(PACKAGE_RATES_FILE, JSON.stringify(rates, null, 2), "utf-8");
+  } catch (err) {
+    console.error("[writePackageRates] Failed to write package rates file", err);
+  }
+}
 
 export interface PayoutEligibilityResult {
   eligible: boolean;
@@ -144,11 +188,14 @@ export async function calculateAndSyncProjectPayouts(projectId: string): Promise
   const grossRevenue = quote ? Number(quote.totalAmount) : 0;
   const packageName = project.packageName || quote?.packageName || "JX_03_CORE";
 
-  // 1. Fetch PayoutRateConfig for package
-  let ratePercent = DEFAULT_PAYOUT_RATES[packageName] || 60.0;
+  // 1. Fetch PayoutRateConfig for package (Statistician & QA shares)
+  const customRates = readPackageRates();
+  const customPkg = customRates[packageName];
+
+  let ratePercent = customPkg?.ratePercent ?? (DEFAULT_PAYOUT_RATES[packageName] || 60.0);
   try {
     const configDelegate = (client as any).payoutRateConfig;
-    if (configDelegate) {
+    if (configDelegate && customPkg?.ratePercent === undefined) {
       const config = await configDelegate.findUnique({
         where: { packageName },
       });
@@ -160,12 +207,14 @@ export async function calculateAndSyncProjectPayouts(projectId: string): Promise
     // fallback to default
   }
 
+  const qaRatePercent = customPkg?.qaRatePercent ?? (DEFAULT_QA_PAYOUT_RATES[packageName] ?? 10.0);
+
   // 2. Compute Statistician Share
   const statisticianPayoutAmount = Math.round((grossRevenue * (ratePercent / 100)) * 100) / 100;
 
-  // 3. Compute QA Lead Share (10% of Statistician payout for packages that involve QA review)
+  // 3. Compute QA Lead Share (from package QA commission rate)
   const hasQa = Boolean(project.assignment?.qaLeadId);
-  const qaLeadPayoutAmount = hasQa ? Math.round((statisticianPayoutAmount * (QA_LEAD_PAYOUT_PERCENT_OF_STAT / 100)) * 100) / 100 : 0;
+  const qaLeadPayoutAmount = hasQa ? Math.round((grossRevenue * (qaRatePercent / 100)) * 100) / 100 : 0;
 
   // 4. Net Platform Margin
   const platformFee = Math.round((grossRevenue - statisticianPayoutAmount - qaLeadPayoutAmount) * 100) / 100;

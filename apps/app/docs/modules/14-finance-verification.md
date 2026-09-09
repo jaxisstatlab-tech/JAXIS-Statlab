@@ -19,7 +19,7 @@ Module 14 establishes the core institutional treasury engine, milestone payout w
 | Feature ID | Scope Description | Implemented Artifacts | Verification Status |
 |:---|:---|:---|:---|
 | `FIN-F01` | **Revenue ledger** — Per-project financial record: gross revenue, platform fee, Expert share, net margin | `FinancialLedger` model, `src/features/finance/actions.ts` (`getFinancialLedgerAction`), `/dashboard/finance/ledger` | ✅ Verified |
-| `FIN-F02` | **Payout rate config** — Seeded rate table by package; CEO can update rates | `PayoutRateConfig` model, `src/lib/payout-rules.ts` (`DEFAULT_PAYOUT_RATES`), `/dashboard/ceo/finance` | ✅ Verified |
+| `FIN-F02` | **Payout rate config** — Seeded rate table by package; CEO can update both Statistician and QA Reviewer rates per package | `PayoutRateConfig` model, `src/lib/payout-rules.ts` (`DEFAULT_PAYOUT_RATES`, `DEFAULT_QA_PAYOUT_RATES`), `/dashboard/ceo/finance` | ✅ Verified |
 | `FIN-F03` | **Payout calculation** — Compute Statistician and QA Lead payout from approved rate for package | `src/lib/payout-rules.ts` (`calculateAndSyncProjectPayouts`) | ✅ Verified |
 | `FIN-F04` | **Payout eligibility check (`RULE_PAY_01`)** — Project must be DELIVERED or CLOSED, FULLY_PAID, no active dispute, no pending refund | `src/lib/payout-rules.ts` (`assertPayoutEligible`), `src/features/finance/actions.ts` (`approvePayoutAction`, `disbursePayoutAction`) | ✅ Verified |
 | `FIN-F05` | **Payout disbursement** — Finance Officer marks payout as disbursed after sending via GCash/bank | `src/features/finance/actions.ts` (`disbursePayoutAction`), `/dashboard/finance/payouts` (`<DisbursePayoutModal />`) | ✅ Verified |
@@ -28,8 +28,8 @@ Module 14 establishes the core institutional treasury engine, milestone payout w
 | `FIN-F08` | **Specialist Registered Payout Routing & 1-Click Copy** — Modal displays specialist's verified GCash/Maya/Bank details | `src/features/finance/actions.ts`, `/dashboard/finance/payouts` | ✅ Verified |
 | `FIN-F09` | **Statistician payout history** — Statistician views own payout history, applied rates, and receipts | `/dashboard/statistician/payouts`, `src/features/finance/actions.ts` (`getSpecialistPayoutHistoryAction`) | ✅ Verified |
 | `FIN-F10` | **Finance disbursement queue** — Finance sees all pending/approved payouts with eligibility checklist | `/dashboard/finance/payouts`, `src/features/finance/actions.ts` (`getFinancePayoutQueue`) | ✅ Verified |
-| `FIN-F11` | **CEO financial overview & rates matrix** — Full ledger, margin performance, package rates editor, and escrow overview | `/dashboard/ceo/finance`, `src/features/finance/actions.ts` (`getCeoFinancialOverviewAction`, `updatePayoutRateConfigAction`) | ✅ Verified |
-| `FIN-F12` | **QA Lead review compensation** — 10% of Statistician milestone fee for Tier 2 packages requiring QA audit | `src/lib/payout-rules.ts`, `/dashboard/qa/payouts` | ✅ Verified |
+| `FIN-F11` | **CEO financial overview & rates matrix** — Full ledger, margin performance, dual package rates editor (Stat & QA commission), and escrow overview | `/dashboard/ceo/finance`, `src/features/finance/actions.ts` (`getCeoFinancialOverviewAction`, `updatePayoutRateConfigAction`) | ✅ Verified |
+| `FIN-F12` | **QA Lead review compensation** — Configurable QA commission rate per package (with default package baseline: 5% to 15%) for packages requiring QA audit | `src/lib/payout-rules.ts`, `/dashboard/qa/payouts` | ✅ Verified |
 
 ---
 
