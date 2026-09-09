@@ -153,8 +153,8 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
     }
     setToast({
       variant: "success",
-      message: "Institutional Affiliation Verified",
-      description: "Your academic credentials have been saved. Intake desk unlocked.",
+      message: "School Affiliation Verified",
+      description: "Your academic details have been saved. Intake desk unlocked.",
     });
   };
 
@@ -233,8 +233,8 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
           setUploadingState((prev) => ({ ...prev, [category]: null }));
           setToast({
             variant: "danger",
-            message: "Cloudflare Upload Failed",
-            description: uploadRes.error?.message || "Failed to upload file to Cloudflare storage.",
+            message: "Upload Failed",
+            description: uploadRes.error?.message || "Failed to upload file. Please try again.",
           });
           return;
         }
@@ -273,8 +273,8 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
           setToast({
             variant: "success",
-            message: "File Uploaded to Cloudflare R2",
-            description: `"${file.name}" is stored in cloud storage and attached.`,
+            message: "File Uploaded",
+            description: `"${file.name}" has been uploaded and attached to your study.`,
           });
         }, 250);
       } catch (err) {
@@ -516,10 +516,10 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
         <Card className="p-8 border-l-4 border-l-[#CC6600] flex flex-col justify-between min-h-[220px] gap-5 bg-[#011B38]/40 border-white/[0.08] animate-card-reveal stagger-1">
           <div className="flex flex-col gap-3">
             <h2 className="text-base font-bold text-white uppercase tracking-wider font-sans">
-              Institutional Profile Verification Required
+              School Profile Verification Required
             </h2>
             <p className="text-sm text-white/70 leading-relaxed font-sans max-w-2xl">
-              You must complete your institutional affiliation details (university, academic program, contact number, and region) before you can submit research project intake forms.
+              Please complete your school affiliation details (university, academic program, contact number, and region) before submitting a new research study.
             </p>
           </div>
           <div className="pt-2 flex flex-wrap items-center gap-4">
@@ -537,7 +537,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               className="inline-flex items-center gap-1.5 text-xs text-white/60 hover:text-white transition-colors font-sans py-1.5"
             >
               <span>Full Profile Settings</span>
-              <ArrowRight size={13} weight="bold" />
+              <ArrowRight size={13} weight="fill" />
             </Link>
           </div>
         </Card>
@@ -1200,7 +1200,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               variant="secondary"
               size="sm"
               onClick={() => setCurrentStep(1)}
-              className="w-full sm:w-auto font-bold tracking-wider"
+              className="w-full sm:w-auto font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
             >
               ← Back to Scope
             </Button>
@@ -1229,10 +1229,10 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
             </p>
           </div>
 
-          {/* Institutional Affiliation Verification */}
+          {/* School Affiliation Verification */}
           {profile && (
             <div
-              className="p-5 md:p-6 rounded-[3px] bg-[#011C38] border border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5"
+              className="p-5 md:p-6 rounded-[2px] bg-[#011C38] border border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5"
               style={{ marginTop: "1.5rem", padding: "1.25rem 1.5rem", borderRadius: "2px", boxSizing: "border-box" }}
             >
               <div className="flex flex-col gap-1.5">
@@ -1355,7 +1355,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 flexShrink: 0,
               }}
             >
-              {integrityAgreed && <Check size={15} weight="bold" style={{ color: "#FFFFFF" }} />}
+              {integrityAgreed && <Check size={15} weight="fill" style={{ color: "#FFFFFF" }} />}
             </div>
 
             <div
@@ -1377,7 +1377,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 className="text-xs text-white/75 font-sans leading-relaxed"
                 style={{ fontSize: "0.8125rem", lineHeight: 1.55, color: "rgba(255, 255, 255, 0.75)" }}
               >
-                I confirm that the submitted questionnaire and dataset belong to my academic thesis or institutional project. I understand JAXIS StatLab operates under strict peer review and non-disclosure standards.
+                I confirm that the submitted questionnaire and dataset belong to my academic thesis or research project. I understand JAXIS StatLab operates under strict peer review and non-disclosure standards.
               </p>
               <div
                 className="flex items-center gap-1.5 text-[0.688rem] font-mono text-emerald-400/90 pt-1"

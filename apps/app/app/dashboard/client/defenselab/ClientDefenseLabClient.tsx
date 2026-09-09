@@ -11,6 +11,7 @@ import {
   Toast,
   LoadingState,
   Peso,
+  CopyButton,
 } from "@repo/ui";
 import {
   VideoCamera,
@@ -254,123 +255,352 @@ export function ClientDefenseLabClient({
             disabled={totalRemainingHours === 0 && entitlements.length === 0}
             className="flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
           >
-            <Plus size={15} weight="bold" />
+            <Plus size={15} weight="fill" />
             <span>Schedule Mock Defense</span>
           </Button>
         }
       />
 
       {/* KPI TELEMETRY CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard
-              label="TOTAL PURCHASED"
-              value={totalPurchasedHours}
-              unit="HOURS"
-              description="Mock defense hours purchased in approved quotes"
-              variant="default"
-              className="animate-card-reveal stagger-1"
-            />
-            <KpiCard
-              label="AVAILABLE TO SCHEDULE"
-              value={totalRemainingHours}
-              unit="HOURS"
-              description="Remaining unbooked rehearsal hours"
-              variant="default"
-              className="animate-card-reveal stagger-2"
-            />
-            <KpiCard
-              label="UPCOMING REHEARSALS"
-              value={activeSessions.length}
-              unit="SESSIONS"
-              description="Active scheduled rehearsal appointments"
-              variant="default"
-              className="animate-card-reveal stagger-3"
-            />
-            <KpiCard
-              label="COMPLETED REHEARSALS"
-              value={completedSessions.length}
-              unit="SESSIONS"
-              description="Completed sessions with recordings available"
-              variant="default"
-              className="animate-card-reveal stagger-4"
-            />
-          </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard
+          label="TOTAL PURCHASED"
+          value={totalPurchasedHours}
+          unit="HOURS"
+          description="Mock defense hours purchased in approved quotes"
+          variant="default"
+          className="animate-card-reveal stagger-1"
+        />
+        <KpiCard
+          label="AVAILABLE TO SCHEDULE"
+          value={totalRemainingHours}
+          unit="HOURS"
+          description="Remaining unbooked rehearsal hours"
+          variant="default"
+          className="animate-card-reveal stagger-2"
+        />
+        <KpiCard
+          label="UPCOMING REHEARSALS"
+          value={activeSessions.length}
+          unit="SESSIONS"
+          description="Active scheduled rehearsal appointments"
+          variant="default"
+          className="animate-card-reveal stagger-3"
+        />
+        <KpiCard
+          label="COMPLETED REHEARSALS"
+          value={completedSessions.length}
+          unit="SESSIONS"
+          description="Completed sessions with recordings available"
+          variant="default"
+          className="animate-card-reveal stagger-4"
+        />
+      </div>
 
-          {/* 12-HOUR RESCHEDULING POLICY BANNER */}
-          <div className="p-4 bg-[#01142B] border border-sky-500/30 rounded-[2px] flex items-start gap-3 text-xs text-sky-200 animate-card-reveal stagger-5">
-            <Info size={18} weight="fill" className="text-sky-400 shrink-0 mt-0.5" />
-            <div className="flex flex-col gap-1">
-              <span className="font-semibold text-white">
-                Official DefenseLab 12-Hour Rescheduling Notice Policy (DEF-F03 &amp; DEF-F04)
-              </span>
-              <span className="text-white/70 leading-relaxed">
-                To guarantee your assigned statistician&apos;s preparation and schedule availability, any session change or cancellation requires at least{" "}
-                <strong className="text-white">12 hours advance notice</strong>. Rescheduling requests submitted with less than 12 hours notice cannot be rescheduled and are marked as late cancellations (No-Show).
-              </span>
+      {/* 2:1 ASYMMETRIC BENTO GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* LEFT COLUMN: FOCAL SESSIONS & RECORDINGS (8 COLS) */}
+        <div className="lg:col-span-8 flex flex-col gap-8">
+          {/* ACTIVE & UPCOMING REHEARSAL SESSIONS */}
+          <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-5 animate-card-reveal stagger-5">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+              <div className="flex items-center gap-2.5">
+                <CalendarBlank size={18} weight="fill" className="text-[#CC6600]" />
+                <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                  Upcoming Mock Defense Rehearsals ({activeSessions.length})
+                </h2>
+              </div>
             </div>
-          </div>
 
+            {activeSessions.length === 0 ? (
+              <div className="p-10 text-center bg-[#010D1F] rounded-[2px] border border-white/5 flex flex-col items-center gap-2">
+                <CalendarBlank size={28} weight="fill" className="text-white/20" />
+                <p className="text-xs text-white/50 font-sans">
+                  No active rehearsals scheduled. Click &quot;Schedule Mock Defense&quot; above to book your session.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3.5">
+                {activeSessions.map((s) => {
+                  const sessionDate = new Date(s.scheduledAt);
+                  const isSoon = sessionDate.getTime() - Date.now() < 1000 * 60 * 60 * 24;
+
+                  return (
+                    <div
+                      key={s.id}
+                      className="p-4 sm:p-5 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-3 hover:border-white/20 transition-colors"
+                    >
+                      {/* Top Row: Badges on left, Actions on right */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <CopyButton
+                            variant="badge"
+                            value={s.projectIntakeId}
+                            label={s.projectIntakeId}
+                            onCopy={() =>
+                              setToast({
+                                message: "Study ID Copied",
+                                description: `"${s.projectIntakeId}" has been copied to your clipboard.`,
+                                variant: "info",
+                              })
+                            }
+                          />
+                          <span className="text-xs font-mono px-2 py-0.5 rounded-[2px] font-semibold bg-amber-950/50 text-amber-300 border border-amber-500/30 whitespace-nowrap">
+                            {s.status}
+                          </span>
+                          {isSoon && (
+                            <span className="text-[0.688rem] font-mono px-2 py-0.5 rounded-[2px] font-semibold bg-rose-950/50 text-rose-300 border border-rose-500/30 whitespace-nowrap">
+                              Within 24 Hours
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Action Toolbar */}
+                        <div className="flex items-center gap-2.5 shrink-0">
+                          {s.meetingUrl ? (
+                            <a
+                              href={s.meetingUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex"
+                            >
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                className="flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform text-xs font-semibold px-3 py-1.5"
+                              >
+                                <VideoCamera size={14} weight="fill" />
+                                <span>Join Video Call</span>
+                              </Button>
+                            </a>
+                          ) : (
+                            <span className="text-xs font-mono text-white/40 bg-black/30 px-2.5 py-1 rounded-[2px] border border-white/5 whitespace-nowrap">
+                              Meeting Link Pending Coordinator Setup
+                            </span>
+                          )}
+
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              setRescheduleSession(s);
+                              setRescheduleDate(s.scheduledAt.slice(0, 16));
+                            }}
+                            className="rounded-[2px] text-xs font-sans font-semibold px-3 py-1.5 active:scale-[0.97] transition-transform"
+                          >
+                            Reschedule
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Study Title */}
+                      <h3 className="text-sm sm:text-base font-semibold text-white font-sans">
+                        {s.projectTitle}
+                      </h3>
+
+                      {/* Telemetry / Metadata Row */}
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs font-mono text-white/70 pt-2 border-t border-white/[0.04]">
+                        <span className="flex items-center gap-1.5 text-white/90 whitespace-nowrap">
+                          <CalendarBlank size={14} weight="fill" className="text-[#CC6600]" />
+                          {sessionDate.toLocaleDateString("en-US", {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}{" "}
+                          at{" "}
+                          {sessionDate.toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-white/60 whitespace-nowrap">
+                          <Clock size={14} weight="fill" className="text-white/40" />
+                          Duration: {s.durationHours} {s.durationHours === 1 ? "Hour" : "Hours"}
+                        </span>
+                        {s.expertName && (
+                          <span className="text-white/60 whitespace-nowrap">
+                            Panelist: {s.expertName}
+                          </span>
+                        )}
+                      </div>
+
+                      {s.notes && (
+                        <p className="text-xs text-white/70 font-sans italic mt-1 bg-black/40 p-2.5 rounded-[2px] border border-white/5">
+                          Focus Agenda: &quot;{s.notes}&quot;
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
+          {/* COMPLETED REHEARSALS & RECORDING VAULT */}
+          <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-5 animate-card-reveal stagger-6">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+              <div className="flex items-center gap-2.5">
+                <DownloadSimple size={18} weight="fill" className="text-emerald-400" />
+                <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                  Completed Rehearsals &amp; Recording Vault ({completedSessions.length})
+                </h2>
+              </div>
+            </div>
+
+            {completedSessions.length === 0 ? (
+              <div className="p-10 text-center bg-[#010D1F] rounded-[2px] border border-white/5 flex flex-col items-center gap-2">
+                <DownloadSimple size={28} weight="fill" className="text-white/20" />
+                <p className="text-xs text-white/50 font-sans">
+                  No completed rehearsal recordings available yet. Once your mock defense concludes, your session recording will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3.5">
+                {completedSessions.map((s) => (
+                  <div
+                    key={s.id}
+                    className="p-4 sm:p-5 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-3 hover:border-white/20 transition-colors"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <CopyButton
+                          variant="badge"
+                          value={s.projectIntakeId}
+                          label={s.projectIntakeId}
+                          onCopy={() =>
+                            setToast({
+                              message: "Study ID Copied",
+                              description: `"${s.projectIntakeId}" has been copied to your clipboard.`,
+                              variant: "info",
+                            })
+                          }
+                        />
+                        <span className="text-xs font-mono px-2 py-0.5 rounded-[2px] font-semibold bg-emerald-950/50 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">
+                          COMPLETED
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {s.recordingUrl ? (
+                          <a
+                            href={s.recordingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex"
+                          >
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              className="flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform text-xs font-semibold px-3 py-1.5"
+                            >
+                              <DownloadSimple size={14} weight="fill" />
+                              <span>Access Session Recording</span>
+                            </Button>
+                          </a>
+                        ) : (
+                          <span className="text-xs font-mono text-white/40 bg-black/30 px-2.5 py-1 rounded-[2px] border border-white/5 whitespace-nowrap">
+                            Recording Upload Pending
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <h3 className="text-sm sm:text-base font-semibold text-white font-sans">
+                      {s.projectTitle}
+                    </h3>
+
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs font-mono text-white/60 pt-2 border-t border-white/[0.04]">
+                      <span className="whitespace-nowrap">
+                        Conducted on:{" "}
+                        {new Date(s.scheduledAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                      <span className="whitespace-nowrap">Panelist: {s.expertName}</span>
+                      <span className="whitespace-nowrap">Duration: {s.durationHours} Hours</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* RIGHT COLUMN: ENTITLED STUDIES & POLICY NOTICE (4 COLS) */}
+        <div className="lg:col-span-4 flex flex-col gap-8">
           {/* ENTITLED STUDIES OVERVIEW */}
-          <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-4 animate-card-reveal stagger-6">
+          <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-4 animate-card-reveal stagger-7">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck size={18} weight="fill" className="text-emerald-400" />
                 <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
-                  Entitled Research Studies &amp; Purchased Hours
+                  Entitled Studies
                 </h2>
               </div>
               <span className="text-xs font-mono text-white/50">
-                Rate: <Peso />250.00 / Hour
+                Rate: <Peso />250.00 / Hr
               </span>
             </div>
 
             {entitlements.length === 0 ? (
-              <div className="p-8 text-center bg-[#01142B] rounded-[2px] border border-white/10 flex flex-col items-center gap-3">
+              <div className="p-6 text-center bg-[#010D1F] rounded-[2px] border border-white/10 flex flex-col items-center gap-3">
                 <Microphone size={32} weight="fill" className="text-white/30" />
                 <p className="text-sm font-semibold text-white">No DefenseLab Add-on Detected</p>
-                <p className="text-xs text-white/60 max-w-md">
-                  DefenseLab mock defense rehearsals are an add-on service. When receiving your study proposal quotation, ensure the DefenseLab add-on is included or contact your administrator.
+                <p className="text-xs text-white/60 leading-relaxed">
+                  DefenseLab mock defense rehearsals are an add-on service. When receiving your proposal quote, ensure DefenseLab is included or contact your coordinator.
                 </p>
                 <Link href="/dashboard/client/projects">
-                  <Button variant="secondary" size="sm" className="rounded-[2px]">
+                  <Button variant="secondary" size="sm" className="rounded-[2px] text-xs">
                     View My Studies
                   </Button>
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3.5">
                 {entitlements.map((ent) => (
                   <div
                     key={ent.projectId}
-                    className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col justify-between gap-3 hover:border-white/20 transition-colors"
+                    className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col justify-between gap-3 hover:border-white/20 transition-colors"
                   >
                     <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[0.688rem] font-mono text-[#38BDF8] bg-sky-950/40 px-2 py-0.5 rounded-[2px] border border-sky-500/30">
-                          {ent.intakeId}
-                        </span>
+                      <div className="flex items-center justify-between gap-2">
+                        <CopyButton
+                          variant="badge"
+                          value={ent.intakeId}
+                          label={ent.intakeId}
+                          onCopy={() =>
+                            setToast({
+                              message: "Study ID Copied",
+                              description: `"${ent.intakeId}" has been copied to your clipboard.`,
+                              variant: "info",
+                            })
+                          }
+                        />
                         <span
-                          className={`text-xs font-mono px-2 py-0.5 rounded-[2px] font-semibold ${
+                          className={`text-xs font-mono px-2 py-0.5 rounded-[2px] font-semibold whitespace-nowrap ${
                             ent.remainingHours > 0
                               ? "bg-emerald-950/50 text-emerald-300 border border-emerald-500/30"
                               : "bg-white/10 text-white/50"
                           }`}
                         >
-                          {ent.remainingHours} {ent.remainingHours === 1 ? "Hour" : "Hours"} Available
+                          {ent.remainingHours} {ent.remainingHours === 1 ? "Hr" : "Hrs"} Available
                         </span>
                       </div>
-                      <h3 className="text-sm font-semibold text-white leading-snug line-clamp-2">
+                      <h3 className="text-xs font-semibold text-white leading-snug line-clamp-2">
                         {ent.researchTitle}
                       </h3>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs text-white/60 font-sans">
-                      <span>
-                        Assigned Statistician:{" "}
-                        <strong className="text-white font-semibold">
+                    <div className="flex flex-col gap-2 pt-2 border-t border-white/[0.06] text-xs text-white/60 font-sans">
+                      <div className="flex items-center justify-between">
+                        <span>Statistician:</span>
+                        <span className="text-white font-semibold truncate max-w-[140px]">
                           {ent.expertAssignedName || "Pending Assignment"}
-                        </strong>
-                      </span>
+                        </span>
+                      </div>
                       <Button
                         variant="secondary"
                         size="sm"
@@ -379,7 +609,7 @@ export function ClientDefenseLabClient({
                           setSelectedProjectId(ent.projectId);
                           setIsBookModalOpen(true);
                         }}
-                        className="rounded-[2px] text-xs active:scale-[0.97] transition-transform"
+                        className="w-full rounded-[2px] text-xs active:scale-[0.97] transition-transform justify-center"
                       >
                         Book Time
                       </Button>
@@ -390,200 +620,24 @@ export function ClientDefenseLabClient({
             )}
           </Card>
 
-          {/* ACTIVE & UPCOMING REHEARSAL SESSIONS */}
-          <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-4 animate-card-reveal stagger-7">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-              <div className="flex items-center gap-2">
-                <CalendarBlank size={18} weight="fill" className="text-[#CC6600]" />
-                <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
-                  Upcoming Mock Defense Rehearsals ({activeSessions.length})
-                </h2>
-              </div>
+          {/* 12-HOUR RESCHEDULING POLICY CARD */}
+          <div className="p-5 bg-[#01142B] border border-sky-500/30 rounded-[2px] flex flex-col gap-2 text-xs text-sky-200 animate-card-reveal stagger-8">
+            <div className="flex items-center gap-2">
+              <Info size={18} weight="fill" className="text-sky-400 shrink-0" />
+              <span className="font-semibold text-white">
+                12-Hour Rescheduling Notice Policy
+              </span>
             </div>
-
-            {activeSessions.length === 0 ? (
-              <div className="p-8 text-center text-xs text-white/40 font-mono">
-                No active rehearsals scheduled. Click &quot;Schedule Mock Defense&quot; above to book your preparation session.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {activeSessions.map((s) => {
-                  const sessionDate = new Date(s.scheduledAt);
-                  const isSoon = sessionDate.getTime() - Date.now() < 1000 * 60 * 60 * 24;
-
-                  return (
-                    <div
-                      key={s.id}
-                      className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col md:flex-row md:items-center justify-between gap-4"
-                    >
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-semibold text-sky-400 bg-sky-950/40 px-2 py-0.5 rounded-[2px] border border-sky-500/30">
-                            {s.projectIntakeId}
-                          </span>
-                          <span className="text-xs font-mono px-2 py-0.5 rounded-[2px] font-semibold bg-amber-950/50 text-amber-300 border border-amber-500/30">
-                            {s.status}
-                          </span>
-                          {isSoon && (
-                            <span className="text-[0.625rem] font-mono px-2 py-0.5 rounded-[2px] font-semibold bg-rose-950/50 text-rose-300 border border-rose-500/30">
-                              Within 24 Hours
-                            </span>
-                          )}
-                        </div>
-
-                        <span className="text-sm font-semibold text-white">
-                          {s.projectTitle}
-                        </span>
-
-                        <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-white/70">
-                          <span className="flex items-center gap-1.5 text-white/90">
-                            <CalendarBlank size={14} weight="fill" className="text-[#CC6600]" />
-                            {sessionDate.toLocaleDateString("en-US", {
-                              weekday: "short",
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}{" "}
-                            at{" "}
-                            {sessionDate.toLocaleTimeString("en-US", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                          <span className="flex items-center gap-1 text-white/60">
-                            <Clock size={14} weight="fill" />
-                            Duration: {s.durationHours} {s.durationHours === 1 ? "Hour" : "Hours"}
-                          </span>
-                          <span>Panelist: {s.expertName}</span>
-                        </div>
-
-                        {s.notes && (
-                          <p className="text-xs text-white/60 font-sans italic mt-1 bg-black/30 p-2 rounded-[2px] border border-white/5">
-                            Focus Agenda: &quot;{s.notes}&quot;
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0">
-                        {s.meetingUrl ? (
-                          <a
-                            href={s.meetingUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex"
-                          >
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              className="flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
-                            >
-                              <VideoCamera size={15} weight="fill" />
-                              <span>Join Video Call</span>
-                            </Button>
-                          </a>
-                        ) : (
-                          <span className="text-xs font-mono text-white/40 bg-black/30 px-3 py-1.5 rounded-[2px] border border-white/5">
-                            Meeting Link Pending Coordinator Setup
-                          </span>
-                        )}
-
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            setRescheduleSession(s);
-                            setRescheduleDate(s.scheduledAt.slice(0, 16));
-                          }}
-                          className="rounded-[2px] text-xs font-sans active:scale-[0.97] transition-transform"
-                        >
-                          Reschedule
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-
-          {/* COMPLETED REHEARSALS & RECORDING VAULT */}
-          <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-4 animate-card-reveal stagger-8">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-              <div className="flex items-center gap-2">
-                <DownloadSimple size={18} weight="bold" className="text-emerald-400" />
-                <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
-                  Completed Rehearsals &amp; Recording Vault ({completedSessions.length})
-                </h2>
-              </div>
-            </div>
-
-            {completedSessions.length === 0 ? (
-              <div className="p-8 text-center text-xs text-white/40 font-mono">
-                No completed rehearsal recordings available yet. Once your mock defense concludes, your coordinator will upload the session recording link here.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {completedSessions.map((s) => (
-                  <div
-                    key={s.id}
-                    className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col md:flex-row md:items-center justify-between gap-4"
-                  >
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-semibold text-sky-400 bg-sky-950/40 px-2 py-0.5 rounded-[2px] border border-sky-500/30">
-                          {s.projectIntakeId}
-                        </span>
-                        <span className="text-xs font-mono px-2 py-0.5 rounded-[2px] font-semibold bg-emerald-950/50 text-emerald-300 border border-emerald-500/30">
-                          COMPLETED
-                        </span>
-                      </div>
-
-                      <span className="text-sm font-semibold text-white">
-                        {s.projectTitle}
-                      </span>
-
-                      <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-white/60">
-                        <span>
-                          Conducted on:{" "}
-                          {new Date(s.scheduledAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </span>
-                        <span>Panelist: {s.expertName}</span>
-                        <span>Duration: {s.durationHours} Hours</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {s.recordingUrl ? (
-                        <a
-                          href={s.recordingUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex"
-                        >
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            className="flex items-center gap-1.5 rounded-[2px]"
-                          >
-                            <DownloadSimple size={15} weight="bold" />
-                            <span>Access Session Recording</span>
-                          </Button>
-                        </a>
-                      ) : (
-                        <span className="text-xs font-mono text-white/40 bg-black/30 px-3 py-1.5 rounded-[2px] border border-white/5">
-                          Recording Upload Pending
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+            <p className="text-white/70 leading-relaxed font-sans">
+              To guarantee your assigned statistician&apos;s preparation and schedule availability, any session change or cancellation requires at least{" "}
+              <strong className="text-white">12 hours advance notice</strong>.
+            </p>
+            <p className="text-white/60 leading-relaxed font-sans text-[11px] pt-1 border-t border-white/5">
+              Requests submitted with less than 12 hours notice cannot be rescheduled and are marked as late cancellations without refund.
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* SCHEDULE REHEARSAL MODAL */}
       {isBookModalOpen && (
@@ -618,12 +672,12 @@ export function ClientDefenseLabClient({
               >
                 {isSubmittingBook ? (
                   <div className="flex items-center gap-1.5">
-                    <CircleNotch size={14} weight="bold" className="animate-spin" />
+                    <CircleNotch size={14} weight="fill" className="animate-spin" />
                     <span>Booking Session...</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5">
-                    <Check size={15} weight="bold" />
+                    <Check size={15} weight="fill" />
                     <span>Confirm Booking</span>
                   </div>
                 )}
@@ -738,7 +792,7 @@ export function ClientDefenseLabClient({
               >
                 {isSubmittingReschedule ? (
                   <div className="flex items-center gap-1.5">
-                    <CircleNotch size={14} weight="bold" className="animate-spin" />
+                    <CircleNotch size={14} weight="fill" className="animate-spin" />
                     <span>Processing...</span>
                   </div>
                 ) : (

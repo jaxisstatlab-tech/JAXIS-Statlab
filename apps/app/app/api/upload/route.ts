@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
         success: false,
         error: {
           code: "UPLOAD_FAILED",
-          message: (error as Error).message || "Failed to upload file to Cloudflare storage.",
+          message: "Failed to upload file. Please try again.",
         },
       },
       { status: 500 }

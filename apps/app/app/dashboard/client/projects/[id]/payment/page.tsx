@@ -132,7 +132,7 @@ export default function ClientProjectPaymentPage() {
           <div className="flex items-center gap-2.5">
             <Link href={`/dashboard/client/projects/${project.id}`}>
               <Button variant="outline" size="sm" className="gap-1.5 font-sans rounded-[2px] active:scale-[0.97] transition-all">
-                <ArrowLeft size={14} weight="bold" />
+                <ArrowLeft size={14} weight="fill" />
                 <span>Return to Study</span>
               </Button>
             </Link>
@@ -143,7 +143,7 @@ export default function ClientProjectPaymentPage() {
                 onClick={() => setIsUploadModalOpen(true)}
                 className="gap-1.5 font-sans rounded-[2px] active:scale-[0.97] transition-all bg-[#CC6600] hover:bg-[#E67300] text-white"
               >
-                <Plus size={14} weight="bold" />
+                <Plus size={14} weight="fill" />
                 <span>Submit Deposit Proof</span>
               </Button>
             )}

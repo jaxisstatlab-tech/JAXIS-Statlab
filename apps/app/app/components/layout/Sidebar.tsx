@@ -1341,31 +1341,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {/* System Operational Status Badge */}
+        {/* System Version Footer */}
         <div
-          className="h-8 px-3.5 border-t border-white/[0.08] flex items-center text-white/40 shrink-0 bg-white/[0.01] overflow-hidden"
-          title={isCollapsed ? "System Operational v2.4.0" : undefined}
+          className="h-7 px-3.5 border-t border-white/[0.08] flex items-center shrink-0 bg-white/[0.01] overflow-hidden"
+          title="JAXIS StatLab v2.4.0"
         >
-          {/* Status Dot: Anchored on x = 34px axis */}
-          <div className="w-10 h-full shrink-0 flex items-center justify-center">
-            <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
-            </span>
-          </div>
-
-          {/* Status Text & Version: Smoothly fades in/out */}
           <div
-            className={`flex items-center justify-between flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
-              isCollapsed
-                ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0"
-                : "max-w-[200px] opacity-100 ml-1.5 pr-1"
+            className={`flex items-center flex-1 min-w-0 ${
+              isCollapsed ? "justify-center" : "justify-end"
             }`}
           >
-            <span className="font-sans text-[10px] text-white/50 tracking-tight select-none truncate">
-              System Operational
-            </span>
-            <span className="font-mono text-[9px] text-white/30 tracking-wider select-none ml-2 shrink-0">
+            <span className="font-mono text-[9px] text-white/30 tracking-wider select-none">
               v2.4.0
             </span>
           </div>

@@ -11,6 +11,7 @@ import {
   Toast,
   LoadingState,
   Peso,
+  CopyButton,
 } from "@repo/ui";
 import {
   ArrowLeft,
@@ -428,56 +429,59 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
           { label: "Client Portal", href: "/dashboard/client" },
           { label: "Projects", href: "/dashboard/client/projects" },
           { label: project.intakeId, href: `/dashboard/client/projects/${projectId}` },
-          { label: "Commercial Proposal" },
+          { label: "Quote & Proposal" },
         ]}
         actions={
           <Link href={`/dashboard/client/projects/${projectId}`}>
-            <Button variant="secondary" size="sm" className="font-sans font-semibold text-xs flex items-center gap-2">
-              <ArrowLeft size={15} weight="bold" />
+            <Button variant="secondary" size="sm" className="font-sans font-semibold text-xs flex items-center gap-2 rounded-[2px] active:scale-[0.97] transition-transform">
+              <ArrowLeft size={15} weight="fill" />
               <span>Return to Study Details</span>
             </Button>
           </Link>
         }
       />
 
-      {/* ── 2. Governance Status Action Bar ── */}
-      <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[4px] shadow-xl">
+      {/* ── 2. Quotation Status Bar ── */}
+      <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs font-sans text-white/50 uppercase font-bold tracking-wider">
               Proposal Status:
             </span>
             {quotation.status === "CLIENT_APPROVED" ? (
-              <span className="text-xs font-sans text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-[3px] uppercase font-bold flex items-center gap-1.5">
-                <Check size={14} weight="bold" />
+              <span className="text-xs font-sans text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-[2px] uppercase font-bold flex items-center gap-1.5">
+                <Check size={14} weight="fill" />
                 PROPOSAL ACCEPTED
               </span>
             ) : quotation.status === "QUOTE_DECLINED" ? (
-              <span className="text-xs font-sans text-rose-400 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-[3px] uppercase font-bold flex items-center gap-1.5">
-                <X size={14} weight="bold" />
+              <span className="text-xs font-sans text-rose-400 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-[2px] uppercase font-bold flex items-center gap-1.5">
+                <X size={14} weight="fill" />
                 PROPOSAL DECLINED
               </span>
             ) : quotation.isExpired ? (
-              <span className="text-xs font-sans text-rose-400 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-[3px] uppercase font-bold flex items-center gap-1.5">
+              <span className="text-xs font-sans text-rose-400 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-[2px] uppercase font-bold flex items-center gap-1.5">
                 <Warning size={14} weight="fill" />
                 PROPOSAL EXPIRED
               </span>
             ) : (
-              <span className="text-xs font-sans text-amber-300 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-[3px] uppercase font-bold flex items-center gap-1.5">
+              <span className="text-xs font-sans text-amber-300 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-[2px] uppercase font-bold flex items-center gap-1.5">
                 <Clock size={14} weight="fill" />
                 READY FOR YOUR REVIEW
               </span>
             )}
 
-            <button
-              type="button"
-              onClick={handleCopyId}
-              title="Click to copy Study ID"
-              className="text-xs font-mono font-bold text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 hover:border-sky-400 px-2.5 py-1 rounded-[3px] whitespace-nowrap cursor-pointer transition-all inline-flex items-center gap-1.5"
-            >
-              <span>{project.intakeId}</span>
-              <Copy size={13} weight="fill" className="opacity-60" />
-            </button>
+            <CopyButton
+              variant="badge"
+              value={project.intakeId}
+              label={project.intakeId}
+              onCopy={() =>
+                setToastMessage({
+                  message: "Copied to Clipboard",
+                  description: `Study ID "${project.intakeId}" has been copied to your clipboard.`,
+                  variant: "info",
+                })
+              }
+            />
           </div>
 
           {quotation.status === "QUOTE_SENT" && !quotation.isExpired && (
@@ -496,7 +500,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
       </Card>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         <div className="lg:col-span-7 flex flex-col gap-6">
-          <Card className="p-6 sm:p-8 bg-[#01142B]/90 border border-white/10 rounded-[4px] flex flex-col gap-5 shadow-xl">
+          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-4 gap-3">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center shrink-0 text-[#FFA040]">
@@ -504,7 +508,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                 </div>
                 <div>
                   <span className="text-xs font-sans uppercase text-[#FFA040] font-semibold tracking-wider block">
-                    Commercial Package Tier ({pkgDef?.id || quotation.packageName})
+                    Service Package Tier ({pkgDef?.id || quotation.packageName})
                   </span>
                   <h2 className="text-lg sm:text-xl font-bold text-white font-sans mt-0.5">
                     {pkgDef?.name || quotation.packageName}
@@ -529,7 +533,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                 <ul className="space-y-2.5 pt-0.5">
                   {pkgDef.deliverables.map((item, idx) => (
                     <li key={idx} className="text-xs sm:text-sm text-white/85 font-sans flex items-start gap-2.5">
-                      <Check size={16} weight="bold" className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <Check size={16} weight="fill" className="text-emerald-400 flex-shrink-0 mt-0.5" />
                       <span className="leading-relaxed">{item}</span>
                     </li>
                   ))}
@@ -538,12 +542,12 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
             )}
           </Card>
 
-          <Card className="p-6 sm:p-8 bg-[#01142B]/90 border border-white/10 rounded-[4px] flex flex-col gap-5 shadow-xl">
+          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-5">
             <div className="border-b border-white/10 pb-4 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
                   <Receipt size={18} weight="fill" className="text-[#CC6600]" />
-                  <span>Itemized Commercial Schedule</span>
+                  <span>Pricing Breakdown &amp; Options</span>
                 </h3>
                 {quotation.status === "QUOTE_SENT" && !quotation.isExpired && (
                   <p className="text-xs text-white/60 font-sans mt-1">
@@ -596,13 +600,13 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                       {isInteractive && (
                         <div className="pt-0.5 flex-shrink-0">
                           <div
-                            className={`w-5 h-5 rounded-[3px] border flex items-center justify-center transition-colors ${
+                            className={`w-5 h-5 rounded-[2px] border flex items-center justify-center transition-colors ${
                               isSelected
                                 ? "bg-emerald-500 border-emerald-400 text-white"
                                 : "border-white/30 bg-white/[0.04]"
                             }`}
                           >
-                            {isSelected && <Check size={13} weight="bold" />}
+                            {isSelected && <Check size={13} weight="fill" />}
                           </div>
                         </div>
                       )}
@@ -649,7 +653,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
               <div className="p-5 sm:p-6 rounded-[2px] bg-[#010D1F] border border-sky-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm mt-3">
                 <div className="space-y-0.5">
                   <span className="text-xs font-sans font-semibold uppercase text-sky-400 tracking-wider block">
-                    Total Contract Sum
+                    Total Amount
                   </span>
                   <p className="text-xs text-white/60 font-sans leading-relaxed">
                     All-inclusive research computation, quality audit, and reporting deliverables
@@ -663,11 +667,11 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
           </Card>
 
           {quotation.notes && (
-            <Card className="p-6 sm:p-8 bg-[#01142B]/90 border border-white/10 rounded-[4px] flex flex-col gap-3 shadow-xl">
+            <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-3">
               <div className="border-b border-white/10 pb-3 flex items-center gap-2">
                 <FileText size={18} weight="fill" className="text-[#CC6600]" />
                 <h3 className="text-sm font-bold text-white font-sans">
-                  Statistical Team Scope Notes &amp; Assumptions
+                  Scope Notes &amp; Assumptions
                 </h3>
               </div>
               <div className="p-4 rounded-[2px] bg-[#010D1F] border border-white/10 text-xs text-white/80 font-sans leading-relaxed whitespace-pre-line">
@@ -678,13 +682,13 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
         </div>
 
         <div className="lg:col-span-5 flex flex-col gap-6">
-          <Card className="p-6 sm:p-8 bg-[#01142B]/90 border border-white/10 rounded-[4px] flex flex-col gap-5 shadow-xl">
+          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-5">
             <div className="border-b border-white/10 pb-3">
               <span className="text-xs font-sans uppercase text-white/50 font-semibold tracking-wider">
                 Payment Milestones
               </span>
               <h3 className="text-base font-bold text-white font-sans mt-0.5">
-                Escrow Settlement Schedule
+                Payment Schedule
               </h3>
             </div>
 
@@ -731,10 +735,10 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
             </div>
           </Card>
 
-          <Card className="p-6 sm:p-8 bg-[#01142B]/90 border border-white/10 rounded-[4px] flex flex-col gap-5 shadow-xl">
+          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-5">
             <div className="border-b border-white/10 pb-3">
               <span className="text-xs font-sans uppercase font-bold text-white/80 tracking-wider">
-                Researcher Decision Deck
+                Actions
               </span>
             </div>
 
@@ -745,10 +749,10 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                   size="md"
                   onClick={() => setIsAcceptModalOpen(true)}
                   disabled={isPending}
-                  className="w-full gap-2 justify-center bg-[#CC6600] text-white hover:bg-[#E67300] min-h-[42px] text-xs font-sans font-semibold cursor-pointer flex items-center"
+                  className="w-full gap-2 justify-center bg-[#CC6600] text-white hover:bg-[#E67300] min-h-[42px] text-xs font-sans font-semibold cursor-pointer flex items-center rounded-[2px] active:scale-[0.97] transition-transform"
                 >
-                  <Check size={16} weight="bold" />
-                  <span>Accept Proposal &amp; Proceed to SOW</span>
+                  <Check size={16} weight="fill" />
+                  <span>Accept Quote &amp; Proceed to SOW →</span>
                 </Button>
 
                 <Button
@@ -756,9 +760,9 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                   size="md"
                   onClick={() => setIsDeclineModalOpen(true)}
                   disabled={isPending}
-                  className="w-full text-white/75 hover:text-rose-400 hover:border-rose-500/40 justify-center text-xs font-sans min-h-[38px] cursor-pointer flex items-center gap-2"
+                  className="w-full text-white/75 hover:text-rose-400 hover:border-rose-500/40 justify-center text-xs font-sans min-h-[38px] cursor-pointer flex items-center gap-2 rounded-[2px] active:scale-[0.97] transition-transform"
                 >
-                  <X size={15} weight="bold" />
+                  <X size={15} weight="fill" />
                   <span>Decline / Request Scope Adjustment</span>
                 </Button>
               </div>
@@ -768,11 +772,11 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                   <>
                     <div className="p-5 rounded-[2px] bg-emerald-950/20 border border-emerald-500/30 text-left space-y-1.5">
                       <div className="text-xs font-sans text-emerald-400 font-bold flex items-center gap-2">
-                        <Check size={16} weight="bold" />
+                        <Check size={16} weight="fill" />
                         <span>Proposal Accepted</span>
                       </div>
                       <p className="text-xs text-white/70 font-sans leading-relaxed">
-                        Commercial terms accepted! Our operations team has been notified and is preparing your formal Statement of Work (SOW). You will be notified as soon as it is ready for your signature.
+                        Terms accepted! Our operations team has been notified and is preparing your formal Statement of Work (SOW). You will be notified as soon as it is ready for your signature.
                       </p>
                     </div>
 
@@ -781,9 +785,9 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                         <Button
                           variant="secondary"
                           size="md"
-                          className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                          className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer rounded-[2px] active:scale-[0.97] transition-transform"
                         >
-                          <ArrowLeft size={15} weight="bold" />
+                          <ArrowLeft size={15} weight="fill" />
                           <span>Return to Study Details</span>
                         </Button>
                       </Link>
@@ -793,7 +797,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                   <>
                     <div className="p-5 rounded-[2px] bg-emerald-950/20 border border-emerald-500/30 text-left space-y-1.5">
                       <div className="text-xs font-sans text-emerald-400 font-bold flex items-center gap-2">
-                        <Check size={16} weight="bold" />
+                        <Check size={16} weight="fill" />
                         <span>SOW Ready for Signing</span>
                       </div>
                       <p className="text-xs text-white/70 font-sans leading-relaxed">
@@ -806,7 +810,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                         <Button
                           variant="primary"
                           size="md"
-                          className="w-full min-h-[42px] font-sans text-xs font-semibold flex items-center justify-center gap-2 bg-[#CC6600] hover:bg-[#E67300] text-white"
+                          className="w-full min-h-[42px] font-sans text-xs font-semibold flex items-center justify-center gap-2 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] active:scale-[0.97] transition-transform"
                         >
                           <Certificate size={16} weight="fill" />
                           <span>Sign Statement of Work Now →</span>
@@ -817,9 +821,9 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                         <Button
                           variant="secondary"
                           size="md"
-                          className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                          className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer rounded-[2px] active:scale-[0.97] transition-transform"
                         >
-                          <ArrowLeft size={15} weight="bold" />
+                          <ArrowLeft size={15} weight="fill" />
                           <span>Return to Study Details</span>
                         </Button>
                       </Link>
@@ -843,9 +847,9 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                   <Button
                     variant="secondary"
                     size="md"
-                    className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer rounded-[2px] active:scale-[0.97] transition-transform"
                   >
-                    <ArrowLeft size={15} weight="bold" />
+                    <ArrowLeft size={15} weight="fill" />
                     <span>Return to Study Details</span>
                   </Button>
                 </Link>
@@ -858,7 +862,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                     <span>Proposal Expired</span>
                   </div>
                   <p className="text-xs text-white/70 font-sans leading-relaxed">
-                    This commercial quote has expired. Return to your study tracker to request an updated quotation.
+                    This quote has expired. Return to your study tracker to request an updated quotation.
                   </p>
                 </div>
 
@@ -866,9 +870,9 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
                   <Button
                     variant="secondary"
                     size="md"
-                    className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer rounded-[2px] active:scale-[0.97] transition-transform"
                   >
-                    <ArrowLeft size={15} weight="bold" />
+                    <ArrowLeft size={15} weight="fill" />
                     <span>Return to Study Details</span>
                   </Button>
                 </Link>
@@ -956,7 +960,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
               disabled={isPending}
               className="gap-2 bg-[#CC6600] text-white hover:bg-[#E67300] font-sans text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
             >
-              <Check size={16} weight="bold" />
+              <Check size={16} weight="fill" />
               <span>{isPending ? "Approving..." : "Confirm & Accept Quote"}</span>
             </Button>
           </ModalFooter>

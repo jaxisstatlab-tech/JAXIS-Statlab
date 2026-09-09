@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   PageHeader,
   Card,
@@ -22,10 +23,7 @@ import {
   MagnifyingGlass,
   Plus,
   ArrowRight,
-  Eye,
   Clock,
-  CheckCircle,
-  ShieldCheck,
 } from "@phosphor-icons/react";
 import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
@@ -47,6 +45,7 @@ export function ClientProjectsListClient({
   initialProjects,
   initialProfileComplete,
 }: ClientProjectsListClientProps) {
+  const router = useRouter();
   const [projects, setProjects] = useState<ProjectDetailItem[]>(initialProjects);
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -88,13 +87,16 @@ export function ClientProjectsListClient({
           setIsProfileComplete(false);
         }
       } catch (err) {
-        console.error("Failed to load client projects", err);
+        router.refresh();
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[ClientProjectsList] Failed to load client projects, refreshed via router:", err);
+        }
       } finally {
         setIsLoading(false);
       }
     }
     loadData();
-  }, [statusFilter, searchQuery]);
+  }, [statusFilter, searchQuery, router]);
 
   // Compute live KPIs
   const kpis = useMemo(() => {
@@ -226,12 +228,12 @@ export function ClientProjectsListClient({
               className="animate-content-fade rounded-[2px]"
             >
               <span>Setup Profile First</span>
-              <ArrowRight size={14} weight="bold" />
+              <ArrowRight size={14} weight="fill" />
             </Button>
           ) : (
             <Link href="/dashboard/client/projects/new" className="animate-content-fade">
               <Button variant="primary" size="sm" className="bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px]">
-                <Plus size={15} weight="bold" />
+                <Plus size={15} weight="fill" />
                 <span>New Project Intake</span>
               </Button>
             </Link>
@@ -248,7 +250,6 @@ export function ClientProjectsListClient({
           badge="ALL TIME"
           badgeColor="gray"
           description="All client submitted research scopes"
-          icon={<Eye size={16} weight="fill" className="text-white/60" />}
           className="animate-card-reveal stagger-1"
         />
 
@@ -264,11 +265,13 @@ export function ClientProjectsListClient({
               : "No pending information requests"
           }
           icon={
-            <Clock
-              size={16}
-              weight="fill"
-              className={kpis.awaitingInfo > 0 ? "text-[#FFA040]" : "text-white/60"}
-            />
+            kpis.awaitingInfo > 0 ? (
+              <Clock
+                size={16}
+                weight="fill"
+                className="text-[#FFA040]"
+              />
+            ) : undefined
           }
           className="animate-card-reveal stagger-2"
         />
@@ -280,7 +283,6 @@ export function ClientProjectsListClient({
           badge="UNDER REVIEW"
           badgeColor="sky"
           description="Methodology & pricing assessment"
-          icon={<ShieldCheck size={16} weight="fill" className="text-sky-400" />}
           className="animate-card-reveal stagger-3"
         />
 
@@ -291,7 +293,6 @@ export function ClientProjectsListClient({
           badge="ACTIVE"
           badgeColor="emerald"
           description={`${kpis.active} running · ${kpis.delivered} delivered`}
-          icon={<CheckCircle size={16} weight="fill" className="text-emerald-400" />}
           className="animate-card-reveal stagger-4"
         />
       </div>
@@ -727,7 +728,7 @@ export function ClientProjectsListClient({
                           }}
                           className="px-4 py-2 rounded-[2px] bg-[#CC6600]/20 hover:bg-[#CC6600]/35 text-white border border-[#CC6600]/60 hover:border-[#CC6600] text-xs font-sans font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer active:scale-[0.97] min-h-[36px]"
                         >
-                          <DownloadSimple size={14} weight="bold" className="text-[#FFA040]" aria-hidden="true" />
+                          <DownloadSimple size={14} weight="fill" className="text-[#FFA040]" aria-hidden="true" />
                           <span>Download</span>
                         </button>
                       </div>

@@ -22,9 +22,6 @@ import {
   ArrowRight,
   Receipt,
   Clock,
-  CheckCircle,
-  FileText,
-  CurrencyDollar,
 } from "@phosphor-icons/react";
 import { getProjects } from "@/features/projects/actions";
 import { getQuotationByProject } from "@/features/quotations/actions";
@@ -178,7 +175,11 @@ export function ClientQuotationsClient({
           badge={stats.pendingAction > 0 ? "ACTION NEEDED" : "ALL CLEAR"}
           badgeColor={stats.pendingAction > 0 ? "orange" : "gray"}
           description="Quotes ready for your review"
-          icon={<Clock size={16} weight="fill" className={stats.pendingAction > 0 ? "text-[#FFA040]" : "text-white/60"} />}
+          icon={
+            stats.pendingAction > 0 ? (
+              <Clock size={16} weight="fill" className="text-[#FFA040]" />
+            ) : undefined
+          }
           className="animate-card-reveal stagger-1"
         />
 
@@ -189,7 +190,6 @@ export function ClientQuotationsClient({
           badge="ACCEPTED"
           badgeColor="emerald"
           description="Scope and milestones accepted"
-          icon={<CheckCircle size={16} weight="fill" className="text-emerald-400" />}
           className="animate-card-reveal stagger-2"
         />
 
@@ -200,7 +200,6 @@ export function ClientQuotationsClient({
           badge="IN PIPELINE"
           badgeColor="sky"
           description="Quotes being prepared by statisticians"
-          icon={<FileText size={16} weight="fill" className="text-sky-400" />}
           className="animate-card-reveal stagger-3"
         />
 
@@ -211,7 +210,6 @@ export function ClientQuotationsClient({
           badge="COMMITTED"
           badgeColor="orange"
           description="Total value of accepted studies"
-          icon={<CurrencyDollar size={16} weight="fill" className="text-[#FFA040]" />}
           className="animate-card-reveal stagger-4"
         />
       </div>
@@ -413,7 +411,7 @@ export function ClientQuotationsClient({
                                 className="whitespace-nowrap font-sans font-semibold text-xs bg-[#CC6600] text-white hover:bg-[#B35500] inline-flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-all px-3 py-1.5"
                               >
                                 <span>Review Quote</span>
-                                <ArrowRight size={13} weight="bold" />
+                                <ArrowRight size={13} weight="fill" />
                               </Button>
                             </Link>
                           ) : isApproved ? (

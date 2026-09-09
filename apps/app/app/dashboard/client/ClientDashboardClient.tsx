@@ -180,6 +180,12 @@ export function ClientDashboardClient({
     }
   }, [initialProjects]);
 
+  useEffect(() => {
+    if (initialIsProfileComplete !== undefined) {
+      setIsProfileComplete(initialIsProfileComplete);
+    }
+  }, [initialIsProfileComplete]);
+
   const hasHandledCreatedRef = React.useRef(false);
   const isRefreshingRef = React.useRef(false);
 
@@ -205,14 +211,19 @@ export function ClientDashboardClient({
         setIsProfileComplete(false);
       }
     } catch (err) {
-      console.error("Failed to load client portal data", err);
+      // In development mode (Turbopack), hot-reloading while a tab is idle in the background
+      // can cause transient action ID mismatches. Fall back to router.refresh() to reload RSC tree.
+      router.refresh();
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[ClientDashboard] Background sync refreshed via router:", err);
+      }
     } finally {
       isRefreshingRef.current = false;
       if (showFullPageSpinner) {
         setIsLoading(false);
       }
     }
-  }, []);
+  }, [router]);
 
   // Re-fetch immediately when redirected from a newly submitted intake
   useEffect(() => {
@@ -242,7 +253,7 @@ export function ClientDashboardClient({
 
     const handleVisibilityChange = () => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        loadData(false);
+        router.refresh();
       }
     };
 
@@ -253,7 +264,7 @@ export function ClientDashboardClient({
       window.removeEventListener("jaxis:study-updated", handleStudyUpdated);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [loadData]);
+  }, [loadData, router]);
 
   // Filter out any projects with pending missing info
   const awaitingInfoProjects = useMemo(() => {
@@ -381,7 +392,7 @@ export function ClientDashboardClient({
                   size="md"
                   className="w-full font-bold tracking-wider font-sans text-xs sm:text-sm flex items-center justify-center gap-2 bg-[#CC6600] hover:bg-[#B35500] text-white active:scale-[0.97] transition-all rounded-[2px]"
                 >
-                  <Plus size={16} weight="bold" />
+                  <Plus size={16} weight="fill" />
                   <span>Submit New Study Request</span>
                 </Button>
               </Link>
@@ -539,12 +550,14 @@ export function ClientDashboardClient({
           <Card className="p-6 sm:p-7 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 sm:gap-5 h-full">
             {primaryStudy && stageInfo ? (
               <>
-                {/* Category Micro-Label */}
-                <div className="flex items-center justify-between text-[11px] font-mono font-semibold text-white/50 tracking-wider uppercase border-b border-white/[0.06] pb-3">
-                  <span className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#CC6600]" />
-                    Active Research Journey
-                  </span>
+                {/* Card Header matching Dashdark X precision standard */}
+                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <Target size={18} weight="fill" className="text-[#CC6600]" />
+                    <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                      Active Research Journey
+                    </h2>
+                  </div>
                   <span className="text-white/40 font-mono text-[10px]">
                     Stage {stageInfo.stageIndex + 1} of 5
                   </span>
@@ -552,36 +565,31 @@ export function ClientDashboardClient({
 
                 {/* Study Metadata & Direct Action Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] shrink-0">
-                      <Target size={20} weight="fill" />
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <CopyButton
-                          variant="badge"
-                          value={primaryStudy.intakeId}
-                          label={primaryStudy.intakeId}
-                        />
-                        {primaryStudy.packageName && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.06] text-white/70 border border-white/10 font-medium">
-                            {primaryStudy.packageName.replace(/_/g, " ")}
-                          </span>
-                        )}
-                        <span className="text-white/30 text-xs font-mono">·</span>
-                        <span className="text-xs font-sans text-white/50">
-                          Target: {new Date(primaryStudy.deadlineRequested).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                  <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <CopyButton
+                        variant="badge"
+                        value={primaryStudy.intakeId}
+                        label={primaryStudy.intakeId}
+                      />
+                      {primaryStudy.packageName && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.06] text-white/70 border border-white/10 font-medium">
+                          {primaryStudy.packageName.replace(/_/g, " ")}
                         </span>
-                      </div>
-                      <h3 className="text-base sm:text-lg font-bold text-white font-sans truncate mt-1" title={primaryStudy.researchTitle}>
-                        {primaryStudy.researchTitle}
-                      </h3>
-                      {primaryStudy.researchObjectives && (
-                        <p className="text-xs text-white/50 font-sans line-clamp-1 mt-0.5" title={primaryStudy.researchObjectives}>
-                          {primaryStudy.researchObjectives}
-                        </p>
                       )}
+                      <span className="text-white/30 text-xs font-mono">·</span>
+                      <span className="text-xs font-sans text-white/50">
+                        Target: {new Date(primaryStudy.deadlineRequested).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                      </span>
                     </div>
+                    <h3 className="text-base sm:text-lg font-bold text-white font-sans truncate mt-1" title={primaryStudy.researchTitle}>
+                      {primaryStudy.researchTitle}
+                    </h3>
+                    {primaryStudy.researchObjectives && (
+                      <p className="text-xs text-white/50 font-sans line-clamp-1 mt-0.5" title={primaryStudy.researchObjectives}>
+                        {primaryStudy.researchObjectives}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
@@ -663,7 +671,7 @@ export function ClientDashboardClient({
                                   : "bg-white/[0.05] text-white/40 border border-white/10"
                               }`}
                             >
-                              {isCompleted ? <Check size={12} weight="bold" /> : i + 1}
+                              {isCompleted ? <Check size={12} weight="fill" /> : i + 1}
                             </span>
 
                             <span className="text-[9px] font-mono tracking-wider uppercase font-semibold">
@@ -718,32 +726,26 @@ export function ClientDashboardClient({
                   </div>
                 </div>
 
-                {/* Bottom Status Ribbon */}
-                <div className="flex items-center justify-between text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] flex-wrap gap-2 mt-auto">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#CC6600] animate-pulse" />
-                    <span>Current Status: <strong className="text-white font-medium">{stageInfo.statusLabel}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {projects.length > 1 && (
-                      <Link
-                        href="/dashboard/client/projects"
-                        prefetch={true}
-                        onMouseEnter={() => router.prefetch("/dashboard/client/projects")}
-                        className="text-white/60 hover:text-white transition-colors font-sans text-xs font-medium cursor-pointer"
-                      >
-                        All Studies ({projects.length}) →
-                      </Link>
-                    )}
+                {/* Bottom Action Links Ribbon */}
+                <div className="flex items-center justify-end text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] gap-4 mt-auto">
+                  {projects.length > 1 && (
                     <Link
-                      href={`/dashboard/client/projects/${primaryStudy.id}`}
+                      href="/dashboard/client/projects"
                       prefetch={true}
-                      onMouseEnter={() => router.prefetch(`/dashboard/client/projects/${primaryStudy.id}`)}
-                      className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium cursor-pointer"
+                      onMouseEnter={() => router.prefetch("/dashboard/client/projects")}
+                      className="text-white/60 hover:text-white transition-colors font-sans text-xs font-medium cursor-pointer"
                     >
-                      View Full Study Details →
+                      All Studies ({projects.length}) →
                     </Link>
-                  </div>
+                  )}
+                  <Link
+                    href={`/dashboard/client/projects/${primaryStudy.id}`}
+                    prefetch={true}
+                    onMouseEnter={() => router.prefetch(`/dashboard/client/projects/${primaryStudy.id}`)}
+                    className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium cursor-pointer"
+                  >
+                    View Full Study Details →
+                  </Link>
                 </div>
               </>
             ) : (
@@ -803,7 +805,7 @@ export function ClientDashboardClient({
                           size="sm"
                           className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md"
                         >
-                          <Plus size={14} weight="bold" />
+                          <Plus size={14} weight="fill" />
                           <span>Start Study Request →</span>
                         </Button>
                       </Link>
@@ -911,28 +913,15 @@ export function ClientDashboardClient({
                   </div>
                 </div>
 
-                {/* Bottom Status Ribbon */}
-                <div className="flex items-center justify-between text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] flex-wrap gap-2 mt-auto">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#CC6600] animate-pulse" />
-                    <span>
-                      Current Status:{" "}
-                      <strong className="text-white font-medium">
-                        {isProfileComplete === false
-                          ? "Profile Setup Required"
-                          : "Ready for Intake Submission"}
-                      </strong>
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setIsHowToUseModalOpen(true)}
-                      className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium cursor-pointer"
-                    >
-                      How It Works Guide →
-                    </button>
-                  </div>
+                {/* Bottom Action Links Ribbon */}
+                <div className="flex items-center justify-end text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] mt-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsHowToUseModalOpen(true)}
+                    className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium cursor-pointer"
+                  >
+                    How It Works Guide →
+                  </button>
                 </div>
               </>
             )}
@@ -943,11 +932,9 @@ export function ClientDashboardClient({
         <div className="lg:col-span-4 flex flex-col gap-5 sm:gap-6">
           {/* Auxiliary Card 1: Statistical Consultation Desk */}
           <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-[2px] bg-sky-500/10 border border-sky-500/25 flex items-center justify-center text-sky-400 shrink-0">
-                  <ChatCenteredText size={18} weight="fill" />
-                </div>
+            <div className="flex items-start justify-between gap-3 border-b border-white/[0.08] pb-3">
+              <div className="flex items-center gap-2.5">
+                <ChatCenteredText size={18} weight="fill" className="text-sky-400 shrink-0" />
                 <div>
                   <h4 className="text-sm font-bold text-white font-sans leading-snug">
                     Statistical Consultation
@@ -997,11 +984,9 @@ export function ClientDashboardClient({
 
           {/* Auxiliary Card 2: DefenseLab Oral Defense Simulator */}
           <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] shrink-0">
-                  <GraduationCap size={18} weight="fill" />
-                </div>
+            <div className="flex items-start justify-between gap-3 border-b border-white/[0.08] pb-3">
+              <div className="flex items-center gap-2.5">
+                <GraduationCap size={18} weight="fill" className="text-[#FFA040] shrink-0" />
                 <div>
                   <h4 className="text-sm font-bold text-white font-sans leading-snug">
                     DefenseLab Practice

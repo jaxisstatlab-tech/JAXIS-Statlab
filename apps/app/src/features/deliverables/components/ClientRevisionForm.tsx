@@ -89,7 +89,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
 
   if (!isReleased || !revisionWindow.isActive) {
     return (
-      <div className="flex flex-col gap-8 max-w-5xl mx-auto pb-24 w-full animate-content-fade">
+      <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-24 w-full animate-content-fade">
         <PageHeader
           breadcrumbs={[
             { label: "WORKSPACE", href: "/dashboard" },
@@ -102,7 +102,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
           description="The 3-day post-delivery revision window for this research study has concluded."
         />
 
-        <Card className="p-8 text-center bg-[#01142B] border border-amber-500/20">
+        <Card className="p-8 text-center bg-[#01142B] border border-amber-500/20 rounded-[2px]">
           <div className="mx-auto w-14 h-14 rounded-[2px] bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-4">
             <Clock size={32} weight="fill" />
           </div>
@@ -115,17 +115,19 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
           <div className="mt-6 flex items-center justify-center gap-3">
             <Button
               variant="secondary"
-              size="md"
+              size="sm"
               onClick={() => router.push(`/dashboard/client/projects/${project.id}/deliverables`)}
+              className="rounded-[2px] active:scale-[0.97] transition-transform"
             >
-              ← Back to Deliverables
+              Back to Deliverables
             </Button>
             <Button
               variant="primary"
-              size="md"
+              size="sm"
               onClick={() => router.push(`/dashboard/client/projects/${project.id}/messages`)}
+              className="rounded-[2px] active:scale-[0.97] transition-transform"
             >
-              Open Consultation Chat →
+              Open Consultation Chat
             </Button>
           </div>
         </Card>
@@ -135,7 +137,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
 
   if (hasPendingRevision) {
     return (
-      <div className="flex flex-col gap-8 max-w-5xl mx-auto pb-24 w-full animate-content-fade">
+      <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-24 w-full animate-content-fade">
         <PageHeader
           breadcrumbs={[
             { label: "WORKSPACE", href: "/dashboard" },
@@ -148,7 +150,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
           description="You already have an active revision request undergoing review."
         />
 
-        <Card className="p-8 text-center bg-[#01142B] border border-sky-500/20">
+        <Card className="p-8 text-center bg-[#01142B] border border-sky-500/20 rounded-[2px]">
           <div className="mx-auto w-14 h-14 rounded-[2px] bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mb-4">
             <ShieldCheck size={32} weight="fill" />
           </div>
@@ -156,15 +158,16 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
             Revision Under Administrative Review
           </h3>
           <p className="font-sans text-xs text-white/60 max-w-md mx-auto mt-2 leading-relaxed">
-            Our administration is currently reviewing your revision items. Once classified, minor corrections will be routed directly to your Lead Statistician.
+            Our team is currently reviewing your revision items. Once classified, minor corrections will be routed directly to your Lead Statistician.
           </p>
           <div className="mt-6">
             <Button
               variant="secondary"
-              size="md"
+              size="sm"
               onClick={() => router.push(`/dashboard/client/projects/${project.id}/deliverables`)}
+              className="rounded-[2px] active:scale-[0.97] transition-transform"
             >
-              ← View Deliverables Status
+              View Deliverables Status
             </Button>
           </div>
         </Card>
@@ -173,7 +176,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-5xl mx-auto pb-24 w-full animate-content-fade">
+    <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-24 w-full animate-content-fade font-sans">
       {/* Header */}
       <PageHeader
         breadcrumbs={[
@@ -187,18 +190,19 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
         description={`Request specific adjustments or table refinements for ${project.researchTitle}.`}
         actions={
           <Button
-            variant="ghost"
-            size="md"
+            variant="secondary"
+            size="sm"
             onClick={() => router.push(`/dashboard/client/projects/${project.id}/deliverables`)}
+            className="flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
           >
-            <ArrowLeft size={16} weight="bold" />
+            <ArrowLeft size={15} weight="fill" />
             <span>Back to Deliverables</span>
           </Button>
         }
       />
 
       {/* Countdown Card */}
-      <Card className="p-5 bg-[#011B38] border border-sky-500/30">
+      <Card className="p-5 bg-[#01142B] border border-sky-500/30 rounded-[2px]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-[2px] bg-sky-500/10 text-sky-400 border border-sky-500/20">
@@ -220,7 +224,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
       </Card>
 
       {/* Guidelines Card */}
-      <Card className="p-6 bg-[#01142B] border border-white/10">
+      <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px]">
         <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-white/80 mb-3">
           Revision Policy & Guidelines
         </h4>
@@ -252,7 +256,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
       </Card>
 
       {/* Form */}
-      <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10">
+      <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px]">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-xs font-mono text-white/70 mb-1.5 uppercase font-semibold">
@@ -263,7 +267,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
               placeholder="e.g. Chapter 4 - Section 4.2, Table 3 (Regression Output), Appendix B"
               value={requestedSections}
               onChange={(e) => setRequestedSections(e.target.value)}
-              className="w-full bg-[#010114] border border-white/10 rounded-[2px] px-3.5 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
+              className="w-full bg-[#010D1F] border border-white/15 focus:border-[#CC6600] rounded-[2px] px-3.5 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:ring-0 transition-colors"
             />
             <p className="text-[11px] font-sans text-white/40 mt-1">
               List the specific chapters, tables, or figures you would like our research team to review.
@@ -286,7 +290,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
               placeholder="Please provide specific, clear instructions on what needs to be adjusted, clarified, or corrected..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-[#010114] border border-white/10 rounded-[2px] p-3.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 leading-relaxed font-sans"
+              className="w-full bg-[#010D1F] border border-white/15 focus:border-[#CC6600] rounded-[2px] p-3.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:ring-0 leading-relaxed font-sans transition-colors resize-none"
             />
           </div>
 
@@ -296,7 +300,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
                 type="checkbox"
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 rounded-[2px] bg-[#010114] border-white/20 text-[#CC6600] focus:ring-0"
+                className="mt-0.5 rounded-[2px] bg-[#010D1F] border-white/20 text-[#CC6600] focus:ring-0 cursor-pointer"
               />
               <span className="text-xs font-sans text-white/70 leading-relaxed select-none">
                 I confirm that the revision details provided above are within the original research objectives and agreed Scope of Work.
@@ -307,20 +311,22 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
             <Button
               type="button"
-              variant="ghost"
-              size="md"
+              variant="secondary"
+              size="sm"
               disabled={isSubmitting}
               onClick={() => router.push(`/dashboard/client/projects/${project.id}/deliverables`)}
+              className="rounded-[2px] active:scale-[0.97] transition-transform"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="primary"
-              size="md"
+              size="sm"
               disabled={isSubmitting || !description.trim() || !agreed}
+              className="flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
             >
-              {isSubmitting ? <CircleNotch size={16} className="animate-spin" /> : <PaperPlaneRight size={16} weight="fill" />}
+              {isSubmitting ? <CircleNotch size={15} className="animate-spin" /> : <PaperPlaneRight size={15} weight="fill" />}
               <span>{isSubmitting ? "Submitting..." : "Submit Revision Request"}</span>
             </Button>
           </div>

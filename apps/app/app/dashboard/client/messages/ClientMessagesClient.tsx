@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader, Card, Badge } from "@repo/ui";
 import type { ProjectThreadSummaryDTO } from "@/features/messaging/schemas";
@@ -39,6 +39,26 @@ export function ClientMessagesClient({
   );
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "PENDING">("ALL");
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "/" &&
+        document.activeElement?.tagName !== "INPUT" &&
+        document.activeElement?.tagName !== "TEXTAREA"
+      ) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key === "Escape" && document.activeElement === searchInputRef.current) {
+        setSearchQuery("");
+        searchInputRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (queryProjectId) {
@@ -109,24 +129,32 @@ export function ClientMessagesClient({
           {/* Search & Filter Header */}
           <div className="flex flex-col gap-2 flex-shrink-0">
             <div className="relative">
-              <MagnifyingGlass size={14} weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
+              <MagnifyingGlass size={14} weight="fill" className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" />
               <input
+                ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by ID or title..."
                 aria-label="Search study conversation by ID or title"
-                className="w-full pl-9 pr-8 py-2 bg-[#010915] border border-white/15 focus:border-[#CC6600] rounded-[2px] text-base sm:text-xs text-white placeholder:text-white/30 focus:outline-none focus:ring-0 ring-0 font-sans transition-colors"
+                className="w-full pl-9 pr-10 py-2 bg-[#010915] border border-white/15 focus:border-[#CC6600] rounded-[2px] text-base sm:text-xs text-white placeholder:text-white/30 focus:outline-none focus:ring-0 ring-0 font-sans transition-colors"
               />
-              {searchQuery && (
+              {searchQuery ? (
                 <button
                   type="button"
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => {
+                    setSearchQuery("");
+                    searchInputRef.current?.focus();
+                  }}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white cursor-pointer outline-none focus:outline-none focus:ring-0 ring-0"
                   aria-label="Clear search"
                 >
-                  <X size={13} weight="bold" />
+                  <X size={13} weight="fill" />
                 </button>
+              ) : (
+                <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.08] text-white/40 border border-white/10 select-none absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  /
+                </kbd>
               )}
             </div>
 
@@ -207,11 +235,17 @@ export function ClientMessagesClient({
                       <span className="text-xs font-mono font-semibold text-white/80">
                         {t.intakeId}
                       </span>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         {t.unreadCount > 0 && (
-                          <span className="px-1.5 py-0.5 rounded-[2px] bg-[#CC6600] text-white text-[0.625rem] font-bold font-mono">
-                            {t.unreadCount} NEW
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#CC6600]"></span>
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded-[2px] bg-[#CC6600] text-white text-[0.625rem] font-bold font-mono shadow-sm">
+                              {t.unreadCount} NEW
+                            </span>
+                          </div>
                         )}
                         <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-white/10 text-white/50 bg-white/[0.02]">
                           {!isAssigned ? "PENDING ASSIGNMENT" : t.masterStatus.replace(/_/g, " ")}
@@ -244,7 +278,7 @@ export function ClientMessagesClient({
                         isAssigned ? (
                           <span className="text-white/70 font-medium flex items-center gap-0.5">
                             <span>ACTIVE</span>
-                            <ArrowRight size={10} weight="bold" className="text-white/50" />
+                            <ArrowRight size={10} weight="fill" className="text-white/50" />
                           </span>
                         ) : (
                           <span className="text-white/40 font-medium flex items-center gap-1">
@@ -303,7 +337,7 @@ export function ClientMessagesClient({
             />
           ) : (
             <Card className="h-full min-h-0 p-12 bg-[#01142B] border-white/10 flex flex-col items-center justify-center text-center">
-              <ArrowRight size={24} weight="bold" className="text-white/40 mb-2" />
+              <ArrowRight size={24} weight="fill" className="text-white/40 mb-2" />
               <span className="text-xs text-white font-semibold">Select a study thread on the left to begin chatting</span>
             </Card>
           )}

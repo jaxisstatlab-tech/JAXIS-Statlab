@@ -38,7 +38,7 @@ export type CompleteDefenseLabSessionInput = z.infer<typeof CompleteDefenseLabSe
 
 export const UploadDefenseLabRecordingSchema = z.object({
   sessionId: z.string().min(1, "Session ID is required."),
-  recordingUrl: z.string().url("Please enter a valid URL (Google Drive, Dropbox, or Cloudflare storage)."),
+  recordingUrl: z.string().url("Please enter a valid URL (Google Drive, Dropbox, or cloud storage)."),
 });
 
 export type UploadDefenseLabRecordingInput = z.infer<typeof UploadDefenseLabRecordingSchema>;

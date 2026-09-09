@@ -219,14 +219,14 @@ export function ClientDisputesClient({
       case "RESOLVED_REFUND":
         return (
           <Badge variant="emerald" className="text-[0.688rem] font-mono flex items-center gap-1">
-            <Check size={13} weight="bold" />
+            <Check size={13} weight="fill" />
             <span>Refund Approved</span>
           </Badge>
         );
       case "RESOLVED_NO_REFUND":
         return (
           <Badge variant="muted" className="text-[0.688rem] font-mono flex items-center gap-1">
-            <Check size={13} weight="bold" />
+            <Check size={13} weight="fill" />
             <span>Study Upheld</span>
           </Badge>
         );
@@ -275,7 +275,7 @@ export function ClientDisputesClient({
             onClick={() => handleOpenFilingModal()}
             disabled={openEligibleProjects.length === 0}
           >
-            <Plus size={15} weight="bold" />
+            <Plus size={15} weight="fill" />
             <span>File New Claim</span>
           </Button>
         }
@@ -380,7 +380,7 @@ export function ClientDisputesClient({
           </div>
         ) : disputes.length === 0 ? (
           <div className="py-12 text-center text-xs text-white/40 flex flex-col items-center gap-2">
-            <Check size={28} weight="bold" className="text-white/20" />
+            <Check size={28} weight="fill" className="text-white/20" />
             <span>You have no active or historical study claims.</span>
           </div>
         ) : (
@@ -431,7 +431,7 @@ export function ClientDisputesClient({
                     <td className="py-3.5 px-4 text-right">
                       <Button
                         variant="secondary"
-                        className="text-xs h-7 px-2.5"
+                        className="text-xs h-7 px-2.5 rounded-[2px] active:scale-[0.97] transition-transform"
                         onClick={() => setSelectedDispute(d)}
                       >
                         View Decision
@@ -474,9 +474,9 @@ export function ClientDisputesClient({
               </div>
               <button
                 onClick={() => setIsFilingModalOpen(false)}
-                className="text-white/50 hover:text-white transition-colors"
+                className="text-white/50 hover:text-white transition-colors cursor-pointer"
               >
-                <X size={20} weight="bold" />
+                <X size={20} weight="fill" />
               </button>
             </div>
 
@@ -536,7 +536,7 @@ export function ClientDisputesClient({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe the exact tables, figures, or sections in your deliverable where the statistical test or numbers differ from your signed Scope of Work..."
-                  className="bg-black/30 border border-white/10 rounded-[2px] p-3 text-white outline-none focus:border-white/30 resize-none"
+                  className="bg-black/30 border border-white/10 rounded-[2px] p-3 text-white outline-none focus:border-white/30 resize-none font-sans leading-relaxed"
                   required
                 />
               </div>
@@ -550,15 +550,15 @@ export function ClientDisputesClient({
                     value={evidenceLink}
                     onChange={(e) => setEvidenceLink(e.target.value)}
                     placeholder="https://drive.google.com/... or cloud document link"
-                    className="bg-black/30 border border-white/10 rounded-[2px] p-2 text-white flex-1 outline-none focus:border-white/30"
+                    className="bg-black/30 border border-white/10 rounded-[2px] p-2 text-white flex-1 outline-none focus:border-white/30 font-mono"
                   />
                   <Button
                     type="button"
                     variant="secondary"
                     onClick={handleAddEvidence}
-                    className="text-xs flex items-center gap-1"
+                    className="text-xs flex items-center gap-1 rounded-[2px] active:scale-[0.97] transition-transform"
                   >
-                    <UploadSimple size={14} weight="bold" />
+                    <UploadSimple size={14} weight="fill" />
                     <span>Add Link</span>
                   </Button>
                 </div>
@@ -572,9 +572,9 @@ export function ClientDisputesClient({
                         <button
                           type="button"
                           onClick={() => handleRemoveEvidence(idx)}
-                          className="text-red-400 hover:text-red-300 ml-2"
+                          className="text-red-400 hover:text-red-300 ml-2 cursor-pointer"
                         >
-                          <X size={14} weight="bold" />
+                          <X size={14} weight="fill" />
                         </button>
                       </div>
                     ))}
@@ -589,6 +589,7 @@ export function ClientDisputesClient({
                   variant="secondary"
                   onClick={() => setIsFilingModalOpen(false)}
                   disabled={isSubmitting}
+                  className="rounded-[2px] active:scale-[0.97] transition-transform"
                 >
                   Cancel
                 </Button>
@@ -596,6 +597,7 @@ export function ClientDisputesClient({
                   type="submit"
                   variant="primary"
                   disabled={isSubmitting}
+                  className="rounded-[2px] active:scale-[0.97] transition-transform"
                 >
                   {isSubmitting ? "Submitting Claim..." : "Submit Claim for Review"}
                 </Button>
@@ -616,9 +618,9 @@ export function ClientDisputesClient({
               </div>
               <button
                 onClick={() => setSelectedDispute(null)}
-                className="text-white/50 hover:text-white transition-colors"
+                className="text-white/50 hover:text-white transition-colors cursor-pointer"
               >
-                <X size={20} weight="bold" />
+                <X size={20} weight="fill" />
               </button>
             </div>
 
@@ -699,6 +701,7 @@ export function ClientDisputesClient({
               <Button
                 variant="secondary"
                 onClick={() => setSelectedDispute(null)}
+                className="rounded-[2px] active:scale-[0.97] transition-transform"
               >
                 Close
               </Button>

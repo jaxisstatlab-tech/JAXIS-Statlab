@@ -357,7 +357,7 @@ export function ClientProjectDetailClient({
       // 1. Upload the physical binary directly to Cloudflare R2
       const uploadRes = await uploadFileToR2(selectedUploadFile, uploadCategory, project.intakeId);
       if (!uploadRes.success || !uploadRes.data) {
-        setUploadError(uploadRes.error?.message || "Failed to upload file to Cloudflare storage.");
+        setUploadError(uploadRes.error?.message || "Failed to upload file. Please try again.");
         return;
       }
 
@@ -643,7 +643,7 @@ export function ClientProjectDetailClient({
                     }}
                     className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
                   >
-                    <UploadSimple size={14} weight="bold" />
+                    <UploadSimple size={14} weight="fill" />
                     <span>Attach File</span>
                   </Button>
                 )}
@@ -677,7 +677,7 @@ export function ClientProjectDetailClient({
                             : "bg-white/[0.05] text-white/40 border border-white/10"
                         }`}
                       >
-                        {isCompleted ? <Check size={12} weight="bold" /> : i + 1}
+                        {isCompleted ? <Check size={12} weight="fill" /> : i + 1}
                       </span>
 
                       <span className="text-[9px] font-mono tracking-wider uppercase font-semibold">
@@ -871,7 +871,7 @@ export function ClientProjectDetailClient({
                 size="md"
                 className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#E67300] text-white whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform cursor-pointer shadow-md"
               >
-                <DownloadSimple size={15} weight="bold" className="mr-1.5" />
+                <DownloadSimple size={15} weight="fill" className="mr-1.5" />
                 <span>Download Deliverables →</span>
               </Button>
             </Link>
@@ -1210,7 +1210,7 @@ export function ClientProjectDetailClient({
                             {opt.label}
                           </span>
                           {isSelected && (
-                            <Check size={15} weight="bold" className="text-emerald-400 flex-shrink-0" />
+                            <Check size={15} weight="fill" className="text-emerald-400 flex-shrink-0" />
                           )}
                         </div>
                         <span className="text-[0.688rem] text-white/50 font-sans leading-relaxed">

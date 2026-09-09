@@ -181,8 +181,8 @@ export default function ClientSowPage() {
           ]}
           actions={
             <Link href={`/dashboard/client/projects/${project.id}`}>
-              <Button variant="secondary" size="sm" className="flex items-center gap-2 font-sans font-semibold text-xs rounded-[2px]">
-                <ArrowLeft size={15} weight="bold" />
+              <Button variant="secondary" size="sm" className="flex items-center gap-2 font-sans font-semibold text-xs rounded-[2px] active:scale-[0.97] transition-transform">
+                <ArrowLeft size={15} weight="fill" />
                 <span>Return to Study Details</span>
               </Button>
             </Link>
@@ -303,7 +303,7 @@ export default function ClientSowPage() {
                       <div className="flex items-center gap-2 text-xs font-sans">
                         {isNameMatch ? (
                           <span className="text-emerald-400 flex items-center gap-1.5 font-medium">
-                            <Check size={16} weight="bold" />
+                            <Check size={16} weight="fill" />
                             Signature name matches your verified registered account profile.
                           </span>
                         ) : (

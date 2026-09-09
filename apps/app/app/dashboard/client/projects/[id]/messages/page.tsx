@@ -32,9 +32,9 @@ export default function ClientProjectMessagesPage({ params }: PageProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="cursor-pointer text-xs font-semibold rounded-[2px]"
+                className="cursor-pointer text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
               >
-                <ArrowLeft size={16} weight="bold" className="mr-1.5" />
+                <ArrowLeft size={16} weight="fill" className="mr-1.5" />
                 <span>Back to Study Details</span>
               </Button>
             </Link>
