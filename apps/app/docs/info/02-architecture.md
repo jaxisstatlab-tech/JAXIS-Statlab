@@ -568,3 +568,21 @@ Every table must maintain composite and single-column indexes on high-frequency 
 ### 6. Client-Side Optimistic UI & `useTransition`
 Always wrap Server Action dispatches in React 19 `useTransition` or optimistic state models (`useOptimistic`) to provide instant 0ms user feedback while the backend action processes.
 
+---
+
+## 8. Data Storage Architecture: Supabase Database vs Cloudflare R2
+
+For the exhaustive database table and object key inventory, see the canonical specification in [03-data-storage.md](./03-data-storage.md).
+
+### Quick Architectural Reference:
+- **Supabase (Managed PostgreSQL)**:
+  - Connects via Prisma ORM pooler (`DATABASE_URL`).
+  - Stores all relational models: `User`, `Role`, `ClientProfile`, `StaffProfile`, `Project` (24-state workflow), `ProjectFile` (metadata only), `Quotation`, `QuotationLineItem`, `SOW`, `Payment`, `PaymentProof` (metadata only), `Assignment`, `StaffAttendanceLog`, `AttendanceCorrectionRequest`, `Message`, `BlockedMessageLog`, `AnalysisFile` (metadata only), `ScopeCreepLog`, `QAReview`, `Deliverable` (metadata only), `DefenseLabSession`, `FinancialLedger`, `Payout`, `Dispute`, `NotificationLog`, `InAppAlert`, `ArchivedProject`, `AuditLog`, `StorageRetentionConfig`.
+  - Zero raw binary files (`BYTEA`) are stored in Supabase.
+- **Cloudflare R2 (S3-Compatible Object Store)**:
+  - Configured in `src/lib/storage.ts` via `@aws-sdk/client-s3` and `/api/upload`.
+  - Zero egress fees forever.
+  - Stores all binary file categories (`RESEARCH_DOCUMENT`, `DATASET`, `QUESTIONNAIRE`, `PAYMENT_PROOF`, `ANALYSIS_OUTPUT`, `DELIVERABLE`, `DISPUTE_EVIDENCE`, SOW signed PDFs, and DefenseLab recordings) under key format `studies/{studyId}/{timestamp}-{cleanFileName}`.
+- **Local Dev Configs (`apps/app/dev_data/`)**:
+  - Hot JSON configurations: `payroll_configs.json` (role base retainers, hourly rates, models), `package_rates.json` (customizable Statistician & Senior QA commission rates), `payslips.json` (batch payroll records), and `payout_details.json` (specialist bank/wallet accounts).
+

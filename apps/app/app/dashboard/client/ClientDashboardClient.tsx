@@ -20,6 +20,8 @@ import {
   Clock,
   ChatCenteredText,
   GraduationCap,
+  ShieldCheck,
+  FileText,
 } from "@phosphor-icons/react";
 import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
@@ -35,7 +37,16 @@ const RESEARCH_STAGES = [
   { id: "deliverables", title: "5. Final Outputs", desc: "Reports & data tables" },
 ];
 
-function getStudyStage(status: string) {
+export interface StudyStageInfo {
+  stageIndex: number;
+  statusLabel: string;
+  actionText: string;
+  actionPath: string;
+  summary: string;
+  nextStep: string;
+}
+
+function getStudyStage(status: string): StudyStageInfo {
   switch (status) {
     case "NEW_REQUEST":
     case "UNDER_EVALUATION":
@@ -44,6 +55,8 @@ function getStudyStage(status: string) {
         statusLabel: "Proposal Under Review",
         actionText: "Open Study",
         actionPath: "",
+        summary: "Our methodological triage desk is assessing your research scope and model requirements.",
+        nextStep: "Admin will formulate an itemized package quotation tailored to your statistical objectives.",
       };
     case "AWAITING_INFORMATION":
       return {
@@ -51,6 +64,8 @@ function getStudyStage(status: string) {
         statusLabel: "Information Needed",
         actionText: "Upload Files",
         actionPath: "",
+        summary: "Additional research instruments or documentation required to finalize your quote.",
+        nextStep: "Please upload questionnaire drafts, raw datasets, or institutional guidelines.",
       };
     case "QUOTE_SENT":
       return {
@@ -58,20 +73,28 @@ function getStudyStage(status: string) {
         statusLabel: "Quotation Ready",
         actionText: "Review Quote",
         actionPath: "/quote",
+        summary: "Official quotation and package options have been prepared for your study.",
+        nextStep: "Review the pricing breakdown and approve to generate the formal Scope of Work.",
       };
+    case "CLIENT_APPROVED":
     case "SOW_PENDING":
       return {
         stageIndex: 1,
         statusLabel: "Agreement Ready",
         actionText: "Sign Agreement",
         actionPath: "/sow",
+        summary: "The formal Scope of Work contract is ready for your electronic signature.",
+        nextStep: "Review the milestone terms, statistical deliverables, and sign to formalize engagement.",
       };
+    case "SOW_SIGNED":
     case "AWAITING_PAYMENT":
       return {
         stageIndex: 2,
         statusLabel: "Downpayment Required",
         actionText: "Pay Deposit",
         actionPath: "/deposit",
+        summary: "Contract successfully executed. Initial downpayment is required to lock specialist scheduling.",
+        nextStep: "Upload your GCash, Maya, or bank transfer deposit slip to unlock specialist assignment.",
       };
     case "ACTIVE":
     case "EXPERT_ASSIGNED":
@@ -81,6 +104,8 @@ function getStudyStage(status: string) {
         statusLabel: "Analysis in Progress",
         actionText: "View Progress",
         actionPath: "",
+        summary: "Your assigned Lead Statistician is cleaning datasets, specifying models, and computing statistical tests.",
+        nextStep: "Outputs will be compiled into draft tables and sent to the QA Lead for reproducibility auditing.",
       };
     case "FOR_QA":
     case "QA_REVISION":
@@ -89,6 +114,8 @@ function getStudyStage(status: string) {
         statusLabel: "Quality Assurance Check",
         actionText: "View QA Audit",
         actionPath: "",
+        summary: "Senior QA Lead is running independent verification scripts and auditing APA format compliance.",
+        nextStep: "Once all formulas and interpretations pass statistical peer review, final files will be released.",
       };
     case "DELIVERED":
     case "CLOSED":
@@ -97,6 +124,8 @@ function getStudyStage(status: string) {
         statusLabel: "Defense Ready",
         actionText: "Get Deliverables",
         actionPath: "",
+        summary: "All statistical tables, narrative interpretations, and verification certificates are finalized.",
+        nextStep: "Download your complete deliverable package. You have 7 days to request any included revisions.",
       };
     default:
       return {
@@ -104,6 +133,8 @@ function getStudyStage(status: string) {
         statusLabel: "Under Review",
         actionText: "View Study",
         actionPath: "",
+        summary: "Your research submission is being processed by the administration team.",
+        nextStep: "Follow live milestone updates here as your study advances through the research milestones.",
       };
   }
 }
@@ -505,7 +536,7 @@ export function ClientDashboardClient({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch animate-card-reveal stagger-5">
         {/* 8-Col Primary Hero: Live Research Journey & 5-Stage Stepper */}
         <div className="lg:col-span-8 flex flex-col">
-          <Card className="p-6 sm:p-7 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-5 h-full">
+          <Card className="p-6 sm:p-7 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 sm:gap-5 h-full">
             {primaryStudy && stageInfo ? (
               <>
                 {/* Category Micro-Label */}
@@ -532,6 +563,11 @@ export function ClientDashboardClient({
                           value={primaryStudy.intakeId}
                           label={primaryStudy.intakeId}
                         />
+                        {primaryStudy.packageName && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.06] text-white/70 border border-white/10 font-medium">
+                            {primaryStudy.packageName.replace(/_/g, " ")}
+                          </span>
+                        )}
                         <span className="text-white/30 text-xs font-mono">·</span>
                         <span className="text-xs font-sans text-white/50">
                           Target: {new Date(primaryStudy.deadlineRequested).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
@@ -540,6 +576,11 @@ export function ClientDashboardClient({
                       <h3 className="text-base sm:text-lg font-bold text-white font-sans truncate mt-1" title={primaryStudy.researchTitle}>
                         {primaryStudy.researchTitle}
                       </h3>
+                      {primaryStudy.researchObjectives && (
+                        <p className="text-xs text-white/50 font-sans line-clamp-1 mt-0.5" title={primaryStudy.researchObjectives}>
+                          {primaryStudy.researchObjectives}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -556,8 +597,46 @@ export function ClientDashboardClient({
                   </div>
                 </div>
 
-                {/* 5-Stage Visual Stepper Container (Recessed Well L2) */}
-                <div className="bg-[#010D1F] border border-white/10 rounded-[2px] p-3.5 sm:p-4 my-auto">
+                {/* Telemetry & Parameter Strip (Eliminates Upper Gap) */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 bg-[#010D1F] border border-white/[0.08] rounded-[2px]">
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-[10px] font-mono uppercase text-white/40 tracking-wider">Methodology Package</span>
+                    <span className="text-xs font-mono font-bold text-white truncate" title={primaryStudy.packageName?.replace(/_/g, " ") || "Statistical Suite"}>
+                      {primaryStudy.packageName?.replace(/_/g, " ") || "Statistical Suite"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-[10px] font-mono uppercase text-white/40 tracking-wider">Target Completion</span>
+                    <span className="text-xs font-mono font-semibold text-white">
+                      {new Date(primaryStudy.deadlineRequested).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-[10px] font-mono uppercase text-white/40 tracking-wider">Research Materials</span>
+                    <span className="text-xs font-mono font-semibold text-white/90">
+                      {primaryStudy.files?.length || 0} Files Attached
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-[10px] font-mono uppercase text-white/40 tracking-wider">Escrow Verification</span>
+                    <span className={`text-xs font-mono font-semibold truncate ${
+                      primaryStudy.financialSummary?.isFullyPaid
+                        ? "text-emerald-400"
+                        : primaryStudy.financialSummary?.isDownpaymentCleared
+                        ? "text-emerald-400"
+                        : "text-amber-400"
+                    }`}>
+                      {primaryStudy.financialSummary?.isFullyPaid
+                        ? "100% Cleared"
+                        : primaryStudy.financialSummary?.isDownpaymentCleared
+                        ? "Deposit Cleared"
+                        : "Pending Verification"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 5-Stage Visual Stepper Container (Recessed Well L2, No my-auto) */}
+                <div className="bg-[#010D1F] border border-white/10 rounded-[2px] p-3 sm:p-3.5">
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                     {RESEARCH_STAGES.map((stg, i) => {
                       const isCompleted = i < stageInfo.stageIndex;
@@ -566,7 +645,7 @@ export function ClientDashboardClient({
                       return (
                         <div
                           key={stg.id}
-                          className={`p-3 rounded-[2px] border transition-all flex flex-col justify-between gap-2.5 ${
+                          className={`p-2.5 sm:p-3 rounded-[2px] border transition-all flex flex-col justify-between gap-2 ${
                             isCurrent
                               ? "bg-[#011C38] border-[#CC6600]/80 shadow-md ring-1 ring-[#CC6600]/40"
                               : isCompleted
@@ -616,8 +695,31 @@ export function ClientDashboardClient({
                   </div>
                 </div>
 
+                {/* Active Stage Detail & Guidance Strip (Eliminates Lower Gap) */}
+                <div className="bg-[#010D1F]/70 border border-white/[0.08] rounded-[2px] p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start sm:items-center gap-3 min-w-0">
+                    <span className="relative flex h-2.5 w-2.5 shrink-0 mt-1 sm:mt-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#CC6600]" />
+                    </span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-sans font-semibold text-white leading-snug">
+                        {stageInfo.summary}
+                      </span>
+                      <span className="text-[11px] font-sans text-white/60 mt-0.5">
+                        <strong className="text-white/80 font-medium">Next Action:</strong> {stageInfo.nextStep}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 self-end sm:self-center">
+                    <span className="inline-flex items-center px-2 py-1 rounded-[2px] text-[10px] font-mono font-bold bg-[#CC6600]/15 border border-[#CC6600]/30 text-[#FFA040]">
+                      {stageInfo.statusLabel}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Bottom Status Ribbon */}
-                <div className="flex items-center justify-between text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] flex-wrap gap-2">
+                <div className="flex items-center justify-between text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] flex-wrap gap-2 mt-auto">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-[#CC6600] animate-pulse" />
                     <span>Current Status: <strong className="text-white font-medium">{stageInfo.statusLabel}</strong></span>
@@ -670,7 +772,7 @@ export function ClientDashboardClient({
                         </span>
                         <span className="text-white/30 text-xs font-mono">·</span>
                         <span className="text-xs font-sans text-white/50">
-                          Turnaround: 2–5 days
+                          Standard SLA: 2–5 business days
                         </span>
                       </div>
                       <h3 className="text-base sm:text-lg font-bold text-white font-sans truncate mt-1">
@@ -678,6 +780,9 @@ export function ClientDashboardClient({
                           ? "Setup Your School Profile to Begin"
                           : "Commission Your First Research Study"}
                       </h3>
+                      <p className="text-xs text-white/50 font-sans line-clamp-1 mt-0.5">
+                        Submit your research title, hypotheses, and questionnaire to initiate methodological evaluation.
+                      </p>
                     </div>
                   </div>
 
@@ -706,8 +811,33 @@ export function ClientDashboardClient({
                   </div>
                 </div>
 
-                {/* 5-Stage Visual Stepper Container (Recessed Well L2) */}
-                <div className="bg-[#010D1F] border border-white/10 rounded-[2px] p-3.5 sm:p-4 my-auto">
+                {/* 3-Point Workflow Onboarding Inset Bar (Eliminates Upper Gap) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 bg-[#010D1F] border border-white/[0.08] rounded-[2px]">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-[#CC6600]/20 text-[#FFA040] font-mono text-[10px] font-bold flex items-center justify-center shrink-0 border border-[#CC6600]/30">1</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-sans font-semibold text-white">Submit Request</span>
+                      <span className="text-[10px] font-sans text-white/50 truncate">Upload proposal & data</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-white/[0.06] text-white/70 font-mono text-[10px] font-bold flex items-center justify-center shrink-0 border border-white/10">2</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-sans font-semibold text-white">Review Quotation</span>
+                      <span className="text-[10px] font-sans text-white/50 truncate">Approve SOW contract</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-white/[0.06] text-white/70 font-mono text-[10px] font-bold flex items-center justify-center shrink-0 border border-white/10">3</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-sans font-semibold text-white">Analysis & QA</span>
+                      <span className="text-[10px] font-sans text-white/50 truncate">Peer-reviewed deliverables</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5-Stage Visual Stepper Container (Recessed Well L2, No my-auto) */}
+                <div className="bg-[#010D1F] border border-white/10 rounded-[2px] p-3 sm:p-3.5">
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                     {RESEARCH_STAGES.map((stg, i) => {
                       const isCurrent = i === 0;
@@ -715,7 +845,7 @@ export function ClientDashboardClient({
                       return (
                         <div
                           key={stg.id}
-                          className={`p-3 rounded-[2px] border transition-all flex flex-col justify-between gap-2.5 ${
+                          className={`p-2.5 sm:p-3 rounded-[2px] border transition-all flex flex-col justify-between gap-2 ${
                             isCurrent
                               ? "bg-[#011C38] border-[#CC6600]/80 shadow-md ring-1 ring-[#CC6600]/40"
                               : "bg-white/[0.01] border-white/[0.06] text-white/40"
@@ -759,8 +889,30 @@ export function ClientDashboardClient({
                   </div>
                 </div>
 
+                {/* Academic Integrity & SLA Guarantee Box (Eliminates Lower Gap) */}
+                <div className="bg-[#010D1F]/70 border border-white/[0.08] rounded-[2px] p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start sm:items-center gap-3 min-w-0">
+                    <div className="w-7 h-7 rounded-[2px] bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0">
+                      <ShieldCheck size={16} weight="fill" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-sans font-semibold text-white leading-snug">
+                        Publication-Grade Rigor & Data Confidentiality
+                      </span>
+                      <span className="text-[11px] font-sans text-white/60 mt-0.5">
+                        Every study is protected by institutional firewalls and audited by an independent Senior QA Lead.
+                      </span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 self-end sm:self-center">
+                    <span className="inline-flex items-center px-2 py-1 rounded-[2px] text-[10px] font-mono font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                      QA CERTIFIED
+                    </span>
+                  </div>
+                </div>
+
                 {/* Bottom Status Ribbon */}
-                <div className="flex items-center justify-between text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] flex-wrap gap-2">
+                <div className="flex items-center justify-between text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] flex-wrap gap-2 mt-auto">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-[#CC6600] animate-pulse" />
                     <span>

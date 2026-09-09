@@ -29,6 +29,15 @@ The platform ensures quality and accountability by following a strict 9-stage op
 - **Unified Design & Typography Harmonization**: Standardized `<KpiCard />` metrics, canonical `<PageHeader />` with fast SPA breadcrumb routing, and Philippine Peso (`<Peso />`) optical weight harmonization.
 - **Cinematic Landing Page (`apps/web`)**: GSAP scroll-triggered hero animations, pixel transitions, research sector dashboard, solutions, and pricing.
 
+## Documentation & Knowledge Base
+The complete project documentation is organized under [`apps/app/docs/`](file:///apps/app/docs/README.md):
+- **[Master Documentation Portal](apps/app/docs/README.md)**: Master sitemap and role-based quick links.
+- **[Information & Architecture (`docs/info/`)](apps/app/docs/info/README.md)**: Scope, architecture, data storage, design system, UI upgrades, and roadmap.
+- **[Modules & Verifications (`docs/modules/`)](apps/app/docs/modules/README.md)**: 22 functional module specifications (`specs/`) and audit reports (`verifications/`).
+- **[Task Boards & Checklists (`docs/tasks/`)](apps/app/docs/tasks/README.md)**: Master task board and component migration tracking.
+- **[Operational Playbooks (`docs/playbooks/`)](apps/app/docs/playbooks/README.md)**: Business operations manual and role-specific guides.
+- **[User Journeys & Flows (`docs/flows/`)](apps/app/docs/flows/README.md)**: 9-stage lifecycle and role interaction diagrams.
+
 ## Monorepo Architecture
 This project uses Turborepo to manage multiple applications and packages:
 - `apps/web`: Public-facing Landing Page & Marketing Site (Next.js SSR/SSG).

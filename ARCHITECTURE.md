@@ -281,3 +281,44 @@ JAXIS StatLab implements a multi-tier caching and prefetching engine engineered 
 4. **Anti-Double-Loading Policy**:
    - Pages enforce a strict single-loader policy via `<LoadingState>` from `@repo/ui`. Sub-components and auxiliary cards never render independent spinners while page-level data is loading.
 
+---
+
+## 8. Data Storage Architecture: Supabase Database vs Cloud Storage (Cloudflare R2)
+
+JAXIS StatLab strictly decouples **Structured Relational Data** from **Unstructured Binary Documents & Datasets**. For the comprehensive inventory, see [apps/app/docs/info/03-data-storage.md](file:///apps/app/docs/info/03-data-storage.md) or the [Master Documentation Portal](file:///apps/app/docs/README.md).
+
+```
+┌──────────────────────────────────────────────────┐  ┌─────────────────────────────────────────┐
+│        SUPABASE (PostgreSQL via Prisma)          │  │       CLOUDFLARE R2 (S3 Bucket)         │
+├──────────────────────────────────────────────────┤  ├─────────────────────────────────────────┤
+│ • User accounts, hashed credentials & RBAC roles │  │ • Raw research datasets (.xlsx, .csv)  │
+│ • Client academic profiles & staff expertise     │  │ • Statistical outputs (.spv, .sav, .R)  │
+│ • 24-state study lifecycle (intakeId, deadlines) │  │ • Client thesis proposals & chapters    │
+│ • Commercial quotations & itemized add-on lines  │  │ • Final verified deliverables & reports │
+│ • Signed SOW contract terms & JSON snapshots     │  │ • SOW digitally signed PDF contracts   │
+│ • Payment transaction records & verification     │  │ • GCash/Maya/Bank payment receipts      │
+│ • Expert workload assignments & business-day SLA │  │ • DefenseLab audio/video recordings     │
+│ • Staff attendance logs & shift correction claims│  │ • Arbitration dispute evidence files    │
+│ • Internal project chat & firewall evasion logs  │  │ • Treasury payout transfer slips        │
+│ • QA evaluation scorecards & error classifications│ │                                         │
+│ • Treasury ledgers & specialist payout records   │  │ Key Schema:                             │
+│ • Pointers to R2 keys (filePath strings)         │  │ studies/{studyId}/{timestamp}-{filename}│
+└──────────────────────────────────────────────────┘  └─────────────────────────────────────────┘
+```
+
+- **Supabase (PostgreSQL)**: Holds 100% of relational integrity, state machines, financial balance ledgers, and audit logs. Never stores raw file binary streams (`BYTEA`).
+- **Cloudflare R2 (Zero-Egress Object Storage)**: Stores all binary assets up to 15MB via `/api/upload` or pre-signed S3 URLs (`@aws-sdk/client-s3`), referenced by relative storage key pointers in Supabase.
+- **Local Dev Configs (`apps/app/dev_data/`)**: Stores hot operational policies including role payroll matrices (`payroll_configs.json`), customizable package commission rates (`package_rates.json`), payslip history (`payslips.json`), and specialist payout bank/wallet details (`payout_details.json`).
+
+---
+
+## 9. Engineering, Security, Scalability & Reliability Standards
+
+All system components, database access routines, server actions, and background jobs adhere to the 5 engineering pillars codified in [apps/app/docs/info/08-engineering-standards.md](file:///apps/app/docs/info/08-engineering-standards.md):
+1. **Database & Scalability**: Proper indexing on all foreign keys and search terms, zero N+1 queries, explicit field selection, and pagination.
+2. **Security**: Zero client secrets, strict server-side Zod input validation, enforced RBAC (`assertRole`), rate limiting, and chat firewall.
+3. **Performance**: RSC prefetching, tag-based memory caching (`unstable_cache`), 0ms optimistic UI updates, and single-track arc loaders.
+4. **Monitoring & Logs**: Actionable structured error logs, immutable business audit ledgers, delivery logs, and React Error Boundaries.
+5. **Reliability & Recovery**: Atomic Prisma `$transaction` blocks, idempotent mutations, automated daily backups, and R2 object versioning.
+
+

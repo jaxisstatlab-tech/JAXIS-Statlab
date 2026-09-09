@@ -23,9 +23,9 @@
 | `F00-01` | Turborepo workspace configuration with `apps/app`, `apps/web`, `packages/ui`, `packages/typescript-config`, `packages/eslint-config` |
 | `F00-02` | Tailwind CSS v4 installed in `apps/app`; `globals.css` populated with all tokens from `design-system.md` |
 | `F00-03` | Inter (sans) + Disket Mono (mono) fonts loaded via `next/font` in root layout |
-| `F00-04` | Prisma client singleton at `src/lib/db.ts` — connects to **Supabase PostgreSQL** via `DATABASE_URL` (Supabase connection pooler URL) |
-| `F00-05` | Supabase browser + server clients at `src/lib/supabase.ts` — used for Realtime channels (Module 09) and Supabase Storage (small files) |
-| `F00-06` | Cloudflare R2 client at `src/lib/storage.ts` — used for large file uploads (research datasets, analysis outputs, deliverables) |
+| `F00-04` | Prisma client singleton at `src/lib/db.ts` — connects to **Supabase PostgreSQL** via `DATABASE_URL` (Supabase connection pooler URL). See [03-data-storage.md](../../info/03-data-storage.md) for full table inventory. |
+| `F00-05` | Supabase browser + server clients at `src/lib/supabase.ts` — used for Realtime channels (Module 09) |
+| `F00-06` | Cloudflare R2 client at `src/lib/storage.ts` — S3-compatible zero-egress object storage for research datasets, raw files, outputs, deliverables, and payment receipts. See [03-data-storage.md](../../info/03-data-storage.md). |
 | `F00-07` | Resend client at `src/lib/email/index.ts` — `sendEmail()` abstraction backed by Resend API |
 | `F00-08` | Trigger.dev client at `src/lib/jobs/` — cron job registration (3-day expiry, 90-day purge, SLA alerts) |
 | `F00-09` | Zod env schema at `src/lib/env.ts` — all service env vars validated at boot |

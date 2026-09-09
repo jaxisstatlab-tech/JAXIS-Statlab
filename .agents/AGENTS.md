@@ -186,3 +186,38 @@ All AI coding assistants and developers MUST strictly follow the design system, 
   2. **Strictly No Rounded Bubbly Corners (`rounded-[2px]`)**: Never use Webflow `rounded-xl` or `rounded-2xl`. Maintain the crisp architectural precision of `rounded-[2px]` across all cards, containers, tables, and buttons.
   3. **Dark Precision Substrates**: Anchor strictly to `#010114` master canvas, `#01142B` flat card substrates, and hairline flat 1px `border-white/10` divisions (zero blurry box-shadow glows).
 
+---
+
+## 20. Engineering, Scalability, Security, Performance & Reliability Guardrails (CRITICAL)
+- **Primary Specification**: See [apps/app/docs/info/08-engineering-standards.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/docs/info/08-engineering-standards.md).
+- **Mandatory Pre-Implementation Check**: Before writing, refactoring, or updating any feature, every developer and AI coding assistant MUST evaluate:
+  1. **📊 Database & Scalability**:
+     - *Can your database handle 10,000 users instead of 10? Are your queries optimized? Have you added proper indexes? What happens when your data grows from hundreds to millions of records?*
+     - Mandate: Add Prisma `@@index` on foreign keys and search columns; eliminate N+1 loops using batch queries; select specific fields instead of full rows; enforce pagination by default (`take/skip`).
+  2. **🔒 Security**:
+     - *Are passwords stored securely? Are API keys protected? Is user input validated? Do you have rate limiting to prevent abuse? Can bots, scrapers, or attackers exploit your endpoints?*
+     - Mandate: Zero secret leakage in client code (only `NEXT_PUBLIC_` for browser vars); validate 100% of inputs on the server using strict Zod schemas; enforce RBAC (`assertRole`/`requireSession`); use rate-limiting on sensitive auth/intake routes.
+  3. **⚡ Performance**:
+     - *Are pages loading quickly? Are APIs optimized? Are you caching frequently accessed data? What happens during traffic spikes?*
+     - Mandate: Pre-load data in async RSC (`page.tsx`) to pass `initialData` into client views; use `unstable_cache` with tag revalidation (`invalidateCacheTags`); implement 0ms optimistic UI updates; enforce single-track arc loaders without double loading.
+  4. **📈 Monitoring & Logs**:
+     - *Do you have logs? Error tracking? Performance monitoring? Alerts when something breaks?*
+     - Mandate: Never write empty `catch` blocks; log actionable error contexts; record critical state mutations in immutable system audit ledgers; wrap desks in React Error Boundaries (`error.tsx`).
+  5. **💾 Reliability & Recovery**:
+     - *What happens if your database crashes? Do you have backups? Can you recover lost data? Can you roll back a bad deployment?*
+     - Mandate: Ensure multi-step state mutations run inside atomic Prisma `$transaction` blocks; keep operations idempotent so retries do not duplicate records; leverage object versioning in Cloudflare R2.
+  6. **⚖️ Concurrency & Data Integrity**:
+     - *What happens if two users click "Approve" or "Disburse" at the exact same millisecond?*
+     - Mandate: Enforce optimistic locking / conditional status transitions (`where: { id, status: 'EXPECTED' }`); use database unique constraints; implement immediate button debouncing and loading states.
+  7. **🧪 Testing & Quality Assurance**:
+     - *Can you deploy on a Friday without anxiety? Do your changes break another role's workflow?*
+     - Mandate: Ensure zero TypeScript compiler errors (`npm run check-types`) and zero ESLint warnings; write unit tests for critical financial/commission calculations.
+  8. **💸 FinOps & Resource Optimization**:
+     - *Will your cloud bills explode when 1,000 clients upload datasets?*
+     - Mandate: Route heavy files to Cloudflare R2 (zero egress) with 15MB limit; never stream big files through serverless RAM; enforce 90-day retention auto-purge on raw files.
+  9. **🧩 Defensive Contracts & Backwards Compatibility**:
+     - *What happens if an older stored JSON record lacks a newly introduced property?*
+     - Mandate: Never assume nested values exist (use `??` fallbacks); add `.optional().default(...)` to Zod schemas when adding new properties to avoid white-screen crashes.
+
+
+
