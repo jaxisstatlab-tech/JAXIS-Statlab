@@ -25,6 +25,11 @@ import {
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import { Prisma, AnalysisFileCategory, type RoleName } from "@prisma/client";
 import { getR2DownloadUrl } from "@/lib/storage";
+import {
+  QA_DECISION_METADATA,
+  ERROR_CLASSIFICATION_METADATA,
+} from "@/lib/qa-rules";
+import type { QaReviewDTO } from "@/features/qa/schemas";
 
 type ProjectWithWorkbench = Prisma.ProjectGetPayload<{
   include: {
@@ -58,6 +63,12 @@ type ProjectWithWorkbench = Prisma.ProjectGetPayload<{
       include: {
         flagger: { select: { fullName: true } };
         resolver: { select: { fullName: true } };
+      };
+    };
+    qaReviews: {
+      orderBy: { reviewedAt: "desc" };
+      include: {
+        reviewer: { select: { fullName: true } };
       };
     };
   };
@@ -122,6 +133,12 @@ export async function getAnalysisWorkbenchData(
           include: {
             flagger: { select: { fullName: true } },
             resolver: { select: { fullName: true } },
+          },
+        },
+        qaReviews: {
+          orderBy: { reviewedAt: "desc" },
+          include: {
+            reviewer: { select: { fullName: true } },
           },
         },
       },
@@ -297,6 +314,41 @@ export async function getAnalysisWorkbenchData(
         isAssignedStatistician,
         isAssignedQaLead,
         isManagement,
+        qaReviews: (project.qaReviews || []).map((r) => ({
+          id: r.id,
+          projectId: r.projectId,
+          reviewerId: r.reviewerId,
+          reviewerName: r.reviewer.fullName,
+          decision: r.decision,
+          decisionLabel: QA_DECISION_METADATA[r.decision]?.label || r.decision,
+          errorClassification: r.errorClassification,
+          errorClassificationLabel: r.errorClassification
+            ? ERROR_CLASSIFICATION_METADATA[r.errorClassification]?.label || r.errorClassification
+            : null,
+          comments: r.comments,
+          qaRevisionDueAt: r.qaRevisionDueAt ? r.qaRevisionDueAt.toISOString() : null,
+          reviewedAt: r.reviewedAt.toISOString(),
+        })),
+        activeRevision: (() => {
+          const revs = project.qaReviews || [];
+          const rejected = revs.find((r) => r.decision === "QA_REJECTED");
+          if (!rejected) return null;
+          return {
+            id: rejected.id,
+            projectId: rejected.projectId,
+            reviewerId: rejected.reviewerId,
+            reviewerName: rejected.reviewer.fullName,
+            decision: rejected.decision,
+            decisionLabel: QA_DECISION_METADATA[rejected.decision]?.label || rejected.decision,
+            errorClassification: rejected.errorClassification,
+            errorClassificationLabel: rejected.errorClassification
+              ? ERROR_CLASSIFICATION_METADATA[rejected.errorClassification]?.label || rejected.errorClassification
+              : null,
+            comments: rejected.comments,
+            qaRevisionDueAt: rejected.qaRevisionDueAt ? rejected.qaRevisionDueAt.toISOString() : null,
+            reviewedAt: rejected.reviewedAt.toISOString(),
+          };
+        })(),
       },
     };
   } catch (err) {
@@ -332,8 +384,8 @@ export async function uploadAnalysisFile(
 
   const { projectId, fileName, filePath, fileType, fileSize, fileCategory, notes } = parsed.data;
 
-  // Validate format and size
-  const formatValidation = validateAnalysisFileFormat(fileName, fileType, fileSize);
+  // Validate format and size with category matching
+  const formatValidation = validateAnalysisFileFormat(fileName, fileType, fileSize, fileCategory);
   if (!formatValidation.valid) {
     return {
       success: false,

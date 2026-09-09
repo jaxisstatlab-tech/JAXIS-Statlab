@@ -12,7 +12,7 @@ const ALLOWED_CATEGORY_EXTENSIONS: Partial<Record<FileCategory, string[]>> = {
   DATASET: [".xlsx", ".xls", ".csv", ".sav", ".dta", ".tsv"],
   QUESTIONNAIRE: [".pdf", ".docx", ".doc", ".xlsx", ".csv"],
   PAYMENT_PROOF: [".pdf", ".png", ".jpg", ".jpeg"],
-  ANALYSIS_OUTPUT: [".pdf", ".docx", ".xlsx", ".csv", ".zip", ".sav"],
+  ANALYSIS_OUTPUT: [".pdf", ".docx", ".doc", ".xlsx", ".xls", ".csv", ".zip", ".sav", ".spv", ".sps", ".r", ".rmd", ".py", ".ipynb", ".dta", ".do", ".txt"],
   DELIVERABLE: [".pdf", ".docx", ".xlsx", ".csv", ".zip"],
   DISPUTE_EVIDENCE: [".pdf", ".docx", ".png", ".jpg", ".jpeg", ".zip"],
 };

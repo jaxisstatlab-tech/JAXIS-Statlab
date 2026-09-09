@@ -16,8 +16,8 @@ interface SubmitForQAModalProps {
 
 const QA_CHECKLIST_ITEMS = [
   "All statistical objectives specified in the signed SOW have been analyzed.",
-  "Underlying model assumptions (normality, multicollinearity, homoscedasticity) were checked.",
-  "Output script (SPSS/R/Python/Stata) or clean summary workbook is uploaded.",
+  "Client Results & Discussion document (PDF or Word) is uploaded.",
+  "Reproducible analysis script (RMD, R, Python, SPSS, or Stata) or calculation workbook is uploaded.",
   "Statistical results are formatted to standard scientific/APA guidelines.",
 ];
 
@@ -111,8 +111,14 @@ export const SubmitForQAModal: React.FC<SubmitForQAModalProps> = ({
           <span className="font-semibold block mb-1 text-white">Quality Assurance Handoff Protocol:</span>
           Submitting advances this study to <strong className="text-white font-mono">FOR_QA</strong>. Workbench
           file uploads will be locked while the assigned Senior QA Lead performs mathematical and methodological
-          verification.
         </div>
+
+        {filesCount < 2 && (
+          <div className="p-3 bg-amber-950/40 border border-amber-500/30 rounded-[2px] text-xs text-amber-200/90 leading-relaxed">
+            <span className="font-semibold text-amber-300 block mb-0.5">Required Submission Assets:</span>
+            Senior QA evaluation requires at least 2 files: <strong>(1) Client Results &amp; Discussion document</strong>, and <strong>(2) Reproducible Script File (RMD, R, Python, SPSS, or Stata)</strong>. You currently have {filesCount} file attached.
+          </div>
+        )}
 
         {errorMessage && (
           <div className="p-3 bg-red-950/50 border border-red-500/40 rounded-[2px] text-xs text-red-200 flex items-start gap-2">

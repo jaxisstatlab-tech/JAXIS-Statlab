@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AnalysisFileCategory } from "@prisma/client";
+import type { QaReviewDTO } from "@/features/qa/schemas";
 
 export const AnalysisFileCategoryEnum = z.nativeEnum(AnalysisFileCategory);
 
@@ -133,4 +134,6 @@ export interface WorkbenchDataDTO {
   isAssignedStatistician: boolean;
   isAssignedQaLead: boolean;
   isManagement: boolean;
+  qaReviews?: QaReviewDTO[];
+  activeRevision?: QaReviewDTO | null;
 }
