@@ -6,7 +6,7 @@ All AI coding assistants and developers MUST inspect and strictly follow [.agent
 
 ### Core Non-Negotiable Directives:
 1. **Follow [design-system.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/docs/design-system.md) strictly for all UI.**
-2. **Anti-Double-Padding Layout Standard**: Inner dashboard pages must use `flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade` without adding redundant outer horizontal padding (the shell handles viewport gutters).
+2. **Anti-Double-Padding & Consistent 24px Grid Standard**: Inner dashboard pages must use `flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade` without adding redundant outer horizontal padding (the shell handles viewport gutters). All desk multi-column grids, status ribbons, metric rows, and card stacks must strictly use a unified `gap-6` (24px) across both X and Y axes to prevent awkward, uneven gutters or canyons. Zero arbitrary mixing of `gap-4` and `gap-8`.
 3. **Modern Minimalist Loading & Anti-Double-Loading Standard**: Always use `<LoadingState variant="page" | "table" | "card" | "inline" />` with the clean, single-track Enterprise Orange arc spinner. Zero clunky boxes, pinging blobs, or sci-fi HUD slop. Never render secondary card spinners alongside page-level loaders.
 4. **Button & Dropdown Styling**: Precision `rounded-[2px]`, Title Case copy, centered high-contrast loader spinner, and zero hover/focus rings on dropdown items.
 5. **Phosphor Fill Icons Exclusively (`@phosphor-icons/react` with `weight="fill"`)**: Fill icons only instead of line icons across all cards, navigation, and badges to match the Dashdark X dark-mode reference. Zero emojis anywhere, no ad-hoc raw SVGs.

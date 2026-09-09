@@ -662,6 +662,21 @@
   - Updated `UpdatePayoutRateSchema`, `PayoutRateConfigDTO`, and `CeoFinancialOverviewDTO` in `src/features/finance/schemas.ts` to accept and return `qaRatePercent`.
   - Updated `getCeoFinancialOverviewAction` and `updatePayoutRateConfigAction` in `src/features/finance/actions.ts` to persist and govern both Statistician and QA Reviewer rates per package.
   - Upgraded CEO Treasury Governance Desk (`/dashboard/ceo/finance`): added dedicated **Stat Commission**, **QA Commission**, and **Total Pool** table columns, and enhanced the Edit Rate modal with dual rate inputs and live pool/margin calculation.
+### Task 16 — Universal Spacing Consistency & Grid Rhythm Standard across All Desks
+- [x] **Statistical Analysis Workbench Gap Harmonization**:
+  - Unified all card grid gutters, 2-column desk column gutters, and vertical section rhythms to a consistent **`gap-6` (24px)**:
+    - Outer page section spacing: changed from `gap-8` (32px) to `gap-6` (24px), eliminating the gaping band between Top Ribbon and Main Desk.
+    - Top Status Ribbon: changed from `gap-4` (16px) to `gap-6` (24px), matching the column gutter width.
+    - Main 2-Column Desk: changed from `gap-8` (32px) to `gap-6` (24px), eliminating the oversized middle gutter.
+    - Lower Bento QA Scorecards: unified grid to `gap-6` (24px).
+- [ ] **Cross-Portal Spacing Rhythm Audit & Harmonization**:
+  - Audit and harmonize all portal pages (`/dashboard/client`, `/dashboard/statistician`, `/dashboard/qa`, `/dashboard/admin`, `/dashboard/ceo`, `/dashboard/finance`) to strictly enforce the canonical **`gap-6` (24px)** standard across:
+    1. Outer page vertical section spacing (`flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full`).
+    2. Multi-column desk gutters (`grid grid-cols-1 lg:grid-cols-3 gap-6` / `grid-cols-1 lg:grid-cols-12 gap-6`).
+    3. Metric KPI rows & status ribbon grids (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6`).
+    4. Stacked auxiliary cards (`flex flex-col gap-6`).
+  - Prohibit arbitrary mixing of `gap-4` (16px) and `gap-8` (32px) within the same view.
+
 ---
 
 ## Roadmap Status Matrix

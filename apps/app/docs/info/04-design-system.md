@@ -69,9 +69,17 @@ Every dashboard page and future module (`/dashboard/*`) runs inside the unified 
 - **Universal Shell Padding**: `<main>` enforces `padding: clamp(2rem, 4vw, 3.5rem)` with `box-sizing: border-box`.
 - **Anti-Double-Padding Mandate**: Page routes inside `/dashboard` **must NEVER add redundant outer horizontal padding** (NO `px-4 sm:px-8 lg:px-12 py-8`). All inner page containers must use the uniform standard:
   ```tsx
-  <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
+  <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
   ```
   *(or `max-w-5xl` for focused legal contract / SOW document desks).*
+- **Universal Consistent Grid Gap & Spacing Rhythm Standard (`gap-6` / 24px MANDATORY)**:
+  - All major layouts, multi-column bento desks, status ribbon rows, metric card grids, and section stacks **MUST use a unified `gap-6` (24px)**:
+    1. **Outer Page Vertical Section Spacing**: `gap-6` (between PageHeader, alert banners, KPI ribbons, bento desks, and data tables).
+    2. **Multi-Column Desk Gutters**: `gap-6` (e.g. `grid grid-cols-1 lg:grid-cols-3 gap-6` or `lg:grid-cols-12 gap-6`). Never use an oversized `gap-8` (32px) that creates empty canyons between columns.
+    3. **Card Grid Rows (KPIs & Status Ribbons)**: `gap-6` (e.g. `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6`). Never use a narrow `gap-4` (16px) directly above or beside a `gap-8` desk.
+    4. **Stacked Column Auxiliary Cards**: `gap-6` (e.g. `flex flex-col gap-6`).
+    5. **Lower Bento Grids**: `gap-6` (e.g. `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`).
+  - **Rule**: Never mix `gap-4` (16px) with `gap-8` (32px) in the same viewport. Maintaining a uniform **24px (`gap-6`)** across both X and Y axes guarantees harmonious visual rhythm across all role portals.
 - **Guaranteed Consistency**: This standard guarantees that switching between tabs (Intake Triage, Quotation Desk, Staff Directory, Admin Command Center) maintains 100% pixel-perfect horizontal alignment without jumping.
 
 ### 2.2. Single Identity Anchor & Anti-Redundancy Standard

@@ -17,16 +17,24 @@ All AI coding assistants and developers MUST strictly follow the design system, 
 
 ---
 
-## 2. Spacing, Margins & Padding Standard (ANTI-DOUBLE-PADDING & ANTI-CRAMPED MANDATE)
+## 2. Spacing, Margins & Padding Standard (ANTI-DOUBLE-PADDING & CONSISTENT GAP MANDATE)
 - **Zero Squished/Cramped Layouts Policy**: Never generate components or pages with zero margin or microscopic padding.
 - **Root Layout vs. Inner Page Containers (Anti-Double-Padding Rule)**:
   - The root layout shell (`DashboardShell.tsx`) already applies `padding: clamp(2rem, 4vw, 3.5rem)` on `<main>`.
   - Inner page routes inside `/dashboard` **MUST NOT add redundant outer padding** (NO `px-4 sm:px-8 lg:px-12 py-8`).
   - Standard page wrapper format:
     ```tsx
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
     ```
     *(or `max-w-5xl mx-auto` for focused legal contract / SOW document desks).*
+- **Universal Consistent Grid Gap & Spacing Rhythm Standard (`gap-6` / 24px MANDATORY)**:
+  - All major layouts, multi-column bento desks, status ribbon rows, metric card grids, and section stacks **MUST use a unified `gap-6` (24px)**:
+    1. **Outer Page Vertical Section Spacing**: `gap-6` (between PageHeader, alert banners, KPI ribbons, bento desks, and data tables).
+    2. **Multi-Column Desk Gutters**: `gap-6` (e.g. `grid grid-cols-1 lg:grid-cols-3 gap-6` or `lg:grid-cols-12 gap-6`). Never use an oversized `gap-8` (32px) that creates empty canyons between columns.
+    3. **Card Grid Rows (KPIs & Status Ribbons)**: `gap-6` (e.g. `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6`). Never use a narrow `gap-4` (16px) directly above or beside a `gap-8` desk.
+    4. **Stacked Column Auxiliary Cards**: `gap-6` (e.g. `flex flex-col gap-6`).
+    5. **Lower Bento Grids**: `gap-6` (e.g. `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`).
+  - **Rule**: Never mix `gap-4` (16px) with `gap-8` (32px) in the same viewport. Maintaining a uniform **24px (`gap-6`)** across both X and Y axes guarantees harmonious visual rhythm across all role portals.
 - **Cards & Document Sheets**:
   - Standard cards: `p-6 sm:p-8 md:p-10`, never `p-1` or `p-2`.
   - Document/Contract sheets: `p-8 sm:p-12 lg:p-16` with generous vertical rhythm (`mb-10` to `mb-12`, `space-y-6`).

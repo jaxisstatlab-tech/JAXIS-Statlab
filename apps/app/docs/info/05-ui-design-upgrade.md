@@ -238,8 +238,9 @@ Elevate all customer and administrative portals using these canonical, high-effi
    Inner page routes inside `/dashboard` **MUST NOT add redundant outer padding** (NO `px-4 sm:px-8 py-8`).
    Standard page container:
    ```tsx
-   <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
+   <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
    ```
+   All desk layouts, multi-column bento grids, status ribbons, and card stacks must strictly use a unified **`gap-6` (24px)** across both X and Y axes to prevent awkward, uneven gutters or canyons.
 2. **Generous Card Padding**:
    Standard card padding is `p-6 sm:p-8 md:p-10`. Microscopic `p-1` or `p-2` is strictly banned.
 3. **Predictable Type Scale**:

@@ -326,11 +326,11 @@ The interface must scale seamlessly across all modern viewports without layout b
 │               │              │ • Expanded sidebar (260px)              │
 ├───────────────┼──────────────┼─────────────────────────────────────────┤
 │ Widescreen    │ 1280px+      │ • Constrained to `max-w-7xl mx-auto`    │
-│               │              │ • Generous vertical rhythm (`gap-8`)    │
+│               │              │ • Consistent grid rhythm (`gap-6` / 24px)│
 └───────────────┴──────────────┴─────────────────────────────────────────┘
 ```
 
-### 7.1. Anti-Double-Padding Container Rule
+### 7.1. Anti-Double-Padding & Consistent 24px Grid Container Rule
 - **The root shell (`DashboardShell.tsx`) already applies viewport gutters**:
   ```tsx
   <main style={{ padding: "clamp(2rem, 4vw, 3.5rem)" }}>
@@ -338,8 +338,9 @@ The interface must scale seamlessly across all modern viewports without layout b
 - **Inner page routes inside `/dashboard` MUST NOT add redundant outer padding** (NO `px-4 sm:px-8 lg:px-12 py-8`).
 - Standard inner page container:
   ```tsx
-  <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
+  <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
   ```
+- **Consistent Grid Rhythm Standard**: All page sections, multi-column bento desks, status ribbons, metric grids, and column card stacks must strictly use a unified **`gap-6` (24px)** across both X and Y axes to prevent awkward, uneven gutters or canyons. Zero arbitrary mixing of `gap-4` and `gap-8`.
 
 ### 7.2. Dashdark X Sidebar-First Shell & Collapsible Rail Standard
 - **Zero Desktop Topbar**: Desktop main canvas eliminates the horizontal topbar completely. The workspace starts immediately at $y = 0$, giving the `<PageHeader>` greeting and action buttons top-level prominence. On mobile (`< lg`), a lean `h-14` header bar remains with logo and hamburger button.

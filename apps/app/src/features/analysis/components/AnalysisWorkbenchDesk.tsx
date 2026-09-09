@@ -323,7 +323,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
   const isForQA = data.project.masterStatus === "FOR_QA";
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
       {/* Toast Notification */}
       {toastMessage && (
         <Toast
@@ -484,7 +484,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
       )}
 
       {/* Top Status & SLA Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
           <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Client Name</span>
           <span className="text-sm font-semibold text-white truncate">{data.project.clientName}</span>
@@ -536,7 +536,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
       </div>
 
       {/* Main 2-Column Desk Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Left Column: Scope of Work Reference & Verified Datasets (1 col) */}
         <div className="flex flex-col gap-6 lg:col-span-1">
           {/* Research Objectives & SOW Card */}
@@ -1008,7 +1008,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {data.qaReviews?.map((rev) => (
               <div
                 key={rev.id}
