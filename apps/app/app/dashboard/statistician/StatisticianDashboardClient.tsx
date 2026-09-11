@@ -290,9 +290,10 @@ export function StatisticianDashboardClient({
       const aIsWorking = a.masterStatus === "IN_PROGRESS";
       const bIsWorking = b.masterStatus === "IN_PROGRESS";
       if (aIsWorking && !bIsWorking) return -1;
-      if (!aIsWorking && bIsWorking) return 1;
-
-      return 0;
+      // 4. Secondary sort: newest assigned first
+      const dateA = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
+      const dateB = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
+      return dateB - dateA;
     });
   }, [assignments]);
 

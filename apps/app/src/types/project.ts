@@ -48,6 +48,8 @@ export interface Project {
   qaStatus: QAStatus;
   paymentStatus: PaymentStatus;
   updated: string;
+  createdAt?: string;
+  deadline?: string;
   datasetName: string;
   datasetSize: string;
   syntaxName: string;

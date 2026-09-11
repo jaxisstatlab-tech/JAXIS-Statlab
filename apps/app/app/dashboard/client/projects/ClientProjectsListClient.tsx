@@ -49,6 +49,7 @@ export function ClientProjectsListClient({
   const [projects, setProjects] = useState<ProjectDetailItem[]>(initialProjects);
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [sortBy, setSortBy] = useState<string>("newest");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -143,24 +144,22 @@ export function ClientProjectsListClient({
     });
   }, [projects, statusFilter]);
 
-  // Prioritize studies requiring client action (Go Signal) to the top
+  // Sort projects: default Newest First, with Oldest First and Closest Deadline options
   const sortedFilteredProjects = useMemo(() => {
-    const clientActionPriority = [
-      "QUOTE_SENT",
-      "SOW_PENDING",
-      "AWAITING_PAYMENT",
-      "DELIVERED",
-      "AWAITING_INFORMATION",
-    ];
-
     return [...filteredProjects].sort((a, b) => {
-      const aIsAction = clientActionPriority.includes(a.masterStatus);
-      const bIsAction = clientActionPriority.includes(b.masterStatus);
-      if (aIsAction && !bIsAction) return -1;
-      if (!aIsAction && bIsAction) return 1;
-      return 0;
+      if (sortBy === "oldest") {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      if (sortBy === "deadline") {
+        const timeA = a.deadlineRequested ? new Date(a.deadlineRequested).getTime() : Infinity;
+        const timeB = b.deadlineRequested ? new Date(b.deadlineRequested).getTime() : Infinity;
+        if (timeA !== timeB) return timeA - timeB;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+      // Default: "newest"
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [filteredProjects]);
+  }, [filteredProjects, sortBy]);
 
   const paginatedProjects = useMemo(() => {
     return sortedFilteredProjects.slice(
@@ -365,15 +364,30 @@ export function ClientProjectsListClient({
                 { value: "DELIVERED", label: `Delivered (${kpis.delivered})` },
               ],
             },
+            {
+              key: "sort",
+              label: "SORT",
+              value: sortBy,
+              defaultValue: "newest",
+              options: [
+                { value: "newest", label: "Newest First" },
+                { value: "oldest", label: "Oldest First" },
+                { value: "deadline", label: "Closest Deadline" },
+              ],
+            },
           ]}
           onFilterChange={(key, value) => {
             if (key === "status") {
               setStatusFilter(value);
               setCurrentPage(1);
+            } else if (key === "sort") {
+              setSortBy(value);
+              setCurrentPage(1);
             }
           }}
           onClear={() => {
             setStatusFilter("ALL");
+            setSortBy("newest");
             setSearchQuery("");
             setCurrentPage(1);
           }}

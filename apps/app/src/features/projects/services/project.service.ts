@@ -40,6 +40,8 @@ function mapDetailItemToProject(item: ProjectDetailItem): Project {
       month: "short",
       day: "numeric",
     }),
+    createdAt: item.createdAt ? new Date(item.createdAt).toISOString() : undefined,
+    deadline: item.deadlineRequested ? new Date(item.deadlineRequested).toISOString() : undefined,
     datasetName: firstDataset?.fileName || "Dataset.xlsx",
     datasetSize: "Verified",
     syntaxName: "analysis_script.R",

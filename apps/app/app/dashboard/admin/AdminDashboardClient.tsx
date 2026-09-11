@@ -43,6 +43,7 @@ export function AdminDashboardClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMethod, setSelectedMethod] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
+  const [sortBy, setSortBy] = useState("newest");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -68,18 +69,8 @@ export function AdminDashboardClient({
     };
   }, [refresh]);
 
-  // Prioritize studies requiring immediate administrative action / ready signal to the top
+  // Sort projects: default Newest First, with Oldest First and Closest Deadline options
   const sortedProjects = useMemo(() => {
-    const actionPriority = [
-      "NEW_REQUEST",
-      "FOR_QA",
-      "QA_REVISION",
-      "AWAITING_PAYMENT",
-      "PROOF_SUBMITTED",
-      "REASSIGNMENT_NEEDED",
-      "ETHICAL_BREACH",
-    ];
-
     let list = [...projects];
 
     if (selectedMethod !== "ALL") {
@@ -101,13 +92,27 @@ export function AdminDashboardClient({
     }
 
     return list.sort((a, b) => {
-      const aIsAction = actionPriority.includes(a.status);
-      const bIsAction = actionPriority.includes(b.status);
-      if (aIsAction && !bIsAction) return -1;
-      if (!aIsAction && bIsAction) return 1;
-      return 0;
+      if (sortBy === "oldest") {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (timeA !== timeB) return timeA - timeB;
+        return a.id.localeCompare(b.id);
+      }
+      if (sortBy === "deadline") {
+        const timeA = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+        const timeB = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+        if (timeA !== timeB) return timeA - timeB;
+        const cA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const cB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return cB - cA;
+      }
+      // Default: "newest"
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (timeA !== timeB) return timeB - timeA;
+      return b.id.localeCompare(a.id);
     });
-  }, [projects, selectedMethod, selectedStatus, searchQuery]);
+  }, [projects, selectedMethod, selectedStatus, searchQuery, sortBy]);
 
   // Analytical Telemetry: 6-Month Research Milestones & Pipeline Activity
   const chartData = useMemo(() => {
@@ -353,15 +358,28 @@ export function AdminDashboardClient({
                 { value: "COMPLETED", label: "Completed" },
               ],
             },
+            {
+              key: "sort",
+              label: "Sort",
+              value: sortBy,
+              defaultValue: "newest",
+              options: [
+                { value: "newest", label: "Newest First" },
+                { value: "oldest", label: "Oldest First" },
+                { value: "deadline", label: "Closest Deadline" },
+              ],
+            },
           ]}
           onFilterChange={(key, value) => {
             if (key === "method") setSelectedMethod(value);
             if (key === "status") setSelectedStatus(value);
+            if (key === "sort") setSortBy(value);
             setCurrentPage(1);
           }}
           onClear={() => {
             setSelectedMethod("ALL");
             setSelectedStatus("ALL");
+            setSortBy("newest");
             setSearchQuery("");
             setCurrentPage(1);
           }}

@@ -10,6 +10,9 @@ const nextConfig = {
       "zod",
       "resend",
     ],
+    serverActions: {
+      bodySizeLimit: "15mb",
+    },
   },
   onDemandEntries: {
     maxInactiveAge: 120 * 1000,

@@ -72,6 +72,7 @@ export function AdminIntakeClient({
   const [projects, setProjects] = useState<ProjectDetailItem[]>(initialProjects);
   const [isLoading, setIsLoading] = useState<boolean>(initialProjects.length === 0);
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [sortBy, setSortBy] = useState<string>("newest");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -176,37 +177,23 @@ export function AdminIntakeClient({
     });
   }, [projects, selectedStatus, searchQuery]);
 
-  // Prioritize studies requiring manager / QA / triage action to the top
+  // Sort projects: default Newest First (resolves Issue #5), with Oldest First and Closest Deadline options
   const sortedFilteredProjects = useMemo(() => {
-    const managerActionPriority = [
-      "FOR_QA",
-      "QA_REVISION",
-      "NEW_REQUEST",
-      "AWAITING_INFORMATION",
-      "UNDER_EVALUATION",
-      "AWAITING_PAYMENT",
-      "PROOF_SUBMITTED",
-      "REASSIGNMENT_NEEDED",
-      "ETHICAL_BREACH",
-      "SLA_PAUSED",
-      "QUOTE_SENT",
-      "SOW_PENDING",
-      "IN_PROGRESS",
-      "EXPERT_ASSIGNED",
-      "DELIVERED",
-      "CLOSED",
-    ];
-
     return [...filteredProjects].sort((a, b) => {
-      const aIndex = managerActionPriority.indexOf(a.masterStatus);
-      const bIndex = managerActionPriority.indexOf(b.masterStatus);
-      const aPriority = aIndex === -1 ? 999 : aIndex;
-      const bPriority = bIndex === -1 ? 999 : bIndex;
-      if (aPriority !== bPriority) return aPriority - bPriority;
-      // Secondary sort: newest first
+      if (sortBy === "oldest") {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      if (sortBy === "deadline") {
+        const timeA = a.deadlineRequested ? new Date(a.deadlineRequested).getTime() : Infinity;
+        const timeB = b.deadlineRequested ? new Date(b.deadlineRequested).getTime() : Infinity;
+        if (timeA !== timeB) return timeA - timeB;
+        // Secondary sort: newest first
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+      // Default: "newest" (newest submissions on top)
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [filteredProjects]);
+  }, [filteredProjects, sortBy]);
 
   const paginatedProjects = useMemo(() => {
     return sortedFilteredProjects.slice(
@@ -415,15 +402,30 @@ export function AdminIntakeClient({
                 { value: "UNDER_EVALUATION", label: `Under Evaluation (${kpis.underEvaluation})` },
               ],
             },
+            {
+              key: "sort",
+              label: "SORT",
+              value: sortBy,
+              defaultValue: "newest",
+              options: [
+                { value: "newest", label: "Newest First" },
+                { value: "oldest", label: "Oldest First" },
+                { value: "deadline", label: "Closest Deadline" },
+              ],
+            },
           ]}
           onFilterChange={(key, value) => {
             if (key === "status") {
               setSelectedStatus(value);
               setCurrentPage(1);
+            } else if (key === "sort") {
+              setSortBy(value);
+              setCurrentPage(1);
             }
           }}
           onClear={() => {
             setSelectedStatus("ALL");
+            setSortBy("newest");
             setSearchQuery("");
             setCurrentPage(1);
           }}
