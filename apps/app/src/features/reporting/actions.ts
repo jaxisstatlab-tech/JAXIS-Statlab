@@ -3,14 +3,15 @@
 import { db, withDbTimeout } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import type { RoleName } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import {
   ReportQuerySchema,
   ArchiveProjectSchema,
   ArchiveFilterSchema,
-  DataDeletionRequestSchema,
   ProcessDeletionSchema,
   AuditLogFilterSchema,
   StorageRetentionConfigSchema,
+  FreshDatabaseResetSchema,
   type ReportQueryInput,
   type ArchiveProjectInput,
   type ArchiveFilterInput,
@@ -21,12 +22,13 @@ import {
   type StorageRetentionConfigDTO,
   type ArchivedProjectDTO,
   type AuditLogDTO,
-  type DataDeletionRequestDTO,
   type InfrastructureHealthDTO,
+  type FreshDatabaseResetInput,
+  type FreshDatabaseResetResultDTO,
+  type DatabaseResetPreviewDTO,
 } from "./schemas";
 import { revalidatePath } from "next/cache";
 import {
-  deleteR2Object,
   deleteMultipleR2Objects,
   listAllR2Objects,
   extractR2StorageKey,
@@ -1646,4 +1648,294 @@ export async function triggerStorageWarningAlertAction(serviceName: "Supabase" |
   }
 }
 
+// ─── Fresh Database Reset: Preview Counts ────────────────────────────────────
 
+export async function getDatabaseResetPreviewAction(): Promise<{
+  success: boolean;
+  data?: DatabaseResetPreviewDTO;
+  error?: { message: string };
+}> {
+  try {
+    const session = await auth();
+    const user = session?.user;
+    if (!user || user.role !== "CEO") {
+      return { success: false, error: { message: "CEO authority required." } };
+    }
+
+    const [
+      studies,
+      payments,
+      payouts,
+      ledgers,
+      disputes,
+      users,
+      attendance,
+      messages,
+      qaReviews,
+      qaRejections,
+      alerts,
+      notifLogs,
+      deletionReqs,
+      auditLogs,
+      authAuditLogs,
+    ] = await Promise.all([
+      db.project.count(),
+      db.payment.count(),
+      db.payout.count(),
+      db.financialLedger.count(),
+      db.dispute.count(),
+      db.user.count({ where: { id: { not: user.id } } }),
+      db.staffAttendanceLog.count(),
+      db.message.count(),
+      db.qAReview.count(),
+      db.qARejectionCount.count(),
+      db.inAppAlert.count(),
+      db.notificationLog.count(),
+      db.dataDeletionRequest.count(),
+      db.auditLog.count(),
+      db.authAuditLog.count(),
+    ]);
+
+    // Get R2 file count and size
+    let r2FileCount = 0;
+    let r2StorageMB = 0;
+    try {
+      const r2Objects = await listAllR2Objects();
+      r2FileCount = r2Objects.length;
+      r2StorageMB = Number(
+        (r2Objects.reduce((sum, obj) => sum + obj.size, 0) / (1024 * 1024)).toFixed(1)
+      );
+    } catch {
+      // R2 may be unavailable in dev, graceful fallback
+    }
+
+    return {
+      success: true,
+      data: {
+        studies,
+        finance: payments + payouts + ledgers + disputes,
+        users,
+        attendance,
+        messages,
+        qa: qaReviews + qaRejections,
+        notifications: alerts + notifLogs + deletionReqs,
+        auditLogs: auditLogs + authAuditLogs,
+        r2FileCount,
+        r2StorageMB,
+      },
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to load reset preview.";
+    return { success: false, error: { message: msg } };
+  }
+}
+
+// ─── Fresh Database Reset: Selective Execution ───────────────────────────────
+
+export async function freshDatabaseResetAction(
+  rawInput: FreshDatabaseResetInput
+): Promise<{
+  success: boolean;
+  data?: FreshDatabaseResetResultDTO;
+  error?: { message: string };
+}> {
+  try {
+    // 1. Auth: CEO only
+    const session = await auth();
+    const user = session?.user;
+    if (!user || user.role !== "CEO") {
+      return { success: false, error: { message: "CEO authority required." } };
+    }
+
+    // 2. Validate input
+    const parsed = FreshDatabaseResetSchema.safeParse(rawInput);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: { message: parsed.error.issues[0]?.message || "Invalid input." },
+      };
+    }
+    const input = parsed.data;
+
+    // 3. Verify CEO password
+    const ceoUser = await db.user.findUnique({
+      where: { id: user.id },
+      select: { id: true, email: true, passwordHash: true },
+    });
+    if (!ceoUser || !ceoUser.passwordHash) {
+      return { success: false, error: { message: "CEO account not found or password not set." } };
+    }
+    const passwordValid = await bcrypt.compare(input.ceoPassword, ceoUser.passwordHash);
+    if (!passwordValid) {
+      return { success: false, error: { message: "Incorrect CEO password." } };
+    }
+
+    const ceoId = ceoUser.id;
+    const categoriesPurged: string[] = [];
+    let purgedStudiesCount = 0;
+    let purgedUsersCount = 0;
+    let purgedR2FilesCount = 0;
+    let purgedFinanceCount = 0;
+    let purgedMessagesCount = 0;
+    let purgedAttendanceCount = 0;
+    let purgedQACount = 0;
+    let purgedNotificationsCount = 0;
+    let purgedAuditLogsCount = 0;
+    let totalFreedBytes = 0;
+
+    // ─── Phase 1: Purge studies & research files ────────────────────────
+    if (input.purgeStudies) {
+      categoriesPurged.push("Studies & Research Files");
+
+      // Delete study child records in FK-safe topological order
+      await db.archivedProject.deleteMany({});
+      await db.assignmentHistory.deleteMany({});
+      await db.defenseLabSession.deleteMany({});
+      await db.revisionRequest.deleteMany({});
+      await db.deliverable.deleteMany({});
+      await db.scopeCreepLog.deleteMany({});
+      await db.analysisFile.deleteMany({});
+      await db.assignment.deleteMany({});
+      await db.sOW.deleteMany({});
+      await db.quotationLineItem.deleteMany({});
+      await db.quotation.deleteMany({});
+      await db.projectFile.deleteMany({});
+
+      // Delete projects last (parent of all above)
+      const projectDel = await db.project.deleteMany({});
+
+      purgedStudiesCount = projectDel.count;
+
+      // Purge R2 study storage objects
+      try {
+        const r2StudyObjects = await listAllR2Objects("studies/");
+        if (r2StudyObjects.length > 0) {
+          const keys = r2StudyObjects.map((o) => o.key);
+          totalFreedBytes += r2StudyObjects.reduce((s, o) => s + o.size, 0);
+          await deleteMultipleR2Objects(keys);
+          purgedR2FilesCount += r2StudyObjects.length;
+        }
+      } catch {
+        // R2 may be unavailable in dev
+      }
+    }
+
+    // ─── Phase 2: Purge finance & payments ──────────────────────────────
+    if (input.purgeFinance) {
+      categoriesPurged.push("Finance & Payments");
+      const proofDel = await db.paymentProof.deleteMany({});
+      const paymentDel = await db.payment.deleteMany({});
+      const payoutDel = await db.payout.deleteMany({});
+      const ledgerDel = await db.financialLedger.deleteMany({});
+      const disputeDel = await db.dispute.deleteMany({});
+      purgedFinanceCount = proofDel.count + paymentDel.count + payoutDel.count + ledgerDel.count + disputeDel.count;
+
+      // Purge R2 treasury storage
+      try {
+        const r2TreasuryObjects = await listAllR2Objects("treasury/");
+        if (r2TreasuryObjects.length > 0) {
+          const keys = r2TreasuryObjects.map((o) => o.key);
+          totalFreedBytes += r2TreasuryObjects.reduce((s, o) => s + o.size, 0);
+          await deleteMultipleR2Objects(keys);
+          purgedR2FilesCount += r2TreasuryObjects.length;
+        }
+      } catch {
+        // R2 may be unavailable in dev
+      }
+    }
+
+    // ─── Phase 3: Purge messages & chat history ────────────────────────
+    if (input.purgeMessages) {
+      categoriesPurged.push("Messages & Chat History");
+      const blockedDel = await db.blockedMessageLog.deleteMany({});
+      const receiptDel = await db.messageReadReceipt.deleteMany({});
+      const messageDel = await db.message.deleteMany({});
+      purgedMessagesCount = blockedDel.count + receiptDel.count + messageDel.count;
+    }
+
+    // ─── Phase 4: Purge QA reviews & scorecards ────────────────────────
+    if (input.purgeQA) {
+      categoriesPurged.push("QA Reviews & Scorecards");
+      const rejDel = await db.qARejectionCount.deleteMany({});
+      const revDel = await db.qAReview.deleteMany({});
+      purgedQACount = rejDel.count + revDel.count;
+    }
+
+    // ─── Phase 5: Purge staff attendance & shifts ──────────────────────
+    if (input.purgeAttendance) {
+      categoriesPurged.push("Staff Attendance & Shifts");
+      const corrDel = await db.attendanceCorrectionRequest.deleteMany({});
+      const attDel = await db.staffAttendanceLog.deleteMany({});
+      purgedAttendanceCount = corrDel.count + attDel.count;
+    }
+
+    // ─── Phase 6: Purge notifications & alerts ─────────────────────────
+    if (input.purgeNotifications) {
+      categoriesPurged.push("Notifications & Alerts");
+      const alertDel = await db.inAppAlert.deleteMany({});
+      const notifDel = await db.notificationLog.deleteMany({});
+      const delReqDel = await db.dataDeletionRequest.deleteMany({});
+      purgedNotificationsCount = alertDel.count + notifDel.count + delReqDel.count;
+    }
+
+    // ─── Phase 7: Purge audit trail & system logs ──────────────────────
+    if (input.purgeAuditLogs) {
+      categoriesPurged.push("Audit Trail & System Logs");
+      const auditDel = await db.auditLog.deleteMany({});
+      const authAuditDel = await db.authAuditLog.deleteMany({});
+      purgedAuditLogsCount = auditDel.count + authAuditDel.count;
+    }
+
+    // ─── Phase 8: Purge non-CEO user accounts ──────────────────────────
+    if (input.purgeUsers) {
+      categoriesPurged.push("User Accounts (non-CEO)");
+      await db.suspensionLog.deleteMany({});
+      await db.passwordResetToken.deleteMany({});
+      // Delete non-CEO profiles and user records
+      await db.staffProfile.deleteMany({ where: { userId: { not: ceoId } } });
+      await db.clientProfile.deleteMany({ where: { userId: { not: ceoId } } });
+      await db.userRole.deleteMany({ where: { userId: { not: ceoId } } });
+      const userDel = await db.user.deleteMany({ where: { id: { not: ceoId } } });
+      purgedUsersCount = userDel.count;
+    }
+
+    // ─── Phase 9: Final audit record ───────────────────────────────────
+    const freedMB = Number((totalFreedBytes / (1024 * 1024)).toFixed(1));
+    await db.auditLog.create({
+      data: {
+        actorId: ceoId,
+        actorRole: "CEO" as RoleName,
+        action: "FRESH_DATABASE_RESET",
+        reason: `CEO initiated selective database reset. Categories purged: ${categoriesPurged.join(", ")}. Studies: ${purgedStudiesCount}, Users: ${purgedUsersCount}, Finance: ${purgedFinanceCount}, R2 Files: ${purgedR2FilesCount}, Freed: ${freedMB} MB.`,
+      },
+    });
+
+    // ─── Phase 10: Cache invalidation ──────────────────────────────────
+    invalidateCacheTags(CACHE_TAGS.PROJECTS);
+    invalidateCacheTags(CACHE_TAGS.STAFF_DIRECTORY);
+    invalidateCacheTags(CACHE_TAGS.PAYMENTS);
+    revalidatePath("/dashboard", "layout");
+
+    return {
+      success: true,
+      data: {
+        categoriesPurged,
+        purgedStudiesCount,
+        purgedUsersCount,
+        purgedR2FilesCount,
+        purgedFinanceCount,
+        purgedMessagesCount,
+        purgedAttendanceCount,
+        purgedQACount,
+        purgedNotificationsCount,
+        purgedAuditLogsCount,
+        freedMB,
+        preservedCeoEmail: ceoUser.email,
+      },
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to execute database reset.";
+    console.error("[freshDatabaseResetAction] Fatal error:", err);
+    return { success: false, error: { message: msg } };
+  }
+}

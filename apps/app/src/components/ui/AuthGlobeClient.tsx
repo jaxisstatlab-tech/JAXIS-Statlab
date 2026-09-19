@@ -1,16 +1,16 @@
 "use client";
 
-import React from "react";
-import dynamic from "next/dynamic";
-
-const ParticleGlobe = dynamic(
-  () => import("./ParticleGlobe"),
-  {
-    ssr: false,
-    loading: () => null,
-  }
-);
+import React, { useEffect, useState } from "react";
+import ParticleGlobe from "./ParticleGlobe";
 
 export function AuthGlobeClient() {
-  return <ParticleGlobe layout="auth-crescent" />;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+  return <ParticleGlobe layout="auth-crescent" interactive={false} />;
 }
+

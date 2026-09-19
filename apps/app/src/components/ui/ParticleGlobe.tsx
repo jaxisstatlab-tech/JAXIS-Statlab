@@ -75,6 +75,8 @@ export interface ParticleGlobeProps {
    */
   layout?: "center" | "auth-crescent";
   pointCount?: number;
+  /** Set to true to enable mouse hover interaction and parallax tilt (defaults to false) */
+  interactive?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -84,6 +86,7 @@ export default function ParticleGlobe({
   transparent = false,
   layout = "center",
   pointCount,
+  interactive = false,
 }: ParticleGlobeProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -152,11 +155,13 @@ export default function ParticleGlobe({
     });
     const posAttr = new THREE.BufferAttribute(posBuf, 3);
     posAttr.setUsage(THREE.DynamicDrawUsage);
+    posAttr.needsUpdate = true;
 
     // Shared colour buffer
     const colBuf  = new Float32Array(count * 3);
     const colAttr = new THREE.BufferAttribute(colBuf, 3);
     colAttr.setUsage(THREE.DynamicDrawUsage);
+    colAttr.needsUpdate = true;
 
     // ── Layer 1: sharp core dots ──────────────────────────────────────────────
     const coreGeo = new THREE.BufferGeometry();
@@ -210,8 +215,8 @@ export default function ParticleGlobe({
         // Visual radius scaled so vertical diameter spans top to bottom of screen with generous arc
         const visualRadius = (vH / 2) * 1.34;
         const scale = visualRadius / SPHERE_RADIUS;
-        // Left margin from auth panel (tight, intentional gap eliminating dead space)
-        const leftMargin = vW * 0.08;
+        // Left margin from auth panel (shifted further right per user request)
+        const leftMargin = vW * 0.52;
         const crestX = -vW / 2 + leftMargin;
         const posX = crestX + visualRadius;
         return { posX, posY: 0, scale };
@@ -239,136 +244,157 @@ export default function ParticleGlobe({
 
     function updateParticles(t: number) {
       camDir.subVectors(camera.position, group.position).normalize();
-
       invQuat.copy(group.quaternion).invert();
-      localDir.copy(hsCurrent).applyQuaternion(invQuat).normalize();
       camLocal.copy(camDir).applyQuaternion(invQuat).normalize();
 
-      // Compute dot products into flat Float32 buffers
-      for (let i = 0; i < count; i++) {
-        const n = normals[i]!;
-        hotDotArray[i] = n.dot(localDir);
-        depthDotArray[i] = n.dot(camLocal);
-        particleIndices[i] = i;
-      }
+      if (interactive && hoverStrength > 0.005) {
+        localDir.copy(hsCurrent).applyQuaternion(invQuat).normalize();
 
-      // Sort index buffer in-place without creating objects
-      particleIndices.sort((a, b) => (hotDotArray[b] ?? 0) - (hotDotArray[a] ?? 0));
+        // Compute dot products into flat Float32 buffers
+        for (let i = 0; i < count; i++) {
+          const n = normals[i]!;
+          hotDotArray[i] = n.dot(localDir);
+          depthDotArray[i] = n.dot(camLocal);
+          particleIndices[i] = i;
+        }
 
-      hotRankArray.fill(-1);
-      for (let r = 0; r < HOTSPOT_COUNT; r++) {
-        const idx = particleIndices[r];
-        if (idx !== undefined) {
-          hotRankArray[idx] = r;
+        // Sort index buffer in-place without creating objects
+        particleIndices.sort((a, b) => (hotDotArray[b] ?? 0) - (hotDotArray[a] ?? 0));
+
+        hotRankArray.fill(-1);
+        for (let r = 0; r < HOTSPOT_COUNT; r++) {
+          const idx = particleIndices[r];
+          if (idx !== undefined) {
+            hotRankArray[idx] = r;
+          }
+        }
+
+        // Update positions & colors with seamless continuous decay
+        for (let i = 0; i < count; i++) {
+          const p = positions[i]!;
+          const n = normals[i]!;
+          const depthDot = depthDotArray[i] ?? 0;
+          const rank     = hotRankArray[i] ?? -1;
+          const hotDot   = hotDotArray[i] ?? 0;
+
+          // Smooth continuous displacement with zero snapping on exit
+          let displacement = 0;
+          if (hoverStrength > 0.005 && hotDot > 0.45) {
+            const intensity = Math.min(1, Math.max(0, (hotDot - 0.45) / 0.55));
+            displacement = intensity * hoverStrength * (0.16 + Math.sin(t * 4.5 + hotDot * 6) * 0.03);
+          }
+
+          posBuf[i * 3 + 0] = p.x + n.x * displacement;
+          posBuf[i * 3 + 1] = p.y + n.y * displacement;
+          posBuf[i * 3 + 2] = p.z + n.z * displacement;
+
+          // Base natural blue depth gradient
+          const depthFactor = Math.pow(Math.max(0, depthDot), 1.25);
+          tmpCNormal.lerpColors(COL_NORMAL_FAR, COL_NORMAL_NEAR, depthFactor);
+
+          // Smooth color crossfade based on hoverStrength
+          if (rank >= 0 && hoverStrength > 0.005) {
+            const rankT = rank / (HOTSPOT_COUNT - 1);
+            const spotDepth = 0.72 + 0.28 * Math.max(0, depthDot);
+            tmpCHot.lerpColors(COL_HOT_CORE, COL_HOT_EDGE, rankT).multiplyScalar(spotDepth);
+
+            const blend = hoverStrength * (1 - rankT * 0.65);
+            tmpCNormal.lerp(tmpCHot, blend);
+          }
+
+          // Atmospheric particle shimmer (organic life at rest)
+          const shimmer = 0.88 + Math.sin(t * 1.6 + i * 0.35) * 0.12;
+
+          colBuf[i * 3 + 0] = tmpCNormal.r * shimmer;
+          colBuf[i * 3 + 1] = tmpCNormal.g * shimmer;
+          colBuf[i * 3 + 2] = tmpCNormal.b * shimmer;
+        }
+
+        posAttr.needsUpdate = true;
+      } else {
+        // Pure spin: Natural blue depth gradient + organic atmospheric shimmer (zero displacement, zero hotspot)
+        for (let i = 0; i < count; i++) {
+          const n = normals[i]!;
+          const depthDot = n.dot(camLocal);
+
+          const depthFactor = Math.pow(Math.max(0, depthDot), 1.25);
+          tmpCNormal.lerpColors(COL_NORMAL_FAR, COL_NORMAL_NEAR, depthFactor);
+
+          const shimmer = 0.88 + Math.sin(t * 1.6 + i * 0.35) * 0.12;
+
+          colBuf[i * 3 + 0] = tmpCNormal.r * shimmer;
+          colBuf[i * 3 + 1] = tmpCNormal.g * shimmer;
+          colBuf[i * 3 + 2] = tmpCNormal.b * shimmer;
         }
       }
 
-      // Update positions & colors with seamless continuous decay
-      for (let i = 0; i < count; i++) {
-        const p = positions[i]!;
-        const n = normals[i]!;
-        const depthDot = depthDotArray[i] ?? 0;
-        const rank     = hotRankArray[i] ?? -1;
-        const hotDot   = hotDotArray[i] ?? 0;
-
-        // 🌟 Smooth continuous displacement with zero snapping on exit
-        let displacement = 0;
-        if (hoverStrength > 0.005 && hotDot > 0.45) {
-          const intensity = Math.min(1, Math.max(0, (hotDot - 0.45) / 0.55));
-          displacement = intensity * hoverStrength * (0.16 + Math.sin(t * 4.5 + hotDot * 6) * 0.03);
-        }
-
-        posBuf[i * 3 + 0] = p.x + n.x * displacement;
-        posBuf[i * 3 + 1] = p.y + n.y * displacement;
-        posBuf[i * 3 + 2] = p.z + n.z * displacement;
-
-        // 🌟 Base natural blue depth gradient
-        const depthFactor = Math.pow(Math.max(0, depthDot), 1.25);
-        tmpCNormal.lerpColors(COL_NORMAL_FAR, COL_NORMAL_NEAR, depthFactor);
-
-        // 🌟 Smooth color crossfade based on hoverStrength
-        if (rank >= 0 && hoverStrength > 0.005) {
-          const rankT = rank / (HOTSPOT_COUNT - 1);
-          const spotDepth = 0.72 + 0.28 * Math.max(0, depthDot);
-          tmpCHot.lerpColors(COL_HOT_CORE, COL_HOT_EDGE, rankT).multiplyScalar(spotDepth);
-
-          const blend = hoverStrength * (1 - rankT * 0.65);
-          tmpCNormal.lerp(tmpCHot, blend);
-        }
-
-        // 🌟 Atmospheric particle shimmer (organic life at rest)
-        const shimmer = 0.88 + Math.sin(t * 1.6 + i * 0.35) * 0.12;
-
-        colBuf[i * 3 + 0] = tmpCNormal.r * shimmer;
-        colBuf[i * 3 + 1] = tmpCNormal.g * shimmer;
-        colBuf[i * 3 + 2] = tmpCNormal.b * shimmer;
-      }
-
-      posAttr.needsUpdate = true;
       colAttr.needsUpdate = true;
     }
 
-    // ── Mouse & Pointer tracking ──────────────────────────────────────────────
+    // ── Mouse & Pointer tracking (only if interactive) ────────────────────────
+    let onPointerMove: ((e: MouseEvent) => void) | null = null;
+    let onPointerLeave: (() => void) | null = null;
     const mouseTarget = new THREE.Vector2(0, 0);
     const mouseSmooth = new THREE.Vector2(0, 0);
-    const raycaster   = new THREE.Raycaster();
-    const sphereObj   = new THREE.Sphere(new THREE.Vector3(0, 0, 0), SPHERE_RADIUS);
-    const rayTarget   = new THREE.Vector3();
 
-    const onPointerMove = (e: MouseEvent) => {
-      // If in Phase 2, disable pointer tracking
-      if ((globeScrollState.interactiveWeight ?? 1) < 0.05) {
-        isPointerOver = false;
-        return;
-      }
+    if (interactive) {
+      const raycaster   = new THREE.Raycaster();
+      const sphereObj   = new THREE.Sphere(new THREE.Vector3(0, 0, 0), SPHERE_RADIUS);
+      const rayTarget   = new THREE.Vector3();
 
-      const rect = container.getBoundingClientRect();
-      const isSubContainer = rect.width < window.innerWidth || rect.height < window.innerHeight;
-
-      if (isSubContainer) {
-        const isInside = (
-          e.clientX >= rect.left &&
-          e.clientX <= rect.right &&
-          e.clientY >= rect.top &&
-          e.clientY <= rect.bottom
-        );
-        if (!isInside) {
+      onPointerMove = (e: MouseEvent) => {
+        if ((globeScrollState.interactiveWeight ?? 1) < 0.05) {
           isPointerOver = false;
-          mouseTarget.set(0, 0);
-          hsTarget.lerp(REST_DIR, 0.04).normalize();
           return;
         }
-        mouseTarget.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        mouseTarget.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      } else {
-        mouseTarget.x = (e.clientX / window.innerWidth) * 2 - 1;
-        mouseTarget.y = -(e.clientY / window.innerHeight) * 2 + 1;
-      }
 
-      // Synchronize raycast sphere with actual 3D group position and scale
-      sphereObj.center.copy(group.position);
-      sphereObj.radius = SPHERE_RADIUS * Math.max(0.1, group.scale.x) * 1.15;
+        const rect = container.getBoundingClientRect();
+        const isSubContainer = rect.width < window.innerWidth || rect.height < window.innerHeight;
 
-      raycaster.setFromCamera(mouseTarget, camera);
-      const hit = raycaster.ray.intersectSphere(sphereObj, rayTarget);
-      if (hit) {
-        isPointerOver = true;
-        tmpLocalHit.copy(rayTarget).sub(group.position).normalize();
-        hsTarget.lerp(tmpLocalHit, 0.28).normalize();
-      } else {
+        if (isSubContainer) {
+          const isInside = (
+            e.clientX >= rect.left &&
+            e.clientX <= rect.right &&
+            e.clientY >= rect.top &&
+            e.clientY <= rect.bottom
+          );
+          if (!isInside) {
+            isPointerOver = false;
+            mouseTarget.set(0, 0);
+            hsTarget.lerp(REST_DIR, 0.04).normalize();
+            return;
+          }
+          mouseTarget.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          mouseTarget.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        } else {
+          mouseTarget.x = (e.clientX / window.innerWidth) * 2 - 1;
+          mouseTarget.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        sphereObj.center.copy(group.position);
+        sphereObj.radius = SPHERE_RADIUS * Math.max(0.1, group.scale.x) * 1.15;
+
+        raycaster.setFromCamera(mouseTarget, camera);
+        const hit = raycaster.ray.intersectSphere(sphereObj, rayTarget);
+        if (hit) {
+          isPointerOver = true;
+          tmpLocalHit.copy(rayTarget).sub(group.position).normalize();
+          hsTarget.lerp(tmpLocalHit, 0.28).normalize();
+        } else {
+          isPointerOver = false;
+          hsTarget.lerp(REST_DIR, 0.04).normalize();
+        }
+      };
+
+      onPointerLeave = () => {
         isPointerOver = false;
+        mouseTarget.set(0, 0);
         hsTarget.lerp(REST_DIR, 0.04).normalize();
-      }
-    };
+      };
 
-    const onPointerLeave = () => {
-      isPointerOver = false;
-      mouseTarget.set(0, 0);
-      hsTarget.lerp(REST_DIR, 0.04).normalize();
-    };
-
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
-    document.addEventListener("mouseleave", onPointerLeave, { passive: true });
+      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      document.addEventListener("mouseleave", onPointerLeave, { passive: true });
+    }
 
     // ── Animation loop ────────────────────────────────────────────────────────
     let animId: number;
@@ -385,41 +411,45 @@ export default function ParticleGlobe({
       const introProgress = Math.min(1, t / FADE_DURATION);
       const eased = 1 - Math.pow(1 - introProgress, 3);
 
-      // Phase 1 vs Phase 2 interactive weight (1 in Phase 1, 0 in Phase 2)
-      const interactiveWeight = Math.max(0, Math.min(1, globeScrollState.interactiveWeight ?? 1));
-
-      // Smooth continuous hover strength transition (disabled when interactiveWeight is 0)
-      const targetHover = (isPointerOver && interactiveWeight > 0.05) ? 1.0 : 0.0;
-      hoverStrength += (targetHover - hoverStrength) * 0.07;
-
-      // Smooth pointer lerp for magnetic inertia
-      mouseSmooth.x += (mouseTarget.x * interactiveWeight - mouseSmooth.x) * 0.06;
-      mouseSmooth.y += (mouseTarget.y * interactiveWeight - mouseSmooth.y) * 0.06;
+      // Smooth continuous hover strength transition (only when interactive)
+      if (interactive) {
+        const interactiveWeight = Math.max(0, Math.min(1, globeScrollState.interactiveWeight ?? 1));
+        const targetHover = (isPointerOver && interactiveWeight > 0.05) ? 1.0 : 0.0;
+        hoverStrength += (targetHover - hoverStrength) * 0.07;
+        mouseSmooth.x += (mouseTarget.x * interactiveWeight - mouseSmooth.x) * 0.06;
+        mouseSmooth.y += (mouseTarget.y * interactiveWeight - mouseSmooth.y) * 0.06;
+      }
 
       // Halo opacity smoothly increases with hoverStrength
-      const currentHaloOpacity = HALO_BASE_OPACITY + hoverStrength * 0.16;
+      const currentHaloOpacity = HALO_BASE_OPACITY + (interactive ? hoverStrength * 0.16 : 0);
 
       // Scroll-driven warp opacity
       const scrollOpacity = globeScrollState.opacity !== undefined ? globeScrollState.opacity : 1;
+      const globeScale = (globeScrollState.scale !== undefined && globeScrollState.scale > 0) ? globeScrollState.scale : 1;
 
-      coreMat.opacity = eased * scrollOpacity;
-      haloMat.opacity = eased * (currentHaloOpacity + Math.sin(t * 1.2) * 0.03) * scrollOpacity;
+      coreMat.opacity = Math.max(0, Math.min(1, eased * scrollOpacity));
+      haloMat.opacity = Math.max(0, Math.min(1, eased * (currentHaloOpacity + Math.sin(t * 1.2) * 0.03) * scrollOpacity));
 
       // Dynamic layout positioning & scaling
       const metrics = getLayoutMetrics(camera.aspect);
 
-      // Magnetic Parallax Inertial Tilt with smooth damping
-      group.rotation.x = Math.sin(t * 0.05) * 0.06 - mouseSmooth.y * 0.14;
-      group.rotation.y = t * 0.09 + globeScrollState.offset + mouseSmooth.x * 0.20;
+      // Continuous natural spin (zero pointer interaction)
+      const mouseX = interactive ? mouseSmooth.x * 0.20 : 0;
+      const mouseY = interactive ? mouseSmooth.y * 0.14 : 0;
+      group.rotation.x = Math.sin(t * 0.05) * 0.06 - mouseY;
+      group.rotation.y = t * 0.09 + (globeScrollState.offset || 0) + mouseX;
 
-      group.position.x = metrics.posX + globeScrollState.xOffset;
-      group.position.y = metrics.posY + globeScrollState.yOffset;
+      group.position.x = metrics.posX + (globeScrollState.xOffset || 0);
+      group.position.y = metrics.posY + (globeScrollState.yOffset || 0);
 
-      // Subtle breathing scale with smooth hover expansion
-      const breathe = (1 + Math.sin(t * 0.8) * 0.01) * (1 + hoverStrength * 0.025);
-      group.scale.setScalar(metrics.scale * breathe * globeScrollState.scale);
+      // Subtle breathing scale (natural organic pulse)
+      const hoverBoost = interactive ? hoverStrength * 0.025 : 0;
+      const breathe = (1 + Math.sin(t * 0.8) * 0.01) * (1 + hoverBoost);
+      group.scale.setScalar(metrics.scale * breathe * globeScale);
 
-      hsCurrent.lerp(hsTarget, 0.10).normalize();
+      if (interactive) {
+        hsCurrent.lerp(hsTarget, 0.10).normalize();
+      }
 
       updateParticles(t);
       renderer.render(scene, camera);
@@ -441,19 +471,30 @@ export default function ParticleGlobe({
 
     // ── Resize ────────────────────────────────────────────────────────────────
     const onResize = () => {
-      const w = container.clientWidth, h = container.clientHeight;
+      if (!container) return;
+      const w = container.clientWidth || window.innerWidth;
+      const h = container.clientHeight || window.innerHeight;
+      if (w <= 0 || h <= 0) return;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
     window.addEventListener("resize", onResize);
 
+    const resizeObserver = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(() => onResize())
+      : null;
+    if (resizeObserver) {
+      resizeObserver.observe(container);
+    }
+
     // ── Cleanup ───────────────────────────────────────────────────────────────
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("pointermove", onPointerMove);
-      document.removeEventListener("mouseleave", onPointerLeave);
+      if (resizeObserver) resizeObserver.disconnect();
+      if (onPointerMove) window.removeEventListener("pointermove", onPointerMove);
+      if (onPointerLeave) document.removeEventListener("mouseleave", onPointerLeave);
       renderer.dispose();
       coreGeo.dispose(); coreMat.dispose(); coreTex.dispose();
       haloGeo.dispose(); haloMat.dispose(); haloTex.dispose();
@@ -461,7 +502,7 @@ export default function ParticleGlobe({
         container.removeChild(renderer.domElement);
       }
     };
-  }, [transparent, layout, pointCount]);
+  }, [transparent, layout, pointCount, interactive]);
 
   return (
     <div

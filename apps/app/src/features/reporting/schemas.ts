@@ -56,7 +56,7 @@ export interface ArchivedProjectDTO {
   intakeId: string;
   clientName: string;
   packageName: string;
-  snapshot: any;
+  snapshot: unknown;
   archivedAt: string;
   archivedBy: string;
   filesPurged: boolean;
@@ -73,7 +73,7 @@ export interface AuditLogDTO {
   oldValue: string | null;
   newValue: string | null;
   reason: string | null;
-  metadata: any;
+  metadata: unknown;
   createdAt: string;
 }
 
@@ -180,6 +180,54 @@ export interface InfrastructureHealthDTO {
   hasActiveWarning: boolean;
   warningDetails: string[];
   lastCheckedAt: string;
+}
+
+// ─── Fresh Database Reset (Selective Categories) ─────────────────────────────
+
+export const FreshDatabaseResetSchema = z.object({
+  ceoPassword: z.string().min(1, "CEO password is required"),
+  confirmationPhrase: z.string().refine(
+    (val) => val === "RESET" || val === "RESET JAXIS DATABASE",
+    { message: 'Type "RESET" to confirm' }
+  ),
+  // CEO-selectable data domains — each toggleable independently
+  purgeStudies: z.boolean().default(true),
+  purgeFinance: z.boolean().default(true),
+  purgeUsers: z.boolean().default(true),
+  purgeAttendance: z.boolean().default(true),
+  purgeMessages: z.boolean().default(true),
+  purgeQA: z.boolean().default(true),
+  purgeNotifications: z.boolean().default(true),
+  purgeAuditLogs: z.boolean().default(false), // default OFF for compliance
+});
+export type FreshDatabaseResetInput = z.infer<typeof FreshDatabaseResetSchema>;
+
+export interface FreshDatabaseResetResultDTO {
+  categoriesPurged: string[];
+  purgedStudiesCount: number;
+  purgedUsersCount: number;
+  purgedR2FilesCount: number;
+  purgedFinanceCount: number;
+  purgedMessagesCount: number;
+  purgedAttendanceCount: number;
+  purgedQACount: number;
+  purgedNotificationsCount: number;
+  purgedAuditLogsCount: number;
+  freedMB: number;
+  preservedCeoEmail: string;
+}
+
+export interface DatabaseResetPreviewDTO {
+  studies: number;
+  finance: number;
+  users: number;
+  attendance: number;
+  messages: number;
+  qa: number;
+  notifications: number;
+  auditLogs: number;
+  r2FileCount: number;
+  r2StorageMB: number;
 }
 
 
