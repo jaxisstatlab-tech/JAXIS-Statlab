@@ -56,6 +56,42 @@ export function extractR2StorageKey(input: string): string {
 }
 
 /**
+ * Generates an organized, domain-segregated Cloudflare R2 storage key.
+ *
+ * Folder Structure:
+ * - Client Raw Inputs:  studies/{studyId}/raw/{timestamp}-{filename}
+ * - Analysis Workbench: studies/{studyId}/workbench/{timestamp}-{filename}
+ * - Final Deliverables: deliverables/{studyId}/{timestamp}-{filename}
+ * - Payment Proofs:     treasury/payments/{studyId}/{timestamp}-{filename}
+ * - Dispute Evidence:   disputes/{studyId}/{timestamp}-{filename}
+ */
+export function generateR2StorageKey(
+  category: string,
+  entityId: string,
+  fileName: string
+): string {
+  const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const sanitizedId = (entityId || "general").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const timestamp = Date.now();
+
+  switch (category) {
+    case "PAYMENT_PROOF":
+      return `treasury/payments/${sanitizedId}/${timestamp}-${cleanFileName}`;
+    case "DELIVERABLE":
+      return `deliverables/${sanitizedId}/${timestamp}-${cleanFileName}`;
+    case "ANALYSIS_OUTPUT":
+      return `studies/${sanitizedId}/workbench/${timestamp}-${cleanFileName}`;
+    case "DISPUTE_EVIDENCE":
+      return `disputes/${sanitizedId}/${timestamp}-${cleanFileName}`;
+    case "RESEARCH_DOCUMENT":
+    case "DATASET":
+    case "QUESTIONNAIRE":
+    default:
+      return `studies/${sanitizedId}/raw/${timestamp}-${cleanFileName}`;
+  }
+}
+
+/**
  * Permanently deletes an object from Cloudflare R2 storage bucket.
  * Automatically handles full URLs by extracting the storage key.
  */

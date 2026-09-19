@@ -652,7 +652,13 @@ export function DocumentViewerLightbox({
   const realFileUrl =
     file.filePath.startsWith("http://") || file.filePath.startsWith("https://")
       ? file.filePath
-      : file.filePath.startsWith("studies/") || file.filePath.startsWith("uploads/") || file.filePath.startsWith("intake-uploads/")
+      : file.filePath.startsWith("studies/") ||
+        file.filePath.startsWith("deliverables/") ||
+        file.filePath.startsWith("treasury/") ||
+        file.filePath.startsWith("sows/") ||
+        file.filePath.startsWith("disputes/") ||
+        file.filePath.startsWith("uploads/") ||
+        file.filePath.startsWith("intake-uploads/")
       ? `${R2_PUBLIC_DEV_URL}/${file.filePath}`
       : null;
 

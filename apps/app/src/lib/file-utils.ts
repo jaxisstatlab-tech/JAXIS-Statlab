@@ -325,7 +325,13 @@ export async function triggerFileDownload(filePath: string, fileName: string): P
   const downloadUrl =
     filePath.startsWith("http://") || filePath.startsWith("https://") || filePath.startsWith("blob:")
       ? filePath
-      : filePath.startsWith("studies/") || filePath.startsWith("uploads/") || filePath.startsWith("intake-uploads/")
+      : filePath.startsWith("studies/") ||
+        filePath.startsWith("deliverables/") ||
+        filePath.startsWith("treasury/") ||
+        filePath.startsWith("sows/") ||
+        filePath.startsWith("disputes/") ||
+        filePath.startsWith("uploads/") ||
+        filePath.startsWith("intake-uploads/")
       ? `${R2_PUBLIC_DEV_URL}/${filePath}`
       : null;
 

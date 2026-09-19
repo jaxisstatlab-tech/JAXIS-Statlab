@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { r2Client } from "@/lib/storage";
+import { r2Client, generateR2StorageKey } from "@/lib/storage";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { env } from "@/lib/env";
 import type { FileCategory } from "@prisma/client";
@@ -73,9 +73,7 @@ export async function POST(req: NextRequest) {
     // Prepare buffer and Cloudflare R2 Key
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const cleanFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const sanitizedStudyId = studyId.replace(/[^a-zA-Z0-9_-]/g, "_");
-    const storageKey = `studies/${sanitizedStudyId}/${Date.now()}-${cleanFileName}`;
+    const storageKey = generateR2StorageKey(category, studyId, file.name);
     const contentType = file.type || "application/octet-stream";
 
     // Upload directly to Cloudflare R2

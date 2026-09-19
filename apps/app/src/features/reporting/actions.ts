@@ -991,11 +991,15 @@ export async function purgeExpiredFilesAction(
           ].filter(Boolean)
         );
 
-        const r2Objects = await listAllR2Objects("studies/");
+        const [r2StudyObjects, r2Deliverables] = await Promise.all([
+          listAllR2Objects("studies/"),
+          listAllR2Objects("deliverables/"),
+        ]);
+        const r2Objects = [...r2StudyObjects, ...r2Deliverables];
         const orphanedKeysToDelete: string[] = [];
 
         for (const item of r2Objects) {
-          // If object is in studies/ and NOT in active database records, or in studies/intake/
+          // If object is in studies/ or deliverables/ and NOT in active database records, or in studies/intake/
           if (!activeTrackedKeys.has(item.key) || item.key.startsWith("studies/intake/")) {
             orphanedKeysToDelete.push(item.key);
             totalFreedBytes += item.size;
@@ -1806,14 +1810,18 @@ export async function freshDatabaseResetAction(
 
       purgedStudiesCount = projectDel.count;
 
-      // Purge R2 study storage objects
+      // Purge R2 study & deliverable storage objects
       try {
-        const r2StudyObjects = await listAllR2Objects("studies/");
-        if (r2StudyObjects.length > 0) {
-          const keys = r2StudyObjects.map((o) => o.key);
-          totalFreedBytes += r2StudyObjects.reduce((s, o) => s + o.size, 0);
+        const [r2StudyObjects, r2Deliverables] = await Promise.all([
+          listAllR2Objects("studies/"),
+          listAllR2Objects("deliverables/"),
+        ]);
+        const combined = [...r2StudyObjects, ...r2Deliverables];
+        if (combined.length > 0) {
+          const keys = combined.map((o) => o.key);
+          totalFreedBytes += combined.reduce((s, o) => s + o.size, 0);
           await deleteMultipleR2Objects(keys);
-          purgedR2FilesCount += r2StudyObjects.length;
+          purgedR2FilesCount += combined.length;
         }
       } catch {
         // R2 may be unavailable in dev

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getR2UploadUrl } from "@/lib/storage";
+import { getR2UploadUrl, generateR2StorageKey } from "@/lib/storage";
 import { env } from "@/lib/env";
 import type { FileCategory } from "@prisma/client";
 
@@ -76,9 +76,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const sanitizedStudyId = studyId.replace(/[^a-zA-Z0-9_-]/g, "_");
-    const storageKey = `studies/${sanitizedStudyId}/${Date.now()}-${cleanFileName}`;
+    const storageKey = generateR2StorageKey(category, studyId, fileName);
     const contentType = fileType || "application/octet-stream";
 
     // Generate Cloudflare R2 Presigned PUT URL (5-minute expiration)
