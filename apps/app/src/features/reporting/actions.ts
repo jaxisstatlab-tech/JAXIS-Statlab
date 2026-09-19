@@ -1,5 +1,7 @@
 "use server";
 
+import fs from "fs";
+import path from "path";
 import { db, withDbTimeout } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import type { RoleName } from "@prisma/client";
@@ -1713,11 +1715,28 @@ export async function getDatabaseResetPreviewAction(): Promise<{
       // R2 may be unavailable in dev, graceful fallback
     }
 
+    // Safely count payslips from dev_data/payslips.json
+    let payslipsCount = 0;
+    try {
+      const devDataDir = path.join(process.cwd(), "dev_data");
+      const payslipsFile = path.join(devDataDir, "payslips.json");
+      if (fs.existsSync(payslipsFile)) {
+        const raw = fs.readFileSync(payslipsFile, "utf-8");
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          payslipsCount = parsed.length;
+        }
+      }
+    } catch {
+      // dev_data may be unavailable in dev, graceful fallback
+    }
+
     return {
       success: true,
       data: {
         studies,
-        finance: payments + payouts + ledgers + disputes,
+        finance: payments + ledgers + disputes,
+        payroll: payslipsCount + payouts,
         users,
         attendance,
         messages,
@@ -1780,6 +1799,7 @@ export async function freshDatabaseResetAction(
     let purgedUsersCount = 0;
     let purgedR2FilesCount = 0;
     let purgedFinanceCount = 0;
+    let purgedPayrollCount = 0;
     let purgedMessagesCount = 0;
     let purgedAttendanceCount = 0;
     let purgedQACount = 0;
@@ -1852,7 +1872,56 @@ export async function freshDatabaseResetAction(
       }
     }
 
-    // ─── Phase 3: Purge messages & chat history ────────────────────────
+    // ─── Phase 3: Purge staff payroll & payslips ────────────────────────
+    if (input.purgePayroll) {
+      categoriesPurged.push("Staff Payroll & Payslips");
+      const payoutDel = await db.payout.deleteMany({});
+      let wipedPayslips = 0;
+      try {
+        const devDataDir = path.join(process.cwd(), "dev_data");
+        const payslipsFile = path.join(devDataDir, "payslips.json");
+        const payoutDetailsFile = path.join(devDataDir, "payout_details.json");
+        const configsFile = path.join(devDataDir, "payroll_configs.json");
+
+        if (fs.existsSync(payslipsFile)) {
+          try {
+            const raw = fs.readFileSync(payslipsFile, "utf-8");
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr)) wipedPayslips = arr.length;
+          } catch {
+            // ignore JSON parse errors
+          }
+          fs.writeFileSync(payslipsFile, JSON.stringify([], null, 2), "utf-8");
+        }
+
+        if (fs.existsSync(payoutDetailsFile)) {
+          fs.writeFileSync(payoutDetailsFile, JSON.stringify({}, null, 2), "utf-8");
+        }
+
+        if (fs.existsSync(configsFile)) {
+          try {
+            const raw = fs.readFileSync(configsFile, "utf-8");
+            const conf = JSON.parse(raw);
+            if (conf && typeof conf === "object") {
+              conf.staffOverrides = {};
+              fs.writeFileSync(configsFile, JSON.stringify(conf, null, 2), "utf-8");
+            }
+          } catch {
+            // ignore
+          }
+        }
+      } catch (fileErr) {
+        console.warn("[freshDatabaseResetAction] Failed to reset payroll files:", fileErr);
+      }
+
+      purgedPayrollCount = payoutDel.count + wipedPayslips;
+      invalidateCacheTags(CACHE_TAGS.PAYROLL);
+      revalidatePath("/dashboard/ceo/payroll");
+      revalidatePath("/dashboard/finance/payroll");
+      revalidatePath("/dashboard/staff/hr");
+    }
+
+    // ─── Phase 4: Purge messages & chat history ────────────────────────
     if (input.purgeMessages) {
       categoriesPurged.push("Messages & Chat History");
       const blockedDel = await db.blockedMessageLog.deleteMany({});
@@ -1861,7 +1930,7 @@ export async function freshDatabaseResetAction(
       purgedMessagesCount = blockedDel.count + receiptDel.count + messageDel.count;
     }
 
-    // ─── Phase 4: Purge QA reviews & scorecards ────────────────────────
+    // ─── Phase 5: Purge QA reviews & scorecards ────────────────────────
     if (input.purgeQA) {
       categoriesPurged.push("QA Reviews & Scorecards");
       const rejDel = await db.qARejectionCount.deleteMany({});
@@ -1869,7 +1938,7 @@ export async function freshDatabaseResetAction(
       purgedQACount = rejDel.count + revDel.count;
     }
 
-    // ─── Phase 5: Purge staff attendance & shifts ──────────────────────
+    // ─── Phase 6: Purge staff attendance & shifts ──────────────────────
     if (input.purgeAttendance) {
       categoriesPurged.push("Staff Attendance & Shifts");
       const corrDel = await db.attendanceCorrectionRequest.deleteMany({});
@@ -1877,7 +1946,7 @@ export async function freshDatabaseResetAction(
       purgedAttendanceCount = corrDel.count + attDel.count;
     }
 
-    // ─── Phase 6: Purge notifications & alerts ─────────────────────────
+    // ─── Phase 7: Purge notifications & alerts ─────────────────────────
     if (input.purgeNotifications) {
       categoriesPurged.push("Notifications & Alerts");
       const alertDel = await db.inAppAlert.deleteMany({});
@@ -1886,7 +1955,7 @@ export async function freshDatabaseResetAction(
       purgedNotificationsCount = alertDel.count + notifDel.count + delReqDel.count;
     }
 
-    // ─── Phase 7: Purge audit trail & system logs ──────────────────────
+    // ─── Phase 8: Purge audit trail & system logs ──────────────────────
     if (input.purgeAuditLogs) {
       categoriesPurged.push("Audit Trail & System Logs");
       const auditDel = await db.auditLog.deleteMany({});
@@ -1894,7 +1963,7 @@ export async function freshDatabaseResetAction(
       purgedAuditLogsCount = auditDel.count + authAuditDel.count;
     }
 
-    // ─── Phase 8: Purge non-CEO user accounts ──────────────────────────
+    // ─── Phase 9: Purge non-CEO user accounts ──────────────────────────
     if (input.purgeUsers) {
       categoriesPurged.push("User Accounts (non-CEO)");
       await db.suspensionLog.deleteMany({});
@@ -1907,21 +1976,22 @@ export async function freshDatabaseResetAction(
       purgedUsersCount = userDel.count;
     }
 
-    // ─── Phase 9: Final audit record ───────────────────────────────────
+    // ─── Phase 10: Final audit record ──────────────────────────────────
     const freedMB = Number((totalFreedBytes / (1024 * 1024)).toFixed(1));
     await db.auditLog.create({
       data: {
         actorId: ceoId,
         actorRole: "CEO" as RoleName,
         action: "FRESH_DATABASE_RESET",
-        reason: `CEO initiated selective database reset. Categories purged: ${categoriesPurged.join(", ")}. Studies: ${purgedStudiesCount}, Users: ${purgedUsersCount}, Finance: ${purgedFinanceCount}, R2 Files: ${purgedR2FilesCount}, Freed: ${freedMB} MB.`,
+        reason: `CEO initiated selective database reset. Categories purged: ${categoriesPurged.join(", ")}. Studies: ${purgedStudiesCount}, Users: ${purgedUsersCount}, Finance: ${purgedFinanceCount}, Payroll: ${purgedPayrollCount}, R2 Files: ${purgedR2FilesCount}, Freed: ${freedMB} MB.`,
       },
     });
 
-    // ─── Phase 10: Cache invalidation ──────────────────────────────────
+    // ─── Phase 11: Cache invalidation ──────────────────────────────────
     invalidateCacheTags(CACHE_TAGS.PROJECTS);
     invalidateCacheTags(CACHE_TAGS.STAFF_DIRECTORY);
     invalidateCacheTags(CACHE_TAGS.PAYMENTS);
+    invalidateCacheTags(CACHE_TAGS.PAYROLL);
     revalidatePath("/dashboard", "layout");
 
     return {
@@ -1932,6 +2002,7 @@ export async function freshDatabaseResetAction(
         purgedUsersCount,
         purgedR2FilesCount,
         purgedFinanceCount,
+        purgedPayrollCount,
         purgedMessagesCount,
         purgedAttendanceCount,
         purgedQACount,

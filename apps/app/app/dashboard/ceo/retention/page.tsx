@@ -91,7 +91,7 @@ const RESET_CATEGORIES: ResetCategory[] = [
     description: "Requests, drafts, deliverables, SOWs, and R2 files.",
     icon: FileText,
     defaultOn: true,
-    autoDeps: ["purgeFinance", "purgeMessages", "purgeQA"],
+    autoDeps: ["purgeFinance", "purgePayroll", "purgeMessages", "purgeQA"],
   },
   {
     key: "purgeFinance",
@@ -99,6 +99,15 @@ const RESET_CATEGORIES: ResetCategory[] = [
     shortLabel: "Finance",
     description: "Transactions, receipts, payouts, ledgers, disputes.",
     icon: CurrencyDollar,
+    defaultOn: true,
+    autoDeps: ["purgePayroll"],
+  },
+  {
+    key: "purgePayroll",
+    label: "Staff Payroll & Payslips",
+    shortLabel: "Payroll",
+    description: "Generated payslips, payout details, and compensation ledger.",
+    icon: Receipt,
     defaultOn: true,
   },
   {
@@ -110,6 +119,7 @@ const RESET_CATEGORIES: ResetCategory[] = [
     defaultOn: true,
     autoDeps: [
       "purgeAttendance",
+      "purgePayroll",
       "purgeMessages",
       "purgeQA",
       "purgeNotifications",
@@ -417,6 +427,7 @@ export default function CeoStorageRetentionPage() {
     const map: Record<string, number> = {
       purgeStudies: resetPreview.studies,
       purgeFinance: resetPreview.finance,
+      purgePayroll: resetPreview.payroll,
       purgeUsers: resetPreview.users,
       purgeAttendance: resetPreview.attendance,
       purgeMessages: resetPreview.messages,
@@ -446,6 +457,7 @@ export default function CeoStorageRetentionPage() {
         confirmationPhrase: "RESET",
         purgeStudies: resetCategories.purgeStudies ?? true,
         purgeFinance: resetCategories.purgeFinance ?? true,
+        purgePayroll: resetCategories.purgePayroll ?? true,
         purgeUsers: resetCategories.purgeUsers ?? true,
         purgeAttendance: resetCategories.purgeAttendance ?? true,
         purgeMessages: resetCategories.purgeMessages ?? true,
@@ -459,7 +471,7 @@ export default function CeoStorageRetentionPage() {
         setToast({
           variant: "success",
           message: "Database Reset Complete",
-          description: `Purged ${res.data.purgedStudiesCount} studies, ${res.data.purgedUsersCount} user accounts, and ${res.data.purgedR2FilesCount} files. Freed ${res.data.freedMB} MB.`,
+          description: `Purged ${res.data.purgedStudiesCount} studies, ${res.data.purgedUsersCount} user accounts, ${res.data.purgedPayrollCount} payslips, and ${res.data.purgedR2FilesCount} files. Freed ${res.data.freedMB} MB.`,
         });
         await loadData(true);
         router.refresh();
@@ -901,8 +913,8 @@ export default function CeoStorageRetentionPage() {
           </div>
         </div>
 
-        {/* 8 Category Selection Cards: 4-Column Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* 9 Category Selection Cards: 3-Column Balanced Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {RESET_CATEGORIES.map((cat) => {
             const isChecked = resetCategories[cat.key] ?? false;
             const count = getCategoryCount(cat.key);

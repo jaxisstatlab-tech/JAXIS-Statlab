@@ -18,11 +18,13 @@ import type { ActiveShiftStatus } from "../schemas";
 interface DutyClockWidgetProps {
   userRole?: string;
   initialActiveShift?: ActiveShiftStatus | null;
+  isSidebarCollapsed?: boolean;
 }
 
 export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
   userRole = "CLIENT",
   initialActiveShift,
+  isSidebarCollapsed,
 }) => {
   // Only render for internal staff roles
   const isInternal = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO"].includes(userRole);
@@ -271,64 +273,147 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
 
   return (
     <>
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        {/* On Leave Indicator */}
-        {shiftStatus?.isOnLeave ? (
-          <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-semibold rounded-[2px] bg-purple-950/50 text-purple-300 border border-purple-500/30 whitespace-nowrap shrink-0">
-            <CalendarX size={13} weight="fill" />
-            <span>On Leave</span>
-          </span>
-        ) : shiftStatus?.isOnDuty ? (
-          /* Active Duty Live Timer Pill */
-          <div className="flex items-center bg-[#01142B] border border-emerald-500/40 rounded-[2px] p-0.5 sm:p-1 gap-1 sm:gap-1.5 shadow-sm shrink-0">
-            {/* Clickable Timer Pill (On mobile, this single element opens the Conclude modal without button cramming) */}
-            <button
-              type="button"
-              disabled={isPunching}
-              onClick={() => setIsClockOutModalOpen(true)}
-              className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 rounded-[2px] hover:bg-emerald-500/10 active:bg-emerald-500/20 transition-colors cursor-pointer"
-              title="Click to view shift details or conclude shift"
+      {isSidebarCollapsed !== undefined ? (
+        /* Sidebar Mode (Full width with 40px icon anchor + collapsing text) */
+        shiftStatus?.isOnLeave ? (
+          <div
+            className="w-full flex items-center h-9 rounded-[2px] bg-purple-950/40 text-purple-300 border border-purple-500/30 overflow-hidden transition-all duration-200"
+            title="On Approved Leave"
+          >
+            <div className="w-10 max-w-full h-full shrink-0 flex items-center justify-center relative">
+              <CalendarX size={16} weight="fill" />
+            </div>
+            <div
+              className={`flex items-center flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
+                isSidebarCollapsed
+                  ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0"
+                  : "max-w-[200px] opacity-100 ml-1.5 pr-2"
+              }`}
             >
-              <span className="relative flex h-2 w-2 shrink-0">
+              <span className="text-xs font-mono font-semibold">On Leave</span>
+            </div>
+          </div>
+        ) : shiftStatus?.isOnDuty ? (
+          /* Active Duty Live Timer Pill in Sidebar */
+          <button
+            type="button"
+            disabled={isPunching}
+            onClick={() => setIsClockOutModalOpen(true)}
+            title={
+              isSidebarCollapsed
+                ? `Active Duty: ${formatTimer(seconds)} (Click to Conclude)`
+                : undefined
+            }
+            className="w-full flex items-center h-9 rounded-[2px] bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/50 transition-all duration-200 cursor-pointer active:scale-[0.98] overflow-hidden"
+          >
+            <div className="w-10 max-w-full h-full shrink-0 flex items-center justify-center relative">
+              <span className="relative flex h-2.5 w-2.5 items-center justify-center">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
               </span>
-              <span className="text-xs font-mono font-bold text-emerald-300 tracking-wider">
+            </div>
+            <div
+              className={`flex items-center justify-between flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
+                isSidebarCollapsed
+                  ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0"
+                  : "max-w-[200px] opacity-100 ml-1.5 pr-2"
+              }`}
+            >
+              <span className="text-xs font-mono font-bold tracking-wider text-emerald-300">
                 {formatTimer(seconds)}
               </span>
-            </button>
-
-            {/* Explicit Conclude Shift button for tablet & desktop viewports */}
-            <button
-              type="button"
-              disabled={isPunching}
-              onClick={() => setIsClockOutModalOpen(true)}
-              className="hidden sm:flex px-2 sm:px-2.5 py-1 text-[0.688rem] font-sans font-semibold rounded-[2px] bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-500/30 hover:border-red-500/50 transition-colors items-center gap-1 cursor-pointer whitespace-nowrap"
-              title="Conclude active shift"
-            >
-              <Stop size={12} weight="fill" />
-              <span>Conclude Shift</span>
-            </button>
-          </div>
+              <span className="text-[10px] font-sans font-semibold text-red-300 bg-red-950/60 border border-red-500/30 px-1.5 py-0.5 rounded-[2px] ml-auto hover:bg-red-900/80">
+                Conclude
+              </span>
+            </div>
+          </button>
         ) : (
-          /* Off Duty - Clock In Button */
-          <Button
-            size="sm"
-            variant="secondary"
+          /* Off Duty - Clock In Button in Sidebar */
+          <button
+            type="button"
             disabled={isPunching}
             onClick={handleClockIn}
-            className="flex items-center gap-1 sm:gap-1.5 text-xs font-semibold px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[32px] sm:min-h-[36px] bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/50 rounded-[2px] transition-colors cursor-pointer whitespace-nowrap shrink-0"
-            title="Clock In to commence duty shift"
+            title={isSidebarCollapsed ? "Clock In to commence duty shift" : undefined}
+            className="w-full flex items-center h-9 rounded-[2px] bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/50 cursor-pointer transition-all duration-200 active:scale-[0.98] overflow-hidden"
           >
-            {isPunching ? (
-              <CircleNotch size={13} className="animate-spin text-emerald-300" />
-            ) : (
-              <Play size={12} weight="fill" />
-            )}
-            <span>Clock In</span>
-          </Button>
-        )}
-      </div>
+            <div className="w-10 max-w-full h-full shrink-0 flex items-center justify-center relative">
+              {isPunching ? (
+                <CircleNotch size={14} className="animate-spin text-emerald-300" />
+              ) : (
+                <Play size={13} weight="fill" className="text-emerald-400 -translate-x-[1px]" />
+              )}
+            </div>
+            <div
+              className={`flex items-center justify-between flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
+                isSidebarCollapsed
+                  ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0"
+                  : "max-w-[200px] opacity-100 ml-1.5 pr-2"
+              }`}
+            >
+              <span className="text-xs font-sans font-semibold">Clock In</span>
+            </div>
+          </button>
+        )
+      ) : (
+        /* Topbar Mode (horizontal inline flex) */
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {shiftStatus?.isOnLeave ? (
+            <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-semibold rounded-[2px] bg-purple-950/50 text-purple-300 border border-purple-500/30 whitespace-nowrap shrink-0">
+              <CalendarX size={13} weight="fill" />
+              <span>On Leave</span>
+            </span>
+          ) : shiftStatus?.isOnDuty ? (
+            /* Active Duty Live Timer Pill */
+            <div className="flex items-center bg-[#01142B] border border-emerald-500/40 rounded-[2px] p-0.5 sm:p-1 gap-1 sm:gap-1.5 shadow-sm shrink-0">
+              {/* Clickable Timer Pill */}
+              <button
+                type="button"
+                disabled={isPunching}
+                onClick={() => setIsClockOutModalOpen(true)}
+                className="flex items-center gap-1 sm:gap-1.5 px-2 py-1 rounded-[2px] hover:bg-emerald-500/10 active:bg-emerald-500/20 transition-colors cursor-pointer"
+                title="Click to view shift details or conclude shift"
+              >
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span className="text-xs font-mono font-bold text-emerald-300 tracking-wider">
+                  {formatTimer(seconds)}
+                </span>
+              </button>
+
+              {/* Explicit Conclude Shift button for tablet & desktop viewports */}
+              <button
+                type="button"
+                disabled={isPunching}
+                onClick={() => setIsClockOutModalOpen(true)}
+                className="hidden sm:flex px-2 sm:px-2.5 py-1 text-[0.688rem] font-sans font-semibold rounded-[2px] bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-500/30 hover:border-red-500/50 transition-colors items-center gap-1 cursor-pointer whitespace-nowrap"
+                title="Conclude active shift"
+              >
+                <Stop size={12} weight="fill" />
+                <span>Conclude Shift</span>
+              </button>
+            </div>
+          ) : (
+            /* Off Duty - Clock In Button */
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={isPunching}
+              onClick={handleClockIn}
+              className="flex items-center gap-1 sm:gap-1.5 text-xs font-semibold px-2.5 sm:px-3 py-1 sm:py-1.5 min-h-[32px] sm:min-h-[36px] bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/50 rounded-[2px] transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              title="Clock In to commence duty shift"
+            >
+              {isPunching ? (
+                <CircleNotch size={13} className="animate-spin text-emerald-300" />
+              ) : (
+                <Play size={12} weight="fill" />
+              )}
+              <span>Clock In</span>
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Clock Out Confirmation Modal */}
       <Modal

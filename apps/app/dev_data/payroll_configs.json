@@ -53,23 +53,7 @@
       "updatedBy": "CEO Owner"
     }
   },
-  "staffOverrides": {
-    "cmt5pluuu0004lrrk5qu5ul2t": {
-      "userId": "cmt5pluuu0004lrrk5qu5ul2t",
-      "staffName": "QA Lead Maria",
-      "staffEmail": "qa@jaxis.dev",
-      "roleName": "SENIOR_QA_LEAD",
-      "compensationType": "HYBRID",
-      "baseSalaryMonthly": 20000,
-      "commissionPercentagePerStudy": 10,
-      "hourlyDutyRate": 450,
-      "fixedPerStudyBonus": 500,
-      "allowancesMonthly": 2500,
-      "notes": "₱12,000 monthly retainer + 10% review commission per audited study + ₱450/hr attendance duty.",
-      "updatedAt": "2026-08-28T20:07:59.013Z",
-      "updatedBy": "CEO Owner"
-    }
-  },
+  "staffOverrides": {},
   "scheduleConfig": {
     "frequency": "MONTHLY",
     "firstCutoffDay": 15,

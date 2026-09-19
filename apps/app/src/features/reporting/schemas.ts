@@ -193,6 +193,7 @@ export const FreshDatabaseResetSchema = z.object({
   // CEO-selectable data domains — each toggleable independently
   purgeStudies: z.boolean().default(true),
   purgeFinance: z.boolean().default(true),
+  purgePayroll: z.boolean().default(true),
   purgeUsers: z.boolean().default(true),
   purgeAttendance: z.boolean().default(true),
   purgeMessages: z.boolean().default(true),
@@ -208,6 +209,7 @@ export interface FreshDatabaseResetResultDTO {
   purgedUsersCount: number;
   purgedR2FilesCount: number;
   purgedFinanceCount: number;
+  purgedPayrollCount: number;
   purgedMessagesCount: number;
   purgedAttendanceCount: number;
   purgedQACount: number;
@@ -220,6 +222,7 @@ export interface FreshDatabaseResetResultDTO {
 export interface DatabaseResetPreviewDTO {
   studies: number;
   finance: number;
+  payroll: number;
   users: number;
   attendance: number;
   messages: number;

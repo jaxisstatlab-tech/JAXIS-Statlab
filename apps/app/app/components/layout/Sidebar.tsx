@@ -49,11 +49,11 @@ import {
   PaperPlaneRight,
   Gavel,
   CaretLeft,
-  CaretRight,
   CaretDown,
   User,
   GraduationCap,
   SignOut,
+  CircleNotch,
 } from "@phosphor-icons/react";
 
 export interface NavItem {
@@ -717,13 +717,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       if (onClose) onClose();
 
       if (pathname === href && !pendingHref) {
-        e.preventDefault();
+        setPendingHref(href);
+        router.refresh();
+        setTimeout(() => setPendingHref(null), 800);
         return;
       }
 
       setPendingHref(href);
     },
-    [onClose, pathname, pendingHref]
+    [onClose, pathname, pendingHref, router]
   );
 
   const handleLogout = async () => {
@@ -971,37 +973,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           : undefined
                       }
                     >
-                      {/* Precision Vertical Accent Bar */}
-                      {effectivelyActive && (
-                        <span
-                          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-[2px] bg-[#CC6600]"
-                          aria-hidden="true"
-                        />
-                      )}
-
                       {/* Nav Icon Container: Anchored on x = 34px axis */}
                       <div className="w-10 h-10 shrink-0 flex items-center justify-center relative">
-                        <span
-                          style={{
-                            color: effectivelyActive
-                              ? "#FFA040"
-                              : hasNewMessages
-                              ? "#FFA040"
-                              : undefined,
-                          }}
-                          className={`${
-                            effectivelyActive
-                              ? "text-[#FFA040]"
-                              : hasNewMessages
-                              ? "text-[#FFA040]"
-                              : "text-white/40 group-hover:text-white/80 group-hover:scale-105"
-                          } transition-all duration-150 flex-shrink-0 flex items-center justify-center`}
-                        >
-                          {item.icon}
-                        </span>
+                        {isCollapsed && isPendingActive ? (
+                          <CircleNotch
+                            size={16}
+                            className="animate-spin text-[#FFA040] shrink-0"
+                            weight="bold"
+                          />
+                        ) : (
+                          <span
+                            style={{
+                              color: effectivelyActive
+                                ? "#FFA040"
+                                : hasNewMessages
+                                ? "#FFA040"
+                                : undefined,
+                            }}
+                            className={`${
+                              effectivelyActive
+                                ? "text-[#FFA040]"
+                                : hasNewMessages
+                                ? "text-[#FFA040]"
+                                : "text-white/40 group-hover:text-white/80 group-hover:scale-105"
+                            } transition-all duration-150 flex-shrink-0 flex items-center justify-center`}
+                          >
+                            {item.icon}
+                          </span>
+                        )}
 
                         {/* Collapsed mode unread ping beacon */}
-                        {isCollapsed && hasNewMessages && (
+                        {isCollapsed && hasNewMessages && !isPendingActive && (
                           <span className="absolute top-2 right-2 flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-80" />
                             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC6600]" />
@@ -1031,14 +1033,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         </span>
 
                         <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-                          {isPendingActive && !isActive && (
-                            <span
-                              className="h-1.5 w-1.5 rounded-full bg-[#CC6600] animate-ping flex-shrink-0 mr-1"
-                              title="Navigating..."
+                          {isPendingActive ? (
+                            <CircleNotch
+                              size={14}
+                              className="animate-spin text-[#FFA040] flex-shrink-0"
+                              weight="bold"
                             />
-                          )}
-
-                          {hasNewMessages ? (
+                          ) : hasNewMessages ? (
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               <span
                                 className="relative flex h-2 w-2 items-center justify-center flex-shrink-0"
@@ -1088,8 +1089,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex flex-col shrink-0 border-t border-white/[0.08] bg-[#010D1F]/75 overflow-hidden">
         {/* Staff Duty Clock (internal staff only) */}
         {isInternal && (
-          <div className={`p-3.5 border-b border-white/[0.08] overflow-hidden ${isCollapsed ? "flex justify-center" : ""}`}>
-            <DutyClockWidget userRole={role} initialActiveShift={initialActiveShift} />
+          <div className="p-3.5 border-b border-white/[0.08] overflow-hidden">
+            <DutyClockWidget
+              userRole={role}
+              initialActiveShift={initialActiveShift}
+              isSidebarCollapsed={isCollapsed}
+            />
           </div>
         )}
 
