@@ -600,6 +600,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isCollapsed = isDesktop && propIsCollapsed;
 
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const prevPathnameRef = useRef<string>(pathname);
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
   const [isProfileExpanded, setIsProfileExpanded] = useState<boolean>(false);
   const profileContainerRef = useRef<HTMLDivElement>(null);
@@ -691,10 +692,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
 
 
-  // Reset pending state once navigation completes or URL matches target
+  // Reset pending state once navigation completes (pathname changes to target or any new route)
   useEffect(() => {
+    // If the URL pathname has transitioned to a new route, clear pending state immediately
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      setPendingHref(null);
+      try {
+        window.dispatchEvent(new CustomEvent("jaxis:navigating-end"));
+      } catch {
+        // Safe fallback
+      }
+      return;
+    }
+
     if (pendingHref) {
-      const isCurrentRoute =
+      const isTargetRoute =
         pathname === pendingHref ||
         (pendingHref !== "/dashboard" &&
           pendingHref !== "/dashboard/admin" &&
@@ -703,20 +716,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
           pendingHref !== "/dashboard/statistician" &&
           pendingHref !== "/dashboard/qa" &&
           pendingHref !== "/dashboard/finance" &&
-          pathname.startsWith(pendingHref + "/"));
+          pathname.startsWith(pendingHref + "/")) ||
+        (pendingHref === "/dashboard/client" &&
+          pathname.startsWith("/dashboard/client/projects") &&
+          !pathname.startsWith("/dashboard/client/projects/new"));
 
-      if (isCurrentRoute) {
+      if (isTargetRoute) {
         setPendingHref(null);
+        try {
+          window.dispatchEvent(new CustomEvent("jaxis:navigating-end"));
+        } catch {
+          // Safe fallback
+        }
       }
     }
   }, [pathname, pendingHref]);
 
-  // Safety watchdog: clear pending state if navigation settles or takes longer than 3.5s
+  // Safety watchdog: clear pending state ONLY if navigation takes longer than 20s (e.g. network failure)
   useEffect(() => {
     if (!pendingHref) return;
     const timeout = setTimeout(() => {
       setPendingHref(null);
-    }, 3500);
+      try {
+        window.dispatchEvent(new CustomEvent("jaxis:navigating-end"));
+      } catch {
+        // Safe fallback
+      }
+    }, 20000);
     return () => clearTimeout(timeout);
   }, [pendingHref]);
 
@@ -728,6 +754,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       if (onClose) onClose();
 
+      // Ignore duplicate rapid clicks if navigation to this exact route is already in flight
+      if (pendingHref === href) {
+        return;
+      }
+
+      // If already at this exact route and no route is pending, trigger a clean 800ms refresh pulse
       if (pathname === href && !pendingHref) {
         setPendingHref(href);
         router.refresh();
@@ -736,6 +768,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
 
       setPendingHref(href);
+      try {
+        window.dispatchEvent(
+          new CustomEvent("jaxis:navigating-start", { detail: { href } })
+        );
+      } catch {
+        // Safe fallback
+      }
     },
     [onClose, pathname, pendingHref, router]
   );
@@ -916,9 +955,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                   const isActive = isExact || isChild || isClientProjectsMatch;
 
+                  const isPendingClientProjectsMatch =
+                    item.href === "/dashboard/client" &&
+                    pendingHref !== null &&
+                    pendingHref.startsWith("/dashboard/client/projects") &&
+                    !pendingHref.startsWith("/dashboard/client/projects/new");
+
                   const isPendingActive =
                     pendingHref !== null &&
                     (pendingHref === item.href ||
+                      isPendingClientProjectsMatch ||
                       (item.href !== "/dashboard" &&
                         item.href !== "/dashboard/admin" &&
                         item.href !== "/dashboard/ceo" &&

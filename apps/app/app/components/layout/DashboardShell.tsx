@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Topbar } from "./Topbar";
 import { Sidebar } from "./Sidebar";
 import type { RoleName } from "@prisma/client";
@@ -25,8 +26,29 @@ export function DashboardShell({
   initialUnreadMessagesCount = 0,
   children,
 }: DashboardShellProps) {
+  const pathname = usePathname();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // Clear navigating state whenever pathname completes a transition
+  React.useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
+
+  // Listen to navigation events from Sidebar or link clicks
+  React.useEffect(() => {
+    const handleNavStart = () => setIsNavigating(true);
+    const handleNavEnd = () => setIsNavigating(false);
+
+    window.addEventListener("jaxis:navigating-start", handleNavStart);
+    window.addEventListener("jaxis:navigating-end", handleNavEnd);
+
+    return () => {
+      window.removeEventListener("jaxis:navigating-start", handleNavStart);
+      window.removeEventListener("jaxis:navigating-end", handleNavEnd);
+    };
+  }, []);
 
   React.useEffect(() => {
     try {
@@ -125,10 +147,22 @@ export function DashboardShell({
         {/* Content Area with Guaranteed Consistent Responsive Padding */}
         <main
           data-role={userRole}
-          className="flex-1 min-w-0 h-full max-h-full bg-[#010114] overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 md:p-[clamp(2rem,4vw,3.5rem)] flex flex-col print:p-0 print:h-auto print:max-h-none print:overflow-visible print:bg-white"
+          className="flex-1 min-w-0 h-full max-h-full bg-[#010114] overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 md:p-[clamp(2rem,4vw,3.5rem)] flex flex-col relative print:p-0 print:h-auto print:max-h-none print:overflow-visible print:bg-white"
         >
+          {/* Dashdark X Enterprise Precision Navigation Progress Beam */}
+          {isNavigating && (
+            <div
+              className="absolute top-0 left-0 right-0 h-[2px] z-30 overflow-hidden bg-white/[0.04] pointer-events-none"
+              aria-hidden="true"
+            >
+              <div className="h-full bg-[#CC6600] animate-pulse w-full shadow-[0_0_10px_rgba(204,102,0,0.8)]" />
+            </div>
+          )}
+
           <div
-            className="w-full max-w-7xl mx-auto flex-1 min-h-full flex flex-col print:max-w-none print:w-full print:m-0"
+            className={`w-full max-w-7xl mx-auto flex-1 min-h-full flex flex-col print:max-w-none print:w-full print:m-0 transition-opacity duration-200 ${
+              isNavigating ? "opacity-75 pointer-events-none" : "opacity-100"
+            }`}
           >
             {children}
           </div>
