@@ -11,6 +11,8 @@ import {
   Toast,
   LoadingState,
   CopyButton,
+  ProgressBar,
+  StatusBadge,
 } from "@repo/ui";
 import {
   Plus,
@@ -21,7 +23,6 @@ import {
   ChatCenteredText,
   GraduationCap,
   ShieldCheck,
-  FileText,
 } from "@phosphor-icons/react";
 import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
@@ -333,6 +334,11 @@ export function ClientDashboardClient({
     return getStudyStage(primaryStudy.masterStatus);
   }, [primaryStudy]);
 
+  const stagePercentage = useMemo(() => {
+    if (!stageInfo) return 20;
+    return Math.round(((stageInfo.stageIndex + 1) / 5) * 100);
+  }, [stageInfo]);
+
   const handleProfileSuccess = async () => {
     await loadData();
     setToast({
@@ -345,7 +351,7 @@ export function ClientDashboardClient({
   return (
     <div
       data-portal="client"
-      className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade"
+      className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade"
     >
       <PageHeader
         title={userName ? `Welcome back, ${userName.split(" ")[0]}` : "Client Research Workspace"}
@@ -491,7 +497,7 @@ export function ClientDashboardClient({
       )}
 
       {/* ── Actionable KPI Metric Cards (Typography-First Dashdark X Precision Standard) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 items-stretch">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
         <KpiCard
           label="Total Studies"
           value={kpis.total}
@@ -544,7 +550,7 @@ export function ClientDashboardClient({
 
 
       {/* ── Asymmetric 2:1 Bento Architecture (Dashdark X Precision Standard) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch animate-card-reveal stagger-5">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch animate-card-reveal stagger-5">
         {/* 8-Col Primary Hero: Live Research Journey & 5-Stage Stepper */}
         <div className="lg:col-span-8 flex flex-col">
           <Card className="p-6 sm:p-7 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 sm:gap-5 h-full">
@@ -701,6 +707,15 @@ export function ClientDashboardClient({
                       );
                     })}
                   </div>
+                </div>
+
+                {/* Visual Milestone Progress Bar */}
+                <div className="p-3 bg-[#010D1F] border border-white/[0.08] rounded-[2px]">
+                  <ProgressBar
+                    value={stagePercentage}
+                    label="Research Milestone Completion"
+                    variant="amber"
+                  />
                 </div>
 
                 {/* Active Stage Detail & Guidance Strip (Eliminates Lower Gap) */}
@@ -929,7 +944,7 @@ export function ClientDashboardClient({
         </div>
 
         {/* 4-Col Double-Stacked Auxiliary Intelligence Cards */}
-        <div className="lg:col-span-4 flex flex-col gap-5 sm:gap-6">
+        <div className="lg:col-span-4 flex flex-col gap-6">
           {/* Auxiliary Card 1: Statistical Consultation Desk */}
           <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
             <div className="flex items-start justify-between gap-3 border-b border-white/[0.08] pb-3">
@@ -1022,6 +1037,83 @@ export function ClientDashboardClient({
           </Card>
         </div>
       </div>
+
+      {/* ── Commissioned Research Studies Table ── */}
+      {projects.length > 0 && (
+        <Card className="p-0 overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[2px] shadow-2xl animate-card-reveal stagger-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 p-5 sm:p-6">
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-white tracking-normal font-sans">
+                My Commissioned Studies
+              </h2>
+              <p className="text-sm text-white/60 mt-1 font-sans leading-relaxed">
+                Track research milestones, review contracts, and access statistical deliverables.
+              </p>
+            </div>
+            <span className="text-xs font-sans font-semibold text-white/70 bg-white/[0.06] px-3.5 py-1.5 rounded-[2px] border border-white/10 self-start sm:self-auto whitespace-nowrap inline-flex items-center">
+              {projects.length} {projects.length === 1 ? "Study" : "Studies"}
+            </span>
+          </div>
+
+          <div className="w-full overflow-x-auto p-4 sm:p-6">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th className="w-[130px] whitespace-nowrap">Study ID</th>
+                  <th>Research Title</th>
+                  <th className="w-[160px] whitespace-nowrap">Package</th>
+                  <th className="w-[140px] whitespace-nowrap">Target Date</th>
+                  <th className="w-[160px] whitespace-nowrap">Status</th>
+                  <th className="w-[110px] text-right whitespace-nowrap">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projects.map((study) => (
+                  <tr
+                    key={study.id}
+                    className="group virtual-row cursor-pointer"
+                    onClick={() => router.push(`/dashboard/client/projects/${study.id}`)}
+                    onMouseEnter={() => router.prefetch(`/dashboard/client/projects/${study.id}`)}
+                  >
+                    <td className="font-mono text-xs whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <CopyButton variant="badge" value={study.intakeId} label={study.intakeId} />
+                    </td>
+                    <td className="text-white font-medium text-sm">
+                      <span className="line-clamp-1 group-hover:text-[#CC6600] transition-colors" title={study.researchTitle}>
+                        {study.researchTitle}
+                      </span>
+                    </td>
+                    <td className="text-slate-300 text-xs font-sans whitespace-nowrap">
+                      {study.packageName?.replace(/_/g, " ") || "Statistical Suite"}
+                    </td>
+                    <td className="text-slate-400 text-xs font-mono whitespace-nowrap">
+                      {new Date(study.deadlineRequested).toLocaleDateString("en-PH", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="whitespace-nowrap">
+                      <StatusBadge status={study.masterStatus} />
+                    </td>
+                    <td className="text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <Link href={`/dashboard/client/projects/${study.id}`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="py-1 px-3 h-auto whitespace-nowrap font-mono text-xs tracking-wider"
+                        >
+                          OPEN
+                        </Button>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* ── Initial Page Loader if Data is Fetching ── */}
       {isLoading && projects.length === 0 && (

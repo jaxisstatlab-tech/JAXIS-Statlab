@@ -1988,10 +1988,16 @@ export async function freshDatabaseResetAction(
     });
 
     // ─── Phase 11: Cache invalidation ──────────────────────────────────
-    invalidateCacheTags(CACHE_TAGS.PROJECTS);
-    invalidateCacheTags(CACHE_TAGS.STAFF_DIRECTORY);
-    invalidateCacheTags(CACHE_TAGS.PAYMENTS);
-    invalidateCacheTags(CACHE_TAGS.PAYROLL);
+    invalidateCacheTags(
+      CACHE_TAGS.PROJECTS,
+      CACHE_TAGS.STAFF_DIRECTORY,
+      CACHE_TAGS.STAFF_CAPACITY,
+      CACHE_TAGS.STAFF_ROSTER,
+      CACHE_TAGS.ATTENDANCE_REVIEW,
+      CACHE_TAGS.PAYMENTS,
+      CACHE_TAGS.PAYROLL,
+      CACHE_TAGS.QUOTATIONS
+    );
     revalidatePath("/dashboard", "layout");
 
     return {

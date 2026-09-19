@@ -15,10 +15,18 @@ import {
   LoadingState,
   Pagination,
   AreaChart,
+  BarList,
+  CategoryBar,
   MoneyDisplay,
   CopyButton,
 } from "@repo/ui";
-import { IconPlus, IconRefresh, IconChartLine } from "@tabler/icons-react";
+import {
+  Plus,
+  ArrowClockwise,
+  ChartLineUp,
+  Funnel,
+  Cpu,
+} from "@phosphor-icons/react";
 import { useProjects } from "@/features/projects/hooks/useProjects";
 import { projectService } from "@/features/projects/services/project.service";
 import { Project, AuditTelemetryEvent } from "@/types/project";
@@ -150,6 +158,67 @@ export function AdminDashboardClient({
     });
   }, [projects]);
 
+  // Intake & Status Conversion Funnel (CategoryBar)
+  const statusDistribution = useMemo(() => {
+    let intakeCount = 0;
+    let activeCount = 0;
+    let qaCount = 0;
+    let deliveredCount = 0;
+
+    projects.forEach((p) => {
+      if (
+        p.status === "NEW_REQUEST" ||
+        p.status === "UNDER_EVALUATION" ||
+        p.status === "QUOTE_SENT" ||
+        p.status === "AWAITING_INFORMATION" ||
+        p.status === "AWAITING_PAYMENT"
+      ) {
+        intakeCount++;
+      } else if (
+        p.status === "IN_PROGRESS" ||
+        p.status === "ANALYSIS_IN_PROGRESS" ||
+        p.status === "EXPERT_ASSIGNED"
+      ) {
+        activeCount++;
+      } else if (p.status === "FOR_QA" || p.status === "QA_REVISION") {
+        qaCount++;
+      } else if (
+        p.status === "DELIVERED" ||
+        p.status === "QA_APPROVED" ||
+        p.status === "APPROVED" ||
+        p.status === "CLOSED"
+      ) {
+        deliveredCount++;
+      } else {
+        intakeCount++;
+      }
+    });
+
+    const total = projects.length || 1;
+    return {
+      intakeCount,
+      activeCount,
+      qaCount,
+      deliveredCount,
+      total,
+      values: [intakeCount, activeCount, qaCount, deliveredCount],
+    };
+  }, [projects]);
+
+  // Statistical Methodology Demand (BarList)
+  const methodologyDistribution = useMemo(() => {
+    const counts: Record<string, number> = {};
+    projects.forEach((p) => {
+      const method = (p.method || "Other").trim();
+      counts[method] = (counts[method] || 0) + 1;
+    });
+
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 4);
+  }, [projects]);
+
   useEffect(() => {
     if (!selectedStudy) {
       setStudyAuditLogs([]);
@@ -176,7 +245,7 @@ export function AdminDashboardClient({
   }, [selectedStudy]);
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {/* ── Page Header ── */}
       <PageHeader
         title="Admin Overview"
@@ -194,12 +263,12 @@ export function AdminDashboardClient({
               disabled={isRefreshing}
               className="flex items-center gap-1.5 font-mono text-xs font-semibold"
             >
-              <IconRefresh size={14} className={isRefreshing ? "animate-spin" : ""} stroke={2} />
+              <ArrowClockwise size={14} weight="fill" className={isRefreshing ? "animate-spin" : ""} />
               <span>Refresh</span>
             </Button>
             <Link href="/dashboard/admin/intake">
               <Button variant="primary" size="sm" className="gap-2 font-sans font-semibold">
-                <IconPlus size={15} stroke={2} />
+                <Plus size={15} weight="fill" />
                 <span>New Study Requests →</span>
               </Button>
             </Link>
@@ -208,7 +277,7 @@ export function AdminDashboardClient({
       />
 
       {/* ── KPI Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
         <KpiCard
           label="Total Active Studies"
           value={projects.length}
@@ -262,49 +331,124 @@ export function AdminDashboardClient({
         />
       </div>
 
-      {/* ── Research Pipeline & Milestone Activity AreaChart ── */}
-      <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-4 animate-card-reveal stagger-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
-          <div className="flex items-center gap-2">
-            <IconChartLine size={18} stroke={2} className="text-[#CC6600]" />
-            <h3 className="text-sm font-bold text-white font-sans">
-              Research Pipeline & Milestone Activity
-            </h3>
+      {/* ── 2:1 Asymmetric Bento Grid: Milestone Velocity & Operational Intelligence ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* 8-Col Focal Hero Card: Research Milestone Velocity */}
+        <Card className="lg:col-span-8 p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 animate-card-reveal stagger-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
+            <div className="flex items-center gap-2">
+              <ChartLineUp size={18} weight="fill" className="text-[#CC6600]" />
+              <div>
+                <h3 className="text-sm font-bold text-white font-sans">
+                  Research Pipeline & Milestone Velocity
+                </h3>
+                <p className="text-xs text-white/50 font-sans mt-0.5">
+                  6-Month progression of active research studies against completed milestones
+                </p>
+              </div>
+            </div>
+            <span className="text-xs text-white/60 font-mono self-start sm:self-auto bg-white/[0.04] px-2 py-1 rounded-[2px] border border-white/10">
+              {projects.length} Registered Studies
+            </span>
           </div>
-          <span className="text-xs text-white/50 font-mono">
-            6-Month Telemetry Overview
-          </span>
-        </div>
 
-        <AreaChart
-          data={chartData}
-          index="month"
-          categories={["Active Studies", "Completed Milestones"]}
-          colors={["#CC6600", "#38BDF8"]}
-          height={220}
-          valueFormatter={(val, cat) =>
-            cat?.includes("Milestone")
-              ? `${val} ${val === 1 ? "Milestone" : "Milestones"}`
-              : `${val} ${val === 1 ? "Study" : "Studies"}`
-          }
-        />
-      </Card>
+          <div className="pt-2">
+            <AreaChart
+              data={chartData}
+              index="month"
+              categories={["Active Studies", "Completed Milestones"]}
+              colors={["#CC6600", "#38BDF8"]}
+              height={260}
+              valueFormatter={(val, cat) =>
+                cat?.includes("Milestone")
+                  ? `${val} ${val === 1 ? "Milestone" : "Milestones"}`
+                  : `${val} ${val === 1 ? "Study" : "Studies"}`
+              }
+            />
+          </div>
+        </Card>
+
+        {/* 4-Col Auxiliary Stack: Stage Distribution & Methodology Demand */}
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          {/* Auxiliary Card 1: Study Stage Distribution */}
+          <Card className="p-5 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+              <div className="flex items-center gap-2">
+                <Funnel size={16} weight="fill" className="text-[#38BDF8]" />
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                  Study Pipeline Funnel
+                </h4>
+              </div>
+              <span className="text-[11px] font-mono text-white/40">
+                {projects.length} Total
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              <CategoryBar
+                values={statusDistribution.values}
+                colors={["#F59E0B", "#38BDF8", "#CC6600", "#10B981"]}
+                className="h-2.5"
+              />
+
+              <div className="grid grid-cols-2 gap-2 text-xs font-sans pt-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#F59E0B] shrink-0" />
+                  <span className="text-white/60 truncate">Intake / Eval:</span>
+                  <span className="font-mono text-white ml-auto font-semibold">{statusDistribution.intakeCount}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#38BDF8] shrink-0" />
+                  <span className="text-white/60 truncate">Analysis:</span>
+                  <span className="font-mono text-white ml-auto font-semibold">{statusDistribution.activeCount}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#CC6600] shrink-0" />
+                  <span className="text-white/60 truncate">QA Review:</span>
+                  <span className="font-mono text-white ml-auto font-semibold">{statusDistribution.qaCount}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#10B981] shrink-0" />
+                  <span className="text-white/60 truncate">Delivered:</span>
+                  <span className="font-mono text-white ml-auto font-semibold">{statusDistribution.deliveredCount}</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Auxiliary Card 2: Methodology Demand */}
+          <Card className="p-5 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-3 flex-1">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+              <div className="flex items-center gap-2">
+                <Cpu size={16} weight="fill" className="text-[#CC6600]" />
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                  Methodology Demand
+                </h4>
+              </div>
+              <span className="text-[11px] font-mono text-white/40">Active</span>
+            </div>
+
+            <div className="pt-0.5 overflow-y-auto max-h-[175px] pr-1">
+              {methodologyDistribution.length > 0 ? (
+                <BarList
+                  data={methodologyDistribution}
+                  valueFormatter={(value) => `${value} ${value === 1 ? "study" : "studies"}`}
+                  color="#CC6600"
+                  className="text-xs space-y-1.5"
+                />
+              ) : (
+                <div className="py-6 text-center text-xs text-white/40 font-sans">
+                  No research studies recorded yet
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      </div>
 
       {/* ── Live Pipeline Table ── */}
-      <Card
-        className="p-0 overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[2px] shadow-2xl animate-card-reveal stagger-6"
-        style={{ padding: 0 }}
-      >
-        <div
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10"
-          style={{
-            padding: "1.75rem 2rem",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-            display: "flex",
-            justifyContent: "space-between",
-            boxSizing: "border-box",
-          }}
-        >
+      <Card className="p-0 overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[2px] shadow-2xl animate-card-reveal stagger-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 p-5 sm:p-6">
           <div>
             <h2 className="text-lg sm:text-xl font-semibold text-white tracking-normal font-sans">
               All Studies
@@ -313,14 +457,7 @@ export function AdminDashboardClient({
               Complete list of all studies, staff assignments, and progress statuses.
             </p>
           </div>
-          <span
-            className="text-xs font-sans font-semibold text-white/70 bg-white/[0.06] px-3.5 py-2 rounded-[4px] border border-white/10 self-start sm:self-auto whitespace-nowrap"
-            style={{
-              padding: "0.5rem 0.875rem",
-              display: "inline-flex",
-              alignItems: "center",
-            }}
-          >
+          <span className="text-xs font-sans font-semibold text-white/70 bg-white/[0.06] px-3.5 py-1.5 rounded-[2px] border border-white/10 self-start sm:self-auto whitespace-nowrap inline-flex items-center">
             {sortedProjects.length} Studies
           </span>
         </div>

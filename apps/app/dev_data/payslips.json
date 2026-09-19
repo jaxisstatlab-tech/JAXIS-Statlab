@@ -1,6 +1,6 @@
 [
   {
-    "id": "ps_1789783498180_54a0",
+    "id": "ps_1789784553888_h633",
     "payslipNumber": "JAX-PS-202609-001",
     "userId": "cmt5plrh90000lrrkrk76bb0b",
     "staffName": "Operations Manager",
@@ -8,7 +8,7 @@
     "staffRole": "ADMIN",
     "payPeriodMonth": "September 2026 (First Half-Month Cycle: Days 1–15)",
     "payPeriodStart": "2026-08-31T16:00:00.000Z",
-    "payPeriodEnd": "2026-09-30T15:59:59.000Z",
+    "payPeriodEnd": "2026-09-15T15:59:59.000Z",
     "cutOffCycle": "FIRST_HALF",
     "compensationType": "FIXED_SALARY",
     "baseSalary": 20000,
@@ -37,11 +37,11 @@
     "approvedByName": "CEO Owner",
     "generatedBy": "CEO Owner",
     "notes": "Operational administrative management fixed salary.",
-    "createdAt": "2026-09-19T02:04:58.180Z",
-    "updatedAt": "2026-09-19T02:04:58.180Z"
+    "createdAt": "2026-09-19T02:22:33.888Z",
+    "updatedAt": "2026-09-19T02:22:33.888Z"
   },
   {
-    "id": "ps_1789783498180_5osz",
+    "id": "ps_1789784553888_mnnb",
     "payslipNumber": "JAX-PS-202609-002",
     "userId": "cmt5plt6q0002lrrkr5jnsghs",
     "staffName": "Finance Officer",
@@ -49,7 +49,7 @@
     "staffRole": "FINANCE_OFFICER",
     "payPeriodMonth": "September 2026 (First Half-Month Cycle: Days 1–15)",
     "payPeriodStart": "2026-08-31T16:00:00.000Z",
-    "payPeriodEnd": "2026-09-30T15:59:59.000Z",
+    "payPeriodEnd": "2026-09-15T15:59:59.000Z",
     "cutOffCycle": "FIRST_HALF",
     "compensationType": "FIXED_SALARY",
     "baseSalary": 17500,
@@ -78,11 +78,11 @@
     "approvedByName": "CEO Owner",
     "generatedBy": "CEO Owner",
     "notes": "Institutional monthly base salary with treasury compliance allowances.",
-    "createdAt": "2026-09-19T02:04:58.180Z",
-    "updatedAt": "2026-09-19T02:04:58.180Z"
+    "createdAt": "2026-09-19T02:22:33.888Z",
+    "updatedAt": "2026-09-19T02:22:33.888Z"
   },
   {
-    "id": "ps_1789783498180_otmh",
+    "id": "ps_1789784553888_ksbn",
     "payslipNumber": "JAX-PS-202609-003",
     "userId": "cmt5plu1k0003lrrkl1kribvh",
     "staffName": "Dr. Juan Reyes",
@@ -90,7 +90,7 @@
     "staffRole": "STATISTICIAN",
     "payPeriodMonth": "September 2026 (First Half-Month Cycle: Days 1–15)",
     "payPeriodStart": "2026-08-31T16:00:00.000Z",
-    "payPeriodEnd": "2026-09-30T15:59:59.000Z",
+    "payPeriodEnd": "2026-09-15T15:59:59.000Z",
     "cutOffCycle": "FIRST_HALF",
     "compensationType": "FIXED_SALARY",
     "baseSalary": 17500,
@@ -119,11 +119,11 @@
     "approvedByName": "CEO Owner",
     "generatedBy": "CEO Owner",
     "notes": "Fixed base salary of ₱35,000/month (₱17,500 per 15-day cut-off) + ₱2,500 monthly allowance.",
-    "createdAt": "2026-09-19T02:04:58.180Z",
-    "updatedAt": "2026-09-19T02:04:58.180Z"
+    "createdAt": "2026-09-19T02:22:33.888Z",
+    "updatedAt": "2026-09-19T02:22:33.888Z"
   },
   {
-    "id": "ps_1789783498180_otjn",
+    "id": "ps_1789784553888_xxgn",
     "payslipNumber": "JAX-PS-202609-004",
     "userId": "cmt5pluuu0004lrrk5qu5ul2t",
     "staffName": "QA Lead Maria",
@@ -131,7 +131,7 @@
     "staffRole": "SENIOR_QA_LEAD",
     "payPeriodMonth": "September 2026 (First Half-Month Cycle: Days 1–15)",
     "payPeriodStart": "2026-08-31T16:00:00.000Z",
-    "payPeriodEnd": "2026-09-30T15:59:59.000Z",
+    "payPeriodEnd": "2026-09-15T15:59:59.000Z",
     "cutOffCycle": "FIRST_HALF",
     "compensationType": "HYBRID",
     "baseSalary": 6000,
@@ -160,11 +160,11 @@
     "approvedByName": "CEO Owner",
     "generatedBy": "CEO Owner",
     "notes": "₱12,000 monthly retainer + 10% review commission per audited study + ₱450/hr attendance duty.",
-    "createdAt": "2026-09-19T02:04:58.180Z",
-    "updatedAt": "2026-09-19T02:04:58.180Z"
+    "createdAt": "2026-09-19T02:22:33.888Z",
+    "updatedAt": "2026-09-19T02:22:33.888Z"
   },
   {
-    "id": "ps_1789783498181_vlat",
+    "id": "ps_1789784553888_9emw",
     "payslipNumber": "JAX-PS-202609-005",
     "userId": "cmtokreid0000jp04otnagvss",
     "staffName": "Kim Claro",
@@ -172,7 +172,7 @@
     "staffRole": "STATISTICIAN",
     "payPeriodMonth": "September 2026 (First Half-Month Cycle: Days 1–15)",
     "payPeriodStart": "2026-08-31T16:00:00.000Z",
-    "payPeriodEnd": "2026-09-30T15:59:59.000Z",
+    "payPeriodEnd": "2026-09-15T15:59:59.000Z",
     "cutOffCycle": "FIRST_HALF",
     "compensationType": "FIXED_SALARY",
     "baseSalary": 17500,
@@ -201,11 +201,11 @@
     "approvedByName": "CEO Owner",
     "generatedBy": "CEO Owner",
     "notes": "Fixed base salary of ₱35,000/month (₱17,500 per 15-day cut-off) + ₱2,500 monthly allowance.",
-    "createdAt": "2026-09-19T02:04:58.180Z",
-    "updatedAt": "2026-09-19T02:04:58.180Z"
+    "createdAt": "2026-09-19T02:22:33.888Z",
+    "updatedAt": "2026-09-19T02:22:33.888Z"
   },
   {
-    "id": "ps_1789783498181_t4ur",
+    "id": "ps_1789784553888_mtbn",
     "payslipNumber": "JAX-PS-202609-006",
     "userId": "cmtqsjwka0000js04ciw97wvi",
     "staffName": "Bienuel Esmeralda",
@@ -213,7 +213,7 @@
     "staffRole": "STATISTICIAN",
     "payPeriodMonth": "September 2026 (First Half-Month Cycle: Days 1–15)",
     "payPeriodStart": "2026-08-31T16:00:00.000Z",
-    "payPeriodEnd": "2026-09-30T15:59:59.000Z",
+    "payPeriodEnd": "2026-09-15T15:59:59.000Z",
     "cutOffCycle": "FIRST_HALF",
     "compensationType": "FIXED_SALARY",
     "baseSalary": 17500,
@@ -242,11 +242,11 @@
     "approvedByName": "CEO Owner",
     "generatedBy": "CEO Owner",
     "notes": "Fixed base salary of ₱35,000/month (₱17,500 per 15-day cut-off) + ₱2,500 monthly allowance.",
-    "createdAt": "2026-09-19T02:04:58.180Z",
-    "updatedAt": "2026-09-19T02:04:58.180Z"
+    "createdAt": "2026-09-19T02:22:33.888Z",
+    "updatedAt": "2026-09-19T02:22:33.888Z"
   },
   {
-    "id": "ps_1789783498181_np4f",
+    "id": "ps_1789784553888_3651",
     "payslipNumber": "JAX-PS-202609-007",
     "userId": "usr_dev_staff_brayan",
     "staffName": "Brayan",
@@ -254,7 +254,7 @@
     "staffRole": "STATISTICIAN",
     "payPeriodMonth": "September 2026 (First Half-Month Cycle: Days 1–15)",
     "payPeriodStart": "2026-08-31T16:00:00.000Z",
-    "payPeriodEnd": "2026-09-30T15:59:59.000Z",
+    "payPeriodEnd": "2026-09-15T15:59:59.000Z",
     "cutOffCycle": "FIRST_HALF",
     "compensationType": "FIXED_SALARY",
     "baseSalary": 17500,
@@ -283,11 +283,11 @@
     "approvedByName": "CEO Owner",
     "generatedBy": "CEO Owner",
     "notes": "Fixed base salary of ₱35,000/month (₱17,500 per 15-day cut-off) + ₱2,500 monthly allowance.",
-    "createdAt": "2026-09-19T02:04:58.180Z",
-    "updatedAt": "2026-09-19T02:04:58.180Z"
+    "createdAt": "2026-09-19T02:22:33.888Z",
+    "updatedAt": "2026-09-19T02:22:33.888Z"
   },
   {
-    "id": "ps_1789783498181_25sv",
+    "id": "ps_1789784553888_dpyj",
     "payslipNumber": "JAX-PS-202609-008",
     "userId": "usr_dev_staff_1787313864352",
     "staffName": "Jerome Gallego",
@@ -295,7 +295,7 @@
     "staffRole": "SENIOR_QA_LEAD",
     "payPeriodMonth": "September 2026 (First Half-Month Cycle: Days 1–15)",
     "payPeriodStart": "2026-08-31T16:00:00.000Z",
-    "payPeriodEnd": "2026-09-30T15:59:59.000Z",
+    "payPeriodEnd": "2026-09-15T15:59:59.000Z",
     "cutOffCycle": "FIRST_HALF",
     "compensationType": "HYBRID",
     "baseSalary": 6000,
@@ -324,11 +324,11 @@
     "approvedByName": "CEO Owner",
     "generatedBy": "CEO Owner",
     "notes": "₱12,000 monthly retainer + 10% review commission per audited study + ₱450/hr attendance duty.",
-    "createdAt": "2026-09-19T02:04:58.180Z",
-    "updatedAt": "2026-09-19T02:04:58.180Z"
+    "createdAt": "2026-09-19T02:22:33.888Z",
+    "updatedAt": "2026-09-19T02:22:33.888Z"
   },
   {
-    "id": "ps_1789783498181_oyy6",
+    "id": "ps_1789784553888_8a0s",
     "payslipNumber": "JAX-PS-202609-009",
     "userId": "usr_dev_staff_1787405545450",
     "staffName": "Bienuel Esmeralda",
@@ -336,7 +336,7 @@
     "staffRole": "STATISTICIAN",
     "payPeriodMonth": "September 2026 (First Half-Month Cycle: Days 1–15)",
     "payPeriodStart": "2026-08-31T16:00:00.000Z",
-    "payPeriodEnd": "2026-09-30T15:59:59.000Z",
+    "payPeriodEnd": "2026-09-15T15:59:59.000Z",
     "cutOffCycle": "FIRST_HALF",
     "compensationType": "FIXED_SALARY",
     "baseSalary": 17500,
@@ -365,7 +365,7 @@
     "approvedByName": "CEO Owner",
     "generatedBy": "CEO Owner",
     "notes": "Fixed base salary of ₱35,000/month (₱17,500 per 15-day cut-off) + ₱2,500 monthly allowance.",
-    "createdAt": "2026-09-19T02:04:58.180Z",
-    "updatedAt": "2026-09-19T02:04:58.180Z"
+    "createdAt": "2026-09-19T02:22:33.888Z",
+    "updatedAt": "2026-09-19T02:22:33.888Z"
   }
 ]

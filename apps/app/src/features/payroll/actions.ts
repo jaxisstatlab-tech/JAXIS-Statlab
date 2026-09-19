@@ -797,22 +797,7 @@ export async function getCompanyPayslips(filters?: {
   availablePeriods: string[];
 }> {
   await requireRole("FINANCE_OFFICER", "CEO", "ADMIN");
-  let payslips = readPayslipsStorage();
-
-  // If storage empty, auto-generate default cycle
-  if (payslips.length === 0) {
-    const currentMonthStr = new Date().toLocaleDateString("en-PH", { month: "long", year: "numeric" });
-    const now = new Date();
-    const startStr = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const endStr = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-    await generateBatchPayslips({
-      payPeriodMonth: currentMonthStr,
-      payPeriodStart: startStr,
-      payPeriodEnd: endStr,
-    });
-    payslips = readPayslipsStorage();
-  }
-
+  const payslips = readPayslipsStorage();
   const availablePeriods = Array.from(new Set(payslips.map((p) => p.payPeriodMonth)));
 
   let filtered = [...payslips];
