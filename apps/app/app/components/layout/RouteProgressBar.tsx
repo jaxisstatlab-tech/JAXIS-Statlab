@@ -1,58 +1,67 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
+type ProgressState = "idle" | "starting" | "animating" | "completing" | "fading";
+
 /**
- * High-performance, zero-dependency route transition progress bar.
- * Renders a precision 2px Enterprise Orange (#CC6600) laser bar at the top edge
- * of the viewport during navigation, giving instantaneous tactile feedback.
+ * Enterprise Dark Precision Route Transition Progress Bar.
+ * Built with hardware-accelerated GPU transforms (transform: scaleX) to eliminate
+ * all discrete stepping, layout reflow, and staggering. Glides with continuous,
+ * butter-smooth physical deceleration, and smoothly completes on route change.
  */
 export function RouteProgressBar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [progress, setProgress] = useState<number>(0);
-  const [isVisible, setIsVisible] = useState<boolean>(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const finishTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [state, setState] = useState<ProgressState>("idle");
+  const timersRef = useRef<NodeJS.Timeout[]>([]);
 
-  const startProgress = () => {
-    if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
-    if (timerRef.current) clearInterval(timerRef.current);
+  const clearTimers = useCallback(() => {
+    timersRef.current.forEach((t) => clearTimeout(t));
+    timersRef.current = [];
+  }, []);
 
-    setIsVisible(true);
-    setProgress(25);
+  const startProgress = useCallback(() => {
+    clearTimers();
+    // Step 1: Reset to 0 scale instantly without animation
+    setState("starting");
 
-    timerRef.current = setInterval(() => {
-      setProgress((prev) => {
-        if (prev < 55) return prev + 12;
-        if (prev < 78) return prev + 5;
-        if (prev < 90) return prev + 2;
-        if (prev < 96) return prev + 0.6;
-        return prev;
-      });
-    }, 140);
-  };
+    // Step 2: Next frame, trigger continuous, hardware-accelerated GPU scale-up
+    const t1 = setTimeout(() => {
+      setState("animating");
+    }, 20);
 
-  const completeProgress = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setProgress(100);
+    timersRef.current.push(t1);
+  }, [clearTimers]);
 
-    finishTimerRef.current = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(() => setProgress(0), 200);
-    }, 280);
-  };
+  const completeProgress = useCallback(() => {
+    clearTimers();
+    // Step 3: Snap cleanly to 100% in 160ms
+    setState("completing");
+
+    // Step 4: Fade out gracefully
+    const t2 = setTimeout(() => {
+      setState("fading");
+    }, 180);
+
+    // Step 5: Reset back to idle
+    const t3 = setTimeout(() => {
+      setState("idle");
+    }, 420);
+
+    timersRef.current.push(t2, t3);
+  }, [clearTimers]);
 
   // Complete progress when pathname or searchParams change
   useEffect(() => {
-    if (isVisible) {
+    if (state === "animating" || state === "starting") {
       completeProgress();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, searchParams]);
 
-  // Listen for click events on links to start progress instantly
+  // Listen to navigation events from link clicks and the JAXIS event bus
   useEffect(() => {
     const handleDocumentClick = (e: MouseEvent) => {
       // Ignore right clicks or clicks with modifier keys
@@ -63,42 +72,81 @@ export function RouteProgressBar() {
       const target = (e.target as HTMLElement)?.closest("a");
       if (!target || !target.href) return;
 
-      const targetUrl = new URL(target.href, window.location.href);
-      const isInternal = targetUrl.origin === window.location.origin;
-      const isSamePath =
-        targetUrl.pathname === window.location.pathname &&
-        targetUrl.search === window.location.search;
+      try {
+        const targetUrl = new URL(target.href, window.location.href);
+        const isInternal = targetUrl.origin === window.location.origin;
+        const isSamePath =
+          targetUrl.pathname === window.location.pathname &&
+          targetUrl.search === window.location.search;
 
-      if (isInternal && !isSamePath && target.target !== "_blank") {
-        startProgress();
+        if (isInternal && !isSamePath && target.target !== "_blank") {
+          startProgress();
+        }
+      } catch {
+        // Ignore invalid URLs
       }
     };
 
+    const handleNavStart = () => startProgress();
+    const handleNavEnd = () => completeProgress();
+
     document.addEventListener("click", handleDocumentClick, { passive: true });
+    window.addEventListener("jaxis:navigating-start", handleNavStart);
+    window.addEventListener("jaxis:navigating-end", handleNavEnd);
 
     return () => {
       document.removeEventListener("click", handleDocumentClick);
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
+      window.removeEventListener("jaxis:navigating-start", handleNavStart);
+      window.removeEventListener("jaxis:navigating-end", handleNavEnd);
+      clearTimers();
     };
-  }, []);
+  }, [startProgress, completeProgress, clearTimers]);
 
-  if (!isVisible && progress === 0) return null;
+  if (state === "idle") return null;
+
+  // GPU transform parameters based on current transition state
+  let transform = "scaleX(0)";
+  let transition = "none";
+  let opacity = 1;
+
+  if (state === "starting") {
+    transform = "scaleX(0)";
+    transition = "none";
+    opacity = 1;
+  } else if (state === "animating") {
+    // Smooth 10s asymptotic glide from 0% to ~85% with continuous deceleration.
+    // Zero setInterval steps, zero interruption, pure 120fps GPU compositor.
+    transform = "scaleX(0.85)";
+    transition = "transform 10000ms cubic-bezier(0.08, 0.82, 0.17, 1)";
+    opacity = 1;
+  } else if (state === "completing") {
+    // Quick, tactile snap to 100%
+    transform = "scaleX(1)";
+    transition = "transform 160ms cubic-bezier(0.2, 0, 0, 1)";
+    opacity = 1;
+  } else if (state === "fading") {
+    // Fade out while holding 100%
+    transform = "scaleX(1)";
+    transition = "opacity 200ms ease-out";
+    opacity = 0;
+  }
 
   return (
     <div
       aria-hidden="true"
-      className="fixed top-0 left-0 right-0 z-[99999] pointer-events-none h-[2.5px] overflow-hidden"
+      className="fixed top-0 left-0 right-0 z-[99999] pointer-events-none h-[2px] overflow-hidden"
     >
       <div
-        className="h-full bg-gradient-to-r from-[#CC6600] via-[#E67300] to-[#FFA040] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] relative"
+        className="h-full w-full bg-gradient-to-r from-[#CC6600] via-[#E67300] to-[#FFA040] shadow-[0_0_8px_rgba(204,102,0,0.7)] relative origin-left"
         style={{
-          width: `${progress}%`,
-          opacity: isVisible ? 1 : 0,
+          transform,
+          transition,
+          opacity,
+          willChange: "transform, opacity",
         }}
       >
-        {/* Leading edge laser beam */}
-        <div className="absolute right-0 top-0 bottom-0 w-28 bg-gradient-to-r from-transparent via-white/40 to-white/95" />
+        {/* Soft, warm amber laser tip (replaces the harsh white block) */}
+        <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-r from-transparent via-[#FFB366]/40 to-[#FFE0B2]/90 shadow-[0_0_10px_rgba(255,160,64,0.8)]" />
       </div>
     </div>
   );

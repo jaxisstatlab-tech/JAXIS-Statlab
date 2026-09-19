@@ -149,16 +149,6 @@ export function DashboardShell({
           data-role={userRole}
           className="flex-1 min-w-0 h-full max-h-full bg-[#010114] overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 md:p-[clamp(2rem,4vw,3.5rem)] flex flex-col relative print:p-0 print:h-auto print:max-h-none print:overflow-visible print:bg-white"
         >
-          {/* Dashdark X Enterprise Precision Navigation Progress Beam */}
-          {isNavigating && (
-            <div
-              className="absolute top-0 left-0 right-0 h-[2px] z-30 overflow-hidden bg-white/[0.04] pointer-events-none"
-              aria-hidden="true"
-            >
-              <div className="h-full bg-[#CC6600] animate-pulse w-full shadow-[0_0_10px_rgba(204,102,0,0.8)]" />
-            </div>
-          )}
-
           <div
             className={`w-full max-w-7xl mx-auto flex-1 min-h-full flex flex-col print:max-w-none print:w-full print:m-0 transition-opacity duration-200 ${
               isNavigating ? "opacity-75 pointer-events-none" : "opacity-100"
