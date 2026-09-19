@@ -13,6 +13,7 @@ import {
   Warning,
   FileText,
   GraduationCap,
+  Trash,
 } from "@phosphor-icons/react";
 import { getProjectDisplayStatus } from "@/lib/project-rules";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
@@ -59,12 +60,14 @@ function getStageIndex(status: string): number {
 interface ClientStudyCardProps {
   study: ProjectDetailItem;
   onDownloadDeliverable?: (study: ProjectDetailItem) => void;
+  onRequestDeletion?: (study: ProjectDetailItem) => void;
   className?: string;
 }
 
 export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
   study,
   onDownloadDeliverable,
+  onRequestDeletion,
   className = "",
 }) => {
   const displayStatus = getProjectDisplayStatus(study, "CLIENT");
@@ -301,6 +304,20 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
               <span>{hasAssignedSpecialist ? "Message Statistician" : "Message Desk"}</span>
             </Button>
           </Link>
+
+          {/* Request Deletion Button */}
+          {onRequestDeletion && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onRequestDeletion(study)}
+              className="font-sans text-xs font-semibold px-2.5 py-2 flex items-center gap-1.5 text-white/40 hover:text-amber-400 hover:bg-amber-500/10 active:scale-[0.97] transition-all rounded-[2px]"
+              title="Request deletion for this study"
+            >
+              <Trash size={15} weight="fill" />
+              <span className="hidden sm:inline">Request Deletion</span>
+            </Button>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

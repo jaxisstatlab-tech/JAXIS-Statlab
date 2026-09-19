@@ -63,6 +63,38 @@ export interface ArchivedProjectDTO {
   filesPurgedAt: string | null;
 }
 
+export interface DeletedStudyHistoryItemDTO {
+  id: string;
+  projectId: string;
+  intakeId: string;
+  researchTitle: string;
+  title: string;
+  clientName: string;
+  clientEmail?: string;
+  institutionSchool?: string;
+  packageName: string;
+  deletedBy: string;
+  deletedByName: string;
+  deletedByRole: string;
+  deletionReason: string;
+  reason: string;
+  deletedAt: string;
+  filesPurged: boolean;
+  totalAmount: number;
+  snapshot: Record<string, unknown>;
+}
+
+export interface DeletedStudiesHistoryResponseDTO {
+  items: DeletedStudyHistoryItemDTO[];
+  kpis: {
+    totalDeleted: number;
+    adminDeletions: number;
+    ceoDeletions: number;
+    clientRequestedDeletions: number;
+    totalFilesPurgedCount: number;
+  };
+}
+
 export interface AuditLogDTO {
   id: string;
   projectId: string | null;

@@ -28,10 +28,12 @@ import {
   Certificate,
   ChatCenteredText,
   DownloadSimple,
+  Trash,
 } from "@phosphor-icons/react";
 import { getProjectById, deleteProjectFile, resolveMissingInfo, addProjectFile } from "@/features/projects/actions";
 import { uploadFileToR2 } from "@/lib/storage-client";
 import { ProjectFilesCard } from "@/features/projects/components/ProjectFilesCard";
+import { RequestStudyDeletionModal } from "@/features/projects/components/RequestStudyDeletionModal";
 import { getProjectDisplayStatus } from "@/lib/project-rules";
 import type { ProjectDetailItem, ProjectFileItem } from "@/features/projects/schemas";
 import type { FileCategory } from "@prisma/client";
@@ -178,6 +180,7 @@ export function ClientProjectDetailClient({
   const [project, setProject] = useState<ProjectDetailItem | null>(initialProject);
   const [isLoading, setIsLoading] = useState(!initialProject && !initialError);
   const [error, setError] = useState<string | null>(initialError);
+  const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<{
     message: string;
     description?: string;
@@ -484,6 +487,16 @@ export function ClientProjectDetailClient({
                 <span>Messages & Chat</span>
               </Button>
             </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsDeletionModalOpen(true)}
+              className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-sans text-white/50 hover:text-amber-400 hover:bg-amber-500/10 flex items-center gap-1.5 cursor-pointer"
+              title="Request study deletion"
+            >
+              <Trash size={14} weight="fill" />
+              <span>Request Deletion</span>
+            </Button>
             <Link href="/dashboard/client/projects">
               <Button
                 variant="secondary"
@@ -504,6 +517,19 @@ export function ClientProjectDetailClient({
           description={toastMessage.description}
           variant={toastMessage.variant}
           onClose={() => setToastMessage(null)}
+        />
+      )}
+
+      {/* ── Request Study Deletion Modal ── */}
+      {project && (
+        <RequestStudyDeletionModal
+          open={isDeletionModalOpen}
+          onClose={() => setIsDeletionModalOpen(false)}
+          study={{
+            id: project.id,
+            intakeId: project.intakeId,
+            title: project.researchTitle,
+          }}
         />
       )}
 

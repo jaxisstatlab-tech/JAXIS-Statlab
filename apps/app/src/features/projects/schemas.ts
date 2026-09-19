@@ -121,3 +121,19 @@ export interface ProjectDetailItem {
 export type ActionResponse<T = undefined> =
   | { success: true; data: T }
   | { success: false; error: { code?: string; message: string; fieldErrors?: Record<string, string[]> } };
+
+export const DeleteStudySchema = z.object({
+  projectId: z.string().min(1, "Project ID is required"),
+  reason: z.string().min(3, "Please provide a deletion reason (at least 3 characters)"),
+  purgeFiles: z.boolean().optional().default(true),
+});
+
+export type DeleteStudyInput = z.infer<typeof DeleteStudySchema>;
+
+export const RequestStudyDeletionSchema = z.object({
+  projectId: z.string().min(1, "Project ID is required"),
+  reason: z.string().min(3, "Please select a deletion reason"),
+  notes: z.string().optional(),
+});
+
+export type RequestStudyDeletionInput = z.infer<typeof RequestStudyDeletionSchema>;

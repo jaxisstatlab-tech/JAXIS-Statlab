@@ -27,10 +27,12 @@ import {
   Funnel,
   Cpu,
 } from "@phosphor-icons/react";
+import { Trash } from "@phosphor-icons/react";
 import { useProjects } from "@/features/projects/hooks/useProjects";
 import { projectService } from "@/features/projects/services/project.service";
 import { Project, AuditTelemetryEvent } from "@/types/project";
 import type { FinanceOverviewData } from "@/features/payments/schemas";
+import { DeleteStudyDialog } from "@/features/projects/components/DeleteStudyDialog";
 
 interface AdminDashboardClientProps {
   initialProjects: Project[];
@@ -43,6 +45,7 @@ export function AdminDashboardClient({
 }: AdminDashboardClientProps) {
   const router = useRouter();
   const [selectedStudy, setSelectedStudy] = useState<Project | null>(null);
+  const [studyToDelete, setStudyToDelete] = useState<Project | null>(null);
   const [studyAuditLogs, setStudyAuditLogs] = useState<AuditTelemetryEvent[]>([]);
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   const [financeData] = useState<FinanceOverviewData | null>(initialFinanceData);
@@ -574,14 +577,25 @@ export function AdminDashboardClient({
                         <StatusBadge status={study.status} />
                       </td>
                       <td className="text-right whitespace-nowrap">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedStudy(study)}
-                          className="py-1 px-3 h-auto whitespace-nowrap font-mono text-xs tracking-wider"
-                        >
-                          INSPECT
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedStudy(study)}
+                            className="py-1 px-3 h-auto whitespace-nowrap font-mono text-xs tracking-wider"
+                          >
+                            INSPECT
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Delete Study Permanently"
+                            onClick={() => setStudyToDelete(study)}
+                            className="py-1 px-2 h-auto text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          >
+                            <Trash size={14} weight="fill" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -612,15 +626,30 @@ export function AdminDashboardClient({
           description={selectedStudy.title}
           size="lg"
           footer={
-            <div className="flex items-center justify-end gap-3 w-full">
-              <Button variant="secondary" size="sm" onClick={() => setSelectedStudy(null)}>
-                Close Inspector
+            <div className="flex items-center justify-between gap-3 w-full">
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  const target = selectedStudy;
+                  setSelectedStudy(null);
+                  setStudyToDelete(target);
+                }}
+                className="font-sans text-xs font-semibold rounded-[2px] bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 flex items-center gap-1.5 transition-colors"
+              >
+                <Trash size={14} weight="fill" />
+                <span>Delete Study</span>
               </Button>
-              <Link href={`/dashboard/admin/projects/${selectedStudy.rawId || selectedStudy.id}`}>
-                <Button variant="primary" size="sm" className="font-sans text-xs font-semibold">
-                  Open Project Desk →
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setSelectedStudy(null)}>
+                  Close Inspector
                 </Button>
-              </Link>
+                <Link href={`/dashboard/admin/projects/${selectedStudy.rawId || selectedStudy.id}`}>
+                  <Button variant="primary" size="sm" className="font-sans text-xs font-semibold">
+                    Open Project Desk →
+                  </Button>
+                </Link>
+              </div>
             </div>
           }
         >
@@ -722,6 +751,16 @@ export function AdminDashboardClient({
           </div>
         </Modal>
       )}
+
+      {/* Delete Study Dialog */}
+      <DeleteStudyDialog
+        open={!!studyToDelete}
+        onClose={() => setStudyToDelete(null)}
+        study={studyToDelete}
+        onDeleted={() => {
+          refresh();
+        }}
+      />
     </div>
   );
 }

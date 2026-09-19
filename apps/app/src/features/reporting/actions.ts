@@ -28,6 +28,8 @@ import {
   type FreshDatabaseResetInput,
   type FreshDatabaseResetResultDTO,
   type DatabaseResetPreviewDTO,
+  type DeletedStudyHistoryItemDTO,
+  type DeletedStudiesHistoryResponseDTO,
 } from "./schemas";
 import { revalidatePath } from "next/cache";
 import {
@@ -654,6 +656,101 @@ export async function getArchivedProjectsAction(rawInput?: ArchiveFilterInput): 
     return { success: true, data: filtered };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to load archived projects.";
+    return { success: false, error: { message: msg } };
+  }
+}
+
+export async function getDeletedStudiesHistoryAction(): Promise<{
+  success: boolean;
+  data?: DeletedStudiesHistoryResponseDTO;
+  error?: { message: string };
+}> {
+  try {
+    const session = await auth();
+    const user = session?.user;
+    if (!user || !["CEO", "ADMIN"].includes(user.role)) {
+      return { success: false, error: { message: "CEO or Admin authority required." } };
+    }
+
+    const rawArchives = await withDbTimeout(
+      db.archivedProject.findMany({
+        orderBy: { archivedAt: "desc" },
+        take: 200,
+      })
+    );
+
+    const userIds = [...new Set(rawArchives.map((a) => a.archivedBy).filter(Boolean))];
+    const userList = await db.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        userRoles: {
+          select: {
+            role: {
+              select: { name: true },
+            },
+          },
+        },
+      },
+    });
+    const userMap = new Map(userList.map((u) => [u.id, u]));
+
+    const items: DeletedStudyHistoryItemDTO[] = rawArchives.map((a) => {
+      const snap = (a.snapshot as Record<string, unknown>) || {};
+      const creator = userMap.get(a.archivedBy);
+      const creatorRole = creator?.userRoles[0]?.role?.name || "ADMIN";
+
+      const deletedBy = String(snap.deletedBy || creator?.fullName || creator?.email || "System Admin");
+      const deletedByRole = String(snap.deletedByRole || creatorRole);
+      const deletionReason = String(snap.deletionReason || "Admin Study Deletion");
+      const researchTitle = String(snap.researchTitle || "Research Study");
+      const clientEmail = snap.clientEmail ? String(snap.clientEmail) : undefined;
+      const institutionSchool = snap.institutionSchool ? String(snap.institutionSchool) : undefined;
+      const totalAmount = Number(snap.totalAmount || 0);
+
+      return {
+        id: a.id,
+        projectId: a.projectId,
+        intakeId: a.intakeId,
+        researchTitle,
+        title: researchTitle,
+        clientName: a.clientName,
+        clientEmail,
+        institutionSchool,
+        packageName: a.packageName,
+        deletedBy,
+        deletedByName: deletedBy,
+        deletedByRole,
+        deletionReason,
+        reason: deletionReason,
+        deletedAt: a.archivedAt.toISOString(),
+        filesPurged: a.filesPurged,
+        totalAmount,
+        snapshot: snap,
+      };
+    });
+
+    const kpis = {
+      totalDeleted: items.length,
+      adminDeletions: items.filter((i) => i.deletedByRole === "ADMIN").length,
+      ceoDeletions: items.filter((i) => i.deletedByRole === "CEO").length,
+      clientRequestedDeletions: items.filter(
+        (i) => i.deletionReason.toLowerCase().includes("client") || Boolean(i.snapshot?.clientRequested)
+      ).length,
+      totalFilesPurgedCount: items.filter((i) => i.filesPurged).length,
+    };
+
+    return {
+      success: true,
+      data: {
+        items,
+        kpis,
+      },
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to load deleted studies history.";
     return { success: false, error: { message: msg } };
   }
 }

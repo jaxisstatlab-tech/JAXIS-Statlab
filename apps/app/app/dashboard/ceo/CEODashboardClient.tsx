@@ -23,11 +23,13 @@ import {
   ChartLineUp,
   Kanban,
   GraduationCap,
+  Trash,
 } from "@phosphor-icons/react";
 import { useProjects } from "@/features/projects/hooks/useProjects";
 import { getFinanceReceivablesSummary } from "@/features/payments/actions";
 import { Project } from "@/types/project";
 import type { FinanceOverviewData } from "@/features/payments/schemas";
+import { DeleteStudyDialog } from "@/features/projects/components/DeleteStudyDialog";
 
 interface CEODashboardClientProps {
   initialProjects: Project[];
@@ -39,10 +41,11 @@ export function CEODashboardClient({
   initialFinanceData,
 }: CEODashboardClientProps) {
   const [selectedStudy, setSelectedStudy] = useState<Project | null>(null);
+  const [studyToDelete, setStudyToDelete] = useState<Project | null>(null);
   const [financeData, setFinanceData] = useState<FinanceOverviewData | null>(initialFinanceData);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { projects, isLoading } = useProjects({
+  const { projects, isLoading, refresh } = useProjects({
     initialData: initialProjects,
     initialLoading: false,
   });
@@ -221,17 +224,28 @@ export function CEODashboardClient({
     {
       key: "actions",
       header: "Actions",
-      width: "130px",
+      width: "140px",
       align: "right",
       render: (study) => (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setSelectedStudy(study)}
-          className="py-1 px-3 whitespace-nowrap font-sans text-xs cursor-pointer rounded-[2px]"
-        >
-          View Details
-        </Button>
+        <div className="flex items-center justify-end gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedStudy(study)}
+            className="py-1 px-3 whitespace-nowrap font-sans text-xs cursor-pointer rounded-[2px]"
+          >
+            View Details
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Delete Study Permanently"
+            onClick={() => setStudyToDelete(study)}
+            className="py-1 px-2 text-white/40 hover:text-red-400 hover:bg-red-500/10 cursor-pointer rounded-[2px] transition-colors"
+          >
+            <Trash size={14} weight="fill" />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -464,13 +478,28 @@ export function CEODashboardClient({
           description={selectedStudy.title}
           size="md"
           footer={
-            <Button
-              variant="secondary"
-              onClick={() => setSelectedStudy(null)}
-              className="rounded-[2px] font-sans text-xs"
-            >
-              Close
-            </Button>
+            <div className="flex items-center justify-between gap-3 w-full">
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  const target = selectedStudy;
+                  setSelectedStudy(null);
+                  setStudyToDelete(target);
+                }}
+                className="font-sans text-xs font-semibold rounded-[2px] bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 flex items-center gap-1.5 transition-colors"
+              >
+                <Trash size={14} weight="fill" />
+                <span>Delete Study</span>
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setSelectedStudy(null)}
+                className="rounded-[2px] font-sans text-xs"
+              >
+                Close
+              </Button>
+            </div>
           }
         >
           <div className="flex flex-col gap-3 text-xs text-white/80 font-sans">
@@ -481,6 +510,16 @@ export function CEODashboardClient({
           </div>
         </Modal>
       )}
+
+      {/* Delete Study Dialog */}
+      <DeleteStudyDialog
+        open={!!studyToDelete}
+        onClose={() => setStudyToDelete(null)}
+        study={studyToDelete}
+        onDeleted={() => {
+          refresh();
+        }}
+      />
     </div>
   );
 }

@@ -54,6 +54,7 @@ import {
   GraduationCap,
   SignOut,
   CircleNotch,
+  Trash,
 } from "@phosphor-icons/react";
 
 export interface NavItem {
@@ -117,6 +118,7 @@ const Icons = {
   Firewall: <ShieldWarning size={16} weight="fill" className="flex-shrink-0" />,
   Emails: <PaperPlaneRight size={16} weight="fill" className="flex-shrink-0" />,
   Gavel: <Gavel size={16} weight="fill" className="flex-shrink-0" />,
+  Trash: <Trash size={16} weight="fill" className="flex-shrink-0" />,
 };
 
 // ─── Role-Specific Navigation Definitions ─────────────────────────────────────
@@ -393,6 +395,11 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           href: "/dashboard/ceo/retention",
           icon: Icons.Vault,
         },
+        {
+          label: "Deleted Studies Ledger",
+          href: "/dashboard/ceo/deleted-studies",
+          icon: Icons.Trash,
+        },
       ],
     },
     {
@@ -495,6 +502,11 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           label: "Project Archive",
           href: "/dashboard/admin/archive",
           icon: Icons.Archive,
+        },
+        {
+          label: "Deleted Studies Ledger",
+          href: "/dashboard/ceo/deleted-studies",
+          icon: Icons.Trash,
         },
       ],
     },

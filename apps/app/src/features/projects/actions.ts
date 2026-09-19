@@ -15,13 +15,18 @@ import {
   UpdateProjectStatusSchema,
   RequestMissingInfoSchema,
   ProjectFilterSchema,
+  DeleteStudySchema,
+  RequestStudyDeletionSchema,
+  type DeleteStudyInput,
+  type RequestStudyDeletionInput,
   type ProjectDetailItem,
   type ProjectFileItem,
   type ActionResponse,
 } from "./schemas";
+import { listAllR2Objects, deleteMultipleR2Objects } from "@/lib/storage";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import type { AuditTelemetryEvent } from "@/types/project";
-import type { ProjectStatus, FileCategory, Prisma } from "@prisma/client";
+import type { ProjectStatus, FileCategory, Prisma, RoleName } from "@prisma/client";
 
 const DEV_PROJECTS_FILE = path.join(process.cwd(), ".dev-projects.json");
 const DEV_PAYMENTS_FILE = path.join(process.cwd(), "dev_data", "payments.json");
@@ -1842,6 +1847,304 @@ export async function getProjectAuditTrail(
       success: true,
       data: [],
     };
+  }
+}
+
+// ─── Delete Study Action (Admin & CEO Authority) ─────────────────────────────
+
+export async function deleteStudyAction(rawInput: DeleteStudyInput): Promise<{
+  success: boolean;
+  intakeId?: string;
+  error?: { message: string };
+}> {
+  try {
+    const session = await auth();
+    const user = session?.user;
+    if (!user || !["ADMIN", "CEO"].includes(user.role)) {
+      return { success: false, error: { message: "Only Administrators and the CEO can delete studies." } };
+    }
+
+    const parsed = DeleteStudySchema.safeParse(rawInput);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: { message: parsed.error.issues[0]?.message || "Invalid input." },
+      };
+    }
+
+    const { projectId, reason, purgeFiles } = parsed.data;
+
+    const project = await db.project.findUnique({
+      where: { id: projectId },
+      include: {
+        client: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            clientProfile: true,
+          },
+        },
+        files: true,
+        sows: true,
+        quotations: {
+          include: { lineItems: true },
+        },
+        deliverables: true,
+        payments: true,
+        financialLedger: true,
+        assignment: true,
+      },
+    });
+
+    if (!project) {
+      // Also check if it exists in dev projects
+      const devList = readPersistedDevProjects();
+      const devIndex = devList.findIndex((p) => p.id === projectId || p.intakeId === projectId);
+      if (devIndex !== -1) {
+        const removed = devList[devIndex];
+        devList.splice(devIndex, 1);
+        writePersistedDevProjects(devList);
+        invalidateCacheTags(CACHE_TAGS.PROJECTS);
+        revalidatePath("/dashboard/admin");
+        revalidatePath("/dashboard/ceo");
+        revalidatePath("/dashboard/client");
+        revalidatePath("/dashboard", "layout");
+        return { success: true, intakeId: removed?.intakeId || projectId };
+      }
+      return { success: false, error: { message: "Study not found." } };
+    }
+
+    // 1. Create immutable snapshot for CEO audit history
+    const snapshot = {
+      intakeId: project.intakeId,
+      researchTitle: project.researchTitle,
+      researchQuestions: project.researchQuestions,
+      researchObjectives: project.researchObjectives,
+      clientName: project.client.fullName,
+      clientEmail: project.client.email,
+      institutionSchool: project.client.clientProfile?.institutionSchool || "Academic Institution",
+      academicProgram: project.client.clientProfile?.academicProgram || "General Research",
+      packageName: project.packageName || "Standard Statistical Suite",
+      masterStatus: project.masterStatus,
+      deletedBy: user.fullName || user.email,
+      deletedById: user.id,
+      deletedByRole: user.role,
+      deletionReason: reason,
+      deletedAt: new Date().toISOString(),
+      filesPurged: Boolean(purgeFiles),
+      filesCount: project.files.length,
+      fileNames: project.files.map((f) => f.fileName),
+      paymentsCount: project.payments.length,
+      totalAmount: project.sows[0]?.totalAmount ? Number(project.sows[0].totalAmount) : 0,
+      createdAt: project.createdAt.toISOString(),
+    };
+
+    await db.archivedProject.upsert({
+      where: { projectId: project.id },
+      create: {
+        projectId: project.id,
+        intakeId: project.intakeId,
+        clientName: project.client.fullName,
+        packageName: project.packageName || "STANDARD",
+        snapshot,
+        archivedBy: user.id,
+        filesPurged: Boolean(purgeFiles),
+        filesPurgedAt: purgeFiles ? new Date() : null,
+      },
+      update: {
+        snapshot,
+        archivedBy: user.id,
+        archivedAt: new Date(),
+        filesPurged: Boolean(purgeFiles),
+        filesPurgedAt: purgeFiles ? new Date() : null,
+      },
+    });
+
+    // 2. Audit Trail
+    await db.auditLog.create({
+      data: {
+        projectId: project.id,
+        actorId: user.id,
+        actorRole: user.role as RoleName,
+        action: "STUDY_DELETED",
+        reason: `Study ${project.intakeId} deleted by ${user.role} (${user.fullName || user.email}). Reason: ${reason}.`,
+        metadata: {
+          intakeId: project.intakeId,
+          researchTitle: project.researchTitle,
+          clientName: project.client.fullName,
+          filesPurged: Boolean(purgeFiles),
+        },
+      },
+    });
+
+    // 3. Purge Cloudflare R2 files if requested
+    if (purgeFiles) {
+      try {
+        const [r2StudyFiles, r2Deliverables] = await Promise.all([
+          listAllR2Objects(`studies/${project.id}/`),
+          listAllR2Objects(`deliverables/${project.id}/`),
+        ]);
+        const allKeys = [...r2StudyFiles, ...r2Deliverables].map((o) => o.key);
+        if (allKeys.length > 0) {
+          await deleteMultipleR2Objects(allKeys);
+        }
+      } catch (r2Err) {
+        console.warn("[deleteStudyAction] Could not purge R2 objects:", r2Err);
+      }
+    }
+
+    // 4. FK-safe child deletions in database
+    await db.assignmentHistory.deleteMany({ where: { projectId: project.id } });
+    await db.defenseLabSession.deleteMany({ where: { projectId: project.id } });
+    await db.revisionRequest.deleteMany({ where: { projectId: project.id } });
+    await db.deliverable.deleteMany({ where: { projectId: project.id } });
+    await db.scopeCreepLog.deleteMany({ where: { projectId: project.id } });
+    await db.analysisFile.deleteMany({ where: { projectId: project.id } });
+    await db.qAReview.deleteMany({ where: { projectId: project.id } });
+    await db.qARejectionCount.deleteMany({ where: { projectId: project.id } });
+    await db.assignment.deleteMany({ where: { projectId: project.id } });
+    await db.sOW.deleteMany({ where: { projectId: project.id } });
+    await db.quotationLineItem.deleteMany({ where: { quotation: { projectId: project.id } } });
+    await db.paymentProof.deleteMany({ where: { payment: { projectId: project.id } } });
+    await db.payout.deleteMany({ where: { projectId: project.id } });
+    await db.payment.deleteMany({ where: { projectId: project.id } });
+    await db.financialLedger.deleteMany({ where: { projectId: project.id } });
+    await db.dispute.deleteMany({ where: { projectId: project.id } });
+    await db.quotation.deleteMany({ where: { projectId: project.id } });
+    await db.projectFile.deleteMany({ where: { projectId: project.id } });
+    await db.messageReadReceipt.deleteMany({ where: { message: { projectId: project.id } } });
+    await db.blockedMessageLog.deleteMany({ where: { message: { projectId: project.id } } });
+    await db.message.deleteMany({ where: { projectId: project.id } });
+    await db.inAppAlert.deleteMany({ where: { projectId: project.id } });
+    await db.notificationLog.deleteMany({ where: { projectId: project.id } });
+
+    // Finally delete the parent project
+    await db.project.delete({ where: { id: project.id } });
+
+    // Clean from dev JSON if present
+    const devList = readPersistedDevProjects();
+    const updatedDev = devList.filter((p) => p.id !== project.id && p.intakeId !== project.intakeId);
+    if (devList.length !== updatedDev.length) {
+      writePersistedDevProjects(updatedDev);
+    }
+
+    // Invalidate server cache & revalidate routes
+    invalidateCacheTags(CACHE_TAGS.PROJECTS, CACHE_TAGS.QUOTATIONS, CACHE_TAGS.PAYMENTS);
+    revalidatePath("/dashboard/admin");
+    revalidatePath("/dashboard/ceo");
+    revalidatePath("/dashboard/client");
+    revalidatePath("/dashboard/client/projects");
+    revalidatePath("/dashboard", "layout");
+
+    return { success: true, intakeId: project.intakeId };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to delete study.";
+    console.error("[deleteStudyAction] Fatal error:", err);
+    return { success: false, error: { message: msg } };
+  }
+}
+
+// ─── Request Study Deletion Action (Client) ──────────────────────────────────
+
+export async function requestStudyDeletionAction(rawInput: RequestStudyDeletionInput): Promise<{
+  success: boolean;
+  error?: { message: string };
+}> {
+  try {
+    const session = await auth();
+    const user = session?.user;
+    if (!user || user.role !== "CLIENT") {
+      return { success: false, error: { message: "Only clients can request study deletion." } };
+    }
+
+    const parsed = RequestStudyDeletionSchema.safeParse(rawInput);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: { message: parsed.error.issues[0]?.message || "Invalid input." },
+      };
+    }
+
+    const { projectId, reason, notes } = parsed.data;
+
+    const project = await db.project.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        intakeId: true,
+        clientId: true,
+        researchTitle: true,
+      },
+    });
+
+    if (!project || project.clientId !== user.id) {
+      return { success: false, error: { message: "Study not found or unauthorized." } };
+    }
+
+    // Find Admins and CEOs to notify
+    const adminsAndCeos = await db.user.findMany({
+      where: {
+        userRoles: {
+          some: {
+            role: {
+              name: { in: ["ADMIN", "CEO"] },
+            },
+          },
+        },
+      },
+      select: { id: true, userRoles: { select: { role: { select: { name: true } } } } },
+    });
+
+    const alertMsg = `Client ${user.fullName || user.email} requested deletion for study ${project.intakeId}. Reason: ${reason}${notes ? ` (${notes})` : ""}`;
+
+    const alertPromises = adminsAndCeos.map((admin) => {
+      const primaryRole = admin.userRoles[0]?.role.name || "ADMIN";
+      return db.inAppAlert.create({
+        data: {
+          recipientId: admin.id,
+          recipientRole: primaryRole as RoleName,
+          alertType: "STUDY_DELETION_REQUESTED",
+          projectId: project.id,
+          message: alertMsg,
+          linkUrl: `/dashboard/admin`,
+        },
+      });
+    });
+
+    await Promise.all([
+      ...alertPromises,
+      db.auditLog.create({
+        data: {
+          projectId: project.id,
+          actorId: user.id,
+          actorRole: "CLIENT" as RoleName,
+          action: "DELETION_REQUESTED",
+          reason,
+          metadata: {
+            intakeId: project.intakeId,
+            notes,
+            requestedAt: new Date().toISOString(),
+          },
+        },
+      }),
+      db.dataDeletionRequest.create({
+        data: {
+          clientId: user.id,
+          status: "PENDING",
+          deletedFields: [`projectId:${project.id}`, `intakeId:${project.intakeId}`, `reason:${reason}`],
+          retainedFields: notes ? [`notes:${notes}`] : [],
+        },
+      }),
+    ]);
+
+    revalidatePath("/dashboard/client");
+    revalidatePath("/dashboard/admin");
+
+    return { success: true };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to submit deletion request.";
+    return { success: false, error: { message: msg } };
   }
 }
 

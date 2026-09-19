@@ -23,11 +23,13 @@ import {
   ChatCenteredText,
   GraduationCap,
   ShieldCheck,
+  Trash,
 } from "@phosphor-icons/react";
 import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { QuickProfileModal } from "@/features/client-profile/components/QuickProfileModal";
 import { HowToUseModal } from "@/features/client-onboarding/components/HowToUseModal";
+import { RequestStudyDeletionModal } from "@/features/projects/components/RequestStudyDeletionModal";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 
 const RESEARCH_STAGES = [
@@ -158,6 +160,11 @@ export function ClientDashboardClient({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isHowToUseModalOpen, setIsHowToUseModalOpen] = useState(false);
+  const [studyToRequestDeletion, setStudyToRequestDeletion] = useState<{
+    id: string;
+    intakeId?: string;
+    title: string;
+  } | null>(null);
   const [toast, setToast] = useState<{
     variant: "success" | "danger" | "warning" | "info";
     message: string;
@@ -1097,15 +1104,32 @@ export function ClientDashboardClient({
                       <StatusBadge status={study.masterStatus} />
                     </td>
                     <td className="text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                      <Link href={`/dashboard/client/projects/${study.id}`}>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Link href={`/dashboard/client/projects/${study.id}`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="py-1 px-3 h-auto whitespace-nowrap font-mono text-xs tracking-wider"
+                          >
+                            OPEN
+                          </Button>
+                        </Link>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          className="py-1 px-3 h-auto whitespace-nowrap font-mono text-xs tracking-wider"
+                          title="Request Study Deletion"
+                          onClick={() =>
+                            setStudyToRequestDeletion({
+                              id: study.id,
+                              intakeId: study.intakeId,
+                              title: study.researchTitle,
+                            })
+                          }
+                          className="py-1 px-2 h-auto text-white/40 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
                         >
-                          OPEN
+                          <Trash size={14} weight="fill" />
                         </Button>
-                      </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1137,6 +1161,16 @@ export function ClientDashboardClient({
         onSetupProfile={() => setIsProfileModalOpen(true)}
         onStartRequest={() => {
           window.location.href = "/dashboard/client/projects/new";
+        }}
+      />
+
+      {/* ── Request Study Deletion Modal ── */}
+      <RequestStudyDeletionModal
+        open={!!studyToRequestDeletion}
+        onClose={() => setStudyToRequestDeletion(null)}
+        study={studyToRequestDeletion}
+        onRequested={() => {
+          loadData();
         }}
       />
 
