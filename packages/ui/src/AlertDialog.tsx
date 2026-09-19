@@ -3,7 +3,7 @@
 import * as React from "react";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { cn } from "./utils";
-import { buttonVariants } from "./Button";
+import { buttonVariants, type ButtonSize, type ButtonVariant } from "./Button";
 
 export const AlertDialog = AlertDialogPrimitive.Root;
 export const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
@@ -64,7 +64,7 @@ export const AlertDialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 gap-2 pt-2",
+      "flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-2",
       className
     )}
     {...props}
@@ -103,13 +103,14 @@ AlertDialogDescription.displayName =
 export const AlertDialogAction = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Action>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action> & {
-    variant?: "default" | "destructive" | "outline" | "secondary";
+    variant?: ButtonVariant;
+    size?: ButtonSize;
   }
->(({ className, variant = "default", ...props }, ref) => (
+>(({ className, variant = "default", size, ...props }, ref) => (
   <AlertDialogPrimitive.Action
     ref={ref}
     className={cn(
-      buttonVariants({ variant }),
+      buttonVariants({ variant, size }),
       "cursor-pointer select-none",
       className
     )}
@@ -120,12 +121,15 @@ AlertDialogAction.displayName = AlertDialogPrimitive.Action.displayName;
 
 export const AlertDialogCancel = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Cancel>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Cancel>
->(({ className, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Cancel> & {
+    variant?: ButtonVariant;
+    size?: ButtonSize;
+  }
+>(({ className, variant = "outline", size, ...props }, ref) => (
   <AlertDialogPrimitive.Cancel
     ref={ref}
     className={cn(
-      buttonVariants({ variant: "outline" }),
+      buttonVariants({ variant, size }),
       "mt-2 sm:mt-0 cursor-pointer select-none",
       className
     )}

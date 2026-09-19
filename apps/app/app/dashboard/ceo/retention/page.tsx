@@ -1125,14 +1125,17 @@ export default function CeoStorageRetentionPage() {
             </div>
           </AlertDialogHeader>
 
-          <AlertDialogFooter className="pt-3 gap-2">
-            <AlertDialogCancel className="text-xs h-8 px-3 rounded-[2px] font-sans">
+          <AlertDialogFooter className="flex flex-row items-center justify-end gap-3 pt-4 sm:space-x-0">
+            <AlertDialogCancel
+              size="sm"
+              className="h-9 min-h-[36px] px-4 text-xs rounded-[2px] font-sans font-medium inline-flex items-center justify-center border border-white/20 hover:bg-white/[0.08] text-white/80 hover:text-white transition-all m-0 sm:m-0 cursor-pointer"
+            >
               Cancel
             </AlertDialogCancel>
             <button
               type="button"
               onClick={handleInitiateStagedPurge}
-              className="text-xs h-8 px-4 bg-amber-600 hover:bg-amber-500 text-white rounded-[2px] font-sans font-semibold cursor-pointer active:scale-[0.97] transition-all"
+              className="h-9 min-h-[36px] px-4 bg-amber-600 hover:bg-amber-500 text-white rounded-[2px] font-sans text-xs font-semibold inline-flex items-center justify-center border border-amber-500/50 cursor-pointer active:scale-[0.97] transition-all m-0 shadow-sm"
             >
               Stage File Purge
             </button>
@@ -1257,18 +1260,21 @@ export default function CeoStorageRetentionPage() {
             </div>
           </AlertDialogHeader>
 
-          <AlertDialogFooter className="pt-3 gap-2">
-            <AlertDialogCancel className="text-xs h-8 px-3 rounded-[2px] font-sans">
+          <AlertDialogFooter className="flex flex-row items-center justify-end gap-3 pt-4 sm:space-x-0">
+            <AlertDialogCancel
+              size="sm"
+              className="h-9 min-h-[36px] px-4 text-xs rounded-[2px] font-sans font-medium inline-flex items-center justify-center border border-white/20 hover:bg-white/[0.08] text-white/80 hover:text-white transition-all m-0 sm:m-0 cursor-pointer"
+            >
               Cancel
             </AlertDialogCancel>
             <button
               type="button"
               onClick={handleExecuteReset}
               disabled={!isResetFormValid || isResetting}
-              className={`text-xs h-8 px-4 rounded-[2px] font-sans font-semibold transition-all cursor-pointer active:scale-[0.97] ${
+              className={`h-9 min-h-[36px] px-4 rounded-[2px] font-sans text-xs font-semibold inline-flex items-center justify-center transition-all cursor-pointer active:scale-[0.97] border m-0 ${
                 isResetFormValid && !isResetting
-                  ? "bg-red-600 hover:bg-red-500 text-white shadow-sm"
-                  : "bg-white/10 text-white/30 cursor-not-allowed"
+                  ? "bg-red-600 hover:bg-red-500 text-white border-red-500 shadow-sm"
+                  : "bg-white/10 text-white/30 border-transparent cursor-not-allowed"
               }`}
             >
               {isResetting ? "Resetting Database..." : "Commit Permanent Reset"}
