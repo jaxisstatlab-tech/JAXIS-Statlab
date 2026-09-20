@@ -56,6 +56,27 @@ export const ResetPasswordSchema = z
 
 export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;
 
+export const ChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[0-9]/, "Password must contain at least one number"),
+    confirmNewPassword: z.string().min(1, "Please confirm your new password"),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "New passwords do not match",
+    path: ["confirmNewPassword"],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: "New password must be different from current password",
+    path: ["newPassword"],
+  });
+
+export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
+
 export const ROLE_HOME: Record<RoleName, string> = {
   CLIENT: "/dashboard/client",
   STATISTICIAN: "/dashboard/statistician",

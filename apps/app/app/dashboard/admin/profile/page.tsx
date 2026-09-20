@@ -12,6 +12,7 @@ import {
 } from "@repo/ui";
 import { IconX } from "@tabler/icons-react";
 import { getOwnProfile, updateOwnProfile } from "@/features/staff/actions";
+import { ChangePasswordCard } from "@/features/auth/components/ChangePasswordCard";
 
 const POPULAR_ADMIN_SPECIALIZATIONS = [
   "Study Intake Triage & Quoting",
@@ -114,7 +115,7 @@ export default function AdminProfilePage() {
   };
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
       {toastMessage && (
         <Toast
           message={toastMessage.message}
@@ -324,6 +325,8 @@ export default function AdminProfilePage() {
           </FormFooter>
         </form>
       )}
+
+      {!isLoading && <ChangePasswordCard />}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
 } from "@repo/ui";
 import { IconX } from "@tabler/icons-react";
 import { getOwnProfile, updateOwnProfile } from "@/features/staff/actions";
+import { ChangePasswordCard } from "@/features/auth/components/ChangePasswordCard";
 
 const POPULAR_QA_SPECIALIZATIONS = [
   "Instrument Validation",
@@ -116,7 +117,7 @@ export default function QAProfilePage() {
   };
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {toastMessage && (
         <Toast
           message={toastMessage.message}
@@ -321,11 +322,13 @@ export default function QAProfilePage() {
               variant="primary"
               loading={isPending}
             >
-              SAVE QA PROFILE CHANGES
+              Save QA Profile Changes
             </Button>
           </FormFooter>
         </form>
       )}
+
+      {!isLoading && <ChangePasswordCard />}
     </div>
   );
 }

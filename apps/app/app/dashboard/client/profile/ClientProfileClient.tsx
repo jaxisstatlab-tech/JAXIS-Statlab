@@ -4,6 +4,7 @@ import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader, Card, FormInput, Button, FormSelect, FormFooter, Toast } from "@repo/ui";
+import { ChangePasswordCard } from "@/features/auth/components/ChangePasswordCard";
 import { upsertClientProfile } from "@/features/client-profile/actions";
 import { ClientProfileFormData } from "@/features/client-profile/schemas";
 import { formatPhilippinePhoneNumber } from "@/lib/formatters";
@@ -179,6 +180,8 @@ export function ClientProfileClient({ initialProfile }: ClientProfileClientProps
           </FormFooter>
         </form>
       </Card>
+
+      <ChangePasswordCard />
 
       {toastMessage && (
         <Toast

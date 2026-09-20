@@ -3,10 +3,12 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { db, withDbTimeout } from "@/lib/db";
+import { requireRole } from "@/lib/auth";
 import {
   RegisterClientSchema,
   ForgotPasswordSchema,
   ResetPasswordSchema,
+  ChangePasswordSchema,
   type ActionResult,
 } from "./schemas";
 import {
@@ -459,3 +461,145 @@ export async function resetPasswordAction(
     };
   }
 }
+
+/**
+ * Changes password for the currently authenticated user in their profile settings.
+ * Accessible to all authenticated roles (Client, Statistician, QA Lead, Finance, CEO, Admin).
+ */
+export async function changePasswordAction(
+  input: unknown
+): Promise<ActionResult<{ success: boolean; message: string }>> {
+  let session;
+  try {
+    session = await requireRole();
+  } catch {
+    return {
+      success: false,
+      error: {
+        code: "UNAUTHENTICATED",
+        message: "You must be signed in to change your password.",
+      },
+    };
+  }
+
+  const parsed = ChangePasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Please correct the errors in the password form.",
+        fieldErrors: parsed.error.flatten().fieldErrors,
+      },
+    };
+  }
+
+  const { currentPassword, newPassword } = parsed.data;
+  const userId = session.user.id;
+  const userEmail = session.user.email;
+
+  try {
+    const user = await withDbTimeout(
+      db.user.findFirst({
+        where: {
+          OR: [
+            { id: userId },
+            ...(userEmail ? [{ email: userEmail }] : []),
+          ],
+        },
+        select: {
+          id: true,
+          email: true,
+          passwordHash: true,
+        },
+      }),
+      3000
+    );
+
+    if (!user) {
+      return {
+        success: false,
+        error: {
+          code: "USER_NOT_FOUND",
+          message: "User account could not be found.",
+        },
+      };
+    }
+
+    // Verify current password
+    let isCurrentValid = false;
+    if (user.passwordHash) {
+      isCurrentValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    }
+
+    // Dev fallback if active
+    const allowDevLogins = process.env.DISABLE_DEV_LOGINS !== "true";
+    if (!isCurrentValid && allowDevLogins && user.email) {
+      const dev = getDevUserByEmail(user.email) || DEV_USERS[user.email];
+      if (dev && dev.password === currentPassword) {
+        isCurrentValid = true;
+      }
+    }
+
+    if (!isCurrentValid) {
+      return {
+        success: false,
+        error: {
+          code: "INVALID_CURRENT_PASSWORD",
+          message: "The current password you entered is incorrect.",
+          fieldErrors: {
+            currentPassword: ["The current password you entered is incorrect."],
+          },
+        },
+      };
+    }
+
+    const newPasswordHash = await bcrypt.hash(newPassword, 12);
+
+    await withDbTimeout(
+      db.user.update({
+        where: { id: user.id },
+        data: { passwordHash: newPasswordHash },
+      }),
+      4000
+    );
+
+    // Synchronize dev mock store if dev logins active
+    if (allowDevLogins && user.email) {
+      const dev = getDevUserByEmail(user.email) || DEV_USERS[user.email];
+      if (dev) {
+        dev.password = newPassword;
+      }
+    }
+
+    // Audit log
+    await withDbTimeout(
+      db.authAuditLog.create({
+        data: {
+          userId: user.id,
+          email: user.email,
+          event: "LOGIN_SUCCESS",
+          metadata: { action: "PASSWORD_CHANGED_IN_PROFILE", role: session.user.role },
+        },
+      }).catch(() => {})
+    );
+
+    return {
+      success: true,
+      data: {
+        success: true,
+        message: "Your password has been changed successfully.",
+      },
+    };
+  } catch (err) {
+    console.error("[ChangePassword] Error updating password:", err);
+    return {
+      success: false,
+      error: {
+        code: "SERVER_ERROR",
+        message: "Unable to update password at this time. Please try again.",
+      },
+    };
+  }
+}
+

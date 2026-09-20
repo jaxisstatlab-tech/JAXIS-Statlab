@@ -1155,6 +1155,33 @@ export async function getMyOfficialPayslip(
   if (myPayslips.length === 0) {
     const now = new Date();
     const periodLabel = payPeriodMonthOrId || `${now.toLocaleDateString("en-PH", { month: "long", year: "numeric" })} (First Half-Month Cycle: Days 1–15)`;
+
+    const storage = readPayrollStorage();
+    const roleCfg = storage.roleConfigs[userRole] || DEFAULT_ROLE_CONFIGS[userRole] || DEFAULT_ROLE_CONFIGS.STATISTICIAN;
+    const userOverride = storage.staffOverrides[userId];
+    const activeCompType = userOverride?.compensationType || roleCfg?.compensationType || "TIER_DELIVERABLE";
+    const activeHourlyRate = userOverride?.hourlyDutyRate ?? roleCfg?.hourlyDutyRate ?? 450.0;
+    const activeBaseSalary = userOverride?.baseSalaryMonthly ?? roleCfg?.baseSalaryMonthly ?? 0;
+    const activeCommissionPct = userOverride?.commissionPercentagePerStudy ?? roleCfg?.commissionPercentagePerStudy ?? (activeCompType === "TIER_DELIVERABLE" ? 0 : 50.0);
+    const activeAllowances = (userOverride?.allowancesMonthly ?? roleCfg?.allowancesMonthly ?? 2500.0) / 2;
+
+    const baseSalary = activeCompType === "FIXED_SALARY" || activeCompType === "HYBRID" ? Math.round((activeBaseSalary / 2) * 100) / 100 : 0;
+    const verifiedDutyHours = 21.3;
+    const hourlyDutyEarnings = (activeCompType === "HOURLY_DUTY" || activeCompType === "HYBRID" || activeCompType === "PERCENTAGE_PER_STUDY" || activeCompType === "TIER_DELIVERABLE")
+      ? Math.round(verifiedDutyHours * activeHourlyRate * 100) / 100
+      : 0;
+    const completedStudiesCount = 1;
+    const completedStudiesGrossValue = 28500.0;
+    const commissionEarnings = 15250.0;
+    const allowances = Math.round(activeAllowances * 100) / 100;
+    const overtimeHours = 0;
+    const overtimeEarnings = 0;
+    const grossEarnings = Math.round((baseSalary + hourlyDutyEarnings + commissionEarnings + allowances) * 100) / 100;
+    const taxThreshold = 10416.5;
+    const withholdingTax = grossEarnings > taxThreshold ? Math.round((grossEarnings - taxThreshold) * 0.15 * 100) / 100 : 0;
+    const otherDeductions = 0;
+    const netPay = Math.round((grossEarnings - withholdingTax - otherDeductions) * 100) / 100;
+
     const liveDraft: StaffPayslipDTO = {
       id: `ps_live_${userId}`,
       payslipNumber: `JAX-PS-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}-001`,
@@ -1166,23 +1193,33 @@ export async function getMyOfficialPayslip(
       payPeriodStart: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
       payPeriodEnd: new Date(now.getFullYear(), now.getMonth(), 15).toISOString(),
       cutOffCycle: "FIRST_HALF",
-      compensationType: "PERCENTAGE_PER_STUDY",
-      baseSalary: 0,
-      verifiedDutyHours: 21.3,
-      hourlyRate: 450.0,
-      hourlyDutyEarnings: 9585.0,
-      completedStudiesCount: 1,
-      completedStudiesGrossValue: 28500.0,
-      commissionPercentage: 50.0,
-      commissionEarnings: 15250.0,
-      itemizedStudies: [],
-      allowances: 1250.0,
-      overtimeHours: 0,
-      overtimeEarnings: 0,
-      grossEarnings: 26085.0,
-      withholdingTax: 2350.28,
-      otherDeductions: 0,
-      netPay: 23734.72,
+      compensationType: activeCompType,
+      baseSalary,
+      verifiedDutyHours,
+      hourlyRate: activeHourlyRate,
+      hourlyDutyEarnings,
+      completedStudiesCount,
+      completedStudiesGrossValue,
+      commissionPercentage: activeCommissionPct,
+      commissionEarnings,
+      itemizedStudies: [
+        {
+          projectId: "proj_demo_study_01",
+          intakeId: "JAXIS-202609-0012",
+          researchTitle: "Predictive Healthcare Biomarkers Analysis",
+          grossAmount: 28500.0,
+          commissionPercentage: activeCommissionPct,
+          commissionEarned: commissionEarnings,
+          status: "IN_REVIEW",
+        }
+      ],
+      allowances,
+      overtimeHours,
+      overtimeEarnings,
+      grossEarnings,
+      withholdingTax,
+      otherDeductions,
+      netPay,
       status: "DRAFT",
       generatedBy: "System (Automated Live Draft)",
       createdAt: now.toISOString(),

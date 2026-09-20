@@ -133,7 +133,7 @@ export function QaPayoutsClient({ initialData }: QaPayoutsClientProps) {
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
       {/* Standardized PageHeader */}
       <PageHeader
         breadcrumbs={[
@@ -146,7 +146,7 @@ export function QaPayoutsClient({ initialData }: QaPayoutsClientProps) {
       />
 
       {/* Canonical KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <KpiCard
           label="VERIFIED QA EARNINGS (PAID)"
           value={<><Peso />{verifiedEarnings.toLocaleString("en-US", { minimumFractionDigits: 2 })}</>}
@@ -165,7 +165,7 @@ export function QaPayoutsClient({ initialData }: QaPayoutsClientProps) {
       </div>
 
       {/* Itemized Payout Ledger Card */}
-      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[4px]">
+      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[2px]">
         <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h2 className="text-base font-semibold text-white">QA Audit Fee Ledger</h2>
           <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
@@ -309,13 +309,13 @@ export function QaPayoutsClient({ initialData }: QaPayoutsClientProps) {
                     </td>
 
                     {/* Applied Rate */}
-                    <td className="py-3.5 px-4 text-center font-mono font-semibold text-sky-400">
-                      {p.payoutRateApplied > 0 ? `${p.payoutRateApplied}%` : "Fixed"}
+                    <td className="py-3.5 px-4 text-center font-mono font-semibold text-white/80">
+                      {p.payoutRateApplied > 0 ? `${p.payoutRateApplied}%` : "Fixed Fee"}
                     </td>
 
                     {/* Payout Sum */}
-                    <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-400 text-sm">
-                      <Peso />{p.payoutAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-white text-sm">
+                      <Peso className="text-white/70" />{p.payoutAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </td>
 
                     {/* Status */}

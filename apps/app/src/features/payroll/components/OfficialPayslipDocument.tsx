@@ -273,7 +273,7 @@ export function OfficialPayslipDocument({
                 <span>1. Completed Research Studies &amp; Commission Deliverables</span>
               </h3>
               <span className="text-[0.625rem] sm:text-[0.688rem] font-mono text-slate-600">
-                Commission Baseline: {(payslip.compensationType as string) === "TIER_DELIVERABLE" ? "Fixed Package Tier Rates" : `${payslip.commissionPercentage}% of SOW contract`}
+                Commission Baseline: {(payslip.compensationType as string) === "TIER_DELIVERABLE" ? "Tier Deliverable Rates (Treasury)" : `${payslip.commissionPercentage}% of SOW contract`}
               </span>
             </div>
 
@@ -296,7 +296,9 @@ export function OfficialPayslipDocument({
                       <td className="py-2 px-3 font-mono text-right text-slate-700 border-r border-slate-200 whitespace-nowrap">
                         <span className="font-sans font-normal inline-block mr-0.5">₱</span>{st.grossAmount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-2 px-3 font-mono text-right text-slate-600 border-r border-slate-200 whitespace-nowrap">{st.commissionPercentage}%</td>
+                      <td className="py-2 px-3 font-mono text-right text-slate-600 border-r border-slate-200 whitespace-nowrap">
+                        {st.commissionPercentage > 0 ? `${st.commissionPercentage}%` : "Tier Fee"}
+                      </td>
                       <td className="py-2 px-3 font-mono text-right font-bold text-slate-900 whitespace-nowrap">
                         <span className="font-sans font-normal inline-block mr-0.5">₱</span>{st.commissionEarned.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
                       </td>

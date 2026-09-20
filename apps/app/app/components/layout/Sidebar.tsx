@@ -191,16 +191,6 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           href: "/dashboard/statistician/payouts",
           icon: Icons.Award,
         },
-        {
-          label: "My HR & Timeclock",
-          href: "/dashboard/staff/hr",
-          icon: Icons.LeaveDesk,
-        },
-        {
-          label: "My Profile",
-          href: "/dashboard/statistician/profile",
-          icon: Icons.Users,
-        },
       ],
     },
   ],
@@ -228,16 +218,6 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           label: "QA Audit Earnings",
           href: "/dashboard/qa/payouts",
           icon: Icons.Award,
-        },
-        {
-          label: "My HR & Timeclock",
-          href: "/dashboard/staff/hr",
-          icon: Icons.LeaveDesk,
-        },
-        {
-          label: "My Profile",
-          href: "/dashboard/qa/profile",
-          icon: Icons.Users,
         },
       ],
     },
@@ -304,21 +284,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
         },
       ],
     },
-    {
-      groupTitle: "MY WORKSPACE",
-      items: [
-        {
-          label: "My HR & Timeclock",
-          href: "/dashboard/staff/hr",
-          icon: Icons.LeaveDesk,
-        },
-        {
-          label: "My Profile",
-          href: "/dashboard/finance/profile",
-          icon: Icons.Users,
-        },
-      ],
-    },
+
   ],
 
   CEO: [
@@ -402,21 +368,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
         },
       ],
     },
-    {
-      groupTitle: "MY WORKSPACE",
-      items: [
-        {
-          label: "My HR & Timeclock",
-          href: "/dashboard/staff/hr",
-          icon: Icons.LeaveDesk,
-        },
-        {
-          label: "My Profile",
-          href: "/dashboard/ceo/profile",
-          icon: Icons.Users,
-        },
-      ],
-    },
+
   ],
 
   ADMIN: [
@@ -510,21 +462,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
         },
       ],
     },
-    {
-      groupTitle: "MY WORKSPACE",
-      items: [
-        {
-          label: "My HR & Timeclock",
-          href: "/dashboard/staff/hr",
-          icon: Icons.LeaveDesk,
-        },
-        {
-          label: "My Profile",
-          href: "/dashboard/admin/profile",
-          icon: Icons.Users,
-        },
-      ],
-    },
+
   ],
 };
 

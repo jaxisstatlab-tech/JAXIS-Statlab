@@ -339,7 +339,7 @@ export function PayslipStatementModal({
                     </span>
                   </div>
                   <span className="text-xs font-mono text-white/50">
-                    Baseline: {(payslip.compensationType as string) === "TIER_DELIVERABLE" ? "Tier Deliverable Rates" : `${payslip.commissionPercentage}% of SOW`}
+                    Baseline: {(payslip.compensationType as string) === "TIER_DELIVERABLE" ? "Tier Deliverable Rates (Treasury)" : `${payslip.commissionPercentage}% of SOW`}
                   </span>
                 </div>
 
@@ -362,8 +362,10 @@ export function PayslipStatementModal({
                           <td className="py-2.5 px-3 font-mono text-right text-white/70">
                             <span className="inline-flex items-baseline"><Peso />{st.grossAmount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</span>
                           </td>
-                          <td className="py-2.5 px-3 font-mono text-right text-white/60">{st.commissionPercentage}%</td>
-                          <td className="py-2.5 px-3 font-mono text-right font-bold text-emerald-400">
+                          <td className="py-2.5 px-3 font-mono text-right text-white/60">
+                            {st.commissionPercentage > 0 ? `${st.commissionPercentage}%` : "Tier Fee"}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono text-right font-bold text-white">
                             <span className="inline-flex items-baseline"><Peso />{st.commissionEarned.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</span>
                           </td>
                         </tr>

@@ -15,11 +15,7 @@ import {
 import Link from "next/link";
 import {
   IconReceipt,
-  IconClock,
-  IconBuildingBank,
   IconLoader2,
-  IconCoins,
-  IconSparkles,
   IconShieldCheck,
   IconSearch,
   IconPrinter,
@@ -354,20 +350,16 @@ export function FinancePayrollClient({
       </div>
 
       {/* KPI Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard
           label="Total Payroll"
-          value={`₱${kpis.totalInstitutionalPayroll.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`}
-          variant="default"
-          icon={<IconCoins size={16} stroke={1.5} />}
+          value={<><Peso />{kpis.totalInstitutionalPayroll.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</>}
           description={`${kpis.activeStaffCount} active staff`}
         />
 
         <KpiCard
           label="Total Paid Out"
-          value={`₱${kpis.totalDisbursed.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`}
-          variant="sky"
-          icon={<IconBuildingBank size={16} stroke={1.5} />}
+          value={<><Peso />{kpis.totalDisbursed.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</>}
           description={kpis.pendingDisbursementsCount === 0 ? "All paid" : `${kpis.pendingDisbursementsCount} pending`}
         />
 
@@ -375,7 +367,6 @@ export function FinancePayrollClient({
           label="Hours Worked"
           value={kpis.totalDutyHoursCompensated}
           unit="hrs total"
-          icon={<IconClock size={16} stroke={1.5} />}
           description="Verified attendance hours"
         />
 
@@ -383,8 +374,6 @@ export function FinancePayrollClient({
           label="Studies Completed"
           value={kpis.totalStudiesRewarded}
           unit="completed"
-          variant="amber"
-          icon={<IconSparkles size={16} stroke={1.5} />}
           description="Paid commissions this cycle"
         />
       </div>
@@ -473,7 +462,7 @@ export function FinancePayrollClient({
                   <th className="py-2.5 px-1 whitespace-nowrap text-right">Hours</th>
                   <th className="py-2.5 px-1 whitespace-nowrap text-center">Studies</th>
                   <th className="py-2.5 px-1.5 whitespace-nowrap text-right">Gross Pay</th>
-                  <th className="py-2.5 px-1.5 whitespace-nowrap text-right text-emerald-400/90">Net Pay</th>
+                  <th className="py-2.5 px-1.5 whitespace-nowrap text-right text-white/50">Net Pay</th>
                   <th className="py-2.5 px-1 whitespace-nowrap text-center">Status</th>
                   <th className="py-2.5 px-1.5 whitespace-nowrap text-right pr-2">Actions</th>
                 </tr>
@@ -581,10 +570,10 @@ export function FinancePayrollClient({
                         <span className="inline-flex items-baseline"><Peso />{ps.grossEarnings.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</span>
                       </td>
 
-                      {/* Net Take-Home */}
+                      {/* Net Pay */}
                       <td className="py-2 px-1.5 font-mono text-right whitespace-nowrap tabular-nums">
-                        <span className="inline-flex items-baseline font-mono font-bold text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1 py-0.5 rounded-[2px]">
-                          <Peso className="text-emerald-400/80 text-xs" />{ps.netPay.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                        <span className="inline-flex items-baseline font-mono font-bold text-xs text-white">
+                          <Peso className="text-white/70 text-xs" />{ps.netPay.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
                         </span>
                       </td>
 

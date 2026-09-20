@@ -20,7 +20,6 @@ import {
   IconDeviceDesktop,
   IconAlertTriangle,
   IconBolt,
-  IconHistory,
   IconFileText,
   IconWallet,
   IconCoins,
@@ -28,6 +27,7 @@ import {
   IconEdit,
 } from "@tabler/icons-react";
 import { Button, Card, KpiCard, Badge, Modal, Toast, LoadingState, Peso, PageHeader, Pagination } from "@repo/ui";
+import { ClockCounterClockwise } from "@phosphor-icons/react";
 import Link from "next/link";
 import { getMyHrPortalData, fileAttendanceCorrection } from "@/features/attendance/actions";
 import { requestLeave, returnFromLeave } from "@/features/staff/actions";
@@ -36,6 +36,24 @@ import type { StaffPayslipDTO, StaffPayoutDetailsDTO, PayoutChannel } from "@/fe
 import { PayslipStatementModal } from "@/features/payroll/components/PayslipStatementModal";
 import type { HrPortalData, DailyAttendanceEvent } from "@/features/attendance/schemas";
 import { formatSettlementAccountNumber } from "@/lib/formatters";
+
+export function formatCompensationType(type?: string | null): string {
+  if (!type) return "Tier Deliverable Fee";
+  switch (type) {
+    case "TIER_DELIVERABLE":
+      return "Tier Deliverable Fee";
+    case "PERCENTAGE_PER_STUDY":
+      return "Percentage per Study";
+    case "FIXED_SALARY":
+      return "Fixed Salary";
+    case "HOURLY_DUTY":
+      return "Hourly Duty";
+    case "HYBRID":
+      return "Base + Study Fee";
+    default:
+      return type.replace(/_/g, " ");
+  }
+}
 
 const LEAVE_REASON_TEMPLATES = [
   {
@@ -220,6 +238,7 @@ export function HrPortalClient({
   // Submit Leave Request
   const handleSubmitLeave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLeaveError(null);
     setIsSubmittingLeave(true);
     try {
       const res = await requestLeave({
@@ -239,6 +258,7 @@ export function HrPortalClient({
         window.dispatchEvent(new CustomEvent("shift-status-updated"));
         await loadData();
       } else {
+        setLeaveError(res.error.message);
         setToast({
           variant: "danger",
           message: "Leave Submission Failed",
@@ -246,6 +266,7 @@ export function HrPortalClient({
         });
       }
     } catch {
+      setLeaveError("Failed to submit leave request.");
       setToast({
         variant: "danger",
         message: "Network Error",
@@ -1140,8 +1161,8 @@ export function HrPortalClient({
                     </Badge>
                   )}
                   {(activeDisplayPayslip?.compensationType || portalData.payslip.compensationType) && (
-                    <span className="text-xs font-mono text-white/50 bg-white/[0.04] px-2.5 py-1 rounded-[2px] border border-white/10">
-                      Rate: {(activeDisplayPayslip?.compensationType || portalData.payslip.compensationType || "").replace(/_/g, " ")}
+                    <span className="text-xs font-mono text-white/70 bg-white/[0.04] px-2.5 py-1 rounded-[2px] border border-white/10">
+                      Rate: {formatCompensationType(activeDisplayPayslip?.compensationType || portalData.payslip.compensationType)}
                     </span>
                   )}
                 </div>
@@ -1236,28 +1257,23 @@ export function HrPortalClient({
             </div>
 
             {/* Compensation Breakdown Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <KpiCard
                 label="Verified Hours Worked"
                 value={activeDisplayPayslip?.verifiedDutyHours ?? portalData.payslip.totalDutyHours}
                 unit="hrs"
-                icon={<IconClock size={16} stroke={1.5} />}
                 description={<>@ <Peso />{(activeDisplayPayslip?.hourlyRate ?? portalData.payslip.baseHourlyRate ?? 450).toFixed(2)} / hour</>}
               />
 
               <KpiCard
                 label="Hourly Duty Earnings"
                 value={<><Peso />{(activeDisplayPayslip?.hourlyDutyEarnings ?? portalData.payslip.dutyHourlyEarnings).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</>}
-                variant="emerald"
-                icon={<IconReceipt size={16} stroke={1.5} />}
                 description="From verified duty punches"
               />
 
               <KpiCard
                 label="Studies Completed Pay"
                 value={<><Peso />{(activeDisplayPayslip?.commissionEarnings ?? portalData.payslip.projectMilestoneEarnings).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</>}
-                variant="emerald"
-                icon={<IconBuildingBank size={16} stroke={1.5} />}
                 description={activeDisplayPayslip?.completedStudiesCount ? `From ${activeDisplayPayslip.completedStudiesCount} delivered studies` : "From delivered studies"}
               />
 
@@ -1268,125 +1284,93 @@ export function HrPortalClient({
                   (activeDisplayPayslip?.allowances ?? portalData.payslip.allowances) +
                   (activeDisplayPayslip?.overtimeEarnings ?? portalData.payslip.overtimeEarnings)
                 ).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</>}
-                variant="sky"
-                icon={<IconShieldCheck size={16} stroke={1.5} />}
                 description={activeDisplayPayslip?.baseSalary ? <><Peso />{activeDisplayPayslip.baseSalary.toLocaleString()} Base + Allowances</> : "Overtime + Tech stipend"}
               />
             </div>
 
-            {/* Total Net Take-Home */}
-            <div className="p-4 sm:p-6 bg-[#011B38] border border-[#10B981]/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
-                {/* Mobile Top Row: Icon + Disbursed Status Badge */}
-                <div className="flex items-center justify-between sm:justify-start gap-3">
-                  <div className="p-2.5 sm:p-3 bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 rounded-[2px] shrink-0">
-                    <IconBuildingBank size={22} stroke={1.5} />
-                  </div>
-
-                  <div className="sm:hidden">
+            {/* Take-Home Pay & Payout Summary Card */}
+            <div className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              {/* Left Column: Take-Home Pay */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[0.688rem] uppercase font-mono text-white/50 tracking-wider font-semibold">
+                      Take-Home Pay
+                    </span>
                     <Badge
                       variant={(activeDisplayPayslip?.status || portalData.payslip.status) === "DISBURSED" ? "emerald" : "sky"}
-                      className="font-mono text-[0.688rem] px-2.5 py-1"
+                      className="font-mono text-[0.625rem] px-2 py-0.5"
                     >
                       {(activeDisplayPayslip?.status || portalData.payslip.status) === "DISBURSED"
                         ? `Disbursed (${activeDisplayPayslip?.disbursementMethod || "Cleared"})`
-                        : (activeDisplayPayslip?.status || "Disbursement Ready")}
+                        : (activeDisplayPayslip?.status || "Draft")}
                     </Badge>
                   </div>
-                </div>
-
-                {/* Content: Labels & Big Currency Value */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[0.688rem] uppercase font-mono text-white/50 tracking-wider">
-                      Estimated Net Disbursement
-                    </span>
-                    <span className="text-xs text-white/60 font-sans truncate max-w-full">
-                      {activeDisplayPayslip?.payPeriodMonth || "This Pay Cycle"}
-                    </span>
-                  </div>
-
-                  <div className="flex items-baseline gap-1.5 mt-1.5 flex-wrap">
-                    <Peso className="text-xl sm:text-2xl text-white/80 font-normal" />
-                    <span className="text-2xl sm:text-3xl font-mono font-extrabold text-white tracking-tight">
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <Peso className="text-2xl sm:text-3xl text-white/70 font-normal" />
+                    <span className="text-3xl sm:text-4xl font-mono font-bold text-white tracking-tight">
                       {(activeDisplayPayslip?.netPay ?? portalData.payslip.netPay).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
+                  <span className="text-xs text-white/50 font-sans block mt-1">
+                    {activeDisplayPayslip?.payPeriodMonth || "Current Pay Cycle"}
+                  </span>
                 </div>
               </div>
 
-              {/* Desktop Disbursed Status Badge */}
-              <div className="hidden sm:flex items-center gap-2 shrink-0">
-                <Badge
-                  variant={(activeDisplayPayslip?.status || portalData.payslip.status) === "DISBURSED" ? "emerald" : "sky"}
-                  className="font-mono text-xs px-3 py-1"
-                >
-                  {(activeDisplayPayslip?.status || portalData.payslip.status) === "DISBURSED"
-                    ? `Disbursed (${activeDisplayPayslip?.disbursementMethod || "Cleared"})`
-                    : (activeDisplayPayslip?.status || "Disbursement Ready")}
-                </Badge>
-              </div>
-            </div>
-
-            {/* Registered Disbursement Destination Banner */}
-            <div className="p-3.5 sm:p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 bg-[#CC6600]/15 border border-[#CC6600]/30 text-[#FFA040] rounded-[2px] shrink-0">
-                  <IconBuildingBank size={18} stroke={1.5} />
-                </div>
+              {/* Right Column: Payout Destination */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:border-l lg:border-white/10 lg:pl-6 pt-4 lg:pt-0 border-t border-white/10 lg:border-t-0">
                 <div className="flex flex-col min-w-0">
-                  <span className="text-xs uppercase font-mono font-semibold text-white/50">
-                    Disbursement Payout Destination
+                  <span className="text-[0.688rem] uppercase font-mono text-white/50 tracking-wider font-semibold">
+                    Payout Destination
                   </span>
                   {payoutDetails ? (
-                    <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
                       <Badge variant="amber" className="text-[0.625rem] font-mono">
                         {payoutDetails.payoutChannel.replace(/_/g, " ")}
                       </Badge>
-                      <span className="font-mono text-xs font-bold text-white">
+                      <span className="font-mono text-xs font-semibold text-white">
                         {payoutDetails.accountNumber}
                       </span>
                       {payoutDetails.bankName && (
-                        <span className="text-xs text-sky-400 font-sans">
+                        <span className="text-xs text-white/60 font-sans">
                           ({payoutDetails.bankName})
                         </span>
                       )}
-                      <span className="text-xs text-white/60 font-sans truncate">
+                      <span className="text-xs text-white/50 font-sans truncate">
                         &bull; {payoutDetails.accountName}
                       </span>
                     </div>
                   ) : (
-                    <span className="text-xs text-amber-400 font-sans mt-0.5">
-                      No verified payout account registered yet.
+                    <span className="text-xs text-amber-400 font-sans mt-1">
+                      No payout account registered yet.
                     </span>
                   )}
                 </div>
-              </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveTab("PAYOUT")}
-                className="cursor-pointer text-xs flex items-center justify-center gap-1.5 rounded-[2px] w-full sm:w-auto shrink-0 py-1.5"
-              >
-                <IconEdit size={14} stroke={1.5} />
-                <span>{payoutDetails ? "Update Payout Details" : "Configure Settlement Account"}</span>
-              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveTab("PAYOUT")}
+                  className="cursor-pointer text-xs font-sans rounded-[2px] shrink-0 py-1.5 px-3 whitespace-nowrap self-start sm:self-auto"
+                >
+                  <IconEdit size={14} stroke={1.5} />
+                  <span>{payoutDetails ? "Update Account" : "Add Account"}</span>
+                </Button>
+              </div>
             </div>
 
-            {/* Historical Payslips Audit Ledger */}
-            <div className="mt-6 flex flex-col gap-3">
+            {/* Past Payslips */}
+            <div className="mt-2 flex flex-col gap-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 bg-[#CC6600]/20 border border-[#CC6600]/40 rounded-[2px] text-[#FFA040]">
-                    <IconHistory size={16} stroke={1.5} />
-                  </div>
+                  <ClockCounterClockwise size={18} weight="fill" className="text-[#CC6600]" />
                   <div>
                     <h3 className="text-sm font-bold text-white font-sans">
-                      Past Months &amp; Historical Payslips Ledger ({allMyPayslips.length})
+                      Past Payslips ({allMyPayslips.length})
                     </h3>
                     <span className="text-[0.688rem] text-white/50 font-sans">
-                      Official compensation statements and corporate settlement records across all cut-off cycles.
+                      View and download payslips from previous pay cycles.
                     </span>
                   </div>
                 </div>
@@ -1402,13 +1386,13 @@ export function HrPortalClient({
                     <table className="w-full text-left text-xs border-collapse font-sans">
                       <thead>
                         <tr className="bg-[#010D1F] border-b border-white/10 text-white/50 font-mono uppercase text-[0.688rem] tracking-wider">
-                          <th className="py-3.5 px-4 whitespace-nowrap min-w-[130px]">Statement Ref</th>
+                          <th className="py-3.5 px-4 whitespace-nowrap min-w-[130px]">Payslip No.</th>
                           <th className="py-3.5 px-4 whitespace-nowrap min-w-[160px]">Pay Period</th>
                           <th className="py-3.5 px-4 whitespace-nowrap min-w-[140px]">Pay Structure</th>
-                          <th className="py-3.5 px-4 whitespace-nowrap text-right min-w-[90px]">Duty Hours</th>
+                          <th className="py-3.5 px-4 whitespace-nowrap text-right min-w-[90px]">Hours Worked</th>
                           <th className="py-3.5 px-4 whitespace-nowrap text-right min-w-[110px]">Gross Pay</th>
-                          <th className="py-3.5 px-4 whitespace-nowrap text-right min-w-[130px] text-emerald-400/90">Net Take-Home</th>
-                          <th className="py-3.5 px-4 whitespace-nowrap text-center min-w-[140px]">Settlement Status</th>
+                          <th className="py-3.5 px-4 whitespace-nowrap text-right min-w-[130px]">Net Pay</th>
+                          <th className="py-3.5 px-4 whitespace-nowrap text-center min-w-[140px]">Status</th>
                           <th className="py-3.5 px-4 whitespace-nowrap text-right min-w-[160px]">Actions</th>
                         </tr>
                       </thead>
@@ -1458,7 +1442,7 @@ export function HrPortalClient({
                                 )}
                               </td>
                               <td className="py-3.5 px-4 text-white/70 font-mono text-[0.688rem] whitespace-nowrap">
-                                {ps.compensationType.replace(/_/g, " ")}
+                                {formatCompensationType(ps.compensationType)}
                               </td>
                               <td className="py-3.5 px-4 font-mono text-right text-white/90 whitespace-nowrap">
                                 {ps.verifiedDutyHours > 0 ? `${ps.verifiedDutyHours}h` : "—"}
@@ -1467,8 +1451,8 @@ export function HrPortalClient({
                                 <span className="inline-flex items-baseline"><Peso />{ps.grossEarnings.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</span>
                               </td>
                               <td className="py-3.5 px-4 font-mono text-right whitespace-nowrap">
-                                <span className="inline-flex items-baseline font-mono font-bold text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-[2px]">
-                                  <Peso className="text-emerald-400/80 text-xs" />{ps.netPay.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                                <span className="inline-flex items-baseline font-mono font-bold text-xs text-white">
+                                  <Peso className="text-white/70 text-xs" />{ps.netPay.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
                                 </span>
                               </td>
                               <td className="py-3.5 px-4 text-center whitespace-nowrap font-mono">
