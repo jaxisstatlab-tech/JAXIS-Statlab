@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Alert, Button, LoadingState, FormInput, EyeIcon, EyeOffIcon, DividerWithText } from "@repo/ui";
 import { IconChevronDown } from "@tabler/icons-react";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 const DEV_PRESETS = [
   { label: "Admin", email: "admin@jaxis.dev", pass: "JaxisAdmin2026!", role: "ADMIN" },
@@ -21,6 +22,12 @@ function LoginForm() {
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const isRegistered = searchParams.get("registered") === "true";
   const isResetSuccess = searchParams.get("reset") === "true";
+  const reason = searchParams.get("reason");
+  const authError = searchParams.get("error");
+  const isIdleTimeout = reason === "idle_timeout";
+  const isAccountSuspended = authError === "AccountSuspended";
+  const isAccountTerminated = authError === "AccountTerminated";
+  const isSessionRevoked = authError === "SessionRevoked";
 
   const [email, setEmail] = useState("admin@jaxis.dev");
   const [password, setPassword] = useState("JaxisAdmin2026!");
@@ -30,7 +37,28 @@ function LoginForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // Load remembered email on mount if user previously checked "Remember me"
+  React.useEffect(() => {
+    try {
+      const savedEmail = localStorage.getItem("jaxis_remember_email");
+      if (savedEmail) {
+        setEmail(savedEmail);
+        setRememberMe(true);
+        setActiveRole("");
+      }
+    } catch {
+      // ignore localStorage in restricted environments
+    }
+  }, []);
+
   const handleSelectPreset = (roleValue: string) => {
+    if (!roleValue) {
+      setActiveRole("");
+      setEmail("");
+      setPassword("");
+      setErrorMessage(null);
+      return;
+    }
     const preset = DEV_PRESETS.find((p) => p.role === roleValue);
     if (!preset) return;
     setEmail(preset.email);
@@ -48,11 +76,23 @@ function LoginForm() {
       return;
     }
 
+    // Persist or clear remembered email
+    try {
+      if (rememberMe && email) {
+        localStorage.setItem("jaxis_remember_email", email.trim());
+      } else {
+        localStorage.removeItem("jaxis_remember_email");
+      }
+    } catch {
+      // ignore
+    }
+
     startTransition(async () => {
       try {
         const res = await signIn("credentials", {
           email,
           password,
+          rememberMe: String(rememberMe),
           redirect: false,
           callbackUrl,
         });
@@ -108,6 +148,26 @@ function LoginForm() {
       </div>
 
       {/* Status Alerts */}
+      {isIdleTimeout && (
+        <Alert variant="warning" title="Session Timed Out">
+          You were signed out after 30 minutes of inactivity to protect client data.
+        </Alert>
+      )}
+      {isAccountSuspended && (
+        <Alert variant="danger" title="Account Suspended">
+          Your account has been suspended. Please contact JAXIS administration.
+        </Alert>
+      )}
+      {isAccountTerminated && (
+        <Alert variant="danger" title="Account Deactivated">
+          This account has been permanently deactivated.
+        </Alert>
+      )}
+      {isSessionRevoked && (
+        <Alert variant="warning" title="Session Expired">
+          Your password was recently changed. Please sign in with your new password.
+        </Alert>
+      )}
       {isRegistered && (
         <Alert variant="success" title="Account Created">
           Your account is ready. Sign in with your credentials.
@@ -139,6 +199,12 @@ function LoginForm() {
               boxShadow: "none",
             }}
           >
+            <option
+              value=""
+              className="bg-[#01142B] text-slate-300 py-2 font-sans"
+            >
+              None (Enter custom credentials)
+            </option>
             {DEV_PRESETS.map((preset) => (
               <option
                 key={preset.role}
@@ -154,6 +220,9 @@ function LoginForm() {
           </div>
         </div>
       </div>
+
+      {/* Google Single Sign-On */}
+      <GoogleSignInButton callbackUrl={callbackUrl} />
 
       {/* Clean Divider */}
       <DividerWithText className="-my-1">or authenticate via email</DividerWithText>
@@ -230,7 +299,7 @@ function LoginForm() {
               onChange={(e) => setRememberMe(e.target.checked)}
               className="h-4 w-4 rounded-[2px] bg-[#011227] border border-white/20 text-[#CC6600] focus:ring-0 focus:ring-offset-0 accent-[#CC6600] cursor-pointer"
             />
-            <span>Remember session</span>
+            <span>Remember me</span>
           </label>
           <Link
             href="/forgot-password"

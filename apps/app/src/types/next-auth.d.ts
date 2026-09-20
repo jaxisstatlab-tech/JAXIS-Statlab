@@ -8,6 +8,8 @@ declare module "next-auth" {
       role: RoleName;
       fullName: string;
       status: UserStatus;
+      pwdFp?: string;
+      rememberMe?: boolean;
     } & DefaultSession["user"];
   }
 
@@ -16,6 +18,8 @@ declare module "next-auth" {
     role: RoleName;
     fullName: string;
     status: UserStatus;
+    pwdFp?: string;
+    rememberMe?: boolean;
   }
 }
 
@@ -25,5 +29,7 @@ declare module "next-auth/jwt" {
     role?: RoleName;
     fullName?: string;
     status?: UserStatus;
+    pwdFp?: string;
+    rememberMe?: boolean;
   }
 }

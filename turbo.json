@@ -22,7 +22,9 @@
     "TRIGGER_API_URL",
     "AUTH_TRUST_HOST",
     "NEXT_PHASE",
-    "DISABLE_DEV_LOGINS"
+    "DISABLE_DEV_LOGINS",
+    "AUTH_GOOGLE_ID",
+    "AUTH_GOOGLE_SECRET"
   ],
   "tasks": {
     "build": {

@@ -4,6 +4,9 @@ import type { RoleName } from "@prisma/client";
 export const LoginSchema = z.object({
   email: z.string().email("Invalid email address format"),
   password: z.string().min(1, "Password is required"),
+  rememberMe: z
+    .union([z.boolean(), z.string().transform((val) => val === "true")])
+    .optional(),
 });
 
 export type LoginInput = z.infer<typeof LoginSchema>;

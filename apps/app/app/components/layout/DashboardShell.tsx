@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Topbar } from "./Topbar";
 import { Sidebar } from "./Sidebar";
+import { IdleSessionManager } from "./IdleSessionManager";
 import type { RoleName } from "@prisma/client";
 import type { ActiveShiftStatus } from "@/features/attendance/schemas";
 
@@ -158,6 +159,9 @@ export function DashboardShell({
           </div>
         </main>
       </div>
+
+      {/* Global Inactivity Idle Timeout Protection */}
+      <IdleSessionManager />
     </div>
   );
 }

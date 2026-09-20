@@ -25,6 +25,10 @@ const envSchema = z.object({
   // Trigger.dev (background jobs)
   TRIGGER_API_KEY: z.string().min(1, "TRIGGER_API_KEY is required"),
   TRIGGER_API_URL: z.string().url("TRIGGER_API_URL must be a valid URL").default("https://api.trigger.dev"),
+
+  // Google OAuth (optional)
+  AUTH_GOOGLE_ID: z.string().optional(),
+  AUTH_GOOGLE_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

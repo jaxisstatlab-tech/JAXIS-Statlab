@@ -3,7 +3,8 @@
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button, Alert, FormInput, EyeIcon, EyeOffIcon } from "@repo/ui";
+import { Button, Alert, FormInput, EyeIcon, EyeOffIcon, DividerWithText } from "@repo/ui";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { registerClient } from "@/features/auth/actions";
 
 export default function RegisterPage() {
@@ -71,6 +72,12 @@ export default function RegisterPage() {
           {errorMessage}
         </Alert>
       )}
+
+      {/* Google Single Sign-On Button */}
+      <GoogleSignInButton callbackUrl="/dashboard/client" isRegister />
+
+      {/* Clean Divider */}
+      <DividerWithText className="-my-1">or register with email</DividerWithText>
 
       {/* Registration Form with Reusable FormInput Components */}
       <form

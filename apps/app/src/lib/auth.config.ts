@@ -40,6 +40,13 @@ export const authConfig: NextAuthConfig = {
         token.role = user.role;
         token.fullName = user.fullName;
         token.status = user.status;
+        if (user.pwdFp) {
+          token.pwdFp = user.pwdFp;
+        }
+        if (user.rememberMe !== undefined) {
+          token.rememberMe = user.rememberMe;
+          token.exp = Math.floor(Date.now() / 1000) + (user.rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60);
+        }
       } else if (token.id && typeof token.id === "string" && LEGACY_DEV_ID_MAP[token.id]) {
         token.id = LEGACY_DEV_ID_MAP[token.id];
       }
@@ -55,6 +62,12 @@ export const authConfig: NextAuthConfig = {
         session.user.role = token.role as RoleName;
         session.user.fullName = token.fullName as string;
         session.user.status = token.status as UserStatus;
+        if (token.pwdFp) {
+          session.user.pwdFp = token.pwdFp as string;
+        }
+        if (token.rememberMe !== undefined) {
+          session.user.rememberMe = token.rememberMe as boolean;
+        }
       }
       return session;
     },
