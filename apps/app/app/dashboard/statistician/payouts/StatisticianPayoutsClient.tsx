@@ -17,7 +17,19 @@ import {
   Clock,
   Receipt,
   ShieldCheck,
+  ArrowsDownUp,
+  CaretUp,
+  CaretDown,
 } from "@phosphor-icons/react";
+
+export type StatisticianPayoutSortField =
+  | "newest"
+  | "oldest"
+  | "payout-desc"
+  | "payout-asc"
+  | "gross-desc"
+  | "id-asc"
+  | "status";
 
 export interface StatisticianPayoutsClientProps {
   initialData: {
@@ -34,6 +46,7 @@ export function StatisticianPayoutsClient({ initialData }: StatisticianPayoutsCl
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
+  const [sortBy, setSortBy] = useState<StatisticianPayoutSortField>("newest");
 
   const isMountedRef = useRef(true);
   const isInitialMount = useRef(true);
@@ -73,10 +86,39 @@ export function StatisticianPayoutsClient({ initialData }: StatisticianPayoutsCl
 
   const completedCount = payouts.filter((p) => p.payoutStatus === "DISBURSED").length;
 
+  const sortedPayouts = useMemo(() => {
+    return [...payouts].sort((a, b) => {
+      if (sortBy === "oldest") {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      }
+      if (sortBy === "payout-desc") {
+        return b.payoutAmount - a.payoutAmount;
+      }
+      if (sortBy === "payout-asc") {
+        return a.payoutAmount - b.payoutAmount;
+      }
+      if (sortBy === "gross-desc") {
+        return b.grossProjectAmount - a.grossProjectAmount;
+      }
+      if (sortBy === "id-asc") {
+        return a.projectIntakeId.localeCompare(b.projectIntakeId);
+      }
+      if (sortBy === "status") {
+        return a.payoutStatus.localeCompare(b.payoutStatus);
+      }
+      // Default: "newest"
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  }, [payouts, sortBy]);
+
   const paginatedPayouts = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    return payouts.slice(start, start + pageSize);
-  }, [payouts, currentPage, pageSize]);
+    return sortedPayouts.slice(start, start + pageSize);
+  }, [sortedPayouts, currentPage, pageSize]);
 
   if (isLoading && payouts.length === 0) {
     return (
@@ -124,9 +166,34 @@ export function StatisticianPayoutsClient({ initialData }: StatisticianPayoutsCl
 
       {/* Payout History Card */}
       <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[4px]">
-        <div className="border-b border-white/10 pb-4 flex items-center justify-between">
+        <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h2 className="text-base font-semibold text-white">Study Milestone History</h2>
-          <span className="text-xs text-white/50">{payouts.length} total assignments</span>
+          <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
+            <div className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-[2px] px-3 py-1.5 focus-within:border-white/20 transition-colors">
+              <ArrowsDownUp size={13} weight="bold" className="text-white/40 shrink-0" />
+              <label htmlFor="stat-payout-sort" className="text-[11px] font-mono text-white/50 uppercase tracking-wider select-none shrink-0">
+                Sort:
+              </label>
+              <select
+                id="stat-payout-sort"
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as StatisticianPayoutSortField);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs font-sans text-white/90 focus:outline-none cursor-pointer pr-1 border-0 ring-0 focus:ring-0 [&>option]:bg-[#01142B] [&>option]:text-white"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="payout-desc">Payout (Highest First)</option>
+                <option value="payout-asc">Payout (Lowest First)</option>
+                <option value="gross-desc">Study Value (Highest First)</option>
+                <option value="id-asc">Study ID (A &rarr; Z)</option>
+                <option value="status">Status</option>
+              </select>
+            </div>
+            <span className="text-xs text-white/50">{payouts.length} total assignments</span>
+          </div>
         </div>
 
         {isLoading ? (
@@ -142,13 +209,79 @@ export function StatisticianPayoutsClient({ initialData }: StatisticianPayoutsCl
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse font-sans text-xs">
               <thead>
-                <tr className="border-b border-white/10 bg-black/20 text-white/50 font-mono text-[0.688rem] uppercase tracking-wider">
-                  <th className="py-3 px-4">Study / Intake ID</th>
+                <tr className="border-b border-white/10 bg-black/20 text-white/50 font-mono text-[0.688rem] uppercase tracking-wider select-none">
+                  <th className="py-3 px-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortBy(sortBy === "id-asc" ? "newest" : "id-asc");
+                        setCurrentPage(1);
+                      }}
+                      className="flex items-center gap-1.5 text-[0.688rem] uppercase tracking-wider font-mono text-white/60 hover:text-white transition-colors cursor-pointer group"
+                    >
+                      <span>Study / Intake ID</span>
+                      {sortBy === "id-asc" ? (
+                        <CaretUp size={12} weight="fill" className="text-[#CC6600]" />
+                      ) : (
+                        <ArrowsDownUp size={11} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                      )}
+                    </button>
+                  </th>
                   <th className="py-3 px-4">Package</th>
-                  <th className="py-3 px-4 text-right">Study Value</th>
+                  <th className="py-3 px-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortBy(sortBy === "gross-desc" ? "newest" : "gross-desc");
+                        setCurrentPage(1);
+                      }}
+                      className="inline-flex items-center gap-1.5 text-[0.688rem] uppercase tracking-wider font-mono text-white/60 hover:text-white transition-colors cursor-pointer group ml-auto"
+                    >
+                      <span>Study Value</span>
+                      {sortBy === "gross-desc" ? (
+                        <CaretDown size={12} weight="fill" className="text-[#CC6600]" />
+                      ) : (
+                        <ArrowsDownUp size={11} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                      )}
+                    </button>
+                  </th>
                   <th className="py-3 px-4 text-center">Applied Split</th>
-                  <th className="py-3 px-4 text-right">Payout Sum</th>
-                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortBy(sortBy === "payout-desc" ? "payout-asc" : "payout-desc");
+                        setCurrentPage(1);
+                      }}
+                      className="inline-flex items-center gap-1.5 text-[0.688rem] uppercase tracking-wider font-mono text-white/60 hover:text-white transition-colors cursor-pointer group ml-auto"
+                    >
+                      <span>Payout Sum</span>
+                      {sortBy === "payout-desc" ? (
+                        <CaretDown size={12} weight="fill" className="text-[#CC6600]" />
+                      ) : sortBy === "payout-asc" ? (
+                        <CaretUp size={12} weight="fill" className="text-[#CC6600]" />
+                      ) : (
+                        <ArrowsDownUp size={11} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="py-3 px-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortBy(sortBy === "status" ? "newest" : "status");
+                        setCurrentPage(1);
+                      }}
+                      className="flex items-center gap-1.5 text-[0.688rem] uppercase tracking-wider font-mono text-white/60 hover:text-white transition-colors cursor-pointer group"
+                    >
+                      <span>Status</span>
+                      {sortBy === "status" ? (
+                        <CaretDown size={12} weight="fill" className="text-[#CC6600]" />
+                      ) : (
+                        <ArrowsDownUp size={11} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                      )}
+                    </button>
+                  </th>
                   <th className="py-3 px-4 text-right">Disbursement Particulars</th>
                 </tr>
               </thead>
