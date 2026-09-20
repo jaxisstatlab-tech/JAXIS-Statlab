@@ -573,22 +573,33 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
           </Card>
 
           <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-6">
-            <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
-                  <Receipt size={18} weight="fill" className="text-[#CC6600]" />
-                  <span>Pricing Breakdown &amp; Scope Options</span>
-                </h3>
-                <p className="text-xs text-white/60 font-sans mt-1">
-                  {quotation.status === "QUOTE_SENT" && !quotation.isExpired
-                    ? "Choose optional coaching or faster delivery turnaround for your study:"
-                    : "Itemized summary of research services and confirmed scope add-ons:"}
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-4 gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="h-10 w-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center shrink-0 text-[#FFA040]">
+                  <Receipt size={20} weight="fill" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-mono uppercase text-white/50 font-semibold tracking-wider block">
+                    Commercial Specification · {quotation.isUpfrontEnforced ? "100% Upfront" : "50% Milestone"}
+                  </span>
+                  <h2 className="text-lg sm:text-xl font-bold text-white font-sans tracking-tight mt-0.5">
+                    Pricing Breakdown &amp; Scope Options
+                  </h2>
+                </div>
               </div>
-              <span className="text-xs font-mono text-white/70 uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-white/[0.06] border border-white/10 flex-shrink-0 self-start sm:self-auto">
-                {quotation.isUpfrontEnforced ? "100% Upfront" : "50% Milestone"}
-              </span>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
+                <span className="text-[11px] font-mono font-semibold uppercase px-2.5 py-1 rounded-[2px] bg-white/[0.04] text-white/70 border border-white/10">
+                  {quotation.isUpfrontEnforced ? "100% UPFRONT" : "50% MILESTONE"}
+                </span>
+              </div>
             </div>
+
+            <p className="text-xs sm:text-sm text-white/80 font-sans leading-relaxed">
+              {quotation.status === "QUOTE_SENT" && !quotation.isExpired
+                ? "Choose optional coaching or faster delivery turnaround for your study:"
+                : "Itemized summary of research services and confirmed scope add-ons:"}
+            </p>
 
             <div className="space-y-4">
               {/* Base Service Package */}
