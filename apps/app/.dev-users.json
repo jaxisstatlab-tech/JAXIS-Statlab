@@ -69,5 +69,24 @@
     "role": "CLIENT",
     "password": "Codex100@",
     "status": "ACTIVE"
+  },
+  "stat@jaxis.dev": {
+    "id": "cmt5plu1k0003lrrkl1kribvh",
+    "email": "stat@jaxis.dev",
+    "fullName": "Dr. Juan Reyes",
+    "role": "STATISTICIAN",
+    "password": "JaxisStat2026!",
+    "status": "ACTIVE",
+    "staffProfile": {
+      "bio": "Senior PhD statistician specializing in multivariate quantitative models, structural equation modeling, and APA-compliant statistical reporting.",
+      "specializations": [
+        "Regression",
+        "ANOVA",
+        "SEM",
+        "Factor Analysis",
+        "Time Series"
+      ],
+      "updatedAt": "2026-09-20T15:02:37.530Z"
+    }
   }
 }
