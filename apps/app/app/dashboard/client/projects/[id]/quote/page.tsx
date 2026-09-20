@@ -501,44 +501,73 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
       </Card>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         <div className="lg:col-span-7 flex flex-col gap-6">
-          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-4 gap-3">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center shrink-0 text-[#FFA040]">
-                  <ClipboardText size={18} weight="fill" />
+          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-4 gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="h-10 w-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center shrink-0 text-[#FFA040]">
+                  <ClipboardText size={20} weight="fill" />
                 </div>
                 <div>
-                  <span className="text-xs font-sans uppercase text-[#FFA040] font-semibold tracking-wider block">
-                    Service Package Tier ({pkgDef?.id || quotation.packageName})
+                  <span className="text-[11px] font-mono uppercase text-white/50 font-semibold tracking-wider block">
+                    Service Scope Specification · {pkgDef?.id || quotation.packageName}
                   </span>
-                  <h2 className="text-lg sm:text-xl font-bold text-white font-sans mt-0.5">
+                  <h2 className="text-lg sm:text-xl font-bold text-white font-sans tracking-tight mt-0.5">
                     {pkgDef?.name || quotation.packageName}
                   </h2>
                 </div>
               </div>
 
-              <span className="text-xs font-sans text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-[2px] font-semibold uppercase self-start sm:self-auto">
-                {pkgDef?.badge || "Ready"}
-              </span>
+              <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
+                <span className="text-[11px] font-mono font-semibold uppercase px-2.5 py-1 rounded-[2px] bg-white/[0.04] text-white/70 border border-white/10">
+                  {pkgDef?.badge || "STANDARD RESEARCH"}
+                </span>
+              </div>
             </div>
 
-            <p className="text-xs sm:text-sm text-white/75 font-sans leading-relaxed">
-              {pkgDef?.tagline || "Comprehensive statistical modeling and hypothesis testing scope."}
-            </p>
+            <div className="space-y-3">
+              <p className="text-xs sm:text-sm text-white/80 font-sans leading-relaxed">
+                {pkgDef?.tagline || "Comprehensive statistical modeling and hypothesis testing scope."}
+              </p>
+
+              {pkgDef?.recommendedFor && (
+                <div className="flex items-center gap-2 flex-wrap text-xs font-sans text-white/60 pt-0.5">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 font-semibold">
+                    Recommended For:
+                  </span>
+                  <span className="text-white/80 font-medium bg-white/[0.03] border border-white/10 px-2.5 py-0.5 rounded-[2px]">
+                    {pkgDef.recommendedFor}
+                  </span>
+                </div>
+              )}
+            </div>
 
             {pkgDef?.deliverables && pkgDef.deliverables.length > 0 && (
-              <div className="p-5 sm:p-6 rounded-[2px] bg-[#010D1F] border border-white/10 space-y-3">
-                <div className="text-xs font-sans uppercase text-white/50 font-semibold tracking-wider">
-                  Guaranteed Deliverables Included in this Scope:
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between px-0.5">
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-white/50 font-semibold flex items-center gap-1.5">
+                    <ShieldCheck size={14} weight="fill" className="text-emerald-400" />
+                    <span>Guaranteed Deliverables Included in this Scope</span>
+                  </span>
+                  <span className="text-[10px] font-mono uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-[2px] font-semibold">
+                    All Included
+                  </span>
                 </div>
-                <ul className="space-y-2.5 pt-0.5">
+
+                <div className="space-y-2">
                   {pkgDef.deliverables.map((item, idx) => (
-                    <li key={idx} className="text-xs sm:text-sm text-white/85 font-sans flex items-start gap-2.5">
-                      <Check size={16} weight="fill" className="text-emerald-400 flex-shrink-0 mt-0.5" />
-                      <span className="leading-relaxed">{item}</span>
-                    </li>
+                    <div
+                      key={idx}
+                      className="p-3.5 sm:p-4 rounded-[2px] bg-[#010D1F] border border-white/10 flex items-start gap-3 transition-colors hover:border-white/20"
+                    >
+                      <div className="w-5 h-5 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 flex-shrink-0 mt-0.5">
+                        <Check size={12} weight="bold" />
+                      </div>
+                      <span className="text-xs sm:text-sm font-medium text-white/90 font-sans leading-relaxed">
+                        {item}
+                      </span>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             )}
           </Card>

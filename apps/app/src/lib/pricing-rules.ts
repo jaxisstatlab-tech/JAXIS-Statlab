@@ -85,7 +85,7 @@ export const PACKAGES_CATALOG: Record<PackageName, PackageDefinition> = {
     tagline: "Parametric & non-parametric hypothesis testing (t-Tests, ANOVA, Pearson r, Multiple Linear Regression).",
     deliverables: [
       "Complete Chapter 4 findings with APA 7th publication tables",
-      "Hypothesis testing decision matrices (p-values, effect sizes, Cohen's d)",
+      "Hypothesis testing decision tables (p-values, effect sizes, Cohen's d)",
       "Reproducible statistical script (.R / SPSS syntax)",
     ],
     recommendedFor: "Undergraduate Theses, Master's Theses, and Correlational/Comparative Research.",
@@ -101,7 +101,7 @@ export const PACKAGES_CATALOG: Record<PackageName, PackageDefinition> = {
     isUpfront: false,
     tagline: "Structural Equation Modeling (SEM/PLS), MANOVA, Factor Analysis (EFA/CFA), Machine Learning & Time Series.",
     deliverables: [
-      "Path model diagrams and structural validity matrices",
+      "Path model diagrams and structural validity models",
       "Comprehensive APA 7th Chapter 4 & Methodology defense deck",
       "Peer-reviewed grade statistical code and raw computational logs",
     ],
