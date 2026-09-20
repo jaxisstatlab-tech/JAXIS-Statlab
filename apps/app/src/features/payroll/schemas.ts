@@ -6,6 +6,7 @@ export const CompensationTypeEnum = z.enum([
   "PERCENTAGE_PER_STUDY",
   "HOURLY_DUTY",
   "HYBRID",
+  "TIER_DELIVERABLE",
 ]);
 
 export type CompensationType = z.infer<typeof CompensationTypeEnum>;
@@ -47,6 +48,7 @@ export const RoleCompensationConfigSchema = z.object({
   hourlyDutyRate: z.number().min(0, "Hourly duty rate must be non-negative."),
   fixedPerStudyBonus: z.number().min(0, "Fixed study bonus must be non-negative."),
   allowancesMonthly: z.number().min(0, "Allowances must be non-negative."),
+  tierRates: z.record(z.string(), z.number().min(0)).optional().default({}),
   isActive: z.boolean().default(true),
   notes: z.string().optional().default(""),
 });
@@ -67,6 +69,7 @@ export const StaffCompensationOverrideSchema = z.object({
   hourlyDutyRate: z.number().min(0),
   fixedPerStudyBonus: z.number().min(0),
   allowancesMonthly: z.number().min(0),
+  tierRates: z.record(z.string(), z.number().min(0)).optional().default({}),
   notes: z.string().optional().default(""),
 });
 
@@ -126,6 +129,7 @@ export interface StaffPayslipDTO {
   completedStudiesGrossValue: number;
   commissionPercentage: number;
   commissionEarnings: number;
+  tierRates?: Record<string, number>;
   itemizedStudies: PayslipItemizedStudy[];
   overtimeHours: number;
   overtimeEarnings: number;

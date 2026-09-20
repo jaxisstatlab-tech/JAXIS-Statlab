@@ -61,6 +61,13 @@ const DEFAULT_ROLE_CONFIGS: Record<string, RoleCompensationConfigDTO> = {
     hourlyDutyRate: 450.0,
     fixedPerStudyBonus: 1000.0,
     allowancesMonthly: 2500.0,
+    tierRates: {
+      JX_01_DATACHECK: 3000,
+      JX_02_START: 5000,
+      JX_03_CORE: 10000,
+      JX_04_ADVANCED: 18000,
+      DEFENSELAB: 8000,
+    },
     isActive: true,
     notes: "50% commission of total research study contract value + ₱450/hr compute duty + ₱1,000 completion bonus.",
     updatedAt: new Date().toISOString(),
@@ -74,6 +81,13 @@ const DEFAULT_ROLE_CONFIGS: Record<string, RoleCompensationConfigDTO> = {
     hourlyDutyRate: 450.0,
     fixedPerStudyBonus: 500.0,
     allowancesMonthly: 2500.0,
+    tierRates: {
+      JX_01_DATACHECK: 1000,
+      JX_02_START: 1500,
+      JX_03_CORE: 3000,
+      JX_04_ADVANCED: 5000,
+      DEFENSELAB: 2500,
+    },
     isActive: true,
     notes: "₱12,000 monthly retainer + 10% review commission per audited study + ₱450/hr attendance duty.",
     updatedAt: new Date().toISOString(),
@@ -87,6 +101,7 @@ const DEFAULT_ROLE_CONFIGS: Record<string, RoleCompensationConfigDTO> = {
     hourlyDutyRate: 0,
     fixedPerStudyBonus: 0,
     allowancesMonthly: 3000.0,
+    tierRates: {},
     isActive: true,
     notes: "Institutional monthly base salary with treasury compliance allowances.",
     updatedAt: new Date().toISOString(),
@@ -100,6 +115,7 @@ const DEFAULT_ROLE_CONFIGS: Record<string, RoleCompensationConfigDTO> = {
     hourlyDutyRate: 0,
     fixedPerStudyBonus: 0,
     allowancesMonthly: 3000.0,
+    tierRates: {},
     isActive: true,
     notes: "Operational administrative management fixed salary.",
     updatedAt: new Date().toISOString(),
@@ -650,9 +666,27 @@ export async function generateBatchPayslips(
       // Fallback if none specifically linked
       const studiesToCount = assigned.length > 0 ? assigned : assignments.slice(0, 2);
       for (const a of studiesToCount) {
-        const grossAmount = PACKAGE_ESTIMATED_VALUE[a.project.packageName || "JX_03_CORE"] || 28500.0;
-        const commPct = config.commissionPercentagePerStudy || 50.0;
-        const commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
+        const pkgName = a.project.packageName || "JX_03_CORE";
+        const grossAmount = PACKAGE_ESTIMATED_VALUE[pkgName] || 28500.0;
+        let commPct = 0;
+        let commEarned = 0;
+
+        if (config.compensationType === "TIER_DELIVERABLE") {
+          const tierRates = config.tierRates || {};
+          const defaultTierRates: Record<string, number> = {
+            JX_01_DATACHECK: 3000,
+            JX_02_START: 5000,
+            JX_03_CORE: 10000,
+            JX_04_ADVANCED: 18000,
+            DEFENSELAB: 8000,
+          };
+          commEarned = (tierRates[pkgName] ?? defaultTierRates[pkgName] ?? 10000) + (config.fixedPerStudyBonus || 0);
+          commPct = grossAmount > 0 ? Math.round((commEarned / grossAmount) * 1000) / 10 : 0;
+        } else {
+          commPct = config.commissionPercentagePerStudy || 50.0;
+          commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
+        }
+
         itemizedStudies.push({
           projectId: a.projectId,
           intakeId: a.project.intakeId,
@@ -667,9 +701,27 @@ export async function generateBatchPayslips(
       const assigned = assignments.filter((a) => a.qaLeadId === staff.id);
       const studiesToCount = assigned.length > 0 ? assigned : assignments.slice(0, 3);
       for (const a of studiesToCount) {
-        const grossAmount = PACKAGE_ESTIMATED_VALUE[a.project.packageName || "JX_03_CORE"] || 28500.0;
-        const commPct = config.commissionPercentagePerStudy || 10.0;
-        const commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
+        const pkgName = a.project.packageName || "JX_03_CORE";
+        const grossAmount = PACKAGE_ESTIMATED_VALUE[pkgName] || 28500.0;
+        let commPct = 0;
+        let commEarned = 0;
+
+        if (config.compensationType === "TIER_DELIVERABLE") {
+          const tierRates = config.tierRates || {};
+          const defaultQaTierRates: Record<string, number> = {
+            JX_01_DATACHECK: 1000,
+            JX_02_START: 1500,
+            JX_03_CORE: 3000,
+            JX_04_ADVANCED: 5000,
+            DEFENSELAB: 2500,
+          };
+          commEarned = (tierRates[pkgName] ?? defaultQaTierRates[pkgName] ?? 3000) + (config.fixedPerStudyBonus || 0);
+          commPct = grossAmount > 0 ? Math.round((commEarned / grossAmount) * 1000) / 10 : 0;
+        } else {
+          commPct = config.commissionPercentagePerStudy || 10.0;
+          commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
+        }
+
         itemizedStudies.push({
           projectId: a.projectId,
           intakeId: a.project.intakeId,
@@ -681,12 +733,27 @@ export async function generateBatchPayslips(
         });
       }
     } else if (staff.role === "ADMIN" || staff.role === "FINANCE_OFFICER") {
-      if (config.compensationType === "PERCENTAGE_PER_STUDY" || config.compensationType === "HYBRID") {
+      if (
+        config.compensationType === "PERCENTAGE_PER_STUDY" ||
+        config.compensationType === "HYBRID" ||
+        config.compensationType === "TIER_DELIVERABLE"
+      ) {
         const studiesToCount = assignments.slice(0, 3);
-        const commPct = config.commissionPercentagePerStudy || (staff.role === "ADMIN" ? 5.0 : 3.0);
         for (const a of studiesToCount) {
-          const grossAmount = PACKAGE_ESTIMATED_VALUE[a.project.packageName || "JX_03_CORE"] || 28500.0;
-          const commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
+          const pkgName = a.project.packageName || "JX_03_CORE";
+          const grossAmount = PACKAGE_ESTIMATED_VALUE[pkgName] || 28500.0;
+          let commPct = 0;
+          let commEarned = 0;
+
+          if (config.compensationType === "TIER_DELIVERABLE") {
+            const tierRates = config.tierRates || {};
+            commEarned = (tierRates[pkgName] ?? 1500) + (config.fixedPerStudyBonus || 0);
+            commPct = grossAmount > 0 ? Math.round((commEarned / grossAmount) * 1000) / 10 : 0;
+          } else {
+            commPct = config.commissionPercentagePerStudy || (staff.role === "ADMIN" ? 5.0 : 3.0);
+            commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
+          }
+
           itemizedStudies.push({
             projectId: a.projectId,
             intakeId: a.project.intakeId,
@@ -745,6 +812,7 @@ export async function generateBatchPayslips(
       completedStudiesGrossValue,
       commissionPercentage: config.commissionPercentagePerStudy || 0,
       commissionEarnings,
+      tierRates: config.tierRates || {},
       itemizedStudies,
       overtimeHours,
       overtimeEarnings,

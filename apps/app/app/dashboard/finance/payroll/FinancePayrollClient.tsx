@@ -339,6 +339,8 @@ export function FinancePayrollClient({
                     <Peso className="text-[0.625rem] mr-0.5" />
                     {rc.baseSalaryMonthly.toLocaleString()} + {rc.commissionPercentagePerStudy}%
                   </>
+                ) : rc.compensationType === "TIER_DELIVERABLE" ? (
+                  `Tier Rates (Core: ₱${(rc.tierRates?.JX_03_CORE ?? 10000).toLocaleString()})`
                 ) : (
                   <>
                     <Peso className="text-[0.625rem] mr-0.5" />

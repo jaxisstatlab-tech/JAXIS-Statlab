@@ -11,6 +11,7 @@ export type ActionResponse<T = undefined> =
   | { success: false; error: { message: string; fieldErrors?: Record<string, string[]> } };
 
 import { cookies } from "next/headers";
+import { resolveOrProvisionUser } from "@/lib/user-healing";
 
 /**
  * Upsert the client profile for the authenticated user.
@@ -24,28 +25,7 @@ export async function upsertClientProfile(
       return { success: false, error: { message: "Unauthorized. Please log in." } };
     }
 
-    let resolvedUserId = session.user.id;
-    try {
-      const userInDb = await withDbTimeout(
-        db.user.findUnique({
-          where: { id: session.user.id },
-          select: { id: true },
-        })
-      );
-      if (!userInDb && session.user.email) {
-        const userByEmail = await withDbTimeout(
-          db.user.findUnique({
-            where: { email: session.user.email.toLowerCase().trim() },
-            select: { id: true },
-          })
-        );
-        if (userByEmail) {
-          resolvedUserId = userByEmail.id;
-        }
-      }
-    } catch (userResolveErr) {
-      console.warn("[upsertClientProfile] User ID resolution warning:", userResolveErr);
-    }
+    const resolvedUserId = await resolveOrProvisionUser(session.user, "CLIENT");
 
     // Validate input
     const parsed = ClientProfileSchema.safeParse(data);
@@ -87,20 +67,26 @@ export async function upsertClientProfile(
     // Always mirror to cookie for resilient offline testing
     try {
       const cookieStore = await cookies();
-      cookieStore.set(
-        `jaxis_profile_${resolvedUserId}`,
-        JSON.stringify({
-          id: `profile_${resolvedUserId}`,
-          userId: resolvedUserId,
-          institutionSchool,
-          academicProgram,
-          contactNumber,
-          region,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }),
-        { path: "/", maxAge: 60 * 60 * 24 * 7 }
-      );
+      const profileJson = JSON.stringify({
+        id: `profile_${resolvedUserId}`,
+        userId: resolvedUserId,
+        institutionSchool,
+        academicProgram,
+        contactNumber,
+        region,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      cookieStore.set(`jaxis_profile_${resolvedUserId}`, profileJson, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+      if (session.user.id !== resolvedUserId) {
+        cookieStore.set(`jaxis_profile_${session.user.id}`, profileJson, {
+          path: "/",
+          maxAge: 60 * 60 * 24 * 7,
+        });
+      }
     } catch (cookieErr) {
       console.warn("[upsertClientProfile] Cookie mirror error", cookieErr);
     }
@@ -123,28 +109,7 @@ export async function getClientProfile() {
   const session = await auth();
   if (!session?.user?.id) return null;
 
-  let resolvedUserId = session.user.id;
-  try {
-    const userInDb = await withDbTimeout(
-      db.user.findUnique({
-        where: { id: session.user.id },
-        select: { id: true },
-      })
-    );
-    if (!userInDb && session.user.email) {
-      const userByEmail = await withDbTimeout(
-        db.user.findUnique({
-          where: { email: session.user.email.toLowerCase().trim() },
-          select: { id: true },
-        })
-      );
-      if (userByEmail) {
-        resolvedUserId = userByEmail.id;
-      }
-    }
-  } catch (userResolveErr) {
-    console.warn("[getClientProfile] User ID resolution warning:", userResolveErr);
-  }
+  const resolvedUserId = await resolveOrProvisionUser(session.user, "CLIENT");
 
   try {
     const profile = await withDbTimeout(

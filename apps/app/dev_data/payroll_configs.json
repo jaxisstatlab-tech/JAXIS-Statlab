@@ -2,28 +2,35 @@
   "roleConfigs": {
     "STATISTICIAN": {
       "roleName": "STATISTICIAN",
-      "compensationType": "FIXED_SALARY",
-      "baseSalaryMonthly": 35000,
+      "compensationType": "TIER_DELIVERABLE",
+      "baseSalaryMonthly": 0,
       "commissionPercentagePerStudy": 0,
       "hourlyDutyRate": 0,
-      "fixedPerStudyBonus": 0,
+      "fixedPerStudyBonus": 1500,
       "allowancesMonthly": 2500,
+      "tierRates": {
+        "JX_01_DATACHECK": 3000,
+        "JX_02_START": 5000,
+        "JX_03_CORE": 12500,
+        "JX_04_ADVANCED": 18000,
+        "DEFENSELAB": 8000
+      },
       "isActive": true,
-      "notes": "Fixed base salary of ₱35,000/month (₱17,500 per 15-day cut-off) + ₱2,500 monthly allowance.",
-      "updatedAt": "2026-08-28T20:38:12.319Z",
+      "notes": "Fixed rate per package tier (Core: ₱12,500, Adv: ₱18,000) + ₱1,500 deliverable bonus + ₱2,500 monthly allowance.",
+      "updatedAt": "2026-09-20T03:25:07.053Z",
       "updatedBy": "CEO Owner"
     },
     "SENIOR_QA_LEAD": {
       "roleName": "SENIOR_QA_LEAD",
-      "compensationType": "HYBRID",
-      "baseSalaryMonthly": 12000,
+      "compensationType": "PERCENTAGE_PER_STUDY",
+      "baseSalaryMonthly": 0,
       "commissionPercentagePerStudy": 10,
-      "hourlyDutyRate": 450,
+      "hourlyDutyRate": 0,
       "fixedPerStudyBonus": 500,
       "allowancesMonthly": 2500,
       "isActive": true,
-      "notes": "₱12,000 monthly retainer + 10% review commission per audited study + ₱450/hr attendance duty.",
-      "updatedAt": "2026-08-28T20:03:29.191Z",
+      "notes": "10% commission per completed research study + ₱500 deliverable bonus + ₱2,500 monthly allowance.",
+      "updatedAt": "2026-09-20T02:42:47.238Z",
       "updatedBy": "CEO Owner"
     },
     "FINANCE_OFFICER": {

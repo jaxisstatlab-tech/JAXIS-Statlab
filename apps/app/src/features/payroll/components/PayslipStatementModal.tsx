@@ -339,7 +339,7 @@ export function PayslipStatementModal({
                     </span>
                   </div>
                   <span className="text-xs font-mono text-white/50">
-                    Baseline: {payslip.commissionPercentage}%
+                    Baseline: {payslip.compensationType === "TIER_DELIVERABLE" ? "Tier Deliverable Rates" : `${payslip.commissionPercentage}%`}
                   </span>
                 </div>
 
