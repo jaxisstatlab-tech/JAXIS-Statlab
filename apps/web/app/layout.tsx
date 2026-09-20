@@ -66,12 +66,52 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://jaxis-statlab.com/#organization",
+        name: "JAXIS StatLab",
+        alternateName: ["JAXIS", "jaxisstatlab", "JAXIS StatLab Maramag"],
+        url: "https://jaxis-statlab.com",
+        logo: {
+          "@type": "ImageObject",
+          url: "https://jaxis-statlab.com/jaxislogo.png",
+        },
+        description:
+          "Student-focused statistical consulting firm based in Maramag, Bukidnon, Philippines offering expert support in data analysis, thesis assistance, SPSS, RStudio, and academic research.",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: "Maramag",
+          addressRegion: "Bukidnon",
+          addressCountry: "PH",
+        },
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://jaxis-statlab.com/#website",
+        url: "https://jaxis-statlab.com",
+        name: "JAXIS StatLab",
+        publisher: {
+          "@id": "https://jaxis-statlab.com/#organization",
+        },
+      },
+    ],
+  };
+
   return (
     <html
       lang="en"
       className={`${disketMono.variable} ${inter.variable}`}
       style={{ backgroundColor: "#010114" }}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="font-sans antialiased" style={{ backgroundColor: "#010114" }}>
         <SmoothScroll>{children}</SmoothScroll>
       </body>
