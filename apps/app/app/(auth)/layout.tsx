@@ -2,7 +2,8 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { AuthGlobeClient } from "@/components/ui/AuthGlobeClient";
-
+import { Button } from "@repo/ui";
+import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 
 export default function AuthLayout({
   children,
@@ -19,7 +20,7 @@ export default function AuthLayout({
           boxSizing: "border-box",
         }}
       >
-        {/* Top Header: Brand Logo */}
+        {/* Top Header: Brand Logo & Back to Website */}
         <header className="flex items-center justify-between w-full flex-shrink-0 mb-6 lg:mb-0">
           <Link
             href="/login"
@@ -45,6 +46,20 @@ export default function AuthLayout({
               </span>
             </div>
           </Link>
+
+          <a
+            href={process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}
+            className="no-underline"
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              className="font-sans text-xs font-semibold rounded-[2px] gap-1.5 border-white/15 hover:bg-white/[0.06] text-white/80 hover:text-white"
+            >
+              <ArrowLeft size={14} weight="bold" />
+              <span>Back to Website</span>
+            </Button>
+          </a>
         </header>
 
         {/* Dynamic Form Content: Centered with comfortable breathing room */}

@@ -61,7 +61,7 @@ export default function RegisterPage() {
           Create Account
         </h1>
         <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
-          Register as an institutional researcher or university client for statistical services.
+          Register as a researcher or university client for statistical services.
         </p>
       </div>
 
@@ -112,7 +112,7 @@ export default function RegisterPage() {
         </div>
 
         <FormInput
-          label="Institutional Email"
+          label="University or Work Email"
           name="email"
           type="email"
           required
@@ -193,11 +193,11 @@ export default function RegisterPage() {
             type="submit"
             variant="primary"
             size="lg"
-            className="w-full py-3.5 font-bold tracking-[0.10em]"
+            className="w-full py-3.5 font-bold tracking-wide rounded-[2px]"
             loading={isPending}
             disabled={isPending}
           >
-            {isPending ? "REGISTERING ACCOUNT..." : "CREATE RESEARCHER ACCOUNT →"}
+            {isPending ? "Creating Account..." : "Create Researcher Account →"}
           </Button>
         </div>
       </form>

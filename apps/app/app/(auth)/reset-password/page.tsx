@@ -128,7 +128,7 @@ function ResetPasswordForm() {
 
         <div className="flex flex-col gap-3 pt-2">
           <Link href="/forgot-password" className="w-full">
-            <Button variant="primary" size="lg" className="w-full py-3.5 font-bold tracking-wide">
+            <Button variant="primary" size="lg" className="w-full py-3.5 font-bold tracking-wide rounded-[2px]">
               Request New Link →
             </Button>
           </Link>
@@ -144,12 +144,15 @@ function ResetPasswordForm() {
     <div className="w-full flex flex-col gap-6 animate-content-fade">
       {/* Top Breadcrumb */}
       <div>
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-1.5 text-xs font-sans text-slate-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft weight="bold" size={14} />
-          <span>Back to Sign In</span>
+        <Link href="/login" className="inline-block">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2.5 -ml-2.5 text-xs font-sans text-slate-400 hover:text-white rounded-[2px] gap-1.5 font-semibold"
+          >
+            <ArrowLeft weight="bold" size={14} />
+            <span>Back to Sign In</span>
+          </Button>
         </Link>
       </div>
 
@@ -251,7 +254,7 @@ function ResetPasswordForm() {
           type="submit"
           variant="primary"
           size="lg"
-          className="w-full py-3.5 font-bold tracking-wide mt-2"
+          className="w-full py-3.5 font-bold tracking-wide mt-2 rounded-[2px]"
           loading={isPending}
           disabled={isPending || !isValid}
         >

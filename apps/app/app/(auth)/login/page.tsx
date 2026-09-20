@@ -245,7 +245,7 @@ function LoginForm() {
             type="submit"
             variant="primary"
             size="lg"
-            className="w-full py-3.5 font-bold tracking-wide"
+            className="w-full py-3.5 font-bold tracking-wide rounded-[2px]"
             loading={isPending}
             disabled={isPending}
           >
@@ -273,7 +273,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="w-full min-h-[300px] flex items-center justify-center">
-          <LoadingState variant="card" label="INITIALIZING AUTHENTICATION..." />
+          <LoadingState variant="card" label="Loading Sign In..." />
         </div>
       }
     >

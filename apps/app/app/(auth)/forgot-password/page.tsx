@@ -48,14 +48,17 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="w-full flex flex-col gap-6 animate-content-fade">
-      {/* Back to Sign In Link */}
+      {/* Back to Sign In Button */}
       <div>
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-1.5 text-xs font-sans text-slate-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft weight="bold" size={14} />
-          <span>Back to Sign In</span>
+        <Link href="/login" className="inline-block">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2.5 -ml-2.5 text-xs font-sans text-slate-400 hover:text-white rounded-[2px] gap-1.5 font-semibold"
+          >
+            <ArrowLeft weight="bold" size={14} />
+            <span>Back to Sign In</span>
+          </Button>
         </Link>
       </div>
 
@@ -110,7 +113,7 @@ export default function ForgotPasswordPage() {
 
           <div className="flex flex-col gap-3 pt-2">
             <Link href="/login" className="w-full">
-              <Button variant="primary" size="lg" className="w-full py-3.5 font-bold tracking-wide">
+              <Button variant="primary" size="lg" className="w-full py-3.5 font-bold tracking-wide rounded-[2px]">
                 Return to Sign In →
               </Button>
             </Link>
@@ -163,7 +166,7 @@ export default function ForgotPasswordPage() {
               type="submit"
               variant="primary"
               size="lg"
-              className="w-full py-3.5 font-bold tracking-wide mt-1"
+              className="w-full py-3.5 font-bold tracking-wide mt-1 rounded-[2px]"
               loading={isPending}
               disabled={isPending}
             >
