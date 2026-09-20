@@ -227,5 +227,30 @@ All AI coding assistants and developers MUST strictly follow the design system, 
      - *What happens if an older stored JSON record lacks a newly introduced property?*
      - Mandate: Never assume nested values exist (use `??` fallbacks); add `.optional().default(...)` to Zod schemas when adding new properties to avoid white-screen crashes.
 
+---
 
-
+## 21. Canonical Section Card Header Anatomy (Dashdark X Standard) (CRITICAL)
+- **Mandatory Policy**:
+  1. Every section content card across all role dashboards (e.g. *Service Scope Specification*, *Pricing Breakdown*, *Payment Milestones*, *Document Inspection*, *Assigned Specialists*, *Workload Details*) **MUST** strictly adhere to the unified minimalist card header:
+     ```tsx
+     <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+       <div>
+         <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
+           <Icon size={18} weight="fill" className="text-[#CC6600]" />
+           <span>{Card Title}</span>
+         </h3>
+         <p className="text-xs text-white/60 font-sans mt-1">
+           {Card Subtitle or plain-English description}
+         </p>
+       </div>
+       {optionalBadge && (
+         <span className="text-xs font-mono text-white/70 uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-white/[0.06] border border-white/10 flex-shrink-0 self-start sm:self-auto">
+           {optionalBadge}
+         </span>
+       )}
+     </div>
+     ```
+  2. **Inline Phosphor Fill Icon**: `size={18}` (or `size={20}` for primary hero desks), `weight="fill"`, Enterprise Orange accent `className="text-[#CC6600]"` directly inline with title text inside `flex items-center gap-2.5`.
+  3. **Anti-Boxed-Tile Ban**: Never render bulky boxed icon tiles (`h-10 w-10 bg-[#CC6600]/15 border border-[#CC6600]/30`) on standard cards. Reserve standalone hero tiles strictly for empty-state watermarks or primary workspace desk hero cards.
+  4. **Anti-Eyebrow Ban**: Never render shouting uppercase eyebrow tags (`text-[10px] font-mono text-[#CC6600] tracking-wider uppercase`).
+  5. **Dividing Line & Spacing**: Always place a hairline `border-b border-white/10 pb-4` beneath the header, followed by content arranged in `flex flex-col gap-6` inside card container `p-6 sm:p-8`.

@@ -249,6 +249,29 @@ Elevate all customer and administrative portals using these canonical, high-effi
    - Body & Descriptions: `text-sm font-sans text-white/60 leading-relaxed`
    - Micro Badges & Meta: `text-xs font-mono font-medium tracking-wide`
    - Numerical Telemetry: `text-2xl sm:text-3xl font-mono font-bold text-white`
+4. **Canonical Section Card Header Anatomy & Anti-Boxed-Tile Mandate**:
+   Every content card (e.g. *Service Scope Specification*, *Pricing Breakdown*, *Payment Milestones*, *Document Details*, *Assigned Specialists*) must strictly use the unified minimalist card header:
+   ```tsx
+   <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+     <div>
+       <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
+         <Icon size={18} weight="fill" className="text-[#CC6600]" />
+         <span>{Card Title}</span>
+       </h3>
+       <p className="text-xs text-white/60 font-sans mt-1">
+         {Card Subtitle or plain-English description}
+       </p>
+     </div>
+     {optionalBadge && (
+       <span className="text-xs font-mono text-white/70 uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-white/[0.06] border border-white/10 flex-shrink-0 self-start sm:self-auto">
+         {optionalBadge}
+       </span>
+     )}
+   </div>
+   ```
+   - **Inline Phosphor Fill Icon**: `size={18}` (or `size={20}` for hero cards), `weight="fill" text-[#CC6600]` inline with title.
+   - **Banned**: Bulky boxed icon tiles (`h-10 w-10 bg-[#CC6600]/15 border border-[#CC6600]/30`) on standard cards.
+   - **Banned**: Shouting uppercase eyebrow tags (`text-[10px] font-mono text-[#CC6600] uppercase`).
 
 ### 4.5. Plain-English Coworker Copywriting (`writing-guidelines`)
 Write all labels, descriptions, empty states, and toast notifications as if explaining clearly to a colleague:

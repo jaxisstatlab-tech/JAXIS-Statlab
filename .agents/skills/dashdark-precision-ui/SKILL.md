@@ -191,6 +191,34 @@ To match the authoritative aesthetic of the Dashdark X reference photos:
 - Modal header icons: `size={22}`
 - Empty state focal icons: `size={28}` or `size={32}`
 
+### 4.1. Canonical Section Card Header Anatomy (Minimalist Dashdark X Standard)
+Every section content card across all role dashboards (e.g. *Service Scope Specification*, *Pricing Breakdown*, *Payment Milestones*, *Document Inspection*, *Assigned Specialists*, *Workload Details*) **MUST** strictly adhere to the unified minimalist card header:
+
+```tsx
+<div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+  <div>
+    <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
+      <Icon size={18} weight="fill" className="text-[#CC6600]" />
+      <span>{Card Title}</span>
+    </h3>
+    <p className="text-xs text-white/60 font-sans mt-1">
+      {Card Subtitle or plain-English description}
+    </p>
+  </div>
+  {optionalBadge && (
+    <span className="text-xs font-mono text-white/70 uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-white/[0.06] border border-white/10 flex-shrink-0 self-start sm:self-auto">
+      {optionalBadge}
+    </span>
+  )}
+</div>
+```
+
+#### Explicit Rules & Anti-Pattern Bans:
+1. **Inline Phosphor Fill Icon**: `size={18}` (or `size={20}` for primary hero desks), `weight="fill"`, Enterprise Orange accent `className="text-[#CC6600]"` directly inline with title text.
+2. **Anti-Boxed-Tile Ban**: Never render bulky boxed icon tiles (`h-10 w-10 bg-[#CC6600]/15 border border-[#CC6600]/30`) on standard cards. Reserve standalone hero tiles strictly for empty-state watermarks or primary workspace desk hero cards.
+3. **Anti-Eyebrow Ban**: Never render shouting uppercase eyebrow tags (`text-[10px] font-mono text-[#CC6600] tracking-wider uppercase`).
+4. **Dividing Line**: Always place a hairline `border-b border-white/10 pb-4` beneath the header, followed by content arranged in `flex flex-col gap-6`.
+
 ---
 
 ## 5. The 2:1 Asymmetric Bento Architecture (Dashdark X Standard)

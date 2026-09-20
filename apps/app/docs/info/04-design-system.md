@@ -350,7 +350,47 @@ import { ChartLineUp } from "@phosphor-icons/react";
 
 ---
 
-### 4.5. Form Fields & Validation Controls
+### 4.5. Canonical Section Card Header Anatomy
+Every section content card across all role dashboards (e.g. *Service Scope Specification*, *Pricing Breakdown*, *Payment Milestones*, *Assigned Specialists*, *Project Files*, *Document Inspection*, *Workload Details*) **MUST** strictly adhere to the unified, minimalist card header architecture:
+
+```tsx
+<div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+  <div>
+    <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
+      <Icon size={18} weight="fill" className="text-[#CC6600]" />
+      <span>{Card Title}</span>
+    </h3>
+    <p className="text-xs text-white/60 font-sans mt-1">
+      {Card Subtitle or plain-English description}
+    </p>
+  </div>
+  {optionalBadge && (
+    <span className="text-xs font-mono text-white/70 uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-white/[0.06] border border-white/10 flex-shrink-0 self-start sm:self-auto">
+      {optionalBadge}
+    </span>
+  )}
+</div>
+```
+
+#### Canonical Directives & Anti-Pattern Bans:
+1. **Inline Phosphor Fill Icon**:
+   - Always `size={18}` (or `size={20}` for primary hero desks), `weight="fill"`, with Enterprise Orange accent `className="text-[#CC6600]"`.
+   - Placed directly inline beside the card title inside `flex items-center gap-2.5`.
+   - **Banned**: Bulky boxed icon tiles (`h-10 w-10 bg-[#CC6600]/15 border border-[#CC6600]/30`) on standard cards. Reserve standalone hero tiles strictly for empty-state watermarks or primary workspace desk hero cards.
+2. **Typography**:
+   - Card Title: `text-base font-bold text-white font-sans` (Clean Title Case, never shouting all-caps).
+   - Subtitle: `text-xs text-white/60 font-sans mt-1` (Clean plain-English summary).
+   - **Banned**: Shouting uppercase eyebrow tags (e.g. `text-[10px] font-mono text-[#CC6600] tracking-wider uppercase`).
+3. **Right-Aligned Status / Meta Badge**:
+   - Placed in the flex header with `flex-shrink-0 self-start sm:self-auto`.
+   - Typography: `text-xs font-mono text-white/70 uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-white/[0.06] border border-white/10`.
+4. **Dividing Line**:
+   - Clean hairline rule: `border-b border-white/10 pb-4`.
+   - Content underneath follows with generous vertical rhythm (`flex flex-col gap-6` within card container `p-6 sm:p-8`).
+
+---
+
+### 4.6. Form Fields & Validation Controls
 All inputs (`FormInput`, `FormSelect`, `FormTextarea`) strictly enforce:
 
 1. **Labels**: Uppercase mono typography (`font-mono text-xs text-slate-200 uppercase tracking-wider`).
