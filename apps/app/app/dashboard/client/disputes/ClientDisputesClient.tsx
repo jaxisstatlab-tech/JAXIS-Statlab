@@ -271,7 +271,8 @@ export function ClientDisputesClient({
         actions={
           <Button
             variant="primary"
-            className="text-xs flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
+            size="sm"
+            className="text-xs font-semibold flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
             onClick={() => handleOpenFilingModal()}
             disabled={openEligibleProjects.length === 0}
           >

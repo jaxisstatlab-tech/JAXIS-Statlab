@@ -570,10 +570,11 @@ export default function CeoStorageRetentionPage() {
         title="Data Retention & Storage Management"
         description="Configure automated file retention periods, protect sensitive research files, and selectively purge data domains."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="secondary"
-              className="text-xs h-8 px-3 flex items-center gap-1.5 hover:bg-white/10 rounded-[2px]"
+              size="sm"
+              className="gap-1.5 rounded-[2px] font-sans text-xs font-semibold"
               onClick={() => loadData(true)}
               disabled={isRefreshing}
             >
@@ -586,7 +587,8 @@ export default function CeoStorageRetentionPage() {
             </Button>
             <Button
               variant="secondary"
-              className="text-xs h-8 px-3 flex items-center gap-1.5 text-amber-400 hover:text-amber-300 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 rounded-[2px]"
+              size="sm"
+              className="gap-1.5 text-amber-400 hover:text-amber-300 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 rounded-[2px] font-sans text-xs font-semibold"
               onClick={() => setIsConfirmPurgeOpen(true)}
               disabled={isPurging || purgeStage === "staged"}
             >
@@ -595,7 +597,8 @@ export default function CeoStorageRetentionPage() {
             </Button>
             <Button
               variant="primary"
-              className="text-xs h-8 px-3.5 flex items-center gap-1.5 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px]"
+              size="sm"
+              className="gap-1.5 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] font-sans text-xs font-semibold"
               onClick={handleSavePolicy}
               disabled={isSaving}
             >

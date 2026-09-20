@@ -31,8 +31,6 @@ import {
   IconUsers,
   IconTrendingUp,
   IconSettings,
-  IconShieldCheck,
-  IconCheck,
   IconX,
   IconDeviceFloppy,
   IconDatabase,
@@ -208,18 +206,20 @@ export default function CeoReportsPage() {
         title="Executive Intelligence & Reporting"
         description="Comprehensive business analytics, platform margins, team productivity benchmarks, and financial ledgers."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="secondary"
-              className="text-xs h-8 px-3 flex items-center gap-1.5 text-amber-400 hover:text-amber-300"
+              size="sm"
+              className="gap-1.5 text-amber-400 hover:text-amber-300 rounded-[2px] font-sans text-xs font-semibold"
               onClick={() => setRetentionModalOpen(true)}
             >
               <IconSettings size={15} />
-              <span>Storage & Purge Policy</span>
+              <span>Storage &amp; Purge Policy</span>
             </Button>
             <Button
               variant="secondary"
-              className="text-xs h-8 px-3 flex items-center gap-1.5"
+              size="sm"
+              className="gap-1.5 rounded-[2px] font-sans text-xs font-semibold"
               onClick={() => window.print()}
             >
               <IconPrinter size={15} />
@@ -227,7 +227,8 @@ export default function CeoReportsPage() {
             </Button>
             <Button
               variant="primary"
-              className="text-xs h-8 px-3 flex items-center gap-1.5 bg-[#CC6600]"
+              size="sm"
+              className="gap-1.5 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] font-sans text-xs font-semibold"
               onClick={handleExportCSV}
               disabled={!reportData || !reportData.records || reportData.records.length === 0}
             >

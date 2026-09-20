@@ -20,7 +20,6 @@ import {
   IconDownload,
   IconFileSpreadsheet,
   IconFileText,
-  IconFilter,
   IconGavel,
   IconPrinter,
   IconRefresh,
@@ -129,10 +128,11 @@ export default function AdminReportsPage() {
         title="Operational & Financial Reports"
         description="Select from 8 standardized analytical reports, configure date intervals, and export audited summaries."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="secondary"
-              className="text-xs h-8 px-3 flex items-center gap-1.5"
+              size="sm"
+              className="gap-1.5 rounded-[2px] font-sans text-xs font-semibold"
               onClick={handlePrint}
             >
               <IconPrinter size={15} />
@@ -140,7 +140,8 @@ export default function AdminReportsPage() {
             </Button>
             <Button
               variant="primary"
-              className="text-xs h-8 px-3 flex items-center gap-1.5 bg-[#CC6600]"
+              size="sm"
+              className="gap-1.5 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] font-sans text-xs font-semibold"
               onClick={handleExportCSV}
               disabled={!reportData || !reportData.records || reportData.records.length === 0}
             >

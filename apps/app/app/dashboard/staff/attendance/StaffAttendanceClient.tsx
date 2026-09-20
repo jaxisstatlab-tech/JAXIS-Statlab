@@ -183,10 +183,11 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
         actions={
           <Button
             variant="primary"
+            size="sm"
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 self-start sm:self-auto cursor-pointer rounded-[2px]"
+            className="flex items-center gap-1.5 self-start sm:self-auto cursor-pointer rounded-[2px] font-sans text-xs font-semibold"
           >
-            <IconPlus size={16} stroke={2.5} />
+            <IconPlus size={15} stroke={2.5} />
             <span>File Missed Punch / Adjustment</span>
           </Button>
         }

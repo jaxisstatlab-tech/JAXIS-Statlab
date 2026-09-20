@@ -15,7 +15,6 @@ import { getReportDataAction } from "@/features/reporting/actions";
 import type { ReportType } from "@/features/reporting/schemas";
 import {
   IconCalendar,
-  IconDownload,
   IconFileSpreadsheet,
   IconPrinter,
   IconRefresh,
@@ -112,10 +111,11 @@ export default function FinanceReportsPage() {
         title="Treasury Ledger & Payout Reports"
         description="Filter financial ledgers, audit per-study gross revenue allocations, and export disbursement summaries."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="secondary"
-              className="text-xs h-8 px-3 flex items-center gap-1.5"
+              size="sm"
+              className="gap-1.5 rounded-[2px] font-sans text-xs font-semibold"
               onClick={() => window.print()}
             >
               <IconPrinter size={15} />
@@ -123,7 +123,8 @@ export default function FinanceReportsPage() {
             </Button>
             <Button
               variant="primary"
-              className="text-xs h-8 px-3 flex items-center gap-1.5 bg-[#CC6600]"
+              size="sm"
+              className="gap-1.5 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] font-sans text-xs font-semibold"
               onClick={handleExportCSV}
               disabled={!reportData || !reportData.records || reportData.records.length === 0}
             >

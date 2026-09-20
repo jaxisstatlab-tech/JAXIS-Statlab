@@ -150,7 +150,8 @@ export default function AdminArchivePage() {
         actions={
           <Button
             variant="secondary"
-            className="text-xs h-8 px-3 flex items-center gap-1.5 text-amber-400 hover:text-amber-300"
+            size="sm"
+            className="gap-1.5 text-amber-400 hover:text-amber-300 rounded-[2px] font-sans text-xs font-semibold"
             onClick={() => setIsConfirmPurgeOpen(true)}
             disabled={isPurging}
           >
