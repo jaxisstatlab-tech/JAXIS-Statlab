@@ -90,7 +90,7 @@ export function ClientProfileClient({ initialProfile }: ClientProfileClientProps
   return (
     <div
       data-portal="client"
-      className="flex flex-col gap-8 max-w-4xl mx-auto pb-20 w-full animate-content-fade font-sans"
+      className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans"
     >
       <PageHeader
         title="School &amp; Academic Profile"
