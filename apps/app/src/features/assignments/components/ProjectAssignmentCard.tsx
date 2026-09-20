@@ -66,11 +66,11 @@ export function ProjectAssignmentCard({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-white text-base font-sans">
-              Specialist Assignment &amp; SLA Tracking
+              Specialist Assignment &amp; Deadline Tracking
             </h3>
             {assignment.isPaused ? (
               <Badge variant="amber" className="font-mono text-[0.625rem] py-0 px-2">
-                SLA PAUSED
+                TIMER PAUSED
               </Badge>
             ) : assignment.isOverdue ? (
               <Badge variant="danger" className="font-mono text-[0.625rem] py-0 px-2">
@@ -106,7 +106,7 @@ export function ProjectAssignmentCard({
                 ) : (
                   <IconPlayerPlay size={14} stroke={2} />
                 )}
-                <span>Resume SLA</span>
+                <span>Resume Timer</span>
               </Button>
             ) : (
               <Button
@@ -121,7 +121,7 @@ export function ProjectAssignmentCard({
                 ) : (
                   <IconPlayerPause size={14} stroke={2} />
                 )}
-                <span>Pause SLA</span>
+                <span>Pause Timer</span>
               </Button>
             )}
 

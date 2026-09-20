@@ -29,7 +29,6 @@ import {
   QA_DECISION_METADATA,
   ERROR_CLASSIFICATION_METADATA,
 } from "@/lib/qa-rules";
-import type { QaReviewDTO } from "@/features/qa/schemas";
 
 type ProjectWithWorkbench = Prisma.ProjectGetPayload<{
   include: {
@@ -196,7 +195,7 @@ export async function getAnalysisWorkbenchData(
       const isUrgent = !isPaused && !isOverdue && diffDays <= 2;
 
       let slaLabel = `${diffDays} days remaining`;
-      if (isPaused) slaLabel = "SLA Paused";
+      if (isPaused) slaLabel = "Timer Paused";
       else if (isOverdue) slaLabel = `${Math.abs(diffDays)}d Overdue`;
       else if (diffDays === 0) slaLabel = "Due Today";
       else if (diffDays === 1) slaLabel = "1 day remaining";

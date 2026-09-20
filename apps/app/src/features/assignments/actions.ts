@@ -408,8 +408,8 @@ export async function requestSlaPause(
         eventType: "SLA_ALERT",
         projectId: assignment.projectId,
         intakeId: project?.intakeId,
-        title: "SLA Clock Pause Requested",
-        message: `Specialist requested an SLA pause for study ${project?.intakeId || ""}. Reason: ${reason}.`,
+        title: "Deadline Timer Pause Requested",
+        message: `Specialist requested to pause the deadline timer for study ${project?.intakeId || ""}. Reason: ${reason}.`,
         targetRoles: ["ADMIN", "CEO"],
         excludeUserId: session.user.id,
       });
@@ -419,7 +419,7 @@ export async function requestSlaPause(
 
     return {
       success: true,
-      data: { message: "SLA pause request submitted for administrative approval." },
+      data: { message: "Pause request submitted for admin review." },
     };
   } catch (err: unknown) {
     return { success: false, error: { code: "SERVER_ERROR", message: (err as Error).message } };
@@ -500,10 +500,10 @@ export async function approveSlaPause(
         eventType: "SLA_ALERT",
         projectId: assignment.projectId,
         intakeId: project?.intakeId,
-        title: approved ? "SLA Clock Paused" : "SLA Pause Request Declined",
+        title: approved ? "Deadline Timer Paused" : "Pause Request Declined",
         message: approved
-          ? `SLA clock for study ${project?.intakeId || ""} has been paused by administration.`
-          : `SLA pause request for study ${project?.intakeId || ""} was declined by administration.`,
+          ? `Deadline timer for study ${project?.intakeId || ""} has been paused by administration.`
+          : `Pause request for study ${project?.intakeId || ""} was declined by administration.`,
         includeProjectParties: true,
         excludeUserId: session.user.id,
       });
@@ -514,7 +514,7 @@ export async function approveSlaPause(
     return {
       success: true,
       data: {
-        message: approved ? "SLA timer paused successfully." : "SLA pause request declined.",
+        message: approved ? "Deadline timer paused successfully." : "Pause request declined.",
       },
     };
   } catch (err: unknown) {
@@ -596,8 +596,8 @@ export async function resumeSla(
         eventType: "SLA_ALERT",
         projectId: assignment.projectId,
         intakeId: project?.intakeId,
-        title: "SLA Clock Resumed",
-        message: `SLA clock for study ${project?.intakeId || ""} resumed. New deadline: ${newDue.toLocaleDateString()}.`,
+        title: "Deadline Timer Resumed",
+        message: `Deadline timer for study ${project?.intakeId || ""} resumed. New deadline: ${newDue.toLocaleDateString()}.`,
         includeProjectParties: true,
         excludeUserId: session.user.id,
       });
@@ -608,7 +608,7 @@ export async function resumeSla(
     return {
       success: true,
       data: {
-        message: "SLA resumed. Target deadline updated.",
+        message: "Deadline timer resumed. Target deadline updated.",
         newSlaDueAt: newDue.toISOString(),
       },
     };

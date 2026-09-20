@@ -13,11 +13,11 @@ import {
 import { getSpecialistPayoutHistoryAction } from "@/features/finance/actions";
 import type { SpecialistPayoutDTO } from "@/features/finance/schemas";
 import {
-  IconAward,
-  IconCheck,
-  IconClock,
-  IconShieldCheck,
-} from "@tabler/icons-react";
+  CheckCircle,
+  Clock,
+  Receipt,
+  ShieldCheck,
+} from "@phosphor-icons/react";
 
 export interface QaPayoutsClientProps {
   initialData: {
@@ -135,7 +135,7 @@ export function QaPayoutsClient({ initialData }: QaPayoutsClientProps) {
           </div>
         ) : payouts.length === 0 ? (
           <div className="py-16 text-center text-xs text-white/40 flex flex-col items-center gap-2">
-            <IconAward size={28} stroke={1.5} className="text-white/20" />
+            <Receipt size={28} weight="fill" className="text-white/20" />
             <span>No QA audit payouts recorded yet.</span>
           </div>
         ) : (
@@ -177,7 +177,7 @@ export function QaPayoutsClient({ initialData }: QaPayoutsClientProps) {
 
                     {/* Applied Rate */}
                     <td className="py-3.5 px-4 text-center font-mono font-semibold text-sky-400">
-                      10% of Stat Share
+                      {p.payoutRateApplied > 0 ? `${p.payoutRateApplied}%` : "Fixed"}
                     </td>
 
                     {/* Payout Sum */}
@@ -189,12 +189,12 @@ export function QaPayoutsClient({ initialData }: QaPayoutsClientProps) {
                     <td className="py-3.5 px-4">
                       {p.payoutStatus === "DISBURSED" ? (
                         <Badge variant="emerald" className="text-[0.688rem] font-mono flex items-center gap-1">
-                          <IconCheck size={13} stroke={2} />
+                          <CheckCircle size={13} weight="fill" />
                           <span>Disbursed</span>
                         </Badge>
                       ) : p.payoutStatus === "APPROVED" ? (
                         <Badge variant="sky" className="text-[0.688rem] font-mono flex items-center gap-1">
-                          <IconShieldCheck size={13} stroke={2} />
+                          <ShieldCheck size={13} weight="fill" />
                           <span>Approved (Pending Release)</span>
                         </Badge>
                       ) : p.payoutStatus === "VOIDED" ? (
@@ -203,7 +203,7 @@ export function QaPayoutsClient({ initialData }: QaPayoutsClientProps) {
                         </Badge>
                       ) : (
                         <Badge variant="amber" className="text-[0.688rem] font-mono flex items-center gap-1">
-                          <IconClock size={13} stroke={2} />
+                          <Clock size={13} weight="fill" />
                           <span>In Escrow</span>
                         </Badge>
                       )}

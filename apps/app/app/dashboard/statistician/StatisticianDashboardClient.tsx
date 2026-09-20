@@ -31,6 +31,8 @@ import {
   UserCheck,
   Clock,
   CaretDown,
+  CaretUp,
+  ArrowsDownUp,
   ChatCircleDots,
   ChartLineUp,
   Cpu,
@@ -41,6 +43,18 @@ import { getStaffSelfProfile, requestLeave, returnFromLeave } from "@/features/s
 import { assessBurnoutRisk } from "@/lib/assignment-rules";
 import type { AssignmentDetailItem } from "@/features/assignments/schemas";
 
+export type StatisticianSortField =
+  | "priority"
+  | "deadline-asc"
+  | "deadline-desc"
+  | "newest"
+  | "oldest"
+  | "id-asc"
+  | "id-desc"
+  | "title-asc"
+  | "title-desc"
+  | "status";
+
 const LEAVE_REASON_TEMPLATES = [
   {
     label: "Annual Vacation / Personal Rest",
@@ -48,15 +62,15 @@ const LEAVE_REASON_TEMPLATES = [
   },
   {
     label: "Sick / Medical Recovery",
-    text: "Taking medical recovery leave due to personal health reasons. Will resume statistical duties once medically cleared.",
+    text: "Medical leave for illness recovery. Workload will resume following health clearance.",
   },
   {
-    label: "Academic Conference Presentation",
-    text: "Attending and presenting research at an academic conference with limited connectivity during daytime hours.",
+    label: "Family Emergency / Compassionate Leave",
+    text: "Urgent family matter requiring immediate attention. Expected return date indicated below.",
   },
   {
-    label: "Family Emergency / Urgent Matters",
-    text: "Stepping away temporarily to attend to urgent family matters. Will keep the team updated on expected availability.",
+    label: "Academic Defense / Institutional Duty",
+    text: "Serving as external statistician or defending dissertation panel. Unavailable for new assignment intake during this period.",
   },
   {
     label: "Research Fieldwork / Data Collection",
@@ -81,6 +95,7 @@ export function StatisticianDashboardClient({
   const [selectedStudy, setSelectedStudy] = useState<AssignmentDetailItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortBy, setSortBy] = useState<StatisticianSortField>("priority");
 
   // Pause Request Modal
   const [pauseTarget, setPauseTarget] = useState<AssignmentDetailItem | null>(null);
@@ -147,7 +162,7 @@ export function StatisticianDashboardClient({
         loadWorkload();
         setToastMessage({
           message: "Pause Request Submitted",
-          description: "Administrative governance team will review your SLA freeze request.",
+          description: "The admin team will review your request to pause the deadline.",
           variant: "info",
         });
       } else {
@@ -277,31 +292,65 @@ export function StatisticianDashboardClient({
   const pausedCount = assignments.filter((a) => a.isPaused).length;
   const burnoutRisk = assessBurnoutRisk(assignments);
 
-  // Prioritize active work requiring statistician action to the top
+  // Dynamic sorting option for assigned runs & computations
   const sortedAssignments = useMemo(() => {
     return [...assignments].sort((a, b) => {
-      // 1. Studies needing revisions or corrections from QA
+      if (sortBy === "deadline-asc") {
+        const timeA = a.slaDueAt ? new Date(a.slaDueAt).getTime() : Infinity;
+        const timeB = b.slaDueAt ? new Date(b.slaDueAt).getTime() : Infinity;
+        return timeA - timeB;
+      }
+      if (sortBy === "deadline-desc") {
+        const timeA = a.slaDueAt ? new Date(a.slaDueAt).getTime() : 0;
+        const timeB = b.slaDueAt ? new Date(b.slaDueAt).getTime() : 0;
+        return timeB - timeA;
+      }
+      if (sortBy === "newest") {
+        const dateA = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
+        const dateB = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
+        return dateB - dateA;
+      }
+      if (sortBy === "oldest") {
+        const dateA = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
+        const dateB = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
+        return dateA - dateB;
+      }
+      if (sortBy === "id-asc") {
+        return a.projectIntakeId.localeCompare(b.projectIntakeId);
+      }
+      if (sortBy === "id-desc") {
+        return b.projectIntakeId.localeCompare(a.projectIntakeId);
+      }
+      if (sortBy === "title-asc") {
+        return a.projectTitle.localeCompare(b.projectTitle);
+      }
+      if (sortBy === "title-desc") {
+        return b.projectTitle.localeCompare(a.projectTitle);
+      }
+      if (sortBy === "status") {
+        return a.masterStatus.localeCompare(b.masterStatus);
+      }
+
+      // Default: "priority" (Revisions first, then Urgent/Overdue, then In Progress, then newest)
       const aIsRevision = a.masterStatus === "QA_REVISION" || a.masterStatus === "REVISION_REQUESTED";
       const bIsRevision = b.masterStatus === "QA_REVISION" || b.masterStatus === "REVISION_REQUESTED";
       if (aIsRevision && !bIsRevision) return -1;
       if (!aIsRevision && bIsRevision) return 1;
 
-      // 2. Urgent / Overdue studies
       const aIsUrgent = a.isOverdue || a.isUrgent;
       const bIsUrgent = b.isOverdue || b.isUrgent;
       if (aIsUrgent && !bIsUrgent) return -1;
       if (!aIsUrgent && bIsUrgent) return 1;
 
-      // 3. Active in-progress runs
       const aIsWorking = a.masterStatus === "IN_PROGRESS";
       const bIsWorking = b.masterStatus === "IN_PROGRESS";
       if (aIsWorking && !bIsWorking) return -1;
-      // 4. Secondary sort: newest assigned first
+
       const dateA = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
       const dateB = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
       return dateB - dateA;
     });
-  }, [assignments]);
+  }, [assignments, sortBy]);
 
   // Analytical Velocity: Dynamic Rolling 6-Month Statistician Output & Milestones
   const statisticianChartData = useMemo(() => {
@@ -677,7 +726,7 @@ export function StatisticianDashboardClient({
           <div className="flex flex-col gap-1">
             <span className="font-semibold text-amber-300">Workload &amp; Burnout Protection Active</span>
             <span className="text-white/80 leading-relaxed">
-              {burnoutRisk.reasons.join(". ")}. Your wellbeing is protected under JAXIS workload policies. If client clarifications or missing datasets are slowing you down, use the &ldquo;Request Pause&rdquo; button to freeze your SLA countdown timer without penalty.
+              {burnoutRisk.reasons.join(". ")}. Your wellbeing is protected under JAXIS workload policies. If client clarifications or missing datasets are slowing you down, use the &ldquo;Pause&rdquo; button to pause your deadline countdown without penalty.
             </span>
           </div>
         </div>
@@ -685,16 +734,49 @@ export function StatisticianDashboardClient({
 
       {/* Assigned Workbench Projects */}
       <Card className="p-0 overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[2px]">
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+        <div className="p-5 sm:p-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-white font-sans">
               Assigned Statistical Runs &amp; Computations
             </h2>
-            <p className="text-sm text-white/60 mt-1 font-sans">
+            <p className="text-sm text-white/60 mt-0.5 font-sans">
               Execute analytical models, track contractual turnaround timers, and upload verified syntax
             </p>
           </div>
-          <span className="text-xs font-mono text-white/50">{assignments.length} Active Studies</span>
+
+          <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
+            {/* Sort Control Dropdown */}
+            <div className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-[2px] px-3 py-1.5 focus-within:border-white/20 transition-colors">
+              <ArrowsDownUp size={13} weight="bold" className="text-white/40 shrink-0" />
+              <label htmlFor="statistician-sort" className="text-[11px] font-mono text-white/50 uppercase tracking-wider select-none shrink-0">
+                Sort:
+              </label>
+              <select
+                id="statistician-sort"
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as StatisticianSortField);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs font-sans text-white/90 focus:outline-none cursor-pointer pr-1 border-0 ring-0 focus:ring-0 [&>option]:bg-[#01142B] [&>option]:text-white"
+              >
+                <option value="priority">Priority (Revisions &amp; Urgent First)</option>
+                <option value="deadline-asc">Due Date (Earliest First)</option>
+                <option value="deadline-desc">Due Date (Latest First)</option>
+                <option value="newest">Newest Assigned</option>
+                <option value="oldest">Oldest Assigned</option>
+                <option value="id-asc">Study ID (A &rarr; Z)</option>
+                <option value="id-desc">Study ID (Z &rarr; A)</option>
+                <option value="title-asc">Research Title (A &rarr; Z)</option>
+                <option value="title-desc">Research Title (Z &rarr; A)</option>
+                <option value="status">Status</option>
+              </select>
+            </div>
+
+            <span className="text-xs font-mono text-white/50 whitespace-nowrap px-2.5 py-1.5 rounded-[2px] bg-white/[0.04] border border-white/10">
+              {assignments.length} Active Studies
+            </span>
+          </div>
         </div>
 
         {isLoading ? (
@@ -713,11 +795,89 @@ export function StatisticianDashboardClient({
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/10 bg-white/[0.02] text-white/50 text-xs uppercase tracking-wider font-semibold">
-                  <th className="py-3 px-4">Study ID &amp; Package</th>
-                  <th className="py-3 px-4">Research &amp; Specialist</th>
-                  <th className="py-3 px-4">SLA Countdown</th>
-                  <th className="py-3 px-4">Status</th>
+                <tr className="border-b border-white/10 bg-white/[0.02] text-white/50 text-xs uppercase tracking-wider font-semibold select-none">
+                  {/* Column 1: Study ID & Package */}
+                  <th className="py-3 px-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortBy(sortBy === "id-asc" ? "id-desc" : "id-asc");
+                        setCurrentPage(1);
+                      }}
+                      className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
+                    >
+                      <span>Study ID &amp; Package</span>
+                      {sortBy === "id-asc" ? (
+                        <CaretUp size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : sortBy === "id-desc" ? (
+                        <CaretDown size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : (
+                        <ArrowsDownUp size={12} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                      )}
+                    </button>
+                  </th>
+
+                  {/* Column 2: Research & Specialist */}
+                  <th className="py-3 px-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortBy(sortBy === "title-asc" ? "title-desc" : "title-asc");
+                        setCurrentPage(1);
+                      }}
+                      className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
+                    >
+                      <span>Research &amp; Specialist</span>
+                      {sortBy === "title-asc" ? (
+                        <CaretUp size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : sortBy === "title-desc" ? (
+                        <CaretDown size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : (
+                        <ArrowsDownUp size={12} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                      )}
+                    </button>
+                  </th>
+
+                  {/* Column 3: SLA Countdown */}
+                  <th className="py-3 px-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortBy(sortBy === "deadline-asc" ? "deadline-desc" : "deadline-asc");
+                        setCurrentPage(1);
+                      }}
+                      className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
+                    >
+                      <span>Time Remaining</span>
+                      {sortBy === "deadline-asc" ? (
+                        <CaretUp size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : sortBy === "deadline-desc" ? (
+                        <CaretDown size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : (
+                        <ArrowsDownUp size={12} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                      )}
+                    </button>
+                  </th>
+
+                  {/* Column 4: Status */}
+                  <th className="py-3 px-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortBy(sortBy === "status" ? "priority" : "status");
+                        setCurrentPage(1);
+                      }}
+                      className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
+                    >
+                      <span>Status</span>
+                      {sortBy === "status" ? (
+                        <CaretDown size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : (
+                        <ArrowsDownUp size={12} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                      )}
+                    </button>
+                  </th>
+
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -790,7 +950,7 @@ export function StatisticianDashboardClient({
                               variant="secondary"
                               size="sm"
                               onClick={() => setPauseTarget(item)}
-                              title="Request SLA Pause"
+                              title="Pause Deadline Timer"
                               className="font-sans text-xs h-7 px-2 rounded-[2px] text-amber-300 border-amber-500/30 hover:bg-amber-500/10 gap-1"
                             >
                               <Pause size={12} weight="fill" />
@@ -1007,7 +1167,7 @@ export function StatisticianDashboardClient({
         <Modal
           open={!!pauseTarget}
           onClose={() => setPauseTarget(null)}
-          title="Request SLA Timer Freeze"
+          title="Pause Deadline Timer"
           description={`Study: ${pauseTarget.projectTitle}`}
           size="md"
           footer={
@@ -1025,7 +1185,7 @@ export function StatisticianDashboardClient({
                 {isPending ? (
                   <CircleNotch size={15} weight="bold" className="animate-spin" />
                 ) : (
-                  <span>Submit Freeze Request</span>
+                  <span>Request Pause</span>
                 )}
               </Button>
             </div>
@@ -1041,18 +1201,18 @@ export function StatisticianDashboardClient({
             <div className="p-3 bg-amber-950/20 border border-amber-500/30 rounded-[2px] flex items-start gap-2.5 text-amber-200">
               <Warning size={16} weight="fill" className="text-amber-400 shrink-0 mt-0.5" />
               <span>
-                SLA pauses freeze the contractual delivery timer while awaiting critical researcher responses, dataset corrections, or survey clarifications.
+                Pausing temporarily stops your delivery countdown while you wait for the researcher to send files, fix data errors, or answer questions. Days spent waiting are added back to your deadline.
               </span>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="font-semibold text-white/90">
-                Reason for Pause Request (Mandatory)
+                What are you waiting for? (Required)
               </label>
               <textarea
                 value={pauseReason}
                 onChange={(e) => setPauseReason(e.target.value)}
-                placeholder="Detail the exact missing data or clarification required from the Lead Researcher..."
+                placeholder="Detail what is missing or what needs clarification from the Lead Researcher..."
                 className="w-full bg-[#01142B] border border-white/10 rounded-[2px] p-3 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-24 font-sans"
               />
             </div>

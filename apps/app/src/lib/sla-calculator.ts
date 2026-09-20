@@ -71,7 +71,7 @@ export function calculateSlaRemaining(
       isUrgent: false,
       remainingHours: 0,
       remainingDays: 0,
-      label: "SLA PAUSED",
+      label: "TIMER PAUSED",
     };
   }
 

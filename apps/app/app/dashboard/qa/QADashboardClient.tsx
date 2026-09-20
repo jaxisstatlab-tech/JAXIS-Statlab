@@ -27,6 +27,8 @@ import {
   UserCheck,
   Clock,
   CaretDown,
+  CaretUp,
+  ArrowsDownUp,
   WarningOctagon,
   ChartLineUp,
   Funnel,
@@ -36,6 +38,18 @@ import {
 import { getQaWorkload } from "@/features/assignments/actions";
 import { getStaffSelfProfile, requestLeave, returnFromLeave } from "@/features/staff/actions";
 import type { AssignmentDetailItem } from "@/features/assignments/schemas";
+
+export type QaSortField =
+  | "priority"
+  | "deadline-asc"
+  | "deadline-desc"
+  | "newest"
+  | "oldest"
+  | "id-asc"
+  | "id-desc"
+  | "title-asc"
+  | "title-desc"
+  | "status";
 
 const LEAVE_REASON_TEMPLATES = [
   {
@@ -78,6 +92,7 @@ export function QADashboardClient({
   const [isPending, startTransition] = useTransition();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortBy, setSortBy] = useState<QaSortField>("priority");
 
   // Leave Management State
   const [profileStatus, setProfileStatus] = useState<string>(initialProfileStatus);
@@ -240,9 +255,46 @@ export function QADashboardClient({
 
   const urgentCount = qaQueueAssignments.filter((a) => a.isUrgent || a.isOverdue).length;
 
-  // Prioritize studies ready for QA evaluation (FOR_QA) to the top of the queue
+  // Dynamic sorting option for QA verification queue
   const sortedAssignments = useMemo(() => {
     return [...qaQueueAssignments].sort((a, b) => {
+      if (sortBy === "deadline-asc") {
+        const timeA = a.slaDueAt ? new Date(a.slaDueAt).getTime() : Infinity;
+        const timeB = b.slaDueAt ? new Date(b.slaDueAt).getTime() : Infinity;
+        return timeA - timeB;
+      }
+      if (sortBy === "deadline-desc") {
+        const timeA = a.slaDueAt ? new Date(a.slaDueAt).getTime() : 0;
+        const timeB = b.slaDueAt ? new Date(b.slaDueAt).getTime() : 0;
+        return timeB - timeA;
+      }
+      if (sortBy === "newest") {
+        const dateA = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
+        const dateB = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
+        return dateB - dateA;
+      }
+      if (sortBy === "oldest") {
+        const dateA = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
+        const dateB = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
+        return dateA - dateB;
+      }
+      if (sortBy === "id-asc") {
+        return a.projectIntakeId.localeCompare(b.projectIntakeId);
+      }
+      if (sortBy === "id-desc") {
+        return b.projectIntakeId.localeCompare(a.projectIntakeId);
+      }
+      if (sortBy === "title-asc") {
+        return a.projectTitle.localeCompare(b.projectTitle);
+      }
+      if (sortBy === "title-desc") {
+        return b.projectTitle.localeCompare(a.projectTitle);
+      }
+      if (sortBy === "status") {
+        return a.masterStatus.localeCompare(b.masterStatus);
+      }
+
+      // Default: "priority"
       // 1. FOR_QA is highest priority (Ready for QA evaluation / Go Signal)
       const aIsForQa = a.masterStatus === "FOR_QA";
       const bIsForQa = b.masterStatus === "FOR_QA";
@@ -259,12 +311,13 @@ export function QADashboardClient({
       const aIsUrgent = a.isOverdue || a.isUrgent;
       const bIsUrgent = b.isOverdue || b.isUrgent;
       if (aIsUrgent && !bIsUrgent) return -1;
+
       // 4. Secondary sort: newest assigned first
       const dateA = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
       const dateB = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
       return dateB - dateA;
     });
-  }, [qaQueueAssignments]);
+  }, [qaQueueAssignments, sortBy]);
 
   // Analytical QA Trend: Dynamic Rolling 6-Month Quality Verification & Revisions
   const qaChartData = useMemo(() => {
@@ -621,16 +674,49 @@ export function QADashboardClient({
 
       {/* Assigned QA Studies */}
       <Card className="p-0 overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[2px]">
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+        <div className="p-5 sm:p-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-white font-sans">
               Quality Assurance &amp; Deliverable Verification Queue
             </h2>
-            <p className="text-sm text-white/60 mt-1 font-sans">
+            <p className="text-sm text-white/60 mt-0.5 font-sans">
               Conduct dual-blind statistical recalculation, inspect notebooks, and validate APA 7th format compliance
             </p>
           </div>
-          <span className="text-xs font-mono text-white/50">{sortedAssignments.length} Studies in Queue</span>
+
+          <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
+            {/* Sort Control Dropdown */}
+            <div className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-[2px] px-3 py-1.5 focus-within:border-white/20 transition-colors">
+              <ArrowsDownUp size={13} weight="bold" className="text-white/40 shrink-0" />
+              <label htmlFor="qa-sort" className="text-[11px] font-mono text-white/50 uppercase tracking-wider select-none shrink-0">
+                Sort:
+              </label>
+              <select
+                id="qa-sort"
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as QaSortField);
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-xs font-sans text-white/90 focus:outline-none cursor-pointer pr-1 border-0 ring-0 focus:ring-0 [&>option]:bg-[#01142B] [&>option]:text-white"
+              >
+                <option value="priority">Priority (Ready for QA &amp; Revisions First)</option>
+                <option value="deadline-asc">Due Date (Earliest First)</option>
+                <option value="deadline-desc">Due Date (Latest First)</option>
+                <option value="newest">Newest Assigned</option>
+                <option value="oldest">Oldest Assigned</option>
+                <option value="id-asc">Study ID (A &rarr; Z)</option>
+                <option value="id-desc">Study ID (Z &rarr; A)</option>
+                <option value="title-asc">Research Title (A &rarr; Z)</option>
+                <option value="title-desc">Research Title (Z &rarr; A)</option>
+                <option value="status">Status</option>
+              </select>
+            </div>
+
+            <span className="text-xs font-mono text-white/50 whitespace-nowrap px-2.5 py-1.5 rounded-[2px] bg-white/[0.04] border border-white/10">
+              {sortedAssignments.length} Studies in Queue
+            </span>
+          </div>
         </div>
 
         {isLoading ? (
@@ -649,11 +735,89 @@ export function QADashboardClient({
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/10 bg-white/[0.02] text-white/50 text-xs uppercase tracking-wider font-semibold">
-                  <th className="py-3 px-4">Study ID</th>
-                  <th className="py-3 px-4">Research &amp; Statistician</th>
-                  <th className="py-3 px-4">SLA Countdown</th>
-                  <th className="py-3 px-4">Master Status</th>
+                <tr className="border-b border-white/10 bg-white/[0.02] text-white/50 text-xs uppercase tracking-wider font-semibold select-none">
+                  {/* Column 1: Study ID */}
+                  <th className="py-3 px-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortBy(sortBy === "id-asc" ? "id-desc" : "id-asc");
+                        setCurrentPage(1);
+                      }}
+                      className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
+                    >
+                      <span>Study ID</span>
+                      {sortBy === "id-asc" ? (
+                        <CaretUp size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : sortBy === "id-desc" ? (
+                        <CaretDown size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : (
+                        <ArrowsDownUp size={12} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                      )}
+                    </button>
+                  </th>
+
+                  {/* Column 2: Research & Statistician */}
+                  <th className="py-3 px-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortBy(sortBy === "title-asc" ? "title-desc" : "title-asc");
+                        setCurrentPage(1);
+                      }}
+                      className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
+                    >
+                      <span>Research &amp; Statistician</span>
+                      {sortBy === "title-asc" ? (
+                        <CaretUp size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : sortBy === "title-desc" ? (
+                        <CaretDown size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : (
+                        <ArrowsDownUp size={12} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                      )}
+                    </button>
+                  </th>
+
+                  {/* Column 3: SLA Countdown */}
+                  <th className="py-3 px-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortBy(sortBy === "deadline-asc" ? "deadline-desc" : "deadline-asc");
+                        setCurrentPage(1);
+                      }}
+                      className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
+                    >
+                      <span>Time Remaining</span>
+                      {sortBy === "deadline-asc" ? (
+                        <CaretUp size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : sortBy === "deadline-desc" ? (
+                        <CaretDown size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : (
+                        <ArrowsDownUp size={12} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                      )}
+                    </button>
+                  </th>
+
+                  {/* Column 4: Master Status */}
+                  <th className="py-3 px-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSortBy(sortBy === "status" ? "priority" : "status");
+                        setCurrentPage(1);
+                      }}
+                      className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
+                    >
+                      <span>Master Status</span>
+                      {sortBy === "status" ? (
+                        <CaretDown size={13} weight="fill" className="text-[#CC6600]" />
+                      ) : (
+                        <ArrowsDownUp size={12} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+                      )}
+                    </button>
+                  </th>
+
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
