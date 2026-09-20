@@ -347,6 +347,16 @@ export async function releaseDeliverables(rawInput: ReleaseDeliverablesInput): P
       includeProjectParties: true,
       excludeUserId: session.user.id,
     });
+
+    await dispatchRealtimeNotification({
+      eventType: "PAYMENT_UPDATE",
+      projectId: input.projectId,
+      intakeId: project?.intakeId || undefined,
+      title: "Escrow Release Gate Unlocked",
+      message: `Deliverables released for study ${project?.intakeId || ""}. Escrow vault funds are cleared for specialist payout.`,
+      targetRoles: ["FINANCE_OFFICER"],
+      excludeUserId: session.user.id,
+    });
   } catch (notifyErr) {
     console.warn("[releaseDeliverables] Realtime notification warning:", notifyErr);
   }

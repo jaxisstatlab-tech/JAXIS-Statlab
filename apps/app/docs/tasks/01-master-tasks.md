@@ -597,6 +597,10 @@
 - [x] Built Platform-Wide Real-Time In-App Notification Engine:
   - Server-Sent Events stream (`/api/v1/notifications/stream`) with 15s delta background fallback and `jaxis:study-updated` DOM event bus
   - Real-time dispatching across Deliverables, Revisions, Datasets, and Disputes across all 6 roles with event-aware deep links
+  - Fresh Account Onboarding Alerts Engine (`ensureFreshAccountNotifications`) automatically pre-seeding role-tailored action guidance for new and self-healed accounts
+  - Automatic Project Milestone Backfill (`ensureProjectLifecycleNotifications`) synchronizing historical milestone notifications for in-flight studies up to Stage 4 & 5
+  - Chronological sorting defaults (`createdAt: desc`) and standardized dual-format timestamp display (`formatNotificationTime`) in `NotificationDrawer.tsx`
+  - Created master operational specification in `docs/info/09-notification-triggers.md`
 - [x] Seeded mock initial in-app alerts and delivery logs in `prisma/seed.ts`
 - [x] Documented verification report in `docs/modules/16-notifications-verification.md` (0 check-types errors across 5 packages)
 
@@ -669,13 +673,28 @@
     - Top Status Ribbon: changed from `gap-4` (16px) to `gap-6` (24px), matching the column gutter width.
     - Main 2-Column Desk: changed from `gap-8` (32px) to `gap-6` (24px), eliminating the oversized middle gutter.
     - Lower Bento QA Scorecards: unified grid to `gap-6` (24px).
-- [ ] **Cross-Portal Spacing Rhythm Audit & Harmonization**:
-  - Audit and harmonize all portal pages (`/dashboard/client`, `/dashboard/statistician`, `/dashboard/qa`, `/dashboard/admin`, `/dashboard/ceo`, `/dashboard/finance`) to strictly enforce the canonical **`gap-6` (24px)** standard across:
-    1. Outer page vertical section spacing (`flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full`).
-    2. Multi-column desk gutters (`grid grid-cols-1 lg:grid-cols-3 gap-6` / `grid-cols-1 lg:grid-cols-12 gap-6`).
-    3. Metric KPI rows & status ribbon grids (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6`).
-    4. Stacked auxiliary cards (`flex flex-col gap-6`).
-  - Prohibit arbitrary mixing of `gap-4` (16px) and `gap-8` (32px) within the same view.
+### Task 17 — Desktop Sidebar-First Identity Anchor & Zero Desktop Topbar Architecture
+- [x] Eliminated horizontal desktop topbar entirely, bringing canvas y=0 to `<PageHeader>` for zero wasted vertical space.
+- [x] Centralized all user identity, role display tags, profile navigation, and sign-out controls into the Sidebar footer profile card (`Sidebar.tsx`).
+- [x] Implemented Radix DropdownMenu trigger on the avatar profile card supporting both expanded (`w-[17.5rem]`) and collapsed (`w-[4.25rem]`) rail widths.
+- [x] Solved delayed hydration lag in `Sidebar.tsx` with synchronous evaluation: `isCollapsed = !isOpen && propIsCollapsed`.
+- [x] Fixed Windows Chromium scrollbar bug: eliminated native 17px OS scrollbar and up/down arrow buttons (`▲` / `▼`) via `*:not(.no-scrollbar):not([data-no-scrollbar])` in `globals.css` and inline styles `scrollbarWidth: "none"`.
+- [x] Standardized collapsed navigation items to fixed 40px × 40px squares centered on `x = 34px`.
+
+### Task 18 — Client Dashboard Dashdark X Precision Upgrade & Active Milestone Mission Panel
+- [x] Eliminated the 250px vertical void in the 8-col Active Research Journey hero card on `/dashboard/client`.
+- [x] Added integrated **Active Milestone Mission Panel** (`bg-[#010D1F]/90 border border-white/[0.08] rounded-[2px] p-4`) providing immediate operational narrative, next action, APA 7th edition standard, and dual-audit credentials.
+- [x] Upgraded 5-stage precision pipeline track (`h-2 rounded-[2px]`) with distinct stage node indicators (`<CheckCircle weight="fill" />`, illuminated orange beacon with `Active Stage` chip, and numbered prefixes).
+- [x] Added Phosphor fill metadata tags (`<CalendarBlank size={12} weight="fill" />`, `<FileText size={12} weight="fill" />`) and direct consultation chat shortcut in the footer.
+- [x] Preserved 100% backend/API contracts with zero database schema alterations.
+
+### Task 19 — Real-Time Notification Engine Upgrades & Operational Catalog
+- [x] Built Fresh Account Onboarding Alerts Engine (`ensureFreshAccountNotifications`) provisioning 2 tailored operational guidance alerts for fresh and self-healed accounts across all 6 roles.
+- [x] Built Project Lifecycle Milestone Auto-Backfill (`ensureProjectLifecycleNotifications`) synchronizing historical milestone notifications for in-flight studies up to Stage 4 & 5.
+- [x] Enforced chronological sorting default (`createdAt: desc`) and standardized dual-format timestamp display (`formatNotificationTime`).
+- [x] Implemented Single-Mention Study ID Highlighting Standard: removed study intake ID from notification title/header to prevent title truncation (e.g. `ASSIGNME...`) and duplication, and rendered high-contrast Enterprise Orange inline chips inside notification messages for effortless scannability.
+- [x] Integrated real-time notification dispatching across all payroll mutations (`saveCompanyPayrollSchedule`, `saveRoleCompensationConfig`, `saveStaffCompensationOverride`, `generateBatchPayslips`, `disbursePayslip`, `approvePayslip`).
+- [x] Authored master operational specification in `docs/info/09-notification-triggers.md`.
 
 ---
 

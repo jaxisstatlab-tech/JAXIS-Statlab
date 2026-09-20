@@ -30,6 +30,10 @@
 | `NTF-F08` | **Unread alert badge** — In-app alert badge count visible in topbar for roles with pending internal events |
 | `NTF-F09` | **Real-Time Lifecycle Push & In-App Dispatch** — Real-time event streaming (`/api/v1/notifications/stream`) connecting Deliverables, Revisions, Datasets, and Disputes across all 6 roles (`CLIENT`, `STATISTICIAN`, `SENIOR_QA_LEAD`, `ADMIN`, `FINANCE_OFFICER`, and `CEO`) |
 | `NTF-F10` | **Event-Aware Multi-Role Deep Linking** — In-app alerts resolve to role-specific target paths with customized action buttons (`View Deliverables →`, `Review Revisions →`, `View Dispute →`) |
+| `NTF-F11` | **Fresh Account Onboarding Alerts Engine** — New registrations and first-time users automatically receive role-specific welcome guidance and setup action triggers |
+| `NTF-F12` | **Chronological Sorting & Dual-Format Timestamps** — Drawer alerts sorted newest-first (`createdAt: desc`) with relative timestamps (<24h) and full PST date-time stamps (>24h) |
+| `NTF-F13` | **Project Lifecycle Milestone Auto-Backfill** — Idempotent milestone synchronization (`ensureProjectLifecycleNotifications`) auto-populating historical stage notifications for in-flight studies up to Stage 4 & 5 |
+| `NTF-F14` | **Single-Mention Study ID Highlighting Engine** — Study IDs are removed from notification header titles to avoid duplication and truncation, and exclusively rendered as highlighted Enterprise Orange inline chips inside the message body |
 
 ### ❌ Explicitly Out of Scope
 
@@ -82,7 +86,15 @@ All operational lifecycle transitions dispatch real-time in-app alerts across co
 | `DELIVERABLE_UPDATE` | Final files uploaded or released to client | Client, Admin, Senior QA Lead, Finance | `/dashboard/client/projects/[id]/deliverables` |
 | `REVISION_REQUEST` | Client requests revisions / Admin classifies warranty | Admin, Statistician, Client | Revision Triage Queue / Workbench |
 | `DISPUTE` | Academic dispute filed or executive ruling issued | Admin, Finance Officer, CEO, Client | `/dashboard/admin/disputes`, `/dashboard/ceo/disputes` |
+| `PAYROLL_UPDATE` | Batch payslips generated, custom rates saved, or salary disbursed | Staff Member, Finance Officer, CEO, Admin | `/dashboard/finance/payroll`, `/dashboard/ceo/payroll` |
+| `ATTENDANCE_UPDATE` | Duty policies changed, punch corrections filed/reviewed | Staff Member, Admin, Finance Officer | `/dashboard/admin`, Staff duty desk |
+| `DEFENSELAB_UPDATE` | Mock defense booked, rescheduled, link added, or completed | Client, Statistician, Admin | `/dashboard/client/defenselab`, `/dashboard/admin` |
+| `MESSAGE_ALERT` | New consultation message delivered (excludes author) | Client, Statistician, QA Lead, Admin | Consultation & Workbench Desks |
+| `SECURITY_ALERT` | Communication firewall blocks contact info exchange | Admin, CEO | `/dashboard/admin/projects/[id]`, `/dashboard/ceo` |
+| `SLA_ALERT` | SLA pause requested, approved, declined, or clock resumed | Statistician, Senior QA Lead, Admin, CEO | `/dashboard/admin/assignments`, Workbench |
 | `SYSTEM_ALERT` | Storage quota limit warning / Purge recommendation | Admin, CEO | `/dashboard/ceo/retention` |
+
+> 📘 **Master Specification**: For complete role-by-role coverage matrices, trigger action mappings, and API guides, see [info/09-notification-triggers.md](../../info/09-notification-triggers.md).
 
 ---
 

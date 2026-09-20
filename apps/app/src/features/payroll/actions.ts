@@ -6,6 +6,7 @@ import path from "path";
 import { db, withDbTimeout } from "@/lib/db";
 import { requireRole, auth } from "@/lib/auth";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
+import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import type { RoleName } from "@prisma/client";
 import {
   RoleCompensationConfigSchema,
@@ -440,6 +441,18 @@ export async function saveCompanyPayrollSchedule(
   revalidatePath("/dashboard/staff/hr");
   invalidateCacheTags(CACHE_TAGS.PAYROLL, CACHE_TAGS.STAFF_DIRECTORY);
 
+  try {
+    dispatchRealtimeNotification({
+      eventType: "PAYROLL_UPDATE",
+      title: "Payroll Schedule Updated",
+      message: `Payroll schedule has been updated to ${dto.frequency.replace(/_/g, "-").toLowerCase()} settlement.`,
+      targetRoles: ["FINANCE_OFFICER", "ADMIN"],
+      excludeUserId: session.user.id,
+    });
+  } catch (notifyErr) {
+    console.warn("[saveCompanyPayrollSchedule] Realtime notification warning:", notifyErr);
+  }
+
   return { success: true, config: dto };
 }
 
@@ -474,6 +487,18 @@ export async function saveRoleCompensationConfig(
   revalidatePath("/dashboard/staff/hr");
   invalidateCacheTags(CACHE_TAGS.PAYROLL, CACHE_TAGS.STAFF_DIRECTORY);
 
+  try {
+    dispatchRealtimeNotification({
+      eventType: "PAYROLL_UPDATE",
+      title: "Pay Rates Updated",
+      message: `Compensation rates for ${parsed.data.roleName.replace(/_/g, " ").toLowerCase()} have been updated.`,
+      targetRoles: ["FINANCE_OFFICER", "ADMIN"],
+      excludeUserId: session.user.id,
+    });
+  } catch (notifyErr) {
+    console.warn("[saveRoleCompensationConfig] Realtime notification warning:", notifyErr);
+  }
+
   return { success: true, data: updatedDTO };
 }
 
@@ -507,6 +532,18 @@ export async function saveStaffCompensationOverride(
   revalidatePath("/dashboard/finance/payroll");
   revalidatePath("/dashboard/staff/hr");
   invalidateCacheTags(CACHE_TAGS.PAYROLL, CACHE_TAGS.STAFF_DIRECTORY);
+
+  try {
+    dispatchRealtimeNotification({
+      eventType: "PAYROLL_UPDATE",
+      title: "Custom Pay Rate Updated",
+      message: "Your custom compensation rates have been updated by leadership.",
+      targetUserIds: [parsed.data.userId],
+      excludeUserId: session.user.id,
+    });
+  } catch (notifyErr) {
+    console.warn("[saveStaffCompensationOverride] Realtime notification warning:", notifyErr);
+  }
 
   return { success: true, data: overrideDTO };
 }
@@ -849,6 +886,31 @@ export async function generateBatchPayslips(
   revalidatePath("/dashboard/staff/hr");
   invalidateCacheTags(CACHE_TAGS.PAYROLL);
 
+  try {
+    // Notify Finance and Leadership
+    dispatchRealtimeNotification({
+      eventType: "PAYROLL_UPDATE",
+      title: "Batch Payslips Generated",
+      message: `Generated ${staffMembers.length} staff payslips for ${formalPeriodLabel}.`,
+      targetRoles: ["FINANCE_OFFICER", "CEO"],
+      excludeUserId: session.user.id,
+    });
+
+    // Notify individual staff recipients
+    const staffUserIds = staffMembers.map((s) => s.id).filter(Boolean);
+    if (staffUserIds.length > 0) {
+      dispatchRealtimeNotification({
+        eventType: "PAYROLL_UPDATE",
+        title: "New Payslip Ready",
+        message: `Your payslip for ${formalPeriodLabel} is now ready for review.`,
+        targetUserIds: staffUserIds,
+        excludeUserId: session.user.id,
+      });
+    }
+  } catch (notifyErr) {
+    console.warn("[generateBatchPayslips] Realtime notification warning:", notifyErr);
+  }
+
   return { success: true, count: staffMembers.length };
 }
 
@@ -952,6 +1014,28 @@ export async function disbursePayslip(
   revalidatePath("/dashboard/staff/hr");
   invalidateCacheTags(CACHE_TAGS.PAYROLL);
 
+  try {
+    // Notify employee of payment disbursement
+    dispatchRealtimeNotification({
+      eventType: "PAYROLL_UPDATE",
+      title: "Salary Payment Sent",
+      message: `Your net pay of ₱${target.netPay.toLocaleString()} has been sent via ${target.disbursementMethod || "bank transfer"} (Ref: ${target.disbursementReference || "N/A"}).`,
+      targetUserIds: [target.userId],
+      excludeUserId: session.user.id,
+    });
+
+    // Notify CEO of completed disbursement
+    dispatchRealtimeNotification({
+      eventType: "PAYROLL_UPDATE",
+      title: "Staff Payment Disbursed",
+      message: `Payslip ${target.payslipNumber} (₱${target.netPay.toLocaleString()}) for ${target.staffName} was marked as disbursed.`,
+      targetRoles: ["CEO"],
+      excludeUserId: session.user.id,
+    });
+  } catch (notifyErr) {
+    console.warn("[disbursePayslip] Realtime notification warning:", notifyErr);
+  }
+
   return { success: true, data: target };
 }
 
@@ -961,7 +1045,7 @@ export async function disbursePayslip(
 export async function approvePayslip(
   payslipId: string
 ): Promise<{ success: boolean; error?: { message: string } }> {
-  await requireRole("FINANCE_OFFICER", "CEO", "ADMIN");
+  const session = await requireRole("FINANCE_OFFICER", "CEO", "ADMIN");
   const payslips = readPayslipsStorage();
   const target = payslips.find((p) => p.id === payslipId);
 
@@ -977,6 +1061,18 @@ export async function approvePayslip(
   revalidatePath("/dashboard/finance/payroll");
   revalidatePath("/dashboard/staff/hr");
   invalidateCacheTags(CACHE_TAGS.PAYROLL);
+
+  try {
+    dispatchRealtimeNotification({
+      eventType: "PAYROLL_UPDATE",
+      title: "Payslip Approved",
+      message: `Payslip ${target.payslipNumber} for ${target.payPeriodMonth} has been approved.`,
+      targetUserIds: [target.userId],
+      excludeUserId: session.user.id,
+    });
+  } catch (notifyErr) {
+    console.warn("[approvePayslip] Realtime notification warning:", notifyErr);
+  }
 
   return { success: true };
 }

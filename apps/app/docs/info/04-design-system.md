@@ -53,19 +53,21 @@ Every dashboard page and future module (`/dashboard/*`) runs inside the unified 
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│ Topbar (h-14 / 56px) — [#010114] with px-clamp(1.25rem, 2.5vw, 2rem)     │
+│ Mobile Topbar (h-14 / 56px) — [#010114] with px-clamp (Mobile < lg only) │
 ├─────────────────┬────────────────────────────────────────────────────────┤
 │ Sidebar         │ Main Content Container (<main>)                        │
-│ Width: 296px    │ Background: #010114 | overflow-y-auto overflow-x-hidden│
-│ Fixed on Desktop│ Padding: clamp(2rem, 4vw, 3.5rem) (Handled by Shell)  │
-│ Slide-out Drawer│ Inner Content: max-w-7xl mx-auto pb-24 w-full          │
+│ Desktop Width:  │ Background: #010114 | overflow-y-auto overflow-x-hidden│
+│ • 280px expand  │ y = 0 Top Prominence (Zero Desktop Topbar)             │
+│ • 68px collapse │ Padding: clamp(2rem, 4vw, 3.5rem) (Handled by Shell)  │
+│ Fixed on Desktop│ Inner Content: max-w-7xl mx-auto pb-24 w-full          │
+│ Slide-out Drawer│                                                        │
 │ on Mobile (<lg) │                                                        │
 └─────────────────┴────────────────────────────────────────────────────────┘
 ```
 
 ### 2.1. Viewport Lock & Anti-Double-Padding Rules
 - **Container Constraint**: Root container is strictly locked to `100dvh` (`max-h-[100dvh] overflow-hidden`).
-- **Independent Scrolling**: `<main>` is the **only** scrollable element in the workspace. The Topbar and Sidebar stay fixed at all times.
+- **Independent Scrolling**: `<main>` is the **only** scrollable element in the workspace. The Topbar (on mobile) and Sidebar stay fixed at all times.
 - **Universal Shell Padding**: `<main>` enforces `padding: clamp(2rem, 4vw, 3.5rem)` with `box-sizing: border-box`.
 - **Anti-Double-Padding Mandate**: Page routes inside `/dashboard` **must NEVER add redundant outer horizontal padding** (NO `px-4 sm:px-8 lg:px-12 py-8`). All inner page containers must use the uniform standard:
   ```tsx
@@ -82,10 +84,15 @@ Every dashboard page and future module (`/dashboard/*`) runs inside the unified 
   - **Rule**: Never mix `gap-4` (16px) with `gap-8` (32px) in the same viewport. Maintaining a uniform **24px (`gap-6`)** across both X and Y axes guarantees harmonious visual rhythm across all role portals.
 - **Guaranteed Consistency**: This standard guarantees that switching between tabs (Intake Triage, Quotation Desk, Staff Directory, Admin Command Center) maintains 100% pixel-perfect horizontal alignment without jumping.
 
-### 2.2. Single Identity Anchor & Anti-Redundancy Standard
-- **Topbar Anchor Exclusivity**: The top-right profile dropdown (`Topbar.tsx`) is the single authoritative anchor for all user identity, role badges, profile links, and session termination (`Sign Out`).
-- **Zero Redundant Cards in Sidebar**: The desktop sidebar (`Sidebar.tsx`) **must never render duplicate user cards**, initials, or logout buttons at its footer. This reclaims ~70px of fixed vertical height, ensuring navigation items breathe comfortably without unnecessary scroll clipping on laptops.
-- **Sidebar Footer Specification**: The sidebar terminates with a subtle, grounded operational status footer (`● System Operational v2.4.0`) that reinforces precision without duplicating session controls.
+### 2.2. Dashdark X Sidebar-First Identity Anchor & Zero Desktop Topbar Standard
+- **Zero Desktop Topbar**: Desktop main canvas operates with zero horizontal topbar. Workspace starts at $y = 0$, giving `<PageHeader>` immediate top prominence without wasted vertical space. On mobile viewports (`< lg`), a lean `h-14` header bar remains for the drawer trigger and mobile controls.
+- **Sidebar-First Identity Anchor**: All session identity, role display tags, role-specific profile routing, and sign-out controls **live directly in the Sidebar footer profile card** (`Sidebar.tsx`).
+- **Collapsible Rail Identity Support**: In expanded mode (`w-[17.5rem]`), user avatar, name, role/account settings, and dropdown caret are displayed. In collapsed mode (`w-[4.25rem]`), the circular avatar operates as the Radix dropdown trigger.
+- **Footer Grounding**: Below the identity card, a subtle operational status footer (`● System Operational v2.4.0` in expanded mode; `●` dot in collapsed mode) provides clean visual grounding.
+- **Synchronous Collapsible Rail & Zero Native Scrollbar Standard**:
+  - Collapse state evaluates synchronously as `isCollapsed = !isOpen && propIsCollapsed`, preventing SSR/client state mismatches.
+  - Windows Chromium native scrollbars and up-arrow buttons (`▲`) are eliminated via `*:not(.no-scrollbar):not([data-no-scrollbar])` in `globals.css` and inline styles `style={isCollapsed ? { scrollbarWidth: "none", msOverflowStyle: "none" } : undefined}`.
+  - Collapsed nav items are fixed 40px × 40px squares centered on `x = 34px`.
 
 ### 2.3. Instantaneous State & Optimistic Duty Tracking Standard
 - **Server Component (RSC) Pre-loading**: Persistent shell widgets (such as `DutyClockWidget`) must receive pre-fetched status (`initialActiveShift`) from async Server Components (`app/dashboard/layout.tsx`). This eliminates client-side fetch delays on initial load, guaranteeing 0ms first-paint without flashing incorrect states or spinners.

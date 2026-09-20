@@ -585,19 +585,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 1024px)");
-    setIsDesktop(media.matches);
-    const listener = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
-  }, []);
-
-  // Collapse mode is strictly for desktop viewports (>= 1024px).
-  // Mobile drawer is ALWAYS full-width expanded.
-  const isCollapsed = isDesktop && propIsCollapsed;
+  // Collapse mode is strictly for desktop viewports.
+  // When mobile drawer is open (isOpen === true), sidebar is always expanded.
+  // On desktop (isOpen === false), collapse state is directly driven by propIsCollapsed with 0ms lag.
+  const isCollapsed = !isOpen && propIsCollapsed;
 
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const prevPathnameRef = useRef<string>(pathname);
@@ -921,13 +912,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* ── 3. Navigation Links List ── */}
-        <div className="p-3.5 flex flex-col gap-4 overflow-y-auto flex-1 scrollbar-thin">
-          <nav aria-label="Sidebar navigation" className="flex flex-col gap-3">
+        <div
+          data-no-scrollbar
+          className={`flex flex-col gap-4 overflow-y-auto flex-1 overflow-x-hidden ${
+            isCollapsed
+              ? "px-0 py-3.5 items-center no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none]"
+              : "p-3.5 scrollbar-thin"
+          }`}
+          style={isCollapsed ? { scrollbarWidth: "none", msOverflowStyle: "none" } : undefined}
+        >
+          <nav
+            aria-label="Sidebar navigation"
+            className={`flex flex-col gap-3 w-full ${isCollapsed ? "items-center" : ""}`}
+          >
             {filteredNavGroups.map((group, gIdx) => (
-              <div key={gIdx} className="flex flex-col gap-0.5">
+              <div
+                key={gIdx}
+                className={`flex flex-col gap-0.5 w-full ${isCollapsed ? "items-center" : ""}`}
+              >
                 <div
                   className={`overflow-hidden transition-all duration-200 ${
-                    isCollapsed ? "h-0 opacity-0 my-0 pointer-events-none" : "h-6 opacity-100 my-1 px-1 flex items-center"
+                    isCollapsed ? "h-0 opacity-0 my-0 pointer-events-none hidden" : "h-6 opacity-100 my-1 px-1 flex items-center"
                   }`}
                 >
                   <span className="text-[10px] font-mono font-medium tracking-widest text-white/35 uppercase select-none whitespace-nowrap">
@@ -981,7 +986,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     return (
                       <div
                         key={item.href + item.label}
-                        className="w-full h-10 flex items-center text-xs rounded-[2px] select-none opacity-40 cursor-not-allowed overflow-hidden border border-transparent"
+                        className={`h-10 flex items-center text-xs rounded-[2px] select-none opacity-40 cursor-not-allowed overflow-hidden border border-transparent ${
+                          isCollapsed ? "w-10 shrink-0 justify-center p-0" : "w-full"
+                        }`}
                         title={`${item.label} (Under Active Development)`}
                       >
                         <div className="w-10 h-10 shrink-0 flex items-center justify-center">
@@ -992,7 +999,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <div
                           className={`flex items-center justify-between flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
                             isCollapsed
-                              ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0"
+                              ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0 hidden"
                               : "max-w-[220px] opacity-100 ml-1.5 pr-2"
                           }`}
                         >
@@ -1018,7 +1025,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       prefetch={true}
                       onMouseEnter={() => router.prefetch(item.href)}
                       onClick={(e) => handleNavClick(e, item.href)}
-                      className={`relative flex items-center h-10 w-full rounded-[2px] transition-all duration-150 ease-out group overflow-hidden active:scale-[0.98] border ${
+                      className={`relative flex items-center h-10 rounded-[2px] transition-all duration-150 ease-out group overflow-hidden active:scale-[0.98] border ${
+                        isCollapsed ? "w-10 shrink-0 justify-center p-0" : "w-full"
+                      } ${
                         effectivelyActive
                           ? "bg-[#CC6600]/12 text-white font-medium border-[#CC6600]/30 shadow-sm"
                           : hasNewMessages
@@ -1073,7 +1082,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <div
                         className={`flex items-center justify-between flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
                           isCollapsed
-                            ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0"
+                            ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0 hidden"
                             : "max-w-[220px] opacity-100 ml-1.5 pr-2"
                         }`}
                       >

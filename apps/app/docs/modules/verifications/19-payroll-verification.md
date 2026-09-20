@@ -53,14 +53,20 @@ Module 19 provides institutional payroll governance, executive compensation conf
 7. **Staff HR Portal Integration (`/dashboard/staff/hr`)**:
    - Dynamic integration with `getMyHrPortalData` and `getMyOfficialPayslip`.
    - Displays official statement document number, status badge (`Disbursed / Paid` vs `Draft`), and exact figures calculated by the payroll engine.
-9. **Employee Self-Service E-Wallets & Bank Details (`/dashboard/staff/hr` - TAB 6)**:
+8. **Employee Self-Service E-Wallets & Bank Details (`/dashboard/staff/hr` - TAB 6)**:
    - Dedicated 6th navigation tab allowing specialists to configure preferred settlement accounts: GCash, Maya, Philippine Banks (BDO, BPI, Metrobank, UnionBank, etc.), or Cash Window.
    - Real-time Live Treasury Verification card previewing exact details visible to Finance and CEO.
    - 1-click clipboard copy with immediate visual feedback.
-10. **Treasury Disbursement Auto-Routing & 1-Click Copy (`DisbursePayslipModal`)**:
-    - Disburse modal automatically identifies employee's registered payout method, displays registered details banner, and auto-selects payment channel.
-11. **Monorepo KPI Typography & Component Standardization (`@repo/ui/src/KpiCard.tsx`)**:
+9. **Treasury Disbursement Auto-Routing & 1-Click Copy (`DisbursePayslipModal`)**:
+   - Disburse modal automatically identifies employee's registered payout method, displays registered details banner, and auto-selects payment channel.
+10. **Monorepo KPI Typography & Component Standardization (`@repo/ui/src/KpiCard.tsx`)**:
     - Standardized all KPI metric cards across Overview, Finance Payroll, CEO Payroll, and Staff HR portals to canonical uppercase mono header, bold mono value, unit suffixes, and solid substrates.
+11. **Real-Time Payroll Event Notification Triggers (`PAY-F14`)**:
+    - Connected `dispatchRealtimeNotification` to `saveCompanyPayrollSchedule`, `saveRoleCompensationConfig`, `saveStaffCompensationOverride`, `generateBatchPayslips`, `disbursePayslip`, and `approvePayslip`.
+    - Instant in-app alerts and notifications delivered to Finance Officers, CEO, and staff members with role-specific links.
+12. **Package Tier Rates & Dual QA Split Governance (`PAY-F15`)**:
+    - Tier-specific deliverable compensation amounts (`BASIC`, `STANDARD`, `PREMIUM`, `ENTERPRISE`) and configurable Statistician vs Senior QA Lead commission splits.
+    - Zero check-types and ESLint errors across all actions and UI views.
 
 ---
 

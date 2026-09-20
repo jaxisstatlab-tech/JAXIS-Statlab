@@ -18,7 +18,8 @@ apps/app/docs/
 │   ├── 05-ui-design-upgrade.md    # Dashdark Precision UI standard, 2:1 bento, Phosphor icons
 │   ├── 06-email-system.md         # Resend transactional email architecture & templates
 │   ├── 07-roadmap.md              # System roadmap v2 & release gates
-│   └── 08-engineering-standards.md# Database, security, performance, monitoring & reliability
+│   ├── 08-engineering-standards.md# Database, security, performance, monitoring & reliability
+│   └── 09-notification-triggers.md# Real-time event engine, event catalog & trigger protocols
 │
 ├── modules/                       ← 📦 2. Functional Module Specifications & Verifications
 │   ├── README.md                  # Module matrix (Modules 00–21)
@@ -60,7 +61,8 @@ apps/app/docs/
   3. [info/03-data-storage.md](./info/03-data-storage.md) — Database & Cloud Storage
   4. [info/04-design-system.md](./info/04-design-system.md) — Design System Tokens
   5. [info/05-ui-design-upgrade.md](./info/05-ui-design-upgrade.md) — Dashdark Precision UI
-  6. [tasks/01-master-tasks.md](./tasks/01-master-tasks.md) — Active Tasks Checklist
+  6. [info/09-notification-triggers.md](./info/09-notification-triggers.md) — Real-Time Notification Engine & Trigger Catalog
+  7. [tasks/01-master-tasks.md](./tasks/01-master-tasks.md) — Active Tasks Checklist
 
 - **Product & Business Operations**:
   1. [info/01-scope.md](./info/01-scope.md) — Platform Scope & Commercial Tiers

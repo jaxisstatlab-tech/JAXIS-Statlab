@@ -170,7 +170,7 @@ body, h1, h2, h3, h4, h5, h6, p, figure, blockquote, dl, dd {
   margin: 0;
 }
 
-* {
+*:not(.no-scrollbar):not([data-no-scrollbar]) {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
@@ -564,6 +564,12 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
   height: 5px;
 }
 
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
@@ -577,9 +583,23 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
   background: rgba(255, 255, 255, 0.25);
 }
 
-* {
+*:not(.no-scrollbar):not([data-no-scrollbar]) {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+/* Utilities to completely suppress scrollbars while preserving native wheel/touch scroll */
+.no-scrollbar::-webkit-scrollbar,
+[data-no-scrollbar]::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar,
+[data-no-scrollbar] {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 /* ==========================================================================

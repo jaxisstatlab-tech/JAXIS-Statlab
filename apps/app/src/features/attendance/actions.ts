@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { db, withDbTimeout } from "@/lib/db";
 import { requireRole, auth } from "@/lib/auth";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
+import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import {
   ClockInSchema,
   ClockOutSchema,
@@ -182,6 +183,18 @@ export async function updateCompanyAttendancePolicy(
       revalidatePath("/dashboard/ceo/attendance");
       revalidatePath("/dashboard/staff/attendance");
       revalidatePath("/dashboard/staff/hr");
+
+      try {
+        dispatchRealtimeNotification({
+          eventType: "ATTENDANCE_UPDATE",
+          title: "Duty Policy Updated",
+          message: "Company attendance and duty policies have been updated by leadership.",
+          targetRoles: ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN"],
+          excludeUserId: session.user.id,
+        });
+      } catch (notifyErr) {
+        console.warn("[updateCompanyAttendancePolicy] Realtime notification warning:", notifyErr);
+      }
 
       return {
         success: true,
@@ -786,6 +799,19 @@ export async function fileAttendanceCorrection(
 
       revalidatePath("/dashboard");
       invalidateCacheTags(CACHE_TAGS.ATTENDANCE_REVIEW);
+
+      try {
+        dispatchRealtimeNotification({
+          eventType: "ATTENDANCE_UPDATE",
+          title: "Attendance Correction Requested",
+          message: `${session.user.name || "Staff member"} requested a punch correction for ${targetDate} (${claimedNetHours}h).`,
+          targetRoles: ["ADMIN", "FINANCE_OFFICER"],
+          excludeUserId: userId,
+        });
+      } catch (notifyErr) {
+        console.warn("[fileAttendanceCorrection] Realtime notification warning:", notifyErr);
+      }
+
       return {
         success: true,
         data: { correctionId: correction.id },
@@ -1089,6 +1115,22 @@ export async function reviewAttendanceCorrection(
 
       revalidatePath("/dashboard");
       invalidateCacheTags(CACHE_TAGS.ATTENDANCE_REVIEW, CACHE_TAGS.PAYROLL);
+
+      try {
+        const approved = action === "APPROVE";
+        dispatchRealtimeNotification({
+          eventType: "ATTENDANCE_UPDATE",
+          title: approved ? "Attendance Correction Approved" : "Attendance Correction Declined",
+          message: approved
+            ? `Your punch correction for ${correction.targetDate.toISOString().split("T")[0]} (${Number(correction.claimedNetHours)}h) was approved.`
+            : `Your punch correction for ${correction.targetDate.toISOString().split("T")[0]} was declined: ${reviewNotes || "Please contact your reviewer."}`,
+          targetUserIds: [correction.userId],
+          excludeUserId: userId,
+        });
+      } catch (notifyErr) {
+        console.warn("[reviewAttendanceCorrection] Realtime notification warning:", notifyErr);
+      }
+
       return {
         success: true,
         data: { correctionId, status: action === "APPROVE" ? "APPROVED" : "REJECTED" },

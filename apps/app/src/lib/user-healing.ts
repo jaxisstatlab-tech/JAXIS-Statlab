@@ -1,5 +1,6 @@
 import { db, withDbTimeout } from "@/lib/db";
 import type { RoleName } from "@prisma/client";
+import { ensureFreshAccountNotifications } from "@/features/notifications/actions";
 
 interface UserCandidate {
   id: string;
@@ -99,6 +100,11 @@ export async function resolveOrProvisionUser(
 
       if (newUser?.id) {
         console.log(`[resolveOrProvisionUser] Auto-provisioned DB user ${newUser.id} for ${candidateEmail}`);
+        try {
+          await ensureFreshAccountNotifications(newUser.id, targetRole);
+        } catch {
+          // Non-blocking
+        }
         return newUser.id;
       }
     } catch (provisionErr) {

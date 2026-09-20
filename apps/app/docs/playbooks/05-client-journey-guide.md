@@ -26,7 +26,7 @@ Clients experience a transparent, predictable, and professional consulting workf
 ## 2. Step-by-Step Client Flow
 
 ### Step 1: Submitting Your Research Study
-1. Navigate to `/dashboard/client/submit`.
+1. Navigate to `/dashboard/client/projects/new`.
 2. Fill out your study title, research objective, and methodology requirements (e.g., ANOVA, Multiple Linear Regression, Factor Analysis).
 3. Select your desired delivery turnaround:
    - **Standard**: 7–10 Business Days

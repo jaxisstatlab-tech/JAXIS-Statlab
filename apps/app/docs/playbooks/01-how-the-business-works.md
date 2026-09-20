@@ -17,7 +17,7 @@ Every project follows a strict 7-stage workflow from first contact to final arch
 ```
 STAGE 1: INTAKE & TRIAGE
 ────────────────────────
-Client fills out submission form at /dashboard/client/submit
+Client fills out submission form at /dashboard/client/projects/new
 • Uploads raw dataset (.csv, .sav, .xlsx)
 • Defines hypothesis and research questions
 • Selects turnaround speed: Standard (7-10d), Rush (3-5d), Emergency (24-48h)

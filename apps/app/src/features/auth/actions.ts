@@ -15,6 +15,8 @@ import {
   registerDevUser,
 } from "@/lib/mock-data/users.data";
 import { sendEmail } from "@/lib/email";
+import { ensureFreshAccountNotifications } from "@/features/notifications/actions";
+import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 
 export async function registerClient(
   input: unknown
@@ -117,6 +119,20 @@ export async function registerClient(
         password: password,
         status: "ACTIVE",
       });
+    }
+
+    try {
+      await ensureFreshAccountNotifications(user.id, "CLIENT");
+
+      dispatchRealtimeNotification({
+        eventType: "NEW_INTAKE",
+        title: "New Client Registered",
+        message: `${fullName.trim()} (${user.email}) registered a new client account.`,
+        targetRoles: ["ADMIN", "CEO"],
+        excludeUserId: user.id,
+      });
+    } catch (notifyErr) {
+      console.warn("[Register] Welcome notification warning:", notifyErr);
     }
 
     return {

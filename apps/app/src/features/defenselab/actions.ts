@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth, requireRole } from "@/lib/auth";
 import { db, getDb, withDbTimeout } from "@/lib/db";
+import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import {
   BookDefenseLabSessionSchema,
   RescheduleDefenseLabSessionSchema,
@@ -376,6 +377,20 @@ export async function bookDefenseLabSession(
     revalidatePath("/dashboard/client/defenselab");
     revalidatePath("/dashboard/admin/defenselab");
 
+    try {
+      dispatchRealtimeNotification({
+        eventType: "DEFENSELAB_UPDATE",
+        projectId,
+        title: "Mock Defense Booked",
+        message: `Client scheduled a ${durationHours}-hour DefenseLab rehearsal on ${scheduledDate.toLocaleDateString()}.`,
+        targetRoles: ["ADMIN"],
+        targetUserIds: entitlement.assignedStatisticianId ? [entitlement.assignedStatisticianId] : undefined,
+        excludeUserId: session.user.id,
+      });
+    } catch (notifyErr) {
+      console.warn("[bookDefenseLabSession] Realtime notification warning:", notifyErr);
+    }
+
     return {
       success: true,
       data: {
@@ -562,6 +577,20 @@ export async function rescheduleDefenseLabSession(
     revalidatePath("/dashboard/client/defenselab");
     revalidatePath("/dashboard/admin/defenselab");
 
+    try {
+      dispatchRealtimeNotification({
+        eventType: "DEFENSELAB_UPDATE",
+        projectId: updated.projectId,
+        title: "DefenseLab Session Rescheduled",
+        message: `DefenseLab rehearsal was rescheduled to ${finalScheduledAt.toLocaleDateString()}.`,
+        targetUserIds: [updated.clientId, updated.expertId].filter(Boolean),
+        targetRoles: ["ADMIN"],
+        excludeUserId: session.user.id,
+      });
+    } catch (notifyErr) {
+      console.warn("[rescheduleDefenseLabSession] Realtime notification warning:", notifyErr);
+    }
+
     return {
       success: true,
       data: {
@@ -631,8 +660,9 @@ export async function updateDefenseLabMeetingLink(
     const client = getDb();
     const defenseDelegate = (client as any).defenseLabSession || (db as any).defenseLabSession;
 
+    let sessionData: { projectId?: string; clientId?: string; expertId?: string } | null = null;
     if (defenseDelegate) {
-      await withDbTimeout(
+      sessionData = await withDbTimeout(
         defenseDelegate.update({
           where: { id: sessionId },
           data: { meetingUrl: meetingUrl.trim() },
@@ -646,10 +676,33 @@ export async function updateDefenseLabMeetingLink(
           sessionId
         )
       );
+      const rows: any[] = await client.$queryRawUnsafe(
+        `SELECT * FROM "defense_lab_sessions" WHERE "id" = $1 LIMIT 1`,
+        sessionId
+      );
+      sessionData = rows?.[0];
     }
 
     revalidatePath("/dashboard/client/defenselab");
     revalidatePath("/dashboard/admin/defenselab");
+
+    try {
+      if (sessionData) {
+        const recipients = [sessionData.clientId, sessionData.expertId].filter((id): id is string => Boolean(id));
+        if (recipients.length > 0) {
+          dispatchRealtimeNotification({
+            eventType: "DEFENSELAB_UPDATE",
+            projectId: sessionData.projectId,
+            title: "DefenseLab Meeting Link Ready",
+            message: "Your DefenseLab video meeting link has been updated. Check your rehearsal desk.",
+            targetUserIds: recipients,
+            excludeUserId: session.user.id,
+          });
+        }
+      }
+    } catch (notifyErr) {
+      console.warn("[updateDefenseLabMeetingLink] Realtime notification warning:", notifyErr);
+    }
 
     return {
       success: true,
@@ -685,8 +738,9 @@ export async function completeDefenseLabSession(
     const client = getDb();
     const defenseDelegate = (client as any).defenseLabSession || (db as any).defenseLabSession;
 
+    let sessionData: { projectId?: string; clientId?: string } | null = null;
     if (defenseDelegate) {
-      await withDbTimeout(
+      sessionData = await withDbTimeout(
         defenseDelegate.update({
           where: { id: sessionId },
           data: {
@@ -711,10 +765,30 @@ export async function completeDefenseLabSession(
           sessionId
         )
       );
+      const rows: any[] = await client.$queryRawUnsafe(
+        `SELECT * FROM "defense_lab_sessions" WHERE "id" = $1 LIMIT 1`,
+        sessionId
+      );
+      sessionData = rows?.[0];
     }
 
     revalidatePath("/dashboard/client/defenselab");
     revalidatePath("/dashboard/admin/defenselab");
+
+    try {
+      if (sessionData?.clientId) {
+        dispatchRealtimeNotification({
+          eventType: "DEFENSELAB_UPDATE",
+          projectId: sessionData.projectId,
+          title: "DefenseLab Rehearsal Completed",
+          message: "Your DefenseLab mock defense rehearsal has been completed.",
+          targetUserIds: [sessionData.clientId],
+          excludeUserId: session.user.id,
+        });
+      }
+    } catch (notifyErr) {
+      console.warn("[completeDefenseLabSession] Realtime notification warning:", notifyErr);
+    }
 
     return {
       success: true,

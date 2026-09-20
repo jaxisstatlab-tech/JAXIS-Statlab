@@ -25,7 +25,6 @@ import {
   Lightning,
   Flame,
   Lock,
-  Copy,
   X,
   ClipboardText,
   FileText,
@@ -41,6 +40,7 @@ import {
   ADDONS_CATALOG,
   calculateQuotationTotals,
 } from "@/lib/pricing-rules";
+import { formatPeso } from "@/lib/formatters";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 import type { QuotationDetailItem } from "@/features/quotations/schemas";
 import type { AddOnName } from "@prisma/client";
@@ -103,16 +103,6 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  const handleCopyId = () => {
-    if (!project) return;
-    navigator.clipboard.writeText(project.intakeId);
-    setToastMessage({
-      message: "Copied to Clipboard",
-      description: `Study ID ${project.intakeId} copied.`,
-      variant: "info",
-    });
-  };
 
   const handleAcceptProposal = () => {
     if (!quotation) return;
@@ -186,18 +176,19 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
     });
   };
 
-  const getAddOnIcon = (name: AddOnName | string) => {
+  const getAddOnIcon = (name: AddOnName | string, isSelected: boolean = false) => {
+    const iconClass = isSelected ? "text-[#FFA040]" : "text-white/40";
     switch (name) {
       case "DEFENSELAB":
-        return <GraduationCap size={20} weight="fill" className="text-sky-400" />;
+        return <GraduationCap size={18} weight="fill" className={iconClass} />;
       case "RUSH":
-        return <Lightning size={20} weight="fill" className="text-amber-400" />;
+        return <Lightning size={18} weight="fill" className={iconClass} />;
       case "EXPRESS":
-        return <Flame size={20} weight="fill" className="text-orange-400" />;
+        return <Flame size={18} weight="fill" className={iconClass} />;
       case "EMERGENCY":
-        return <Warning size={20} weight="fill" className="text-rose-400" />;
+        return <Warning size={18} weight="fill" className={iconClass} />;
       default:
-        return <Sparkle size={20} weight="fill" className="text-amber-400" />;
+        return <Sparkle size={18} weight="fill" className={iconClass} />;
     }
   };
 
@@ -257,6 +248,16 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
 
     return Array.from(map.values());
   }, [quotation]);
+
+  const generalAddOns = useMemo(
+    () => availableAddOns.filter((a) => !a.isSpeedRider),
+    [availableAddOns]
+  );
+
+  const speedAddOns = useMemo(
+    () => availableAddOns.filter((a) => a.isSpeedRider),
+    [availableAddOns]
+  );
 
   // Toggle add-on selection
   const toggleAddOn = (code: string) => {
@@ -542,125 +543,238 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
             )}
           </Card>
 
-          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-5">
-            <div className="border-b border-white/10 pb-4 flex items-center justify-between">
+          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-6">
+            <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
                   <Receipt size={18} weight="fill" className="text-[#CC6600]" />
-                  <span>Pricing Breakdown &amp; Options</span>
+                  <span>Pricing Breakdown &amp; Scope Options</span>
                 </h3>
-                {quotation.status === "QUOTE_SENT" && !quotation.isExpired && (
-                  <p className="text-xs text-white/60 font-sans mt-1">
-                    Select the optional priority add-ons or speed delivery riders you wish to include in your scope:
-                  </p>
-                )}
+                <p className="text-xs text-white/60 font-sans mt-1">
+                  {quotation.status === "QUOTE_SENT" && !quotation.isExpired
+                    ? "Choose optional coaching or faster delivery turnaround for your study:"
+                    : "Itemized summary of research services and confirmed scope add-ons:"}
+                </p>
               </div>
-              <span className="text-xs font-sans text-white/60 uppercase font-semibold px-2.5 py-0.5 rounded-[2px] bg-white/[0.06] border border-white/10 flex-shrink-0">
+              <span className="text-xs font-mono text-white/70 uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-white/[0.06] border border-white/10 flex-shrink-0 self-start sm:self-auto">
                 {quotation.isUpfrontEnforced ? "100% Upfront" : "50% Milestone"}
               </span>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* Base Service Package */}
               <div className="p-4 sm:p-5 rounded-[2px] bg-[#010D1F] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-semibold text-white font-sans">{pkgDef?.name || quotation.packageName}</span>
-                    <span className="text-[0.6875rem] font-sans uppercase px-2 py-0.5 rounded-[2px] bg-sky-500/10 text-sky-300 border border-sky-500/20 font-semibold">
-                      Base Service (Included)
-                    </span>
+                <div className="flex items-start gap-3.5">
+                  <div className="pt-0.5 flex-shrink-0">
+                    <div className="w-5 h-5 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                      <Check size={12} weight="bold" />
+                    </div>
                   </div>
-                  <p className="text-xs text-white/60 font-sans leading-relaxed">
-                    Core computational analysis &amp; APA 7th reporting
-                  </p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-white font-sans">
+                        {pkgDef?.name || quotation.packageName}
+                      </span>
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-[2px] bg-white/[0.06] text-white/70 border border-white/10 font-medium">
+                        Base Package · Included
+                      </span>
+                    </div>
+                    <p className="text-xs text-white/60 font-sans leading-relaxed">
+                      Full statistical modeling, hypothesis testing, and APA 7th summary tables
+                    </p>
+                  </div>
                 </div>
                 <div className="text-base sm:text-lg font-mono font-bold text-white flex-shrink-0 self-end sm:self-auto">
-                  <Peso />{quotation.basePrice.toLocaleString()}
+                  <Peso className="text-white/70 font-sans mr-0.5" />{quotation.basePrice.toLocaleString()}
                 </div>
               </div>
 
-              {/* Add-ons List with Interactive Selection */}
-              {availableAddOns.map((addon) => {
-                const isSelected = selectedAddOnCodes.includes(addon.code);
-                const isInteractive = quotation.status === "QUOTE_SENT" && !quotation.isExpired;
+              {/* Optional Coaching Services */}
+              {generalAddOns.length > 0 && (
+                <div className="space-y-2.5 pt-1">
+                  <div className="flex items-center justify-between flex-wrap gap-2 px-0.5">
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-white/50 font-semibold flex items-center gap-1.5">
+                      <GraduationCap size={14} weight="fill" className="text-white/40" />
+                      <span>Optional Add-On Services</span>
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {generalAddOns.map((addon) => {
+                      const isSelected = selectedAddOnCodes.includes(addon.code);
+                      const isInteractive = quotation.status === "QUOTE_SENT" && !quotation.isExpired;
 
-                return (
-                  <div
-                    key={addon.code}
-                    onClick={() => isInteractive && toggleAddOn(addon.code)}
-                    className={`p-4 sm:p-5 rounded-[2px] border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none ${
-                      isInteractive ? "cursor-pointer" : "cursor-default"
-                    } ${
-                      isSelected
-                        ? "bg-[#011B38] border-emerald-500/40 ring-1 ring-emerald-500/20 shadow-sm"
-                        : "bg-[#010D1F] border-white/10 hover:border-white/20 opacity-75 hover:opacity-100"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3.5">
-                      {isInteractive && (
-                        <div className="pt-0.5 flex-shrink-0">
+                      return (
+                        <div
+                          key={addon.code}
+                          onClick={() => isInteractive && toggleAddOn(addon.code)}
+                          className={`p-4 sm:p-5 rounded-[2px] border transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none ${
+                            isInteractive ? "cursor-pointer group" : "cursor-default"
+                          } ${
+                            isSelected
+                              ? "bg-[#011736] border-white/20 border-l-[3px] border-l-[#CC6600]"
+                              : "bg-[#010D1F] border-white/10 hover:border-white/20 hover:bg-[#01142B]/70 opacity-85 hover:opacity-100"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3.5">
+                            {isInteractive ? (
+                              <div className="pt-0.5 flex-shrink-0">
+                                <div
+                                  className={`w-5 h-5 rounded-[2px] border flex items-center justify-center transition-all duration-150 active:scale-90 ${
+                                    isSelected
+                                      ? "bg-[#CC6600] border-[#CC6600] text-white shadow-sm"
+                                      : "border-white/25 bg-white/[0.04] group-hover:border-white/40"
+                                  }`}
+                                >
+                                  {isSelected && <Check size={12} weight="bold" />}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="pt-0.5 flex-shrink-0">
+                                <div className="w-5 h-5 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                                  <Check size={12} weight="bold" />
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {getAddOnIcon(addon.code, isSelected)}
+                                <span className="text-sm font-semibold font-sans text-white">
+                                  {addon.name}
+                                </span>
+                                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-[2px] bg-white/[0.05] text-white/60 border border-white/10 font-medium">
+                                  {addon.badge}
+                                </span>
+                              </div>
+                              <p className="text-xs text-white/60 font-sans leading-relaxed">
+                                {addon.tagline}
+                              </p>
+                            </div>
+                          </div>
+
                           <div
-                            className={`w-5 h-5 rounded-[2px] border flex items-center justify-center transition-colors ${
-                              isSelected
-                                ? "bg-emerald-500 border-emerald-400 text-white"
-                                : "border-white/30 bg-white/[0.04]"
+                            className={`text-base sm:text-lg font-mono flex-shrink-0 self-end sm:self-auto transition-colors ${
+                              isSelected ? "font-bold text-white" : "font-medium text-white/40"
                             }`}
                           >
-                            {isSelected && <Check size={13} weight="fill" />}
+                            +<Peso className={isSelected ? "text-white/70 font-sans mr-0.5" : "text-white/40 font-sans mr-0.5"} />{addon.amount.toLocaleString()}
                           </div>
                         </div>
-                      )}
-
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {getAddOnIcon(addon.code)}
-                          <span className={`text-sm font-semibold font-sans ${isSelected ? "text-white" : "text-white/85"}`}>
-                            {addon.name}
-                          </span>
-                          <span className="text-[0.6875rem] font-sans uppercase px-2 py-0.5 rounded-[2px] bg-white/[0.06] text-white/60 border border-white/10 font-semibold">
-                            {addon.badge}
-                          </span>
-                          {isInteractive && (
-                            <span
-                              className={`text-[0.6875rem] font-sans uppercase px-2 py-0.5 rounded-[2px] font-bold ${
-                                isSelected
-                                  ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                                  : "bg-white/[0.04] text-white/40 border border-white/10"
-                              }`}
-                            >
-                              {isSelected ? "Selected" : "Optional"}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-white/60 font-sans leading-relaxed">
-                          {addon.tagline}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div
-                      className={`text-base sm:text-lg font-mono font-bold flex-shrink-0 self-end sm:self-auto ${
-                        isSelected ? "text-amber-300" : "text-white/40"
-                      }`}
-                    >
-                      +<Peso />{addon.amount.toLocaleString()}
-                    </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              )}
 
-              {/* Dynamically Recalculated Total */}
-              <div className="p-5 sm:p-6 rounded-[2px] bg-[#010D1F] border border-sky-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm mt-3">
-                <div className="space-y-0.5">
-                  <span className="text-xs font-sans font-semibold uppercase text-sky-400 tracking-wider block">
-                    Total Amount
-                  </span>
+              {/* Turnaround Speed Tiers */}
+              {speedAddOns.length > 0 && (
+                <div className="space-y-2.5 pt-1">
+                  <div className="flex items-center justify-between flex-wrap gap-2 px-0.5">
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-white/50 font-semibold flex items-center gap-1.5">
+                      <Clock size={14} weight="fill" className="text-white/40" />
+                      <span>Turnaround Speed (Select One)</span>
+                    </span>
+                    <span className="text-[11px] font-sans text-white/40">
+                      Standard turnaround: 5–7 business days
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {speedAddOns.map((addon) => {
+                      const isSelected = selectedAddOnCodes.includes(addon.code);
+                      const isInteractive = quotation.status === "QUOTE_SENT" && !quotation.isExpired;
+
+                      return (
+                        <div
+                          key={addon.code}
+                          onClick={() => isInteractive && toggleAddOn(addon.code)}
+                          className={`p-4 sm:p-5 rounded-[2px] border transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none ${
+                            isInteractive ? "cursor-pointer group" : "cursor-default"
+                          } ${
+                            isSelected
+                              ? "bg-[#011736] border-white/20 border-l-[3px] border-l-[#CC6600]"
+                              : "bg-[#010D1F] border-white/10 hover:border-white/20 hover:bg-[#01142B]/70 opacity-85 hover:opacity-100"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3.5">
+                            {isInteractive ? (
+                              <div className="pt-0.5 flex-shrink-0">
+                                <div
+                                  className={`w-5 h-5 rounded-[2px] border flex items-center justify-center transition-all duration-150 active:scale-90 ${
+                                    isSelected
+                                      ? "bg-[#CC6600] border-[#CC6600] text-white shadow-sm"
+                                      : "border-white/25 bg-white/[0.04] group-hover:border-white/40"
+                                  }`}
+                                >
+                                  {isSelected && <Check size={12} weight="bold" />}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="pt-0.5 flex-shrink-0">
+                                <div className="w-5 h-5 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                                  <Check size={12} weight="bold" />
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {getAddOnIcon(addon.code, isSelected)}
+                                <span className="text-sm font-semibold font-sans text-white">
+                                  {addon.name}
+                                </span>
+                                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-[2px] bg-white/[0.05] text-white/60 border border-white/10 font-medium">
+                                  {addon.badge}
+                                </span>
+                              </div>
+                              <p className="text-xs text-white/60 font-sans leading-relaxed">
+                                {addon.tagline}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div
+                            className={`text-base sm:text-lg font-mono flex-shrink-0 self-end sm:self-auto transition-colors ${
+                              isSelected ? "font-bold text-white" : "font-medium text-white/40"
+                            }`}
+                          >
+                            +<Peso className={isSelected ? "text-white/70 font-sans mr-0.5" : "text-white/40 font-sans mr-0.5"} />{addon.amount.toLocaleString()}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamically Recalculated Total Investment Box */}
+              <div className="p-5 sm:p-6 rounded-[2px] bg-[#010D1F] border border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-3">
+                <div className="space-y-1.5 max-w-lg">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-semibold uppercase text-white/50 tracking-wider">
+                      Total Estimated Investment
+                    </span>
+                    {selectedAddOnCodes.length > 0 && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-[2px] bg-[#CC6600]/15 text-[#FFA040] border border-[#CC6600]/30 font-semibold">
+                        +{selectedAddOnCodes.length} {selectedAddOnCodes.length === 1 ? "Add-On" : "Add-Ons"} Included
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-white/60 font-sans leading-relaxed">
-                    All-inclusive research computation, quality audit, and reporting deliverables
+                    {quotation.isUpfrontEnforced
+                      ? "All-inclusive statistical modeling, QA review, and summary tables · 100% upfront deposit"
+                      : selectedAddOnCodes.length > 0
+                        ? `Includes base scope + ${selectedAddOnCodes.length} add-on${selectedAddOnCodes.length > 1 ? "s" : ""} · ${quotation.downpaymentPercentage}% milestone deposit (${formatPeso(currentPricing.downpaymentRequired, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}) due upon signing`
+                        : `Base package scope · ${quotation.downpaymentPercentage}% milestone deposit (${formatPeso(currentPricing.downpaymentRequired, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}) due upon signing`}
                   </p>
                 </div>
-                <div className="text-2xl sm:text-3xl font-mono font-bold text-[#38BDF8] flex-shrink-0 self-end sm:self-auto">
-                  <Peso />{currentPricing.totalAmount.toLocaleString()}
+                <div className="flex flex-col items-start sm:items-end flex-shrink-0">
+                  <div className="text-2xl sm:text-3xl lg:text-4xl font-mono font-bold text-white tracking-tight flex items-baseline">
+                    <Peso className="text-white/70 font-sans mr-1" />
+                    <span>{currentPricing.totalAmount.toLocaleString()}</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider mt-0.5">
+                    PHP · Philippine Peso
+                  </span>
                 </div>
               </div>
             </div>

@@ -5,6 +5,7 @@ import { auth, requireRole } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import type { RoleName, Prisma } from "@prisma/client";
 import { runFirewall, getFirewallWarningMessage } from "@/lib/messaging/firewall";
+import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import {
   SendMessageSchema,
   ReviewBlockedMessageSchema,
@@ -141,6 +142,19 @@ export async function sendMessage(
           },
         });
 
+        try {
+          dispatchRealtimeNotification({
+            eventType: "SECURITY_ALERT",
+            projectId: project.id,
+            title: "Firewall Alert: Contact Info Blocked",
+            message: `${user.fullName || "User"} triggered a communication policy block in consultation.`,
+            targetRoles: ["ADMIN", "CEO"],
+            excludeUserId: user.id,
+          });
+        } catch (notifyErr) {
+          console.warn("[sendMessage/firewall] Realtime notification warning:", notifyErr);
+        }
+
         return {
           success: false,
           blocked: true,
@@ -162,6 +176,19 @@ export async function sendMessage(
           isBlocked: false,
         },
       });
+
+      try {
+        dispatchRealtimeNotification({
+          eventType: "MESSAGE_ALERT",
+          projectId: project.id,
+          title: "New Consultation Message",
+          message: `${user.fullName || "Team Member"}: ${content.trim().slice(0, 80)}${content.trim().length > 80 ? "..." : ""}`,
+          includeProjectParties: true,
+          excludeUserId: user.id,
+        });
+      } catch (notifyErr) {
+        console.warn("[sendMessage/clean] Realtime notification warning:", notifyErr);
+      }
 
       const messageDTO: MessageDTO = {
         id: newMsg.id,

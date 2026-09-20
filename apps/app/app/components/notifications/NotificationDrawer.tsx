@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useOptimistic, startTransition, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useOptimistic, startTransition, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
@@ -57,8 +57,6 @@ export function NotificationDrawer({
   className = "",
   triggerVariant = "icon",
   isSidebarCollapsed = false,
-  side = "right",
-  align = "start",
 }: NotificationDrawerProps = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -437,10 +435,55 @@ export function NotificationDrawer({
     });
   };
 
-  const filteredAlerts = optimisticState.alerts.filter((a) => {
-    if (filterTab === "UNREAD") return !a.isRead;
-    return true;
-  });
+  // Default sort: Newest first to oldest (guaranteed chronological descending order)
+  const filteredAlerts = useMemo(() => {
+    return [...optimisticState.alerts]
+      .filter((a) => (filterTab === "UNREAD" ? !a.isRead : true))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [optimisticState.alerts, filterTab]);
+
+  const formatAlertTimestamp = (dateStr: string): string => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "";
+
+      const now = new Date();
+      const isToday =
+        d.getDate() === now.getDate() &&
+        d.getMonth() === now.getMonth() &&
+        d.getFullYear() === now.getFullYear();
+
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      const isYesterday =
+        d.getDate() === yesterday.getDate() &&
+        d.getMonth() === yesterday.getMonth() &&
+        d.getFullYear() === yesterday.getFullYear();
+
+      const timePart = d.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+
+      if (isToday) {
+        return `Today · ${timePart}`;
+      }
+      if (isYesterday) {
+        return `Yesterday · ${timePart}`;
+      }
+
+      const isThisYear = d.getFullYear() === now.getFullYear();
+      const datePart = d.toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+        ...(isThisYear ? {} : { year: "numeric" }),
+      });
+
+      return `${datePart} · ${timePart}`;
+    } catch {
+      return "";
+    }
+  };
 
   const getAlertIcon = (type: string) => {
     switch (type) {
@@ -485,6 +528,61 @@ export function NotificationDrawer({
       default:
         return "Open Workspace";
     }
+  };
+
+  /**
+   * Renders the notification message while highlighting study IDs (e.g. JAXIS-YYYYMM-XXXX or alert.projectIntakeId)
+   * into an eye-catching, high-contrast Enterprise Orange chip for effortless scannability.
+   * If an alert is linked to a study ID that is not mentioned in the message text, it prepends the badge.
+   */
+  const renderHighlightedMessage = (message: string, projectIntakeId?: string | null) => {
+    if (!message) return null;
+
+    // Study pattern matching canonical JAXIS intake ID: JAXIS-YYYYMM-XXXX
+    const studyRegex = /\b(JAXIS-\d{6}-\d{4})\b/g;
+    const hasStudyIdInText =
+      studyRegex.test(message) ||
+      Boolean(projectIntakeId && message.includes(projectIntakeId));
+
+    // If alert has a projectIntakeId but the message text never mentioned it, prepend it
+    const prependIntakeBadge = Boolean(projectIntakeId && !hasStudyIdInText);
+
+    // Split message by study ID pattern (and projectIntakeId if non-standard)
+    const splitPattern = projectIntakeId
+      ? new RegExp(
+          `(${projectIntakeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}|JAXIS-\\d{6}-\\d{4})`,
+          "g"
+        )
+      : /(JAXIS-\d{6}-\d{4})/g;
+
+    const segments = message.split(splitPattern);
+
+    return (
+      <>
+        {prependIntakeBadge && projectIntakeId && (
+          <span className="font-mono text-[11px] font-bold text-[#FFA040] bg-[#CC6600]/15 border border-[#CC6600]/30 px-1.5 py-0.5 rounded-[2px] inline-flex items-center align-baseline mr-1.5 tracking-wide select-all shadow-xs">
+            {projectIntakeId}
+          </span>
+        )}
+        {segments.map((segment, idx) => {
+          const isStudyId =
+            (projectIntakeId && segment === projectIntakeId) ||
+            /^JAXIS-\d{6}-\d{4}$/.test(segment);
+
+          if (isStudyId) {
+            return (
+              <span
+                key={idx}
+                className="font-mono text-[11px] font-bold text-[#FFA040] bg-[#CC6600]/15 border border-[#CC6600]/30 px-1.5 py-0.5 rounded-[2px] inline-flex items-center align-baseline mx-0.5 tracking-wide select-all shadow-xs"
+              >
+                {segment}
+              </span>
+            );
+          }
+          return <span key={idx}>{segment}</span>;
+        })}
+      </>
+    );
   };
 
   return (
@@ -745,19 +843,17 @@ export function NotificationDrawer({
                       <span className="font-mono text-[10px] uppercase text-white/50 font-semibold tracking-wider truncate">
                         {alert.alertType.replace(/_/g, " ")}
                       </span>
-                      {alert.projectIntakeId && (
-                        <span className="font-mono text-[10px] text-[#FFA040] bg-[#CC6600]/10 border border-[#CC6600]/25 px-1.5 py-0.2 rounded-[2px] font-bold shrink-0">
-                          {alert.projectIntakeId}
-                        </span>
-                      )}
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-                      <span className="text-[10px] text-white/35 font-mono">
-                        {new Date(alert.createdAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
+                      <span
+                        className="text-[10px] text-white/40 font-mono whitespace-nowrap"
+                        title={new Date(alert.createdAt).toLocaleString("en-PH", {
+                          dateStyle: "full",
+                          timeStyle: "short",
                         })}
+                      >
+                        {formatAlertTimestamp(alert.createdAt)}
                       </span>
 
                       {/* Mark as read button */}
@@ -792,9 +888,9 @@ export function NotificationDrawer({
                     </div>
                   </div>
 
-                  {/* Message body */}
+                  {/* Message body with highlighted study ID */}
                   <p className="text-xs leading-relaxed text-white/85 font-sans">
-                    {alert.message}
+                    {renderHighlightedMessage(alert.message, alert.projectIntakeId)}
                   </p>
 
                   {/* Action link */}

@@ -848,6 +848,68 @@ async function main() {
               ],
             });
 
+          const existingClientAlerts = await (prisma as any).inAppAlert.count({
+            where: { recipientId: clientUser.id },
+          });
+
+          if (existingClientAlerts === 0) {
+            await (prisma as any).inAppAlert.createMany({
+              data: [
+                {
+                  recipientId: clientUser.id,
+                  recipientRole: "CLIENT",
+                  alertType: "COMMERCIAL_UPDATE",
+                  projectId: firstProject.id,
+                  message: `Quotation ready for review: ${firstProject.intakeId} — ${firstProject.researchTitle}. Package: Statistical Suite. Scope of work and pricing ready.`,
+                  linkUrl: `/dashboard/client/projects/${firstProject.id}/quote`,
+                  isRead: true,
+                  createdAt: new Date(Date.now() - 86400000 * 3),
+                },
+                {
+                  recipientId: clientUser.id,
+                  recipientRole: "CLIENT",
+                  alertType: "COMMERCIAL_UPDATE",
+                  projectId: firstProject.id,
+                  message: `Scope of Work (SOW) agreement executed for ${firstProject.intakeId}. Research milestones and deliverables are locked in escrow.`,
+                  linkUrl: `/dashboard/client/projects/${firstProject.id}/sow`,
+                  isRead: true,
+                  createdAt: new Date(Date.now() - 86400000 * 2),
+                },
+                {
+                  recipientId: clientUser.id,
+                  recipientRole: "CLIENT",
+                  alertType: "PAYMENT_UPDATE",
+                  projectId: firstProject.id,
+                  message: `Downpayment verified for ${firstProject.intakeId}. Escrow vault confirmed and specialist workbench unlocked.`,
+                  linkUrl: `/dashboard/client/projects/${firstProject.id}`,
+                  isRead: true,
+                  createdAt: new Date(Date.now() - 86400000 * 1.5),
+                },
+                {
+                  recipientId: clientUser.id,
+                  recipientRole: "CLIENT",
+                  alertType: "ASSIGNMENT",
+                  projectId: firstProject.id,
+                  message: `Research team assigned to ${firstProject.intakeId}: Lead Statistician Dr. Juan Reyes and Senior QA Lead Maria. Statistical modeling active.`,
+                  linkUrl: `/dashboard/client/projects/${firstProject.id}`,
+                  isRead: true,
+                  createdAt: new Date(Date.now() - 86400000 * 1),
+                },
+                {
+                  recipientId: clientUser.id,
+                  recipientRole: "CLIENT",
+                  alertType: "STATUS_UPDATE",
+                  projectId: firstProject.id,
+                  message: `Senior QA Lead is running independent verification scripts and auditing APA format compliance for ${firstProject.intakeId}.`,
+                  linkUrl: `/dashboard/client/projects/${firstProject.id}`,
+                  isRead: false,
+                  createdAt: new Date(Date.now() - 3600000 * 4),
+                },
+              ],
+            });
+            console.log("✅ Seeded Module 16 In-App Alerts for Client on study JAXIS-202608-0001.");
+          }
+
             await (prisma as any).notificationLog.createMany({
               data: [
                 {

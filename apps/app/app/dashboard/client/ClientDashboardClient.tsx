@@ -11,19 +11,21 @@ import {
   Toast,
   LoadingState,
   CopyButton,
-  ProgressBar,
   StatusBadge,
 } from "@repo/ui";
 import {
   Plus,
   Question,
   Target,
-  Check,
+  CheckCircle,
   Clock,
   ChatCenteredText,
   GraduationCap,
   ShieldCheck,
   Trash,
+  ArrowRight,
+  CalendarBlank,
+  FileText,
 } from "@phosphor-icons/react";
 import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
@@ -563,23 +565,24 @@ export function ClientDashboardClient({
           <Card className="p-6 sm:p-7 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 sm:gap-5 h-full">
             {primaryStudy && stageInfo ? (
               <>
-                {/* Card Header matching Dashdark X precision standard */}
-                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+                {/* 1. Header: Categorical Identity & Stage Readout */}
+                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3.5">
                   <div className="flex items-center gap-2.5">
-                    <Target size={18} weight="fill" className="text-[#CC6600]" />
-                    <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                    <Target size={16} weight="fill" className="text-[#CC6600]" />
+                    <h2 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
                       Active Research Journey
                     </h2>
                   </div>
-                  <span className="text-white/40 font-mono text-[10px]">
-                    Stage {stageInfo.stageIndex + 1} of 5
+                  <span className="text-white/40 font-mono text-[11px]">
+                    Stage {stageInfo.stageIndex + 1} of 5 · {stagePercentage}%
                   </span>
                 </div>
 
-                {/* Study Metadata & Direct Action Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                {/* 2. Study Focal Subject & Direct Action CTA */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex flex-col min-w-0 flex-1">
+                    {/* Unified Metadata Row (Zero nested container box) */}
+                    <div className="flex items-center gap-2 flex-wrap text-xs">
                       <CopyButton
                         variant="badge"
                         value={primaryStudy.intakeId}
@@ -590,27 +593,61 @@ export function ClientDashboardClient({
                           {primaryStudy.packageName.replace(/_/g, " ")}
                         </span>
                       )}
-                      <span className="text-white/30 text-xs font-mono">·</span>
-                      <span className="text-xs font-sans text-white/50">
-                        Target: {new Date(primaryStudy.deadlineRequested).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                      <span className="text-white/30 font-mono">·</span>
+                      <span className="text-xs font-sans text-white/50 inline-flex items-center gap-1">
+                        <CalendarBlank size={12} weight="fill" className="text-white/40 shrink-0" />
+                        <span>Due {new Date(primaryStudy.deadlineRequested).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</span>
+                      </span>
+                      {primaryStudy.files && primaryStudy.files.length > 0 && (
+                        <>
+                          <span className="text-white/30 font-mono">·</span>
+                          <span className="text-xs font-sans text-white/50 inline-flex items-center gap-1">
+                            <FileText size={12} weight="fill" className="text-white/40 shrink-0" />
+                            <span>{primaryStudy.files.length} file{primaryStudy.files.length > 1 ? "s" : ""}</span>
+                          </span>
+                        </>
+                      )}
+                      <span className="text-white/30 font-mono">·</span>
+                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-mono ${
+                        primaryStudy.financialSummary?.isFullyPaid || primaryStudy.financialSummary?.isDownpaymentCleared
+                          ? "text-emerald-400"
+                          : "text-amber-400"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          primaryStudy.financialSummary?.isFullyPaid || primaryStudy.financialSummary?.isDownpaymentCleared
+                            ? "bg-emerald-400"
+                            : "bg-amber-400"
+                        }`} />
+                        {primaryStudy.financialSummary?.isFullyPaid
+                          ? "100% Cleared"
+                          : primaryStudy.financialSummary?.isDownpaymentCleared
+                          ? "Deposit Cleared"
+                          : "Deposit Pending"}
                       </span>
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold text-white font-sans truncate mt-1" title={primaryStudy.researchTitle}>
+
+                    <h3
+                      className="text-base sm:text-lg lg:text-xl font-bold text-white font-sans truncate mt-2 tracking-tight"
+                      title={primaryStudy.researchTitle}
+                    >
                       {primaryStudy.researchTitle}
                     </h3>
                     {primaryStudy.researchObjectives && (
-                      <p className="text-xs text-white/50 font-sans line-clamp-1 mt-0.5" title={primaryStudy.researchObjectives}>
+                      <p
+                        className="text-xs text-white/50 font-sans line-clamp-1 mt-1"
+                        title={primaryStudy.researchObjectives}
+                      >
                         {primaryStudy.researchObjectives}
                       </p>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+                  <div className="shrink-0 self-start sm:self-center">
                     <Link href={`/dashboard/client/projects/${primaryStudy.id}${stageInfo.actionPath}`}>
                       <Button
                         variant="primary"
                         size="sm"
-                        className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md"
+                        className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md whitespace-nowrap cursor-pointer"
                       >
                         <span>{stageInfo.actionText} →</span>
                       </Button>
@@ -618,97 +655,72 @@ export function ClientDashboardClient({
                   </div>
                 </div>
 
-                {/* Telemetry & Parameter Strip (Eliminates Upper Gap) */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 bg-[#010D1F] border border-white/[0.08] rounded-[2px]">
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[10px] font-mono uppercase text-white/40 tracking-wider">Methodology Package</span>
-                    <span className="text-xs font-mono font-bold text-white truncate" title={primaryStudy.packageName?.replace(/_/g, " ") || "Statistical Suite"}>
-                      {primaryStudy.packageName?.replace(/_/g, " ") || "Statistical Suite"}
-                    </span>
+                {/* 3. Sleek 5-Stage Precision Pipeline */}
+                <div className="flex flex-col gap-2.5 pt-1">
+                  {/* Continuous Segmented Bar */}
+                  <div className="grid grid-cols-5 gap-2 w-full">
+                    {RESEARCH_STAGES.map((_, i) => {
+                      const isCompleted = i < stageInfo.stageIndex;
+                      const isCurrent = i === stageInfo.stageIndex;
+                      return (
+                        <div
+                          key={i}
+                          className={`h-2 rounded-[2px] transition-all duration-300 ${
+                            isCompleted
+                              ? "bg-emerald-500"
+                              : isCurrent
+                              ? "bg-[#CC6600]"
+                              : "bg-white/[0.08]"
+                          }`}
+                        />
+                      );
+                    })}
                   </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[10px] font-mono uppercase text-white/40 tracking-wider">Target Completion</span>
-                    <span className="text-xs font-mono font-semibold text-white">
-                      {new Date(primaryStudy.deadlineRequested).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[10px] font-mono uppercase text-white/40 tracking-wider">Research Materials</span>
-                    <span className="text-xs font-mono font-semibold text-white/90">
-                      {primaryStudy.files?.length || 0} Files Attached
-                    </span>
-                  </div>
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="text-[10px] font-mono uppercase text-white/40 tracking-wider">Escrow Verification</span>
-                    <span className={`text-xs font-mono font-semibold truncate ${
-                      primaryStudy.financialSummary?.isFullyPaid
-                        ? "text-emerald-400"
-                        : primaryStudy.financialSummary?.isDownpaymentCleared
-                        ? "text-emerald-400"
-                        : "text-amber-400"
-                    }`}>
-                      {primaryStudy.financialSummary?.isFullyPaid
-                        ? "100% Cleared"
-                        : primaryStudy.financialSummary?.isDownpaymentCleared
-                        ? "Deposit Cleared"
-                        : "Pending Verification"}
-                    </span>
-                  </div>
-                </div>
 
-                {/* 5-Stage Visual Stepper Container (Recessed Well L2, No my-auto) */}
-                <div className="bg-[#010D1F] border border-white/10 rounded-[2px] p-3 sm:p-3.5">
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                  {/* 5 Stage Node Labels */}
+                  <div className="grid grid-cols-5 gap-2 pt-1">
                     {RESEARCH_STAGES.map((stg, i) => {
                       const isCompleted = i < stageInfo.stageIndex;
                       const isCurrent = i === stageInfo.stageIndex;
+                      const cleanTitle = stg.title.replace(/^\d+\.\s*/, "");
 
                       return (
-                        <div
-                          key={stg.id}
-                          className={`p-2.5 sm:p-3 rounded-[2px] border transition-all flex flex-col justify-between gap-2 ${
-                            isCurrent
-                              ? "bg-[#011C38] border-[#CC6600]/80 shadow-md ring-1 ring-[#CC6600]/40"
-                              : isCompleted
-                              ? "bg-emerald-500/[0.04] border-emerald-500/25 text-white/80"
-                              : "bg-white/[0.01] border-white/[0.06] text-white/40"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
+                        <div key={stg.id} className="flex flex-col min-w-0 pr-1">
+                          <div className="flex items-center gap-1.5">
+                            {isCompleted ? (
+                              <CheckCircle size={13} weight="fill" className="text-emerald-400 shrink-0" />
+                            ) : isCurrent ? (
+                              <span className="w-2 h-2 rounded-full bg-[#CC6600] ring-2 ring-[#CC6600]/30 shrink-0" />
+                            ) : (
+                              <span className="text-[10px] font-mono text-white/30 shrink-0">{i + 1}.</span>
+                            )}
                             <span
-                              className={`w-5 h-5 rounded-full text-[10px] font-mono font-bold flex items-center justify-center ${
+                              className={`text-xs font-sans truncate transition-colors ${
                                 isCurrent
-                                  ? "bg-[#CC6600] text-white"
+                                  ? "font-bold text-white"
                                   : isCompleted
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                                  : "bg-white/[0.05] text-white/40 border border-white/10"
+                                  ? "font-medium text-white/80"
+                                  : "font-normal text-white/40"
                               }`}
+                              title={cleanTitle}
                             >
-                              {isCompleted ? <Check size={12} weight="fill" /> : i + 1}
-                            </span>
-
-                            <span className="text-[9px] font-mono tracking-wider uppercase font-semibold">
-                              {isCompleted ? (
-                                <span className="text-emerald-400">Done</span>
-                              ) : isCurrent ? (
-                                <span className="text-[#FFA040] animate-pulse">Active</span>
-                              ) : (
-                                <span className="text-white/30">Next</span>
-                              )}
+                              {cleanTitle}
                             </span>
                           </div>
-
-                          <div>
-                            <h4
-                              className={`text-xs font-sans font-semibold leading-snug ${
-                                isCurrent ? "text-white" : isCompleted ? "text-white/90" : "text-white/40"
-                              }`}
-                            >
-                              {stg.title}
-                            </h4>
-                            <p className="text-[10px] font-sans text-white/50 mt-0.5 line-clamp-1">
-                              {stg.desc}
-                            </p>
+                          <div className="mt-1">
+                            {isCurrent ? (
+                              <span className="inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded-[2px] bg-[#CC6600]/20 text-[#FFA040] border border-[#CC6600]/35 font-semibold">
+                                Active Stage
+                              </span>
+                            ) : isCompleted ? (
+                              <span className="inline-flex items-center text-[10px] font-mono text-emerald-400/90 font-medium">
+                                Completed
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center text-[10px] font-mono text-white/30">
+                                Upcoming
+                              </span>
+                            )}
                           </div>
                         </div>
                       );
@@ -716,74 +728,109 @@ export function ClientDashboardClient({
                   </div>
                 </div>
 
-                {/* Visual Milestone Progress Bar */}
-                <div className="p-3 bg-[#010D1F] border border-white/[0.08] rounded-[2px]">
-                  <ProgressBar
-                    value={stagePercentage}
-                    label="Research Milestone Completion"
-                    variant="amber"
-                  />
-                </div>
-
-                {/* Active Stage Detail & Guidance Strip (Eliminates Lower Gap) */}
-                <div className="bg-[#010D1F]/70 border border-white/[0.08] rounded-[2px] p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-start sm:items-center gap-3 min-w-0">
-                    <span className="relative flex h-2.5 w-2.5 shrink-0 mt-1 sm:mt-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#CC6600]" />
-                    </span>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-sans font-semibold text-white leading-snug">
-                        {stageInfo.summary}
+                {/* 4. Active Milestone Mission & Quality Assurance Panel */}
+                <div className="bg-[#010D1F]/90 border border-white/[0.08] rounded-[2px] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-[#FFA040] bg-[#CC6600]/20 border border-[#CC6600]/35 px-1.5 py-0.5 rounded-[2px]">
+                        STAGE {stageInfo.stageIndex + 1} · {stageInfo.statusLabel.toUpperCase()}
                       </span>
-                      <span className="text-[11px] font-sans text-white/60 mt-0.5">
-                        <strong className="text-white/80 font-medium">Next Action:</strong> {stageInfo.nextStep}
+                      <span className="text-white/30 font-mono text-xs hidden sm:inline">·</span>
+                      <span className="text-[11px] font-mono text-white/50">
+                        Turnaround: 2–5 Business Days
                       </span>
                     </div>
+
+                    <p className="text-xs text-white/85 font-sans mt-2 leading-relaxed">
+                      {stageInfo.summary}
+                    </p>
+
+                    <div className="flex items-center gap-2 mt-2 text-xs font-sans text-white/55">
+                      <ArrowRight size={12} weight="bold" className="text-[#CC6600] shrink-0" />
+                      <span className="text-white/40 font-mono text-[10px] uppercase font-semibold">Next Action:</span>
+                      <span className="text-white/70 truncate">{stageInfo.nextStep}</span>
+                    </div>
                   </div>
-                  <div className="shrink-0 self-end sm:self-center">
-                    <span className="inline-flex items-center px-2 py-1 rounded-[2px] text-[10px] font-mono font-bold bg-[#CC6600]/15 border border-[#CC6600]/30 text-[#FFA040]">
-                      {stageInfo.statusLabel}
-                    </span>
+
+                  {/* Quality & Rigor Credentials Strip */}
+                  <div className="flex flex-row md:flex-col gap-3 shrink-0 border-t md:border-t-0 md:border-l border-white/[0.08] pt-3 md:pt-0 md:pl-5">
+                    <div className="flex items-center gap-2 text-xs">
+                      <ShieldCheck size={16} weight="fill" className="text-emerald-400 shrink-0" />
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-mono uppercase text-white/40 leading-none">Format Protocol</span>
+                        <span className="text-[11px] font-sans font-semibold text-white/90 mt-0.5">APA 7th Edition</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <CheckCircle size={16} weight="fill" className="text-sky-400 shrink-0" />
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-mono uppercase text-white/40 leading-none">Verification</span>
+                        <span className="text-[11px] font-sans font-semibold text-white/90 mt-0.5">Dual-Audit Review</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Bottom Action Links Ribbon */}
-                <div className="flex items-center justify-end text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] gap-4 mt-auto">
-                  {projects.length > 1 && (
+                {/* 5. Live Activity Status & Footer Actions Strip */}
+                <div className="pt-3 border-t border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs mt-auto">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#CC6600]" />
+                    </span>
+                    <span className="text-white/70 font-sans truncate" title={stageInfo.summary}>
+                      Live Consultation & Verification Desk is active
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-4 shrink-0 self-end sm:self-center font-sans">
                     <Link
-                      href="/dashboard/client/projects"
+                      href={`/dashboard/client/messages?projectId=${primaryStudy.id}`}
                       prefetch={true}
-                      onMouseEnter={() => router.prefetch("/dashboard/client/projects")}
-                      className="text-white/60 hover:text-white transition-colors font-sans text-xs font-medium cursor-pointer"
+                      onMouseEnter={() => router.prefetch(`/dashboard/client/messages?projectId=${primaryStudy.id}`)}
+                      className="text-white/60 hover:text-white transition-colors cursor-pointer text-xs flex items-center gap-1.5"
                     >
-                      All Studies ({projects.length}) →
+                      <ChatCenteredText size={13} weight="fill" className="text-[#CC6600]" />
+                      <span>Consultation Chat</span>
                     </Link>
-                  )}
-                  <Link
-                    href={`/dashboard/client/projects/${primaryStudy.id}`}
-                    prefetch={true}
-                    onMouseEnter={() => router.prefetch(`/dashboard/client/projects/${primaryStudy.id}`)}
-                    className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium cursor-pointer"
-                  >
-                    View Full Study Details →
-                  </Link>
+
+                    {projects.length > 1 && (
+                      <Link
+                        href="/dashboard/client/projects"
+                        prefetch={true}
+                        onMouseEnter={() => router.prefetch("/dashboard/client/projects")}
+                        className="text-white/50 hover:text-white transition-colors cursor-pointer text-xs"
+                      >
+                        All Studies ({projects.length}) →
+                      </Link>
+                    )}
+                    <Link
+                      href={`/dashboard/client/projects/${primaryStudy.id}`}
+                      prefetch={true}
+                      onMouseEnter={() => router.prefetch(`/dashboard/client/projects/${primaryStudy.id}`)}
+                      className="text-sky-400 hover:text-sky-300 font-semibold transition-colors cursor-pointer text-xs"
+                    >
+                      View Full Details →
+                    </Link>
+                  </div>
                 </div>
               </>
             ) : (
               <>
-                {/* Category Micro-Label */}
-                <div className="flex items-center justify-between text-[11px] font-mono font-semibold text-white/50 tracking-wider uppercase border-b border-white/[0.06] pb-3">
-                  <span className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#CC6600]" />
-                    Active Research Journey
-                  </span>
-                  <span className="text-white/40 font-mono text-[10px]">
+                {/* 1. Category Micro-Label */}
+                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3.5">
+                  <div className="flex items-center gap-2.5">
+                    <Target size={16} weight="fill" className="text-[#CC6600]" />
+                    <h2 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                      Active Research Journey
+                    </h2>
+                  </div>
+                  <span className="text-white/40 font-mono text-[11px]">
                     Stage 1 of 5
                   </span>
                 </div>
 
-                {/* Study Metadata & Direct Action Header */}
+                {/* 2. Study Metadata & Direct Action Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-start sm:items-center gap-3.5 min-w-0">
                     <div className="w-10 h-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] shrink-0">
@@ -835,112 +882,71 @@ export function ClientDashboardClient({
                   </div>
                 </div>
 
-                {/* 3-Point Workflow Onboarding Inset Bar (Eliminates Upper Gap) */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 bg-[#010D1F] border border-white/[0.08] rounded-[2px]">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-[#CC6600]/20 text-[#FFA040] font-mono text-[10px] font-bold flex items-center justify-center shrink-0 border border-[#CC6600]/30">1</span>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-sans font-semibold text-white">Submit Request</span>
-                      <span className="text-[10px] font-sans text-white/50 truncate">Upload proposal & data</span>
-                    </div>
+                {/* 3. Sleek 5-Stage Minimalist Pipeline (Zero Nested Boxes) */}
+                <div className="flex flex-col gap-2.5 pt-1">
+                  {/* Continuous Segmented Bar */}
+                  <div className="grid grid-cols-5 gap-2 w-full">
+                    {RESEARCH_STAGES.map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-1.5 rounded-[1px] transition-all duration-300 ${
+                          i === 0 ? "bg-[#CC6600]" : "bg-white/[0.08]"
+                        }`}
+                      />
+                    ))}
                   </div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-white/[0.06] text-white/70 font-mono text-[10px] font-bold flex items-center justify-center shrink-0 border border-white/10">2</span>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-sans font-semibold text-white">Review Quotation</span>
-                      <span className="text-[10px] font-sans text-white/50 truncate">Approve SOW contract</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-white/[0.06] text-white/70 font-mono text-[10px] font-bold flex items-center justify-center shrink-0 border border-white/10">3</span>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-sans font-semibold text-white">Analysis & QA</span>
-                      <span className="text-[10px] font-sans text-white/50 truncate">Peer-reviewed deliverables</span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* 5-Stage Visual Stepper Container (Recessed Well L2, No my-auto) */}
-                <div className="bg-[#010D1F] border border-white/10 rounded-[2px] p-3 sm:p-3.5">
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                  {/* 5 Stage Node Labels */}
+                  <div className="grid grid-cols-5 gap-2 pt-0.5">
                     {RESEARCH_STAGES.map((stg, i) => {
                       const isCurrent = i === 0;
+                      const cleanTitle = stg.title.replace(/^\d+\.\s*/, "");
 
                       return (
-                        <div
-                          key={stg.id}
-                          className={`p-2.5 sm:p-3 rounded-[2px] border transition-all flex flex-col justify-between gap-2 ${
-                            isCurrent
-                              ? "bg-[#011C38] border-[#CC6600]/80 shadow-md ring-1 ring-[#CC6600]/40"
-                              : "bg-white/[0.01] border-white/[0.06] text-white/40"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
+                        <div key={stg.id} className="flex flex-col min-w-0 pr-1">
+                          <div className="flex items-center gap-1">
+                            {isCurrent && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#CC6600] shrink-0" />
+                            )}
                             <span
-                              className={`w-5 h-5 rounded-full text-[10px] font-mono font-bold flex items-center justify-center ${
+                              className={`text-[11px] sm:text-xs font-sans truncate transition-colors ${
                                 isCurrent
-                                  ? "bg-[#CC6600] text-white"
-                                  : "bg-white/[0.05] text-white/40 border border-white/10"
+                                  ? "font-bold text-white"
+                                  : "font-normal text-white/30"
                               }`}
+                              title={cleanTitle}
                             >
-                              {i + 1}
-                            </span>
-
-                            <span className="text-[9px] font-mono tracking-wider uppercase font-semibold">
-                              {isCurrent ? (
-                                <span className="text-[#FFA040] animate-pulse">Active</span>
-                              ) : (
-                                <span className="text-white/30">Next</span>
-                              )}
+                              {cleanTitle}
                             </span>
                           </div>
-
-                          <div>
-                            <h4
-                              className={`text-xs font-sans font-semibold leading-snug ${
-                                isCurrent ? "text-white" : "text-white/40"
-                              }`}
-                            >
-                              {stg.title}
-                            </h4>
-                            <p className="text-[10px] font-sans text-white/50 mt-0.5 line-clamp-1">
-                              {stg.desc}
-                            </p>
-                          </div>
+                          <span
+                            className={`text-[10px] font-sans truncate mt-0.5 hidden sm:block ${
+                              isCurrent ? "text-[#FFA040] font-medium" : "text-white/20"
+                            }`}
+                          >
+                            {isCurrent ? "Step 1" : `Step ${i + 1}`}
+                          </span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Academic Integrity & SLA Guarantee Box (Eliminates Lower Gap) */}
-                <div className="bg-[#010D1F]/70 border border-white/[0.08] rounded-[2px] p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-start sm:items-center gap-3 min-w-0">
-                    <div className="w-7 h-7 rounded-[2px] bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0">
-                      <ShieldCheck size={16} weight="fill" />
+                {/* 4. Integrity & SLA Guarantee Footer (Clean Single Row) */}
+                <div className="pt-3 border-t border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs mt-auto">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className="w-5 h-5 rounded-[2px] bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0">
+                      <ShieldCheck size={13} weight="fill" />
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-sans font-semibold text-white leading-snug">
-                        Publication-Grade Rigor & Data Confidentiality
-                      </span>
-                      <span className="text-[11px] font-sans text-white/60 mt-0.5">
-                        Every study is protected by institutional firewalls and audited by an independent Senior QA Lead.
-                      </span>
-                    </div>
-                  </div>
-                  <div className="shrink-0 self-end sm:self-center">
-                    <span className="inline-flex items-center px-2 py-1 rounded-[2px] text-[10px] font-mono font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-                      QA CERTIFIED
+                    <span className="text-white/70 font-sans truncate">
+                      Publication-Grade Rigor & Data Confidentiality · Audited by Senior QA Lead
                     </span>
                   </div>
-                </div>
 
-                {/* Bottom Action Links Ribbon */}
-                <div className="flex items-center justify-end text-xs text-white/50 font-sans pt-3 border-t border-white/[0.06] mt-auto">
                   <button
                     type="button"
                     onClick={() => setIsHowToUseModalOpen(true)}
-                    className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium cursor-pointer"
+                    className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium cursor-pointer shrink-0 self-end sm:self-center"
                   >
                     How It Works Guide →
                   </button>

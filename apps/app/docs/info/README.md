@@ -14,6 +14,7 @@ This directory contains the foundational specifications, technical architecture,
 | **06** | [06-email-system.md](./06-email-system.md) | Resend transactional email subsystem, client templates, and audit logging. |
 | **07** | [07-roadmap.md](./07-roadmap.md) | Architectural roadmap, module completion milestones (Roadmap v2), and release gates. |
 | **08** | [08-engineering-standards.md](./08-engineering-standards.md) | Engineering, security, scalability, performance, monitoring, and reliability standards. |
+| **09** | [09-notification-triggers.md](./09-notification-triggers.md) | Real-time notification engine, event catalog, role coverage matrix, and trigger protocols. |
 
 ---
 *Back to [Master Documentation Index](../README.md)*

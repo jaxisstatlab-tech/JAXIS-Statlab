@@ -300,6 +300,21 @@ export async function reassignExperts(
     revalidatePath("/dashboard/qa");
     invalidateCacheTags(CACHE_TAGS.STAFF_CAPACITY, CACHE_TAGS.PROJECTS);
 
+    try {
+      await dispatchRealtimeNotification({
+        eventType: "ASSIGNMENT",
+        projectId: result.projectId,
+        intakeId: result.project.intakeId,
+        title: "Reassigned to Research Study",
+        message: `Reassigned to study ${result.project.intakeId} ("${result.project.researchTitle}"). Reason: ${reason}.`,
+        targetRoles: ["ADMIN"],
+        includeProjectParties: true,
+        excludeUserId: session.user.id,
+      });
+    } catch (e) {
+      console.warn("[reassignExperts] Realtime dispatch warning:", e);
+    }
+
     const remaining = calculateSlaRemaining(result.slaDueAt, result.slaPausedAt);
 
     return {
@@ -384,6 +399,24 @@ export async function requestSlaPause(
     revalidatePath("/dashboard/statistician");
     invalidateCacheTags(CACHE_TAGS.STAFF_CAPACITY, CACHE_TAGS.PROJECTS);
 
+    try {
+      const project = await db.project.findUnique({
+        where: { id: assignment.projectId },
+        select: { intakeId: true, researchTitle: true },
+      });
+      await dispatchRealtimeNotification({
+        eventType: "SLA_ALERT",
+        projectId: assignment.projectId,
+        intakeId: project?.intakeId,
+        title: "SLA Clock Pause Requested",
+        message: `Specialist requested an SLA pause for study ${project?.intakeId || ""}. Reason: ${reason}.`,
+        targetRoles: ["ADMIN", "CEO"],
+        excludeUserId: session.user.id,
+      });
+    } catch (e) {
+      console.warn("[requestSlaPause] Realtime dispatch warning:", e);
+    }
+
     return {
       success: true,
       data: { message: "SLA pause request submitted for administrative approval." },
@@ -457,6 +490,26 @@ export async function approveSlaPause(
     revalidatePath(`/dashboard/admin/projects/${projectId}`);
     revalidatePath("/dashboard/statistician");
     invalidateCacheTags(CACHE_TAGS.STAFF_CAPACITY, CACHE_TAGS.PROJECTS);
+
+    try {
+      const project = await db.project.findUnique({
+        where: { id: assignment.projectId },
+        select: { intakeId: true, researchTitle: true },
+      });
+      await dispatchRealtimeNotification({
+        eventType: "SLA_ALERT",
+        projectId: assignment.projectId,
+        intakeId: project?.intakeId,
+        title: approved ? "SLA Clock Paused" : "SLA Pause Request Declined",
+        message: approved
+          ? `SLA clock for study ${project?.intakeId || ""} has been paused by administration.`
+          : `SLA pause request for study ${project?.intakeId || ""} was declined by administration.`,
+        includeProjectParties: true,
+        excludeUserId: session.user.id,
+      });
+    } catch (e) {
+      console.warn("[approveSlaPause] Realtime dispatch warning:", e);
+    }
 
     return {
       success: true,
@@ -533,6 +586,24 @@ export async function resumeSla(
     revalidatePath(`/dashboard/admin/projects/${projectId}`);
     revalidatePath("/dashboard/statistician");
     invalidateCacheTags(CACHE_TAGS.STAFF_CAPACITY, CACHE_TAGS.PROJECTS);
+
+    try {
+      const project = await db.project.findUnique({
+        where: { id: assignment.projectId },
+        select: { intakeId: true, researchTitle: true },
+      });
+      await dispatchRealtimeNotification({
+        eventType: "SLA_ALERT",
+        projectId: assignment.projectId,
+        intakeId: project?.intakeId,
+        title: "SLA Clock Resumed",
+        message: `SLA clock for study ${project?.intakeId || ""} resumed. New deadline: ${newDue.toLocaleDateString()}.`,
+        includeProjectParties: true,
+        excludeUserId: session.user.id,
+      });
+    } catch (e) {
+      console.warn("[resumeSla] Realtime dispatch warning:", e);
+    }
 
     return {
       success: true,

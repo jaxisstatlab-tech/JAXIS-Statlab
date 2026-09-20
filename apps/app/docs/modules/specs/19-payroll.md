@@ -44,6 +44,8 @@ Module 19 implements institutional compensation governance, dual-mandate separat
 | `PAY-F11` | **CEO Override Modal Payout Reflection** — Displays the specialist's active registered settlement badge when configuring bespoke contract terms. |
 | `PAY-F12` | **Standardized KPI Telemetry Integration** — All payroll overview metrics utilize the canonical `@repo/ui` `<KpiCard />` with uppercase mono headers, bold mono values, and unit suffixes. |
 | `PAY-F13` | **Real-Time Settlement Account Number Formatter** — Dynamic formatting and digit capping for e-wallets (`09XX-XXX-XXXX`, max 11 digits) and Philippine bank accounts (`XXXX-XXXX-XXXX`, max 16 digits) with live digit counter and validation hints. |
+| `PAY-F14` | **Real-Time Payroll Event Notification Triggers** — Instantaneous in-app alerts on schedule changes, rate updates, bespoke overrides, batch generation, and disbursements across Finance, CEO, and staff. |
+| `PAY-F15` | **Package Tier Rates & Dual QA Split Governance** — Tier-specific deliverable compensation amounts (`BASIC`, `STANDARD`, `PREMIUM`, `ENTERPRISE`) and configurable Statistician vs Senior QA Lead commission splits. |
 
 ---
 

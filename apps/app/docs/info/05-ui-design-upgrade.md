@@ -606,7 +606,7 @@ The Client Portal (`/dashboard/client` and related sub-desks) serves as the cano
 |---|---|
 | **Authoritative Top Greeting & Action** | `<PageHeader>` with personalized greeting (`Welcome back, [First Name]`), plain-English subtitle, subtle secondary outline button (`How It Works`), and primary Enterprise Orange CTA (`+ Submit New Study Request`). |
 | **4-Column Balanced KPI Row** | 4 balanced `<KpiCard />` elements: `TOTAL STUDIES` (ALL TIME), `ACTION REQUIRED` (ACTION NEEDED in amber when > 0), `IN PROGRESS / QA` (ACTIVE in sky blue), and `DEFENSE READY` (DELIVERED in emerald). Numerals default to crisp bold white (`variant="default"`). |
-| **2:1 Asymmetric Focal Bento Grid** | **8-Col Hero Card**: Active Research Journey with category micro-label, 1-click study ID copy badge, 5-stage milestone stepper (`Proposal` $\rightarrow$ `Contract` $\rightarrow$ `Deposit` $\rightarrow$ `Analysis` $\rightarrow$ `Deliverables`) in a recessed L2 well (`bg-[#010D1F] border-white/10`), target date, status ribbon, and direct action button.<br/>**4-Col Auxiliary Stack**: (1) Statistical Consultation Desk with active pulse beacon + turnaround subtext, (2) DefenseLab Oral Defense Simulator with mock question counter. |
+| **2:1 Asymmetric Focal Bento Grid** | **8-Col Hero Card**: Active Research Journey with category micro-label, 1-click study ID copy badge, 5-stage precision milestone stepper (`Proposal` $\rightarrow$ `Contract` $\rightarrow$ `Deposit` $\rightarrow$ `Analysis` $\rightarrow$ `Deliverables`), integrated **Active Milestone Mission Panel** (`bg-[#010D1F]/90 border-white/[0.08] rounded-[2px]`) presenting current milestone narrative, next milestone action, APA 7th edition format standard, and dual-audit credentials (eliminating barren voids and balancing height against 4-col auxiliary cards), target date, status ribbon, direct action button, and consultation chat shortcut.<br/>**4-Col Auxiliary Stack**: (1) Statistical Consultation Desk with active pulse beacon + turnaround subtext, (2) DefenseLab Oral Defense Simulator with mock question counter. |
 | **Dedicated Archive Desk** | For multi-study searching, filter tabs, and full pagination, clients navigate seamlessly to **My Studies** (`/dashboard/client/projects`), keeping the main dashboard an ultra-clean, focused 3-tier cockpit without administrative table clutter. |
 
 ### 12.2. Semi-Circular SVG Arc Gauge Specification (Dashdark X Lower Bento)
@@ -652,9 +652,13 @@ Modeled directly after Dashdark X Reference Photos (`media_1788813180736.png`, `
    - On mobile (`< lg`), a lean `h-14` header bar is retained with the brand logo and hamburger button to trigger the mobile drawer.
 2. **Collapsible Sidebar Rail**:
    - **Expanded Width**: `w-[17.5rem]` (280px).
-   - **Collapsed Width**: `w-[5rem]` (80px icon rail).
+   - **Collapsed Width**: `w-[4.25rem]` (68px icon rail).
    - **Opposing Caret Toggle Button (`< >`)**: Positioned at the top right of the sidebar header, toggling smoothly between expanded and collapsed modes. State is persisted in browser `localStorage` (`jaxis_sidebar_collapsed`).
    - **Integrated Sidebar Search**: Dedicated `Search for...` input with `/` shortcut badge in expanded mode; compact `MagnifyingGlass` button in collapsed mode. Pressing `/` expands the sidebar and focuses search.
-   - **Nav Items**: Fill icon + Title + count badge + right chevron (`>`) in expanded mode; centered icon with tooltip in collapsed mode.
+   - **Nav Items**: Fill icon + Title + count badge in expanded mode; centered 40px × 40px square with tooltip in collapsed mode.
    - **Operational Strip**: `NotificationDrawer` bell and staff `DutyClockWidget` embedded directly in the sidebar.
    - **Footer Identity Anchor**: UserAvatar + Full Name + Role / "Account settings" + Radix DropdownMenu trigger (Profile, HR & Timeclock, Sign Out).
+3. **Synchronous Collapsible Rail & Zero Native Scrollbar Standard**:
+   - **Zero Hydration Lag**: Collapse state evaluates synchronously as `isCollapsed = !isOpen && propIsCollapsed`, preventing SSR/client state mismatches where full-width layouts get squeezed into 68px rails.
+   - **Windows Chromium Scrollbar Elimination**: Global CSS rules explicitly exclude `.no-scrollbar` and `[data-no-scrollbar]` (`*:not(.no-scrollbar):not([data-no-scrollbar])`), and the collapsed nav list applies inline styles `style={isCollapsed ? { scrollbarWidth: "none", msOverflowStyle: "none" } : undefined}` along with `::-webkit-scrollbar-button { display: none !important; }`. Native OS scrollbar tracks and arrow buttons (▲ / ▼) are 100% eradicated.
+   - **Fixed 40px × 40px Item Geometry**: Nav links in collapsed mode are fixed `w-10 h-10 shrink-0 justify-center p-0` squares with child labels set to `hidden`, perfectly centering icons on the `x = 34px` axis aligned with the header logo and footer avatar.

@@ -62,12 +62,12 @@ The system divides authority into 6 distinct roles so that no single person can 
 ## 3. How the Features Connect (The "Wiring" Explained)
 
 ### A. The Client & Financial Pipeline
-1. **Intake to Quotation**: A client submits a research project at `/dashboard/client/submit`. Admin reviews the dataset and generates a pricing quotation based on complexity (e.g. Simple Regression vs Structural Equation Modeling).
+1. **Intake to Quotation**: A client submits a research project at `/dashboard/client/projects/new`. Admin reviews the dataset and generates a pricing quotation based on complexity (e.g. Simple Regression vs Structural Equation Modeling).
 2. **Escrow Vault Security**: The client deposits a 50% downpayment via GCash or Bank Wire. The money is locked in the **JAXIS Escrow Vault**. Work does not begin until Finance verifies the payment proof.
 3. **Delivery & Final Balance**: When the analysis passes QA, the client pays the remaining 50% to unlock and download their official deliverable files.
 
 ### B. The Specialist Attendance & Labor Pipeline
-1. **1-Click Live Timeclock**: All staff members have an integrated live clock-in widget in the topbar. It tracks shifts with server timestamps and device telemetry.
+1. **1-Click Live Timeclock**: All staff members have an integrated live clock-in widget in the sidebar and mobile header. It tracks shifts with server timestamps and device telemetry.
 2. **Anti-Runaway Safety**: If an employee forgets to clock out, the system automatically caps the shift at 14 hours (`AUTO_CLOSED`) and prompts them to file a missed punch correction.
 3. **Shift Deductions**: Meal breaks (e.g., 60 minutes for shifts over 5 hours) are deducted automatically to calculate **Net Payable Duty Hours**.
 

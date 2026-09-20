@@ -3,13 +3,20 @@ import NextAuth from "next-auth";
 import type { RoleName, UserStatus } from "@prisma/client";
 
 const LEGACY_DEV_ID_MAP: Record<string, string> = {
-  usr_dev_admin_001: "cmt5plrh90000lrrkrk76bb0b",
+  usr_dev_admin_001: "cmu99bmds0000lrow6sbc7luy",
   usr_dev_ceo_001: "cmt5plsb20001lrrk0w684oz0",
-  usr_dev_finance_001: "cmt5plt6q0002lrrkr5jnsghs",
-  usr_dev_stat_001: "cmt5plu1k0003lrrkl1kribvh",
-  usr_dev_qa_001: "cmt5pluuu0004lrrk5qu5ul2t",
-  usr_dev_client_001: "cmt5plvqe0005lrrkcoiysc7j",
-  usr_dev_suspended_001: "cmt5plwpt0006lrrk1vi05x2g",
+  usr_dev_finance_001: "cmu99bny80002lrowev9mf1f3",
+  usr_dev_stat_001: "cmu99botv0003lrowauyj8dwi",
+  usr_dev_qa_001: "cmu99bplv0004lrowkjy7iukg",
+  usr_dev_client_001: "cmu99bqf70005lrowvdx8odq6",
+  usr_dev_suspended_001: "cmu99br9u0006lrowo3liwjhd",
+  // Map previous seed run legacy CUIDs if existing in active cookies
+  cmt5plrh90000lrrkrk76bb0b: "cmu99bmds0000lrow6sbc7luy",
+  cmt5plt6q0002lrrkr5jnsghs: "cmu99bny80002lrowev9mf1f3",
+  cmt5plu1k0003lrrkl1kribvh: "cmu99botv0003lrowauyj8dwi",
+  cmt5pluuu0004lrrk5qu5ul2t: "cmu99bplv0004lrowkjy7iukg",
+  cmt5plvqe0005lrrkcoiysc7j: "cmu99bqf70005lrowvdx8odq6",
+  cmt5plwpt0006lrrk1vi05x2g: "cmu99br9u0006lrowo3liwjhd",
 };
 
 export const authConfig: NextAuthConfig = {

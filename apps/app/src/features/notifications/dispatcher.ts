@@ -16,6 +16,12 @@ export type NotificationEventType =
   | "REVISION_REQUEST"
   | "DISPUTE"
   | "DATA_PURGE"
+  | "PAYROLL_UPDATE"
+  | "ATTENDANCE_UPDATE"
+  | "DEFENSELAB_UPDATE"
+  | "MESSAGE_ALERT"
+  | "SECURITY_ALERT"
+  | "SLA_ALERT"
   | "SYSTEM_ALERT";
 
 export interface DispatchRealtimeNotificationOptions {
@@ -41,6 +47,92 @@ function getRoleSpecificLink(
   eventType?: NotificationEventType
 ): string {
   if (defaultUrl) return defaultUrl;
+
+  if (eventType === "PAYROLL_UPDATE") {
+    switch (role) {
+      case "FINANCE_OFFICER":
+        return "/dashboard/finance/payroll";
+      case "CEO":
+        return "/dashboard/ceo/payroll";
+      case "STATISTICIAN":
+        return "/dashboard/statistician";
+      case "SENIOR_QA_LEAD":
+        return "/dashboard/qa";
+      default:
+        return "/dashboard";
+    }
+  }
+
+  if (eventType === "ATTENDANCE_UPDATE") {
+    switch (role) {
+      case "ADMIN":
+        return "/dashboard/admin";
+      case "CEO":
+        return "/dashboard/ceo";
+      case "STATISTICIAN":
+        return "/dashboard/statistician";
+      case "SENIOR_QA_LEAD":
+        return "/dashboard/qa";
+      default:
+        return "/dashboard";
+    }
+  }
+
+  if (eventType === "DEFENSELAB_UPDATE") {
+    switch (role) {
+      case "CLIENT":
+        return "/dashboard/client/defenselab";
+      case "STATISTICIAN":
+        return projectId ? `/dashboard/statistician/projects/${projectId}` : "/dashboard/statistician";
+      case "ADMIN":
+        return "/dashboard/admin";
+      case "CEO":
+        return "/dashboard/ceo";
+      default:
+        return "/dashboard";
+    }
+  }
+
+  if (eventType === "MESSAGE_ALERT") {
+    switch (role) {
+      case "CLIENT":
+        return projectId ? `/dashboard/client/projects/${projectId}/consultation` : "/dashboard/client";
+      case "STATISTICIAN":
+        return projectId ? `/dashboard/statistician/projects/${projectId}/workbench` : "/dashboard/statistician";
+      case "SENIOR_QA_LEAD":
+        return projectId ? `/dashboard/qa/projects/${projectId}` : "/dashboard/qa";
+      case "ADMIN":
+        return projectId ? `/dashboard/admin/projects/${projectId}` : "/dashboard/admin";
+      default:
+        return "/dashboard";
+    }
+  }
+
+  if (eventType === "SECURITY_ALERT") {
+    switch (role) {
+      case "ADMIN":
+        return projectId ? `/dashboard/admin/projects/${projectId}` : "/dashboard/admin";
+      case "CEO":
+        return "/dashboard/ceo";
+      default:
+        return "/dashboard";
+    }
+  }
+
+  if (eventType === "SLA_ALERT") {
+    switch (role) {
+      case "SENIOR_QA_LEAD":
+        return projectId ? `/dashboard/qa/projects/${projectId}` : "/dashboard/qa";
+      case "STATISTICIAN":
+        return projectId ? `/dashboard/statistician/projects/${projectId}` : "/dashboard/statistician";
+      case "ADMIN":
+        return projectId ? `/dashboard/admin/projects/${projectId}` : "/dashboard/admin";
+      case "CEO":
+        return "/dashboard/ceo";
+      default:
+        return "/dashboard";
+    }
+  }
 
   if (eventType === "DISPUTE") {
     switch (role) {

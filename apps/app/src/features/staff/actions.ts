@@ -26,6 +26,8 @@ import {
   type MockUser,
 } from "@/lib/mock-data/users.data";
 import type { RoleName, UserStatus, ViolationType } from "@prisma/client";
+import { ensureFreshAccountNotifications } from "@/features/notifications/actions";
+import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 
 /**
  * 1. Provision a new internal staff member (Statistician, QA Lead, Finance Officer).
@@ -136,6 +138,20 @@ export async function provisionStaff(
 
     revalidatePath("/dashboard/admin/staff");
     invalidateCacheTags(CACHE_TAGS.STAFF_ROSTER, CACHE_TAGS.STAFF_DIRECTORY, CACHE_TAGS.STAFF_CAPACITY);
+
+    try {
+      await ensureFreshAccountNotifications(user.id, role);
+
+      dispatchRealtimeNotification({
+        eventType: "ASSIGNMENT",
+        title: "New Staff Specialist Added",
+        message: `${computedFullName} was registered as ${role.replace(/_/g, " ")}.`,
+        targetRoles: ["ADMIN", "CEO"],
+        excludeUserId: session.user.id,
+      });
+    } catch (notifyErr) {
+      console.warn("[provisionStaff] Welcome notification warning:", notifyErr);
+    }
 
     return {
       success: true,
