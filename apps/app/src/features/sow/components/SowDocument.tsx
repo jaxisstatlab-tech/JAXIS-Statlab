@@ -8,6 +8,8 @@ import {
   Check,
 } from "@phosphor-icons/react";
 import type { SOWDetailItem } from "../schemas";
+import { ADDONS_CATALOG } from "@/lib/pricing-rules";
+import type { AddOnName } from "@prisma/client";
 
 export interface SowDocumentProps {
   sow: SOWDetailItem;
@@ -206,9 +208,36 @@ export function SowDocument({
                     <MoneyDisplay amount={commercial.basePrice} />
                   </td>
                 </tr>
+                {commercial.addOns && commercial.addOns.length > 0 && commercial.addOns.map((addonCode) => {
+                  const def = ADDONS_CATALOG[addonCode as AddOnName];
+                  return (
+                    <tr key={addonCode}>
+                      <td className="py-3 pr-4 font-semibold text-white print:text-black">
+                        Add-On: {def?.name || addonCode}
+                      </td>
+                      <td className="py-3 px-4 text-white/70 print:text-black/70 text-xs">
+                        {def?.tagline || "Optional priority research scope add-on."}
+                      </td>
+                      <td className="py-3 pl-4 text-right font-mono font-semibold text-white print:text-black">
+                        <MoneyDisplay amount={def?.defaultPrice || 0} />
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr className="border-t-2 border-white/20 print:border-black/30 font-bold">
+                  <td className="py-3 pr-4 text-white print:text-black uppercase font-mono text-xs">
+                    Total Contract Consideration
+                  </td>
+                  <td className="py-3 px-4 text-xs font-sans font-normal text-white/50 print:text-black/50">
+                    {commercial.addOns && commercial.addOns.length > 0 ? `Includes base tier + ${commercial.addOns.length} add-on${commercial.addOns.length > 1 ? "s" : ""}` : "All deliverables included"}
+                  </td>
+                  <td className="py-3 pl-4 text-right font-mono text-base text-white print:text-black">
+                    <MoneyDisplay amount={commercial.totalAmount} />
+                  </td>
+                </tr>
                 <tr>
                   <td className="py-3 pr-4 font-semibold text-[#FFA040] print:text-amber-800">
-                    Downpayment (To Start)
+                    Required Escrow Downpayment
                   </td>
                   <td className="py-3 px-4 text-white/70 print:text-black/70 text-xs">
                     Required prior to commencing analytical computation and statistician assignment.
@@ -222,19 +251,10 @@ export function SowDocument({
                     Final Release Balance
                   </td>
                   <td className="py-3 px-4 text-white/70 print:text-black/70 text-xs">
-                    Payable prior to final handoff of analytical scripts and raw dataset models.
+                    Payable only after you inspect and accept the final statistical findings.
                   </td>
                   <td className="py-3 pl-4 text-right font-mono font-bold text-emerald-400 print:text-emerald-700">
                     <MoneyDisplay amount={commercial.balanceDue} />
-                  </td>
-                </tr>
-                <tr className="border-t-2 border-white/20 print:border-black/30 font-bold">
-                  <td className="py-3 pr-4 text-white print:text-black uppercase font-mono text-xs">
-                    Total Contract Consideration
-                  </td>
-                  <td className="py-3 px-4"></td>
-                  <td className="py-3 pl-4 text-right font-mono text-base text-white print:text-black">
-                    <MoneyDisplay amount={commercial.basePrice} />
                   </td>
                 </tr>
               </tbody>

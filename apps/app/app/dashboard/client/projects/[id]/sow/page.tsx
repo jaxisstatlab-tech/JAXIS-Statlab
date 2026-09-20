@@ -23,6 +23,7 @@ import {
   Check,
   Warning,
   CreditCard,
+  ChatCircleDots,
 } from "@phosphor-icons/react";
 import { getSOWByProject, signSOW } from "@/features/sow/actions";
 import { getProjectById } from "@/features/projects/actions";
@@ -331,25 +332,46 @@ export default function ClientSowPage() {
                   />
                 </div>
 
+                {/* Scope Revision Note */}
+                <div className="p-3.5 rounded-[2px] bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans text-white/70">
+                  <span>Need to add coaching, accelerate turnaround, or adjust research scope before signing?</span>
+                  <Link
+                    href={`/dashboard/client/projects/${project.id}/messages`}
+                    className="text-[#FFA040] hover:text-[#FFB060] font-semibold underline underline-offset-2 flex-shrink-0 flex items-center gap-1.5"
+                  >
+                    <ChatCircleDots size={15} weight="fill" />
+                    <span>Message Team to Revise Scope →</span>
+                  </Link>
+                </div>
+
                 {/* Action Trigger */}
-                <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-4">
-                  <Link href={`/dashboard/client/projects/${project.id}`}>
-                    <Button variant="secondary" size="md" className="rounded-[2px]">
-                      Cancel
+                <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <Link href={`/dashboard/client/projects/${project.id}/messages`}>
+                    <Button variant="outline" size="md" className="rounded-[2px] text-white/75 hover:text-white flex items-center gap-2 text-xs font-sans">
+                      <ChatCircleDots size={15} weight="fill" />
+                      <span>Request Scope Revision</span>
                     </Button>
                   </Link>
 
-                  <Button
-                    variant="primary"
-                    size="md"
-                    disabled={!canSign || isPending}
-                    loading={isPending}
-                    onClick={() => setIsConfirmModalOpen(true)}
-                    className="font-sans font-bold text-xs sm:text-sm tracking-wider bg-[#CC6600] hover:bg-[#FFA040] text-white px-6 py-3 flex items-center gap-2 rounded-[2px]"
-                  >
-                    <ShieldCheck size={18} weight="fill" />
-                    <span>Sign Statement of Work</span>
-                  </Button>
+                  <div className="flex items-center gap-3 self-end sm:self-auto">
+                    <Link href={`/dashboard/client/projects/${project.id}`}>
+                      <Button variant="secondary" size="md" className="rounded-[2px]">
+                        Cancel
+                      </Button>
+                    </Link>
+
+                    <Button
+                      variant="primary"
+                      size="md"
+                      disabled={!canSign || isPending}
+                      loading={isPending}
+                      onClick={() => setIsConfirmModalOpen(true)}
+                      className="font-sans font-bold text-xs sm:text-sm tracking-wider bg-[#CC6600] hover:bg-[#FFA040] text-white px-6 py-3 flex items-center gap-2 rounded-[2px]"
+                    >
+                      <ShieldCheck size={18} weight="fill" />
+                      <span>Sign Statement of Work</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Card>
