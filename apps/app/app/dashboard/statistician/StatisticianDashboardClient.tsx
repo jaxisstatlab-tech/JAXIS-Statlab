@@ -303,23 +303,53 @@ export function StatisticianDashboardClient({
     });
   }, [assignments]);
 
-  // Analytical Velocity: 6-Month Statistician Output & Milestones
+  // Analytical Velocity: Dynamic Rolling 6-Month Statistician Output & Milestones
   const statisticianChartData = useMemo(() => {
-    const monthNames = ["Apr", "May", "Jun", "Jul", "Aug", "Sep"];
-    const activeCount = assignments.filter((a) => a.masterStatus === "IN_PROGRESS").length;
-    const deliveredCount = assignments.filter(
-      (a) => a.masterStatus === "DELIVERED" || a.masterStatus === "QA_APPROVED" || a.masterStatus === "CLOSED"
-    ).length;
+    const now = new Date();
+    // 1. Generate dynamic rolling 6-month window
+    const months: { label: string; year: number; month: number; start: Date; end: Date }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const start = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+      months.push({
+        label: d.toLocaleString("en-US", { month: "short" }),
+        year: d.getFullYear(),
+        month: d.getMonth(),
+        start,
+        end,
+      });
+    }
 
-    return monthNames.map((m, idx) => {
-      const factor = (idx + 1) / monthNames.length;
+    const isDeliveredStatus = (status: string) =>
+      status === "DELIVERED" || status === "QA_APPROVED" || status === "CLOSED";
+
+    const isActiveAnalysisStatus = (status: string) =>
+      status !== "CANCELLED" && !isDeliveredStatus(status);
+
+    return months.map((m) => {
+      // Completed outputs in this month
+      const completedInMonth = assignments.filter((a) => {
+        if (!isDeliveredStatus(a.masterStatus)) return false;
+        const assignDate = a.assignedAt ? new Date(a.assignedAt) : null;
+        if (!assignDate || isNaN(assignDate.getTime())) return false;
+        return assignDate >= m.start && assignDate <= m.end;
+      }).length;
+
+      // Active analyses in this month (assigned on or before this month's end, and currently active)
+      const activeInMonth = assignments.filter((a) => {
+        if (!isActiveAnalysisStatus(a.masterStatus)) return false;
+        const assignDate = a.assignedAt ? new Date(a.assignedAt) : null;
+        if (!assignDate || isNaN(assignDate.getTime())) {
+          return m.year === now.getFullYear() && m.month === now.getMonth();
+        }
+        return assignDate <= m.end;
+      }).length;
+
       return {
-        month: m,
-        "Active Analyses": Math.max(0, Math.round(activeCount * factor)),
-        "Completed Outputs": Math.max(
-          0,
-          Math.round(deliveredCount * factor + (idx >= 3 ? Math.min(idx - 2, deliveredCount) : 0))
-        ),
+        month: m.label,
+        "Active Analyses": activeInMonth,
+        "Completed Outputs": completedInMonth,
       };
     });
   }, [assignments]);

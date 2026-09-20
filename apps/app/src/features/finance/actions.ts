@@ -21,6 +21,8 @@ import {
   calculateAndSyncProjectPayouts,
   DEFAULT_PAYOUT_RATES,
   DEFAULT_QA_PAYOUT_RATES,
+  DEFAULT_FIXED_RATES,
+  DEFAULT_FIXED_QA_RATES,
   readPackageRates,
   writePackageRates,
 } from "@/lib/payout-rules";
@@ -570,8 +572,11 @@ export async function getCeoFinancialOverviewAction(): Promise<FinanceActionResu
       return {
         id: c.id,
         packageName: c.packageName,
+        mode: custom?.mode || "PERCENTAGE",
         ratePercent: custom?.ratePercent ?? Number(c.ratePercent),
         qaRatePercent: custom?.qaRatePercent ?? (DEFAULT_QA_PAYOUT_RATES[c.packageName] || 10.0),
+        fixedAmount: custom?.fixedAmount ?? (DEFAULT_FIXED_RATES[c.packageName] || 1500.0),
+        fixedQaAmount: custom?.fixedQaAmount ?? (DEFAULT_FIXED_QA_RATES[c.packageName] || 250.0),
         effectiveFrom: c.effectiveFrom.toISOString(),
         approvedBy: c.approvedBy,
         approvedByName: c.approvedBy ? userMap.get(c.approvedBy) || null : null,
@@ -699,7 +704,7 @@ export async function updatePayoutRateConfigAction(
     };
   }
 
-  const { packageName, ratePercent, qaRatePercent } = parsed.data;
+  const { packageName, mode, ratePercent, qaRatePercent, fixedAmount, fixedQaAmount } = parsed.data;
   const customRates = readPackageRates();
   const effectiveQaRate =
     qaRatePercent !== undefined
@@ -708,8 +713,11 @@ export async function updatePayoutRateConfigAction(
 
   customRates[packageName] = {
     packageName,
+    mode: mode || customRates[packageName]?.mode || "PERCENTAGE",
     ratePercent,
     qaRatePercent: effectiveQaRate,
+    fixedAmount: fixedAmount !== undefined ? fixedAmount : (customRates[packageName]?.fixedAmount ?? DEFAULT_FIXED_RATES[packageName] ?? 1500.0),
+    fixedQaAmount: fixedQaAmount !== undefined ? fixedQaAmount : (customRates[packageName]?.fixedQaAmount ?? DEFAULT_FIXED_QA_RATES[packageName] ?? 250.0),
     updatedAt: new Date().toISOString(),
     approvedBy: session.user.id,
   };

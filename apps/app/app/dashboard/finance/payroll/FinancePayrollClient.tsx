@@ -327,7 +327,9 @@ export function FinancePayrollClient({
             >
               <strong className="text-white font-sans">{rc.roleName.replace(/_/g, " ")}:</strong>{" "}
               <span className="inline-flex items-baseline font-mono text-white/90">
-                {rc.compensationType === "PERCENTAGE_PER_STUDY" ? (
+                {rc.compensationType === "TIER_DELIVERABLE" ? (
+                  "Tier Deliverable Fee"
+                ) : rc.compensationType === "PERCENTAGE_PER_STUDY" ? (
                   `${rc.commissionPercentagePerStudy}% / study`
                 ) : rc.compensationType === "FIXED_SALARY" ? (
                   <>
@@ -339,8 +341,6 @@ export function FinancePayrollClient({
                     <Peso className="text-[0.625rem] mr-0.5" />
                     {rc.baseSalaryMonthly.toLocaleString()} + {rc.commissionPercentagePerStudy}%
                   </>
-                ) : rc.compensationType === "TIER_DELIVERABLE" ? (
-                  `Tier Rates (Core: ₱${(rc.tierRates?.JX_03_CORE ?? 10000).toLocaleString()})`
                 ) : (
                   <>
                     <Peso className="text-[0.625rem] mr-0.5" />

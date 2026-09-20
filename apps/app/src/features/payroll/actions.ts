@@ -3,11 +3,12 @@
 import { revalidatePath, unstable_cache } from "next/cache";
 import fs from "fs";
 import path from "path";
+import type { RoleName } from "@prisma/client";
 import { db, withDbTimeout } from "@/lib/db";
 import { requireRole, auth } from "@/lib/auth";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
-import type { RoleName } from "@prisma/client";
+import { resolvePackagePayoutRule } from "@/lib/payout-rules";
 import {
   RoleCompensationConfigSchema,
   StaffCompensationOverrideSchema,
@@ -56,21 +57,14 @@ interface PayrollStorage {
 const DEFAULT_ROLE_CONFIGS: Record<string, RoleCompensationConfigDTO> = {
   STATISTICIAN: {
     roleName: "STATISTICIAN",
-    compensationType: "PERCENTAGE_PER_STUDY",
+    compensationType: "TIER_DELIVERABLE",
     baseSalaryMonthly: 0,
-    commissionPercentagePerStudy: 50.0,
+    commissionPercentagePerStudy: 0,
     hourlyDutyRate: 450.0,
     fixedPerStudyBonus: 1000.0,
     allowancesMonthly: 2500.0,
-    tierRates: {
-      JX_01_DATACHECK: 3000,
-      JX_02_START: 5000,
-      JX_03_CORE: 10000,
-      JX_04_ADVANCED: 18000,
-      DEFENSELAB: 8000,
-    },
     isActive: true,
-    notes: "50% commission of total research study contract value + ₱450/hr compute duty + ₱1,000 completion bonus.",
+    notes: "Tier deliverable fee based on approved SOW contracts (governed by CEO Treasury Rates) + ₱450/hr compute duty + ₱1,000 completion bonus.",
     updatedAt: new Date().toISOString(),
     updatedBy: "CEO Owner",
   },
@@ -82,13 +76,6 @@ const DEFAULT_ROLE_CONFIGS: Record<string, RoleCompensationConfigDTO> = {
     hourlyDutyRate: 450.0,
     fixedPerStudyBonus: 500.0,
     allowancesMonthly: 2500.0,
-    tierRates: {
-      JX_01_DATACHECK: 1000,
-      JX_02_START: 1500,
-      JX_03_CORE: 3000,
-      JX_04_ADVANCED: 5000,
-      DEFENSELAB: 2500,
-    },
     isActive: true,
     notes: "₱12,000 monthly retainer + 10% review commission per audited study + ₱450/hr attendance duty.",
     updatedAt: new Date().toISOString(),
@@ -102,9 +89,8 @@ const DEFAULT_ROLE_CONFIGS: Record<string, RoleCompensationConfigDTO> = {
     hourlyDutyRate: 0,
     fixedPerStudyBonus: 0,
     allowancesMonthly: 3000.0,
-    tierRates: {},
     isActive: true,
-    notes: "Institutional monthly base salary with treasury compliance allowances.",
+    notes: "Monthly base salary with compliance allowances.",
     updatedAt: new Date().toISOString(),
     updatedBy: "CEO Owner",
   },
@@ -116,9 +102,8 @@ const DEFAULT_ROLE_CONFIGS: Record<string, RoleCompensationConfigDTO> = {
     hourlyDutyRate: 0,
     fixedPerStudyBonus: 0,
     allowancesMonthly: 3000.0,
-    tierRates: {},
     isActive: true,
-    notes: "Operational administrative management fixed salary.",
+    notes: "Operations admin fixed salary.",
     updatedAt: new Date().toISOString(),
     updatedBy: "CEO Owner",
   },
@@ -129,7 +114,8 @@ function readPayrollStorage(): PayrollStorage {
   try {
     if (fs.existsSync(CONFIGS_FILE)) {
       const data = fs.readFileSync(CONFIGS_FILE, "utf-8");
-      return JSON.parse(data);
+      const parsed = JSON.parse(data) as PayrollStorage;
+      return parsed;
     }
   } catch (err) {
     console.warn("[readPayrollStorage] Failed to read configs file, using defaults", err);
@@ -612,7 +598,15 @@ export async function generateBatchPayslips(
     projectId: string;
     statisticianId: string;
     qaLeadId: string;
-    project: { id: string; intakeId: string; researchTitle: string; masterStatus: string; packageName: string | null };
+    project: {
+      id: string;
+      intakeId: string;
+      researchTitle: string;
+      masterStatus: string;
+      packageName: string | null;
+      sows: { totalAmount: number | { toString(): string }; isLocked: boolean; packageName: string }[];
+      quotations: { totalAmount: number | { toString(): string }; status: string; packageName: string }[];
+    };
   }[] = [];
 
   try {
@@ -631,7 +625,15 @@ export async function generateBatchPayslips(
         db.assignment.findMany({
           include: {
             project: {
-              select: { id: true, intakeId: true, researchTitle: true, masterStatus: true, packageName: true },
+              select: {
+                id: true,
+                intakeId: true,
+                researchTitle: true,
+                masterStatus: true,
+                packageName: true,
+                sows: { select: { totalAmount: true, isLocked: true, packageName: true }, orderBy: { generatedAt: "desc" } },
+                quotations: { select: { totalAmount: true, status: true, packageName: true }, orderBy: { createdAt: "desc" } },
+              },
             },
           },
         }),
@@ -650,8 +652,21 @@ export async function generateBatchPayslips(
       const devProjPath = path.join(process.cwd(), ".dev-projects.json");
       if (fs.existsSync(devProjPath)) {
         const rawProjs = JSON.parse(fs.readFileSync(devProjPath, "utf-8"));
+
+        // Cross-reference with .dev-quotations.json for dynamic SOW amounts
+        let devQuotations: { projectId?: string; status?: string; totalAmount?: number; packageName?: string }[] = [];
+        const devQuotePath = path.join(process.cwd(), ".dev-quotations.json");
+        if (fs.existsSync(devQuotePath)) {
+          devQuotations = JSON.parse(fs.readFileSync(devQuotePath, "utf-8"));
+        }
+
         // Create mock assignment links for active studies
         for (const p of rawProjs) {
+          // Find the latest approved quotation for this project
+          const projQuotes = devQuotations
+            .filter((q) => q.projectId === p.id && q.status === "CLIENT_APPROVED")
+            .map((q) => ({ totalAmount: q.totalAmount || 0, status: q.status || "", packageName: q.packageName || "JX_03_CORE" }));
+
           assignments.push({
             projectId: p.id,
             statisticianId: "usr_dev_stat_001",
@@ -659,9 +674,11 @@ export async function generateBatchPayslips(
             project: {
               id: p.id,
               intakeId: p.intakeId || "JAXIS-202608-0001",
-              researchTitle: p.researchTitle || "Multivariate Empirical Analysis",
+              researchTitle: p.researchTitle || "Statistical Analysis",
               masterStatus: p.masterStatus || "DELIVERED",
               packageName: p.packageName || "JX_03_CORE",
+              sows: [], // No dev SOW file — quotation is the fallback
+              quotations: projQuotes,
             },
           });
         }
@@ -671,13 +688,26 @@ export async function generateBatchPayslips(
     }
   }
 
-  const PACKAGE_ESTIMATED_VALUE: Record<string, number> = {
-    JX_01_DATACHECK: 8500.0,
-    JX_02_START: 16500.0,
-    JX_03_CORE: 28500.0,
-    JX_04_ADVANCED: 48000.0,
-    DEFENSELAB: 15000.0,
-  };
+  /**
+   * Resolve the approved contract amount for a project.
+   * Priority: Signed SOW.totalAmount > Approved Quotation.totalAmount > 0 (no amount available)
+   */
+  function resolveContractAmount(project: (typeof assignments)[0]["project"]): number {
+    // 1. Signed SOW (highest priority — immutable contract)
+    const signedSow = project.sows?.find((s) => s.isLocked);
+    if (signedSow) return Number(signedSow.totalAmount);
+    // 2. Any SOW (draft SOW still represents admin-approved pricing)
+    const latestSow = project.sows?.[0];
+    if (latestSow) return Number(latestSow.totalAmount);
+    // 3. Approved quotation (pre-SOW stage)
+    const approvedQuote = project.quotations?.find((q) => q.status === "CLIENT_APPROVED");
+    if (approvedQuote) return Number(approvedQuote.totalAmount);
+    // 4. Latest quotation of any status
+    const latestQuote = project.quotations?.[0];
+    if (latestQuote) return Number(latestQuote.totalAmount);
+    // 5. No contract data available
+    return 0;
+  }
 
   const nowStr = new Date().toISOString();
 
@@ -696,7 +726,7 @@ export async function generateBatchPayslips(
       : Math.round(defaultBaseline * prorationMultiplier * 10) / 10;
     const overtimeHours = staffLogs.filter((l) => (l.totalMinutes || 0) > 510).length * 1.5;
 
-    // 2. Calculate studies completed
+    // 2. Calculate studies completed — using dynamic SOW/Quotation amounts and Treasury Package Rules
     const itemizedStudies: PayslipItemizedStudy[] = [];
     if (staff.role === "STATISTICIAN") {
       const assigned = assignments.filter((a) => a.statisticianId === staff.id);
@@ -704,23 +734,23 @@ export async function generateBatchPayslips(
       const studiesToCount = assigned.length > 0 ? assigned : assignments.slice(0, 2);
       for (const a of studiesToCount) {
         const pkgName = a.project.packageName || "JX_03_CORE";
-        const grossAmount = PACKAGE_ESTIMATED_VALUE[pkgName] || 28500.0;
-        let commPct = 0;
-        let commEarned = 0;
+        // Dynamic: pull actual contract amount from SOW/Quotation
+        const grossAmount = resolveContractAmount(a.project);
+        const rule = resolvePackagePayoutRule(pkgName);
 
-        if (config.compensationType === "TIER_DELIVERABLE") {
-          const tierRates = config.tierRates || {};
-          const defaultTierRates: Record<string, number> = {
-            JX_01_DATACHECK: 3000,
-            JX_02_START: 5000,
-            JX_03_CORE: 10000,
-            JX_04_ADVANCED: 18000,
-            DEFENSELAB: 8000,
-          };
-          commEarned = (tierRates[pkgName] ?? defaultTierRates[pkgName] ?? 10000) + (config.fixedPerStudyBonus || 0);
-          commPct = grossAmount > 0 ? Math.round((commEarned / grossAmount) * 1000) / 10 : 0;
+        let commEarned = 0;
+        let commPct = 0;
+
+        if (rule.mode === "FIXED") {
+          commEarned = rule.fixedAmount + (config.fixedPerStudyBonus || 0);
+          commPct = 0;
         } else {
-          commPct = config.commissionPercentagePerStudy || 50.0;
+          // In Percentage Mode: individual staff override takes priority if set, otherwise use package rule rate
+          commPct = (staff.overrideConfig?.commissionPercentagePerStudy && staff.overrideConfig.commissionPercentagePerStudy > 0)
+            ? staff.overrideConfig.commissionPercentagePerStudy
+            : (config.commissionPercentagePerStudy && config.commissionPercentagePerStudy > 0 && config.compensationType === "PERCENTAGE_PER_STUDY"
+              ? config.commissionPercentagePerStudy
+              : rule.ratePercent);
           commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
         }
 
@@ -739,23 +769,21 @@ export async function generateBatchPayslips(
       const studiesToCount = assigned.length > 0 ? assigned : assignments.slice(0, 3);
       for (const a of studiesToCount) {
         const pkgName = a.project.packageName || "JX_03_CORE";
-        const grossAmount = PACKAGE_ESTIMATED_VALUE[pkgName] || 28500.0;
-        let commPct = 0;
-        let commEarned = 0;
+        const grossAmount = resolveContractAmount(a.project);
+        const rule = resolvePackagePayoutRule(pkgName);
 
-        if (config.compensationType === "TIER_DELIVERABLE") {
-          const tierRates = config.tierRates || {};
-          const defaultQaTierRates: Record<string, number> = {
-            JX_01_DATACHECK: 1000,
-            JX_02_START: 1500,
-            JX_03_CORE: 3000,
-            JX_04_ADVANCED: 5000,
-            DEFENSELAB: 2500,
-          };
-          commEarned = (tierRates[pkgName] ?? defaultQaTierRates[pkgName] ?? 3000) + (config.fixedPerStudyBonus || 0);
-          commPct = grossAmount > 0 ? Math.round((commEarned / grossAmount) * 1000) / 10 : 0;
+        let commEarned = 0;
+        let commPct = 0;
+
+        if (rule.mode === "FIXED") {
+          commEarned = rule.fixedQaAmount + (config.fixedPerStudyBonus || 0);
+          commPct = 0;
         } else {
-          commPct = config.commissionPercentagePerStudy || 10.0;
+          commPct = (staff.overrideConfig?.commissionPercentagePerStudy && staff.overrideConfig.commissionPercentagePerStudy > 0)
+            ? staff.overrideConfig.commissionPercentagePerStudy
+            : (config.commissionPercentagePerStudy && config.commissionPercentagePerStudy > 0 && config.compensationType === "PERCENTAGE_PER_STUDY"
+              ? config.commissionPercentagePerStudy
+              : rule.qaRatePercent);
           commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
         }
 
@@ -771,25 +799,15 @@ export async function generateBatchPayslips(
       }
     } else if (staff.role === "ADMIN" || staff.role === "FINANCE_OFFICER") {
       if (
+        config.compensationType === "TIER_DELIVERABLE" ||
         config.compensationType === "PERCENTAGE_PER_STUDY" ||
-        config.compensationType === "HYBRID" ||
-        config.compensationType === "TIER_DELIVERABLE"
+        config.compensationType === "HYBRID"
       ) {
         const studiesToCount = assignments.slice(0, 3);
         for (const a of studiesToCount) {
-          const pkgName = a.project.packageName || "JX_03_CORE";
-          const grossAmount = PACKAGE_ESTIMATED_VALUE[pkgName] || 28500.0;
-          let commPct = 0;
-          let commEarned = 0;
-
-          if (config.compensationType === "TIER_DELIVERABLE") {
-            const tierRates = config.tierRates || {};
-            commEarned = (tierRates[pkgName] ?? 1500) + (config.fixedPerStudyBonus || 0);
-            commPct = grossAmount > 0 ? Math.round((commEarned / grossAmount) * 1000) / 10 : 0;
-          } else {
-            commPct = config.commissionPercentagePerStudy || (staff.role === "ADMIN" ? 5.0 : 3.0);
-            commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
-          }
+          const grossAmount = resolveContractAmount(a.project);
+          const commPct = config.commissionPercentagePerStudy || (staff.role === "ADMIN" ? 5.0 : 3.0);
+          const commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
 
           itemizedStudies.push({
             projectId: a.projectId,
@@ -811,7 +829,7 @@ export async function generateBatchPayslips(
     const fullMonthlyBase = config.compensationType === "FIXED_SALARY" || config.compensationType === "HYBRID" ? config.baseSalaryMonthly : 0;
     const baseSalary = Math.round(fullMonthlyBase * prorationMultiplier * 100) / 100;
     const hourlyRate = config.hourlyDutyRate || 0;
-    const hourlyDutyEarnings = (config.compensationType === "HOURLY_DUTY" || config.compensationType === "HYBRID" || config.compensationType === "PERCENTAGE_PER_STUDY")
+    const hourlyDutyEarnings = (config.compensationType === "HOURLY_DUTY" || config.compensationType === "HYBRID" || config.compensationType === "PERCENTAGE_PER_STUDY" || config.compensationType === "TIER_DELIVERABLE")
       ? Math.round(verifiedDutyHours * hourlyRate * 100) / 100
       : 0;
 
@@ -849,7 +867,6 @@ export async function generateBatchPayslips(
       completedStudiesGrossValue,
       commissionPercentage: config.commissionPercentagePerStudy || 0,
       commissionEarnings,
-      tierRates: config.tierRates || {},
       itemizedStudies,
       overtimeHours,
       overtimeEarnings,

@@ -20,19 +20,12 @@ export function SpecialistOverrideModal({
   onClose,
   onSuccess,
 }: SpecialistOverrideModalProps) {
-  const [compensationType, setCompensationType] = useState<CompensationType>("PERCENTAGE_PER_STUDY");
+  const [compensationType, setCompensationType] = useState<CompensationType>("TIER_DELIVERABLE");
   const [baseSalary, setBaseSalary] = useState(0);
   const [commissionPct, setCommissionPct] = useState(50);
   const [hourlyRate, setHourlyRate] = useState(450);
   const [fixedBonus, setFixedBonus] = useState(1000);
   const [allowances, setAllowances] = useState(2500);
-  const [tierRates, setTierRates] = useState<Record<string, number>>({
-    JX_01_DATACHECK: 3000,
-    JX_02_START: 5000,
-    JX_03_CORE: 10000,
-    JX_04_ADVANCED: 18000,
-    DEFENSELAB: 8000,
-  });
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -46,9 +39,6 @@ export function SpecialistOverrideModal({
       setHourlyRate(cfg.hourlyDutyRate || 0);
       setFixedBonus(cfg.fixedPerStudyBonus || 0);
       setAllowances(cfg.allowancesMonthly || 0);
-      if (cfg.tierRates && Object.keys(cfg.tierRates).length > 0) {
-        setTierRates(cfg.tierRates);
-      }
       setNotes(cfg.notes || "");
     }
   }, [staff]);
@@ -72,7 +62,6 @@ export function SpecialistOverrideModal({
         hourlyDutyRate: Number(hourlyRate),
         fixedPerStudyBonus: Number(fixedBonus),
         allowancesMonthly: Number(allowances),
-        tierRates,
         notes: notes.trim(),
       });
 
@@ -103,10 +92,10 @@ export function SpecialistOverrideModal({
 
   const handleSelectModelType = (type: CompensationType) => {
     setCompensationType(type);
-    if (type === "PERCENTAGE_PER_STUDY") {
+    if (type === "TIER_DELIVERABLE" || type === "PERCENTAGE_PER_STUDY") {
       setBaseSalary(0);
       setHourlyRate(0);
-      if (!commissionPct) setCommissionPct(50);
+      setCommissionPct(0);
     } else if (type === "FIXED_SALARY") {
       setCommissionPct(0);
       setHourlyRate(0);
@@ -122,10 +111,6 @@ export function SpecialistOverrideModal({
       setFixedBonus(0);
       if (!baseSalary) setBaseSalary(12000);
       if (!commissionPct) setCommissionPct(10);
-    } else if (type === "TIER_DELIVERABLE") {
-      setBaseSalary(0);
-      setCommissionPct(0);
-      setHourlyRate(0);
     }
   };
 
@@ -225,11 +210,10 @@ export function SpecialistOverrideModal({
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {[
-              { id: "PERCENTAGE_PER_STUDY", title: "Study % Commission", subtitle: "Earn percentage per study" },
+              { id: "TIER_DELIVERABLE", title: "Tier Deliverable Fee", subtitle: "SOW split via Package Key from Treasury" },
               { id: "FIXED_SALARY", title: "Fixed Monthly Base", subtitle: "Guaranteed monthly/semi-monthly rate" },
               { id: "HOURLY_DUTY", title: "Hourly Attendance Wage", subtitle: "Paid per verified platform hour" },
-              { id: "HYBRID", title: "Hybrid (Base + %)", subtitle: "Base monthly pay + % commission" },
-              { id: "TIER_DELIVERABLE", title: "Tier Deliverable Rate", subtitle: "Fixed rate per package tier" },
+              { id: "HYBRID", title: "Hybrid (Base + Tier Fee)", subtitle: "Base monthly pay + SOW tier split" },
             ].map((item) => {
               const isSelected = compensationType === item.id;
               return (
@@ -253,11 +237,11 @@ export function SpecialistOverrideModal({
 
         {/* Model-Specific Inputs */}
         <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-3.5">
-          {compensationType === "PERCENTAGE_PER_STUDY" && (
+          {(compensationType === "TIER_DELIVERABLE" || compensationType === "PERCENTAGE_PER_STUDY") && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label className="text-xs font-mono text-white/80 block mb-1 font-semibold">
-                  Commission % Per Study
+                  Custom Commission % (Optional)
                 </label>
                 <div className="relative flex items-center">
                   <input
@@ -267,14 +251,18 @@ export function SpecialistOverrideModal({
                     value={commissionPct}
                     onChange={(e) => setCommissionPct(Number(e.target.value))}
                     className="w-full bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                    placeholder="0"
                   />
                   <span className="absolute right-3 text-xs font-mono text-white/50">% of study</span>
                 </div>
+                <span className="text-[0.625rem] text-white/40 font-sans mt-0.5 block">
+                  Set 0 to automatically inherit the Treasury Package Key rate.
+                </span>
               </div>
 
               <div>
                 <label className="text-xs font-mono text-white/80 block mb-1 font-semibold">
-                  Deliverable Bonus (Optional)
+                  Deliverable Bonus (₱)
                 </label>
                 <div className="relative flex items-center">
                   <span className="absolute left-3"><Peso className="text-xs text-white/50" /></span>
@@ -372,70 +360,6 @@ export function SpecialistOverrideModal({
             </div>
           )}
 
-          {compensationType === "TIER_DELIVERABLE" && (
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-0.5">
-                <label className="text-xs font-mono text-white/90 font-semibold">
-                  Package Tier Deliverable Rates (₱ per study)
-                </label>
-                <span className="text-[0.688rem] text-white/50 font-sans">
-                  Custom flat rates paid to this specialist per completed package.
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {[
-                  { key: "JX_01_DATACHECK", label: "Data Cleaning & Audit", defaultRate: 3000 },
-                  { key: "JX_02_START", label: "Starter Analysis", defaultRate: 5000 },
-                  { key: "JX_03_CORE", label: "Core Statistics", defaultRate: 10000 },
-                  { key: "JX_04_ADVANCED", label: "Advanced Analysis", defaultRate: 18000 },
-                  { key: "DEFENSELAB", label: "Mock Defense Lab", defaultRate: 8000 },
-                ].map((pkg) => {
-                  const currentRate = tierRates[pkg.key] ?? pkg.defaultRate;
-                  return (
-                    <div key={pkg.key} className="p-2 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-[0.625rem] text-white/50 font-semibold">{pkg.key}</span>
-                      </div>
-                      <span className="text-xs text-white/90 font-sans font-medium line-clamp-1">{pkg.label}</span>
-                      <div className="relative flex items-center mt-0.5">
-                        <span className="absolute left-2.5"><Peso className="text-xs text-white/50" /></span>
-                        <input
-                          type="number"
-                          step={250}
-                          min={0}
-                          value={currentRate}
-                          onChange={(e) => {
-                            const val = Math.max(0, Number(e.target.value) || 0);
-                            setTierRates((prev) => ({ ...prev, [pkg.key]: val }));
-                          }}
-                          className="w-full bg-[#010D1F] border border-white/15 rounded-[2px] pl-6 pr-2 py-1 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div>
-                <label className="text-xs font-mono text-white/80 block mb-1 font-semibold">
-                  Optional Deliverable Bonus (₱)
-                </label>
-                <div className="relative flex items-center max-w-xs">
-                  <span className="absolute left-3"><Peso className="text-xs text-white/50" /></span>
-                  <input
-                    type="number"
-                    step={100}
-                    min={0}
-                    value={fixedBonus}
-                    onChange={(e) => setFixedBonus(Number(e.target.value))}
-                    className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-7 pr-3 py-1.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Optional Monthly Allowance */}
           <div className="pt-2.5 border-t border-white/[0.08] flex items-center justify-between gap-3">
             <span className="text-xs font-mono text-white/70">Monthly Allowance / Stipend (Optional)</span>
@@ -457,8 +381,19 @@ export function SpecialistOverrideModal({
         {/* Human Summary */}
         <div className="p-3 bg-[#010D1F] border border-emerald-500/20 rounded-[2px] text-xs font-sans text-white/90">
           <strong className="text-emerald-400">Effective Pay Agreement: </strong>
+          {compensationType === "TIER_DELIVERABLE" && (
+            <span>
+              Earns <strong>{commissionPct > 0 ? `${commissionPct}%` : "active Treasury Package Key split"}</strong> of approved SOW contract price
+              {fixedBonus > 0 && <span> + <Peso />{fixedBonus.toLocaleString()} bonus</span>}
+              {allowances > 0 && <span> + <Peso />{allowances.toLocaleString()} monthly allowance</span>}.
+            </span>
+          )}
           {compensationType === "PERCENTAGE_PER_STUDY" && (
-            <span>{staff.fullName} earns <strong>{commissionPct}%</strong> on each completed research study.</span>
+            <span>
+              Earns <strong>{commissionPct}%</strong> of approved SOW contract price
+              {fixedBonus > 0 && <span> + <Peso />{fixedBonus.toLocaleString()} bonus</span>}
+              {allowances > 0 && <span> + <Peso />{allowances.toLocaleString()} monthly allowance</span>}.
+            </span>
           )}
           {compensationType === "FIXED_SALARY" && (
             <span>{staff.fullName} earns a fixed <strong><Peso />{baseSalary.toLocaleString()} / month</strong> (<Peso />{(baseSalary / 2).toLocaleString()} every 15 days).</span>
@@ -468,9 +403,6 @@ export function SpecialistOverrideModal({
           )}
           {compensationType === "HYBRID" && (
             <span>{staff.fullName} receives <strong><Peso />{baseSalary.toLocaleString()} monthly base</strong> + <strong>{commissionPct}% commission</strong> per study.</span>
-          )}
-          {compensationType === "TIER_DELIVERABLE" && (
-            <span>{staff.fullName} receives fixed rates per delivered study tier (Core: <Peso />{(tierRates.JX_03_CORE ?? 10000).toLocaleString()}, Adv: <Peso />{(tierRates.JX_04_ADVANCED ?? 18000).toLocaleString()}){fixedBonus > 0 ? ` + ₱${fixedBonus.toLocaleString()} bonus` : ""}.</span>
           )}
         </div>
 

@@ -18,6 +18,24 @@ export const DEFAULT_QA_PAYOUT_RATES: Record<string, number> = {
   DEFENSELAB: 15.0,
 };
 
+export const DEFAULT_FIXED_RATES: Record<string, number> = {
+  JX_01_DATACHECK: 500.0,
+  JX_02_START: 750.0,
+  JX_03_CORE: 1550.0,
+  JX_04_ADVANCED: 2500.0,
+  DEFENSELAB: 2000.0,
+};
+
+export const DEFAULT_FIXED_QA_RATES: Record<string, number> = {
+  JX_01_DATACHECK: 100.0,
+  JX_02_START: 150.0,
+  JX_03_CORE: 250.0,
+  JX_04_ADVANCED: 450.0,
+  DEFENSELAB: 350.0,
+};
+
+export type TreasuryPayoutMode = "PERCENTAGE" | "FIXED";
+
 export const QA_LEAD_PAYOUT_PERCENT_OF_STAT = 10.0; // QA Lead receives 10% of the Statistician's payout amount fallback
 
 const DEV_DATA_DIR = path.join(process.cwd(), "dev_data");
@@ -25,10 +43,39 @@ const PACKAGE_RATES_FILE = path.join(DEV_DATA_DIR, "package_rates.json");
 
 export interface PackageRateRecord {
   packageName: string;
+  mode?: TreasuryPayoutMode;
   ratePercent: number;
   qaRatePercent: number;
+  fixedAmount?: number;
+  fixedQaAmount?: number;
   updatedAt?: string;
   approvedBy?: string;
+}
+
+export function resolvePackagePayoutRule(packageName: string): {
+  packageName: string;
+  mode: TreasuryPayoutMode;
+  ratePercent: number;
+  qaRatePercent: number;
+  fixedAmount: number;
+  fixedQaAmount: number;
+} {
+  const customRates = readPackageRates();
+  const custom = customRates[packageName];
+  const mode: TreasuryPayoutMode = custom?.mode || "PERCENTAGE";
+  const ratePercent = custom?.ratePercent ?? (DEFAULT_PAYOUT_RATES[packageName] ?? 60.0);
+  const qaRatePercent = custom?.qaRatePercent ?? (DEFAULT_QA_PAYOUT_RATES[packageName] ?? 10.0);
+  const fixedAmount = custom?.fixedAmount ?? (DEFAULT_FIXED_RATES[packageName] ?? 1500.0);
+  const fixedQaAmount = custom?.fixedQaAmount ?? (DEFAULT_FIXED_QA_RATES[packageName] ?? 250.0);
+
+  return {
+    packageName,
+    mode,
+    ratePercent,
+    qaRatePercent,
+    fixedAmount,
+    fixedQaAmount,
+  };
 }
 
 export function readPackageRates(): Record<string, PackageRateRecord> {
@@ -189,32 +236,19 @@ export async function calculateAndSyncProjectPayouts(projectId: string): Promise
   const packageName = project.packageName || quote?.packageName || "JX_03_CORE";
 
   // 1. Fetch PayoutRateConfig for package (Statistician & QA shares)
-  const customRates = readPackageRates();
-  const customPkg = customRates[packageName];
-
-  let ratePercent = customPkg?.ratePercent ?? (DEFAULT_PAYOUT_RATES[packageName] || 60.0);
-  try {
-    const configDelegate = (client as any).payoutRateConfig;
-    if (configDelegate && customPkg?.ratePercent === undefined) {
-      const config = await configDelegate.findUnique({
-        where: { packageName },
-      });
-      if (config) {
-        ratePercent = Number(config.ratePercent);
-      }
-    }
-  } catch {
-    // fallback to default
-  }
-
-  const qaRatePercent = customPkg?.qaRatePercent ?? (DEFAULT_QA_PAYOUT_RATES[packageName] ?? 10.0);
+  const rule = resolvePackagePayoutRule(packageName);
+  const isFixed = rule.mode === "FIXED";
 
   // 2. Compute Statistician Share
-  const statisticianPayoutAmount = Math.round((grossRevenue * (ratePercent / 100)) * 100) / 100;
+  const statisticianPayoutAmount = isFixed
+    ? rule.fixedAmount
+    : Math.round((grossRevenue * (rule.ratePercent / 100)) * 100) / 100;
 
   // 3. Compute QA Lead Share (from package QA commission rate)
   const hasQa = Boolean(project.assignment?.qaLeadId);
-  const qaLeadPayoutAmount = hasQa ? Math.round((grossRevenue * (qaRatePercent / 100)) * 100) / 100 : 0;
+  const qaLeadPayoutAmount = hasQa
+    ? (isFixed ? rule.fixedQaAmount : Math.round((grossRevenue * (rule.qaRatePercent / 100)) * 100) / 100)
+    : 0;
 
   // 4. Net Platform Margin
   const platformFee = Math.round((grossRevenue - statisticianPayoutAmount - qaLeadPayoutAmount) * 100) / 100;
@@ -269,7 +303,7 @@ export async function calculateAndSyncProjectPayouts(projectId: string): Promise
               where: { id: existingStatPayout.id },
               data: {
                 grossProjectAmount: grossRevenue,
-                payoutRateApplied: ratePercent,
+                payoutRateApplied: isFixed ? 0 : rule.ratePercent,
                 payoutAmount: statisticianPayoutAmount,
                 payoutStatus: eligibility.eligible ? "APPROVED" : existingStatPayout.payoutStatus,
               },
@@ -282,7 +316,7 @@ export async function calculateAndSyncProjectPayouts(projectId: string): Promise
               recipientId: project.assignment.statisticianId,
               recipientRole: "STATISTICIAN",
               grossProjectAmount: grossRevenue,
-              payoutRateApplied: ratePercent,
+              payoutRateApplied: isFixed ? 0 : rule.ratePercent,
               payoutAmount: statisticianPayoutAmount,
               payoutStatus: initialPayoutStatus,
             },
@@ -313,7 +347,7 @@ export async function calculateAndSyncProjectPayouts(projectId: string): Promise
               where: { id: existingQaPayout.id },
               data: {
                 grossProjectAmount: grossRevenue,
-                payoutRateApplied: QA_LEAD_PAYOUT_PERCENT_OF_STAT,
+                payoutRateApplied: isFixed ? 0 : rule.qaRatePercent,
                 payoutAmount: qaLeadPayoutAmount,
                 payoutStatus: eligibility.eligible ? "APPROVED" : existingQaPayout.payoutStatus,
               },
@@ -326,7 +360,7 @@ export async function calculateAndSyncProjectPayouts(projectId: string): Promise
               recipientId: project.assignment.qaLeadId,
               recipientRole: "QA_LEAD",
               grossProjectAmount: grossRevenue,
-              payoutRateApplied: QA_LEAD_PAYOUT_PERCENT_OF_STAT,
+              payoutRateApplied: isFixed ? 0 : rule.qaRatePercent,
               payoutAmount: qaLeadPayoutAmount,
               payoutStatus: initialPayoutStatus,
             },

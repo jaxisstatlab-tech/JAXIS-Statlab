@@ -273,7 +273,7 @@ export function OfficialPayslipDocument({
                 <span>1. Completed Research Studies &amp; Commission Deliverables</span>
               </h3>
               <span className="text-[0.625rem] sm:text-[0.688rem] font-mono text-slate-600">
-                Commission Baseline: {payslip.compensationType === "TIER_DELIVERABLE" ? "Fixed Package Tier Rates" : `${payslip.commissionPercentage}% of contract`}
+                Commission Baseline: {(payslip.compensationType as string) === "TIER_DELIVERABLE" ? "Fixed Package Tier Rates" : `${payslip.commissionPercentage}% of SOW contract`}
               </span>
             </div>
 

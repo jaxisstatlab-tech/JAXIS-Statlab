@@ -2,11 +2,11 @@ import { z } from "zod";
 import type { RoleName } from "@prisma/client";
 
 export const CompensationTypeEnum = z.enum([
-  "FIXED_SALARY",
+  "TIER_DELIVERABLE",
   "PERCENTAGE_PER_STUDY",
+  "FIXED_SALARY",
   "HOURLY_DUTY",
   "HYBRID",
-  "TIER_DELIVERABLE",
 ]);
 
 export type CompensationType = z.infer<typeof CompensationTypeEnum>;
@@ -48,7 +48,6 @@ export const RoleCompensationConfigSchema = z.object({
   hourlyDutyRate: z.number().min(0, "Hourly duty rate must be non-negative."),
   fixedPerStudyBonus: z.number().min(0, "Fixed study bonus must be non-negative."),
   allowancesMonthly: z.number().min(0, "Allowances must be non-negative."),
-  tierRates: z.record(z.string(), z.number().min(0)).optional().default({}),
   isActive: z.boolean().default(true),
   notes: z.string().optional().default(""),
 });
@@ -69,7 +68,6 @@ export const StaffCompensationOverrideSchema = z.object({
   hourlyDutyRate: z.number().min(0),
   fixedPerStudyBonus: z.number().min(0),
   allowancesMonthly: z.number().min(0),
-  tierRates: z.record(z.string(), z.number().min(0)).optional().default({}),
   notes: z.string().optional().default(""),
 });
 

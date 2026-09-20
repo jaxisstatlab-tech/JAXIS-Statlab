@@ -36,8 +36,11 @@ export type VoidPayoutInput = z.infer<typeof VoidPayoutSchema>;
 
 export const UpdatePayoutRateSchema = z.object({
   packageName: z.string().min(1, "Package name is required"),
+  mode: z.enum(["PERCENTAGE", "FIXED"]).optional().default("PERCENTAGE"),
   ratePercent: z.number().min(0, "Rate must be at least 0%").max(100, "Rate cannot exceed 100%"),
   qaRatePercent: z.number().min(0, "QA Rate must be at least 0%").max(100, "QA Rate cannot exceed 100%").optional(),
+  fixedAmount: z.number().min(0).optional(),
+  fixedQaAmount: z.number().min(0).optional(),
 });
 
 export type UpdatePayoutRateInput = z.infer<typeof UpdatePayoutRateSchema>;
@@ -119,8 +122,11 @@ export interface FinancialLedgerDTO {
 export interface PayoutRateConfigDTO {
   id: number;
   packageName: string;
+  mode?: "PERCENTAGE" | "FIXED";
   ratePercent: number;
   qaRatePercent?: number;
+  fixedAmount?: number;
+  fixedQaAmount?: number;
   effectiveFrom: string;
   approvedBy: string | null;
   approvedByName: string | null;

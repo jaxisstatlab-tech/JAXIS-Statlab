@@ -266,22 +266,53 @@ export function QADashboardClient({
     });
   }, [qaQueueAssignments]);
 
-  // Analytical QA Trend: 6-Month Quality Verification & Revisions
+  // Analytical QA Trend: Dynamic Rolling 6-Month Quality Verification & Revisions
   const qaChartData = useMemo(() => {
-    const monthNames = ["Apr", "May", "Jun", "Jul", "Aug", "Sep"];
-    const approvedCount = assignments.filter(
-      (a) => a.masterStatus === "DELIVERED" || a.masterStatus === "QA_APPROVED" || a.masterStatus === "CLOSED"
-    ).length;
-    const revisionCount = assignments.filter(
-      (a) => a.masterStatus === "QA_REVISION"
-    ).length;
+    const now = new Date();
+    // 1. Generate dynamic rolling 6-month window
+    const months: { label: string; year: number; month: number; start: Date; end: Date }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const start = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+      months.push({
+        label: d.toLocaleString("en-US", { month: "short" }),
+        year: d.getFullYear(),
+        month: d.getMonth(),
+        start,
+        end,
+      });
+    }
 
-    return monthNames.map((m, idx) => {
-      const factor = (idx + 1) / monthNames.length;
+    const isDeliveredStatus = (status: string) =>
+      status === "DELIVERED" || status === "QA_APPROVED" || status === "CLOSED";
+
+    const isRevisionStatus = (status: string) =>
+      status === "QA_REVISION" || status === "REVISION_REQUESTED";
+
+    return months.map((m) => {
+      // Verified and released in this month
+      const approvedInMonth = assignments.filter((a) => {
+        if (!isDeliveredStatus(a.masterStatus)) return false;
+        const assignDate = a.assignedAt ? new Date(a.assignedAt) : null;
+        if (!assignDate || isNaN(assignDate.getTime())) return false;
+        return assignDate >= m.start && assignDate <= m.end;
+      }).length;
+
+      // Revisions handled in this month
+      const revisionsInMonth = assignments.filter((a) => {
+        if (!isRevisionStatus(a.masterStatus)) return false;
+        const assignDate = a.assignedAt ? new Date(a.assignedAt) : null;
+        if (!assignDate || isNaN(assignDate.getTime())) {
+          return m.year === now.getFullYear() && m.month === now.getMonth();
+        }
+        return assignDate <= m.end;
+      }).length;
+
       return {
-        month: m,
-        "Verified & Released": approvedCount > 0 ? Math.max(0, Math.round(approvedCount * factor)) : 0,
-        "Revisions Handled": revisionCount > 0 ? Math.max(0, Math.round(revisionCount * factor)) : 0,
+        month: m.label,
+        "Verified & Released": approvedInMonth,
+        "Revisions Handled": revisionsInMonth,
       };
     });
   }, [assignments]);

@@ -29,8 +29,11 @@ export default function CeoFinancePage() {
 
   // Edit Rate Modal
   const [selectedConfig, setSelectedConfig] = useState<PayoutRateConfigDTO | null>(null);
+  const [newMode, setNewMode] = useState<"PERCENTAGE" | "FIXED">("PERCENTAGE");
   const [newRate, setNewRate] = useState<string>("");
   const [newQaRate, setNewQaRate] = useState<string>("");
+  const [newFixedAmount, setNewFixedAmount] = useState<string>("");
+  const [newFixedQaAmount, setNewFixedQaAmount] = useState<string>("");
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -55,8 +58,11 @@ export default function CeoFinancePage() {
 
   const handleOpenEditRate = (config: PayoutRateConfigDTO) => {
     setSelectedConfig(config);
+    setNewMode(config.mode || "PERCENTAGE");
     setNewRate(config.ratePercent.toString());
     setNewQaRate((config.qaRatePercent ?? 10).toString());
+    setNewFixedAmount((config.fixedAmount ?? 1500).toString());
+    setNewFixedQaAmount((config.fixedQaAmount ?? 250).toString());
     setErrorMsg(null);
     setIsEditModalOpen(true);
   };
@@ -85,8 +91,11 @@ export default function CeoFinancePage() {
     try {
       const res = await updatePayoutRateConfigAction({
         packageName: selectedConfig.packageName,
+        mode: newMode,
         ratePercent: parsedRate,
         qaRatePercent: parsedQaRate,
+        fixedAmount: parseFloat(newFixedAmount) || 0,
+        fixedQaAmount: parseFloat(newFixedQaAmount) || 0,
       });
 
       if (res.success) {
@@ -230,14 +239,28 @@ export default function CeoFinancePage() {
                     {/* Stat Commission Rate */}
                     <td className="py-3.5 px-4 text-center font-mono font-semibold text-white">
                       <Badge variant="sky" className="text-xs">
-                        {pkg.currentRatePercent}%
+                        {config?.mode === "FIXED" ? (
+                          <>
+                            <Peso className="text-[0.625rem] mr-0.5" />
+                            {(config.fixedAmount ?? 1500).toLocaleString()}
+                          </>
+                        ) : (
+                          `${pkg.currentRatePercent}%`
+                        )}
                       </Badge>
                     </td>
 
                     {/* QA Commission Rate */}
                     <td className="py-3.5 px-4 text-center font-mono font-semibold text-white">
                       <Badge variant="amber" className="text-xs">
-                        {pkg.currentQaRatePercent ?? 10}%
+                        {config?.mode === "FIXED" ? (
+                          <>
+                            <Peso className="text-[0.625rem] mr-0.5" />
+                            {(config.fixedQaAmount ?? 250).toLocaleString()}
+                          </>
+                        ) : (
+                          `${pkg.currentQaRatePercent ?? 10}%`
+                        )}
                       </Badge>
                     </td>
 
@@ -308,55 +331,138 @@ export default function CeoFinancePage() {
               </div>
             )}
 
-            {/* Statistician Rate */}
+            {/* Mode Selector */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-white/80 font-semibold flex items-center justify-between">
-                <span>Lead Research Statistician Commission *</span>
-                <span className="text-white/40 font-mono text-[0.625rem]">Stat Share</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.5}
-                  value={newRate}
-                  onChange={(e) => setNewRate(e.target.value)}
-                  className="w-full p-2.5 bg-[#010114] border border-white/15 rounded-[2px] text-sm font-mono text-white focus:border-[#CC6600] focus:outline-none pr-8"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 font-mono font-bold">
-                  %
-                </span>
+              <label className="text-white/80 font-semibold text-xs">Operating Mode</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setNewMode("PERCENTAGE")}
+                  className={`p-2 rounded-[2px] border text-center font-mono text-xs transition-colors cursor-pointer ${
+                    newMode === "PERCENTAGE"
+                      ? "bg-[#CC6600]/20 border-[#CC6600] text-white ring-1 ring-[#CC6600]"
+                      : "bg-[#010114] border-white/10 text-white/60 hover:text-white"
+                  }`}
+                >
+                  Percentage Split (% of SOW)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewMode("FIXED")}
+                  className={`p-2 rounded-[2px] border text-center font-mono text-xs transition-colors cursor-pointer ${
+                    newMode === "FIXED"
+                      ? "bg-[#CC6600]/20 border-[#CC6600] text-white ring-1 ring-[#CC6600]"
+                      : "bg-[#010114] border-white/10 text-white/60 hover:text-white"
+                  }`}
+                >
+                  Fixed Payout (Flat ₱ Fee)
+                </button>
               </div>
-              <span className="text-[0.688rem] text-white/40 leading-relaxed">
-                Percentage of gross study fees disbursed to the Lead Statistician.
-              </span>
             </div>
 
-            {/* QA Reviewer Rate */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-white/80 font-semibold flex items-center justify-between">
-                <span>Senior QA Reviewer Commission *</span>
-                <span className="text-white/40 font-mono text-[0.625rem]">QA Share</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.5}
-                  value={newQaRate}
-                  onChange={(e) => setNewQaRate(e.target.value)}
-                  className="w-full p-2.5 bg-[#010114] border border-white/15 rounded-[2px] text-sm font-mono text-white focus:border-[#CC6600] focus:outline-none pr-8"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 font-mono font-bold">
-                  %
-                </span>
-              </div>
-              <span className="text-[0.688rem] text-white/40 leading-relaxed">
-                Percentage of gross study fees disbursed to the Senior QA Reviewer.
-              </span>
-            </div>
+            {newMode === "PERCENTAGE" ? (
+              <>
+                {/* Statistician Rate */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-white/80 font-semibold flex items-center justify-between">
+                    <span>Lead Research Statistician Commission *</span>
+                    <span className="text-white/40 font-mono text-[0.625rem]">Stat Share</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      value={newRate}
+                      onChange={(e) => setNewRate(e.target.value)}
+                      className="w-full p-2.5 bg-[#010114] border border-white/15 rounded-[2px] text-sm font-mono text-white focus:border-[#CC6600] focus:outline-none pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 font-mono font-bold">
+                      %
+                    </span>
+                  </div>
+                  <span className="text-[0.688rem] text-white/40 leading-relaxed">
+                    Percentage of gross SOW fees disbursed to the Lead Statistician.
+                  </span>
+                </div>
+
+                {/* QA Reviewer Rate */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-white/80 font-semibold flex items-center justify-between">
+                    <span>Senior QA Reviewer Commission *</span>
+                    <span className="text-white/40 font-mono text-[0.625rem]">QA Share</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      value={newQaRate}
+                      onChange={(e) => setNewQaRate(e.target.value)}
+                      className="w-full p-2.5 bg-[#010114] border border-white/15 rounded-[2px] text-sm font-mono text-white focus:border-[#CC6600] focus:outline-none pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 font-mono font-bold">
+                      %
+                    </span>
+                  </div>
+                  <span className="text-[0.688rem] text-white/40 leading-relaxed">
+                    Percentage of gross SOW fees disbursed to the Senior QA Reviewer.
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Statistician Fixed Amount */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-white/80 font-semibold flex items-center justify-between">
+                    <span>Lead Statistician Flat Fee (₱) *</span>
+                    <span className="text-white/40 font-mono text-[0.625rem]">Fixed Payout</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-sans font-bold">
+                      ₱
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={100}
+                      value={newFixedAmount}
+                      onChange={(e) => setNewFixedAmount(e.target.value)}
+                      className="w-full p-2.5 pl-8 bg-[#010114] border border-white/15 rounded-[2px] text-sm font-mono text-white focus:border-[#CC6600] focus:outline-none"
+                    />
+                  </div>
+                  <span className="text-[0.688rem] text-white/40 leading-relaxed">
+                    Fixed peso amount paid per completed study under this package key.
+                  </span>
+                </div>
+
+                {/* QA Reviewer Fixed Amount */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-white/80 font-semibold flex items-center justify-between">
+                    <span>Senior QA Reviewer Flat Fee (₱) *</span>
+                    <span className="text-white/40 font-mono text-[0.625rem]">Fixed Payout</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-sans font-bold">
+                      ₱
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={50}
+                      value={newFixedQaAmount}
+                      onChange={(e) => setNewFixedQaAmount(e.target.value)}
+                      className="w-full p-2.5 pl-8 bg-[#010114] border border-white/15 rounded-[2px] text-sm font-mono text-white focus:border-[#CC6600] focus:outline-none"
+                    />
+                  </div>
+                  <span className="text-[0.688rem] text-white/40 leading-relaxed">
+                    Fixed peso amount paid per QA-reviewed study under this package key.
+                  </span>
+                </div>
+              </>
+            )}
 
             {/* Live Commission Pool Summary */}
             {(() => {

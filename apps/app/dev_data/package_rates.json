@@ -1,0 +1,52 @@
+{
+  "JX_01_DATACHECK": {
+    "packageName": "JX_01_DATACHECK",
+    "mode": "PERCENTAGE",
+    "ratePercent": 45,
+    "qaRatePercent": 5,
+    "fixedAmount": 500,
+    "fixedQaAmount": 100,
+    "updatedAt": "2026-09-20T12:30:00.000Z",
+    "approvedBy": "CEO Owner"
+  },
+  "JX_02_START": {
+    "packageName": "JX_02_START",
+    "mode": "PERCENTAGE",
+    "ratePercent": 47,
+    "qaRatePercent": 5,
+    "fixedAmount": 750,
+    "fixedQaAmount": 150,
+    "updatedAt": "2026-09-20T12:30:00.000Z",
+    "approvedBy": "CEO Owner"
+  },
+  "JX_03_CORE": {
+    "packageName": "JX_03_CORE",
+    "mode": "PERCENTAGE",
+    "ratePercent": 62,
+    "qaRatePercent": 10,
+    "fixedAmount": 1550,
+    "fixedQaAmount": 250,
+    "updatedAt": "2026-09-20T12:30:00.000Z",
+    "approvedBy": "CEO Owner"
+  },
+  "JX_04_ADVANCED": {
+    "packageName": "JX_04_ADVANCED",
+    "mode": "PERCENTAGE",
+    "ratePercent": 72,
+    "qaRatePercent": 12,
+    "fixedAmount": 2500,
+    "fixedQaAmount": 450,
+    "updatedAt": "2026-09-20T12:30:00.000Z",
+    "approvedBy": "CEO Owner"
+  },
+  "DEFENSELAB": {
+    "packageName": "DEFENSELAB",
+    "mode": "PERCENTAGE",
+    "ratePercent": 80,
+    "qaRatePercent": 15,
+    "fixedAmount": 2000,
+    "fixedQaAmount": 350,
+    "updatedAt": "2026-09-20T12:30:00.000Z",
+    "approvedBy": "CEO Owner"
+  }
+}

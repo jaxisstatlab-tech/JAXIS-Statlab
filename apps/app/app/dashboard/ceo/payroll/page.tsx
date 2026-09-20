@@ -15,6 +15,7 @@ import {
   TabsContent,
   Peso,
 } from "@repo/ui";
+import Link from "next/link";
 import {
   SlidersHorizontal,
   Receipt,
@@ -25,6 +26,7 @@ import {
   ShieldCheck,
   CaretDown,
   Sparkle,
+  Info,
 } from "@phosphor-icons/react";
 import {
   getPayrollConfigurations,
@@ -72,10 +74,14 @@ function generateRoleNotes(config: {
   hourlyDutyRate: number;
   fixedPerStudyBonus: number;
   allowancesMonthly: number;
-  tierRates?: Record<string, number>;
 }): string {
   const parts: string[] = [];
-  if (config.compensationType === "PERCENTAGE_PER_STUDY") {
+  if (config.compensationType === "TIER_DELIVERABLE") {
+    parts.push(`Tier deliverable fee based on approved SOW contract value (governed by CEO Treasury Rates)`);
+    if (config.fixedPerStudyBonus > 0) {
+      parts.push(`+ ₱${config.fixedPerStudyBonus.toLocaleString()} study bonus`);
+    }
+  } else if (config.compensationType === "PERCENTAGE_PER_STUDY") {
     parts.push(`${config.commissionPercentagePerStudy}% commission per completed research study`);
     if (config.fixedPerStudyBonus > 0) {
       parts.push(`+ ₱${config.fixedPerStudyBonus.toLocaleString()} deliverable bonus`);
@@ -85,17 +91,9 @@ function generateRoleNotes(config: {
   } else if (config.compensationType === "HOURLY_DUTY") {
     parts.push(`₱${config.hourlyDutyRate.toLocaleString()}/hr based on verified clock-in duty`);
   } else if (config.compensationType === "HYBRID") {
-    parts.push(`₱${config.baseSalaryMonthly.toLocaleString()}/month base + ${config.commissionPercentagePerStudy}% commission per completed study`);
+    parts.push(`₱${config.baseSalaryMonthly.toLocaleString()}/month base + Tier deliverable fee per completed study`);
     if (config.hourlyDutyRate > 0) {
       parts.push(`+ ₱${config.hourlyDutyRate.toLocaleString()}/hr duty rate`);
-    }
-  } else if (config.compensationType === "TIER_DELIVERABLE") {
-    const tr = config.tierRates || {};
-    parts.push(
-      `Fixed rate per package tier (Core: ₱${(tr.JX_03_CORE || 10000).toLocaleString()}, Adv: ₱${(tr.JX_04_ADVANCED || 18000).toLocaleString()})`
-    );
-    if (config.fixedPerStudyBonus > 0) {
-      parts.push(`+ ₱${config.fixedPerStudyBonus.toLocaleString()} deliverable bonus`);
     }
   }
 
@@ -190,10 +188,10 @@ export default function CeoPayrollPolicyPage() {
     setFormConfig((prev) => {
       if (!prev) return null;
       const next = { ...prev, compensationType: modelId };
-      if (modelId === "PERCENTAGE_PER_STUDY") {
+      if (modelId === "TIER_DELIVERABLE" || modelId === "PERCENTAGE_PER_STUDY") {
         next.baseSalaryMonthly = 0;
         next.hourlyDutyRate = 0;
-        if (!next.commissionPercentagePerStudy) next.commissionPercentagePerStudy = 50;
+        next.commissionPercentagePerStudy = 0;
       } else if (modelId === "FIXED_SALARY") {
         next.commissionPercentagePerStudy = 0;
         next.hourlyDutyRate = 0;
@@ -208,20 +206,6 @@ export default function CeoPayrollPolicyPage() {
         next.hourlyDutyRate = 0;
         next.fixedPerStudyBonus = 0;
         if (!next.baseSalaryMonthly) next.baseSalaryMonthly = 12000;
-        if (!next.commissionPercentagePerStudy) next.commissionPercentagePerStudy = 10;
-      } else if (modelId === "TIER_DELIVERABLE") {
-        next.baseSalaryMonthly = 0;
-        next.commissionPercentagePerStudy = 0;
-        next.hourlyDutyRate = 0;
-        if (!next.tierRates || Object.keys(next.tierRates).length === 0) {
-          next.tierRates = {
-            JX_01_DATACHECK: 3000,
-            JX_02_START: 5000,
-            JX_03_CORE: 10000,
-            JX_04_ADVANCED: 18000,
-            DEFENSELAB: 8000,
-          };
-        }
       }
       next.notes = generateRoleNotes(next);
       return next;
@@ -842,9 +826,9 @@ export default function CeoPayrollPolicyPage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                             {[
                               {
-                                id: "PERCENTAGE_PER_STUDY",
-                                title: "Study % Commission",
-                                subtitle: "Earn percentage per completed study",
+                                id: "TIER_DELIVERABLE",
+                                title: "Tier Deliverable Fee",
+                                subtitle: "SOW split via Package Key from Treasury",
                               },
                               {
                                 id: "FIXED_SALARY",
@@ -858,13 +842,8 @@ export default function CeoPayrollPolicyPage() {
                               },
                               {
                                 id: "HYBRID",
-                                title: "Hybrid (Base + %)",
-                                subtitle: "Base monthly pay + Study % commission",
-                              },
-                              {
-                                id: "TIER_DELIVERABLE",
-                                title: "Tier Deliverable Rate",
-                                subtitle: "Fixed rate per package tier delivered",
+                                title: "Hybrid (Base + Tier Fee)",
+                                subtitle: "Base monthly pay + SOW tier split",
                               },
                             ].map((m) => {
                               const isSelected = formConfig.compensationType === m.id;
@@ -888,7 +867,7 @@ export default function CeoPayrollPolicyPage() {
                         </div>
 
                         {(formConfig.roleName === "ADMIN" || formConfig.roleName === "FINANCE_OFFICER") &&
-                          (formConfig.compensationType === "PERCENTAGE_PER_STUDY" || formConfig.compensationType === "HYBRID" || formConfig.compensationType === "TIER_DELIVERABLE") && (
+                          (formConfig.compensationType === "PERCENTAGE_PER_STUDY" || formConfig.compensationType === "HYBRID") && (
                             <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-[2px] text-xs text-amber-200 flex flex-col gap-1">
                               <span className="font-semibold text-white">Platform Operations Role:</span>
                               <p className="text-white/80 leading-relaxed text-[0.688rem]">
@@ -899,50 +878,65 @@ export default function CeoPayrollPolicyPage() {
 
                         {/* Focused Inputs */}
                         <div className="flex flex-col gap-4 p-4 bg-[#010D1F] border border-white/10 rounded-[2px]">
-                          {formConfig.compensationType === "PERCENTAGE_PER_STUDY" && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <label className="text-xs font-mono text-white/80 block mb-1.5 font-semibold">
-                                  Commission % Per Study
-                                </label>
-                                <div className="relative flex items-center">
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    max={100}
-                                    value={formConfig.commissionPercentagePerStudy}
-                                    onChange={(e) =>
-                                      setFormConfig((p) =>
-                                        p ? { ...p, commissionPercentagePerStudy: Number(e.target.value) } : null
-                                      )
-                                    }
-                                    className="w-full bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
-                                  />
-                                  <span className="absolute right-3 text-xs font-mono text-white/50">
-                                    % of study fee
+                          {(formConfig.compensationType === "TIER_DELIVERABLE" || formConfig.compensationType === "PERCENTAGE_PER_STUDY") && (
+                            <div className="flex flex-col gap-3">
+                              {/* Package Key Lookup Preview */}
+                              <div className="p-3 bg-[#01142B] border border-white/10 rounded-[2px]">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-mono text-xs text-white/70 font-semibold uppercase tracking-wider">
+                                    Package Tier Key Rules (Treasury Single Source of Truth)
                                   </span>
+                                  <Link
+                                    href="/dashboard/ceo/finance"
+                                    className="text-[0.688rem] text-[#CC6600] hover:underline font-mono font-medium flex items-center gap-1"
+                                  >
+                                    Configure Treasury Rates →
+                                  </Link>
                                 </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                  {[
+                                    { key: "JX-01", name: "DataCheck", pct: "45%", qa: "5%" },
+                                    { key: "JX-02", name: "Start", pct: "47%", qa: "5%" },
+                                    { key: "JX-03", name: "Core", pct: "62%", qa: "10%" },
+                                    { key: "JX-04", name: "Advanced", pct: "72%", qa: "12%" },
+                                    { key: "DEFENSE", name: "DefenseLab", pct: "80%", qa: "15%" },
+                                  ].map((pkg) => (
+                                    <div key={pkg.key} className="p-2 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-1">
+                                      <span className="font-mono text-[0.625rem] text-[#CC6600] font-bold">{pkg.key}</span>
+                                      <span className="text-[0.688rem] text-white font-medium line-clamp-1">{pkg.name}</span>
+                                      <span className="font-mono text-[0.688rem] text-emerald-400 font-semibold">
+                                        {formConfig.roleName === "SENIOR_QA_LEAD" ? `${pkg.qa} QA` : `${pkg.pct} Spec`}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <p className="text-[0.688rem] text-white/50 mt-2 leading-relaxed font-sans">
+                                  Payouts calculate dynamically as this percentage of the client&apos;s approved Statement of Work (SOW) contract price. In Treasury Fixed Mode, pre-set flat fees apply automatically.
+                                </p>
                               </div>
 
-                              <div>
-                                <label className="text-xs font-mono text-white/80 block mb-1.5 font-semibold">
-                                  Optional Deliverable Bonus (₱)
-                                </label>
-                                <div className="relative flex items-center">
-                                  <span className="absolute left-3"><Peso className="text-xs text-white/50" /></span>
-                                  <input
-                                    type="number"
-                                    step={100}
-                                    min={0}
-                                    value={formConfig.fixedPerStudyBonus}
-                                    onChange={(e) =>
-                                      setFormConfig((p) =>
-                                        p ? { ...p, fixedPerStudyBonus: Number(e.target.value) } : null
-                                      )
-                                    }
-                                    className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-7 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
-                                    placeholder="0"
-                                  />
+                              {/* Optional Deliverable Bonus */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                                <div>
+                                  <label className="text-xs font-mono text-white/80 block mb-1.5 font-semibold">
+                                    Optional Study Completion Bonus (₱)
+                                  </label>
+                                  <div className="relative flex items-center">
+                                    <span className="absolute left-3"><Peso className="text-xs text-white/50" /></span>
+                                    <input
+                                      type="number"
+                                      step={100}
+                                      min={0}
+                                      value={formConfig.fixedPerStudyBonus}
+                                      onChange={(e) =>
+                                        setFormConfig((p) =>
+                                          p ? { ...p, fixedPerStudyBonus: Number(e.target.value) } : null
+                                        )
+                                      }
+                                      className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-7 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                                      placeholder="0"
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -1042,77 +1036,14 @@ export default function CeoPayrollPolicyPage() {
                                   </span>
                                 </div>
                               </div>
-                            </div>
-                          )}
 
-                          {formConfig.compensationType === "TIER_DELIVERABLE" && (
-                            <div className="flex flex-col gap-3.5">
-                              <div className="flex flex-col gap-1">
-                                <label className="text-xs font-mono text-white/90 font-semibold">
-                                  Package Tier Deliverable Rates (₱ per completed study)
-                                </label>
-                                <span className="text-[0.688rem] text-white/50 font-sans">
-                                  Define the exact flat fee paid to staff when completing each package tier.
-                                </span>
-                              </div>
-
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {[
-                                  { key: "JX_01_DATACHECK", label: "Data Cleaning & Audit", defaultRate: 3000 },
-                                  { key: "JX_02_START", label: "Starter Analysis", defaultRate: 5000 },
-                                  { key: "JX_03_CORE", label: "Core Statistics", defaultRate: 10000 },
-                                  { key: "JX_04_ADVANCED", label: "Advanced Analysis", defaultRate: 18000 },
-                                  { key: "DEFENSELAB", label: "Mock Defense Lab", defaultRate: 8000 },
-                                ].map((pkg) => {
-                                  const currentRate = formConfig.tierRates?.[pkg.key] ?? pkg.defaultRate;
-                                  return (
-                                    <div key={pkg.key} className="p-2.5 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1.5">
-                                      <div className="flex items-center justify-between">
-                                        <span className="font-mono text-[0.688rem] text-white/50 font-semibold">{pkg.key}</span>
-                                      </div>
-                                      <span className="text-xs text-white/90 font-sans font-medium line-clamp-1">{pkg.label}</span>
-                                      <div className="relative flex items-center mt-0.5">
-                                        <span className="absolute left-2.5"><Peso className="text-xs text-white/50" /></span>
-                                        <input
-                                          type="number"
-                                          step={250}
-                                          min={0}
-                                          value={currentRate}
-                                          onChange={(e) => {
-                                            const val = Math.max(0, Number(e.target.value) || 0);
-                                            setFormConfig((p) => {
-                                              if (!p) return null;
-                                              const updatedRates = { ...(p.tierRates || {}), [pkg.key]: val };
-                                              return { ...p, tierRates: updatedRates };
-                                            });
-                                          }}
-                                          className="w-full bg-[#010D1F] border border-white/15 rounded-[2px] pl-6 pr-2 py-1.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
-                                        />
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              <div className="pt-2 border-t border-white/[0.08]">
-                                <label className="text-xs font-mono text-white/80 block mb-1 font-semibold">
-                                  Optional Deliverable Completion Bonus (₱)
-                                </label>
-                                <div className="relative flex items-center max-w-xs">
-                                  <span className="absolute left-3"><Peso className="text-xs text-white/50" /></span>
-                                  <input
-                                    type="number"
-                                    step={100}
-                                    min={0}
-                                    value={formConfig.fixedPerStudyBonus}
-                                    onChange={(e) =>
-                                      setFormConfig((p) =>
-                                        p ? { ...p, fixedPerStudyBonus: Number(e.target.value) } : null
-                                      )
-                                    }
-                                    className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-7 pr-3 py-1.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
-                                    placeholder="0"
-                                  />
+                              <div className="sm:col-span-2 p-2.5 bg-[#01142B] border border-[#CC6600]/25 rounded-[2px] text-xs text-white/70 flex items-start gap-2">
+                                <Info weight="fill" size={16} className="text-[#CC6600] shrink-0 mt-0.5" />
+                                <div>
+                                  <span className="font-semibold text-white">Dynamic SOW Contract Pricing:</span>
+                                  <p className="text-[0.688rem] text-white/60 leading-relaxed mt-0.5">
+                                    Commission calculates from the actual approved Statement of Work (SOW) contract price for each study. Base rates link to your <Link href="/dashboard/ceo/finance" className="text-[#CC6600] hover:underline font-medium">Treasury & Rates</Link> desk.
+                                  </p>
                                 </div>
                               </div>
                             </div>
@@ -1154,6 +1085,17 @@ export default function CeoPayrollPolicyPage() {
                           </div>
                           <div className="text-xs font-sans text-white/90 leading-relaxed">
                             <span className="font-bold text-emerald-400 mr-1.5">How this role gets paid:</span>
+                            {formConfig.compensationType === "TIER_DELIVERABLE" && (
+                              <span>
+                                Specialist earns the <strong>active Treasury split (% of approved SOW contract)</strong> for each completed study key
+                                {formConfig.fixedPerStudyBonus > 0 ? (
+                                  <span> + <Peso />{formConfig.fixedPerStudyBonus.toLocaleString()} bonus</span>
+                                ) : ""}
+                                {formConfig.allowancesMonthly > 0 ? (
+                                  <span> + <Peso />{formConfig.allowancesMonthly.toLocaleString()} monthly allowance</span>
+                                ) : ""}.
+                              </span>
+                            )}
                             {formConfig.compensationType === "PERCENTAGE_PER_STUDY" && (
                               <span>
                                 Specialist earns <strong>{formConfig.commissionPercentagePerStudy}%</strong> of the project fee for every completed study
@@ -1187,17 +1129,6 @@ export default function CeoPayrollPolicyPage() {
                                 Base salary of <strong><Peso />{formConfig.baseSalaryMonthly.toLocaleString()} / month</strong> + <strong>{formConfig.commissionPercentagePerStudy}%</strong> per completed study
                                 {formConfig.allowancesMonthly > 0 ? (
                                   <span> + <Peso />{formConfig.allowancesMonthly.toLocaleString()} allowance</span>
-                                ) : ""}.
-                              </span>
-                            )}
-                            {formConfig.compensationType === "TIER_DELIVERABLE" && (
-                              <span>
-                                Specialist receives a <strong>fixed rate per package tier delivered</strong> (Core: <Peso />{(formConfig.tierRates?.JX_03_CORE ?? 10000).toLocaleString()}, Adv: <Peso />{(formConfig.tierRates?.JX_04_ADVANCED ?? 18000).toLocaleString()}, Starter: <Peso />{(formConfig.tierRates?.JX_02_START ?? 5000).toLocaleString()})
-                                {formConfig.fixedPerStudyBonus > 0 ? (
-                                  <span> + <Peso />{formConfig.fixedPerStudyBonus.toLocaleString()} bonus</span>
-                                ) : ""}
-                                {formConfig.allowancesMonthly > 0 ? (
-                                  <span> + <Peso />{formConfig.allowancesMonthly.toLocaleString()} monthly allowance</span>
                                 ) : ""}.
                               </span>
                             )}
@@ -1239,6 +1170,14 @@ export default function CeoPayrollPolicyPage() {
                               Standard Pay Rate
                             </span>
                             <div className="font-sans font-bold text-sm text-white flex items-center gap-2">
+                              {role.compensationType === "TIER_DELIVERABLE" && (
+                                <span className="text-white font-mono font-bold text-base sm:text-lg inline-flex items-baseline">
+                                  Dynamic SOW Tier Fee
+                                  <span className="text-xs font-mono text-emerald-400 font-normal ml-2">
+                                    (Treasury Rates)
+                                  </span>
+                                </span>
+                              )}
                               {role.compensationType === "PERCENTAGE_PER_STUDY" && (
                                 <span className="text-white font-mono font-bold text-lg sm:text-xl inline-flex items-baseline">
                                   {role.commissionPercentagePerStudy}%
@@ -1274,30 +1213,6 @@ export default function CeoPayrollPolicyPage() {
                                     commission
                                   </span>
                                 </span>
-                              )}
-                              {role.compensationType === "TIER_DELIVERABLE" && (
-                                <div className="flex flex-col gap-1.5">
-                                  <span className="text-white font-mono font-bold text-base sm:text-lg inline-flex items-baseline">
-                                    Tier Deliverable Rates
-                                  </span>
-                                  <div className="flex flex-wrap gap-1.5 mt-0.5">
-                                    <span className="px-2 py-0.5 bg-white/[0.04] border border-white/10 text-white/80 rounded-[2px] text-[0.688rem] font-mono">
-                                      Core: <Peso className="text-white/40" />{(role.tierRates?.JX_03_CORE ?? 10000).toLocaleString()}
-                                    </span>
-                                    <span className="px-2 py-0.5 bg-white/[0.04] border border-white/10 text-white/80 rounded-[2px] text-[0.688rem] font-mono">
-                                      Adv: <Peso className="text-white/40" />{(role.tierRates?.JX_04_ADVANCED ?? 18000).toLocaleString()}
-                                    </span>
-                                    <span className="px-2 py-0.5 bg-white/[0.04] border border-white/10 text-white/80 rounded-[2px] text-[0.688rem] font-mono">
-                                      Start: <Peso className="text-white/40" />{(role.tierRates?.JX_02_START ?? 5000).toLocaleString()}
-                                    </span>
-                                    <span className="px-2 py-0.5 bg-white/[0.04] border border-white/10 text-white/80 rounded-[2px] text-[0.688rem] font-mono">
-                                      Clean: <Peso className="text-white/40" />{(role.tierRates?.JX_01_DATACHECK ?? 3000).toLocaleString()}
-                                    </span>
-                                    <span className="px-2 py-0.5 bg-white/[0.04] border border-white/10 text-white/80 rounded-[2px] text-[0.688rem] font-mono">
-                                      Mock: <Peso className="text-white/40" />{(role.tierRates?.DEFENSELAB ?? 8000).toLocaleString()}
-                                    </span>
-                                  </div>
-                                </div>
                               )}
                             </div>
                           </div>
