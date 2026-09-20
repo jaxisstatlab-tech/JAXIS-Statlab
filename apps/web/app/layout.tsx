@@ -17,20 +17,37 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "JAXIS StatLab — Enterprise Statistical Infrastructure & Intelligence Platform",
-  description: "Mission-critical workflow platform connecting clients, statisticians, QA leads, and finance teams from intake to payout with strict compliance gates.",
-  keywords: ["statistical analysis", "data intelligence", "research QA", "statistical modeling", "enterprise SaaS"],
+  metadataBase: new URL("https://jaxis-statlab.com"),
+  title: "JAXIS StatLab — Statistical Consulting & Data Analysis Services",
+  description: "Student-focused statistical consulting firm based in Maramag, Bukidnon, Philippines offering expert support in data analysis, thesis assistance, SPSS, RStudio, and academic research.",
+  keywords: [
+    "JAXIS StatLab",
+    "jaxisstatlab",
+    "JAXIS",
+    "statistical consulting",
+    "data analysis",
+    "thesis assistance",
+    "SPSS",
+    "RStudio",
+    "academic research",
+    "Maramag Bukidnon",
+    "statistical modeling",
+    "Philippines",
+  ],
+  alternates: {
+    canonical: "https://jaxis-statlab.com",
+  },
   icons: {
     icon: "/jaxislogo.png",
     shortcut: "/jaxislogo.png",
     apple: "/jaxislogo.png",
   },
   openGraph: {
-    title: "JAXIS StatLab — Enterprise Statistical Infrastructure",
-    description: "High-performance statistical workflow platform built for enterprise research and clinical compliance.",
-    url: "https://jaxisstatlab.com",
+    title: "JAXIS StatLab — Statistical Consulting & Data Analysis Services",
+    description: "Statistical consulting and data analysis service based in Maramag, Bukidnon, Philippines offering expert research and thesis support.",
+    url: "https://jaxis-statlab.com",
     siteName: "JAXIS StatLab",
-    locale: "en_US",
+    locale: "en_PH",
     type: "website",
   },
 };
