@@ -370,44 +370,45 @@ export function ClientDashboardClient({
           { label: "Client Portal" },
         ]}
         actions={
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
             <Button
               variant="outline"
-              size="md"
+              size="sm"
               onClick={() => setIsHowToUseModalOpen(true)}
-              className="font-sans text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 border-white/15 hover:bg-white/[0.06] text-white active:scale-[0.97] transition-all rounded-[2px]"
+              className="font-sans text-xs font-semibold flex items-center justify-center gap-1.5 border-white/15 hover:bg-white/[0.06] text-white active:scale-[0.97] transition-all rounded-[2px]"
               title="How to Use JAXIS Guide"
             >
-              <Question size={16} weight="fill" className="text-sky-400" />
+              <Question size={15} weight="fill" className="text-sky-400" />
               <span>How It Works</span>
             </Button>
 
             {isProfileComplete === null ? (
               <Button
                 variant="primary"
-                size="md"
+                size="sm"
                 disabled
-                className="font-bold tracking-wider font-sans text-xs sm:text-sm opacity-50 cursor-wait pointer-events-none rounded-[2px]"
+                className="font-sans text-xs font-semibold opacity-50 cursor-wait pointer-events-none rounded-[2px]"
               >
                 <LoadingState variant="inline" label="Loading..." />
               </Button>
             ) : isProfileComplete === false ? (
               <Button
                 variant="primary"
-                size="md"
+                size="sm"
                 onClick={() => setIsProfileModalOpen(true)}
-                className="font-bold tracking-wider font-sans text-xs sm:text-sm animate-content-fade bg-[#CC6600] hover:bg-[#B35500] text-white active:scale-[0.97] transition-all rounded-[2px]"
+                className="font-sans text-xs font-semibold animate-content-fade bg-[#CC6600] hover:bg-[#B35500] text-white active:scale-[0.97] transition-all rounded-[2px] gap-1.5"
               >
-                1. Setup School First →
+                <span>Setup School First</span>
+                <ArrowRight size={14} weight="fill" />
               </Button>
             ) : (
               <Link href="/dashboard/client/projects/new" className="animate-content-fade w-full sm:w-auto">
                 <Button
                   variant="primary"
-                  size="md"
-                  className="w-full font-bold tracking-wider font-sans text-xs sm:text-sm flex items-center justify-center gap-2 bg-[#CC6600] hover:bg-[#B35500] text-white active:scale-[0.97] transition-all rounded-[2px]"
+                  size="sm"
+                  className="w-full font-sans text-xs font-semibold flex items-center justify-center gap-1.5 bg-[#CC6600] hover:bg-[#B35500] text-white active:scale-[0.97] transition-all rounded-[2px]"
                 >
-                  <Plus size={16} weight="fill" />
+                  <Plus size={15} weight="fill" />
                   <span>Submit New Study Request</span>
                 </Button>
               </Link>
