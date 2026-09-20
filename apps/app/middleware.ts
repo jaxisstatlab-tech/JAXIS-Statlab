@@ -5,6 +5,20 @@ import type { RoleName } from "@prisma/client";
 
 export default auth((req) => {
   const { nextUrl } = req;
+
+  // Canonical domain redirect: ensure production traffic routes through custom domain
+  const hostname = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+  if (
+    hostname.includes("jaxis-statlab-app.vercel.app") &&
+    !hostname.includes("localhost")
+  ) {
+    const canonicalUrl = new URL(
+      nextUrl.pathname + nextUrl.search,
+      "https://app.jaxis-statlab.com"
+    );
+    return NextResponse.redirect(canonicalUrl, 308);
+  }
+
   const isLoggedIn = !!req.auth;
   const userRole = req.auth?.user?.role as RoleName | undefined;
 
