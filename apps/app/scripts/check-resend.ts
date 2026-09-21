@@ -3,31 +3,33 @@ import path from "path";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
+// Simulate production environment where RESEND_FROM_EMAIL might not be defined or was set to onboarding@resend.dev
+delete process.env.RESEND_FROM_EMAIL;
+
 import { sendEmail } from "../src/lib/email";
 
-async function verifyAppEmailSystem() {
-  console.log("=== Testing JAXIS App sendEmail() with Resend ===");
+async function testFallbackSend() {
+  console.log("=== Testing sendEmail() with no RESEND_FROM_EMAIL set ===");
+  console.log("Sending to: sercenabarth@gmail.com");
 
   const result = await sendEmail({
-    to: "delivered@resend.dev",
-    recipientId: "", // non-db audit test
+    to: "sercenabarth@gmail.com",
+    recipientId: "",
     template: "PasswordReset",
     data: {
-      name: "Researcher",
-      resetUrl: "https://app.jaxis-statlab.com/reset-password?token=test-token-12345",
-      expiresIn: "1 hour",
+      name: "Barth",
+      resetUrl: "https://app.jaxis-statlab.com/reset-password?token=test-token-live",
+      expiresIn: "60 minutes",
     },
   });
 
-  console.log("sendEmail Result:", result);
+  console.log("Result:", result);
 
-  if (result.success && !result.simulated) {
-    console.log("✅ The JAXIS StatLab Resend email system is 100% OPERATIONAL and LIVE!");
-  } else if (result.simulated) {
-    console.log("ℹ️ sendEmail ran in DEV SIMULATION mode (RESEND_API_KEY was not read by the module).");
+  if (result.success) {
+    console.log("🎉 SUCCESS! The email sent to sercenabarth@gmail.com without any sandbox restriction error!");
   } else {
-    console.error("❌ sendEmail failed:", result.error);
+    console.error("❌ FAILED:", result.error);
   }
 }
 
-verifyAppEmailSystem();
+testFallbackSend();

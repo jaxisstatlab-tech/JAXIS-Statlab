@@ -30,6 +30,12 @@ export async function sendEmail(payload: EmailPayload): Promise<{
     for (let attempt = 1; attempt <= 3; attempt++) {
       attemptCount = attempt;
       try {
+        const configuredFrom = process.env.RESEND_FROM_EMAIL?.trim();
+        const from =
+          configuredFrom && !configuredFrom.includes("onboarding@resend.dev")
+            ? configuredFrom
+            : "JAXIS StatLab <notifications@jaxis-statlab.com>";
+
         const res = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
@@ -37,7 +43,7 @@ export async function sendEmail(payload: EmailPayload): Promise<{
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: process.env.RESEND_FROM_EMAIL || "JAXIS StatLab <onboarding@resend.dev>",
+            from,
             to,
             subject,
             html,
