@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Button, FormInput } from "@repo/ui";
 import {
   ArrowLeft,
-  EnvelopeSimple,
   CheckCircle,
   WarningCircle,
   ArrowRight,
@@ -72,10 +71,7 @@ export default function ForgotPasswordPage() {
       {isSubmitted ? (
         /* Confirmation State */
         <div className="flex flex-col gap-6 py-2">
-          <div className="flex flex-col gap-3">
-            <div className="w-12 h-12 rounded-[2px] bg-[#CC6600]/10 border border-[#CC6600]/30 flex items-center justify-center text-[#CC6600]">
-              <EnvelopeSimple weight="fill" size={24} />
-            </div>
+          <div className="flex flex-col gap-1.5">
             <h1 className="text-2xl font-bold text-white tracking-tight font-sans">
               Check your inbox
             </h1>
