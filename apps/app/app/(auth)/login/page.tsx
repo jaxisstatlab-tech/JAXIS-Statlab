@@ -25,10 +25,12 @@ const DEV_PRESETS = [
 function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-  const isRegistered = searchParams.get("registered") === "true";
-  const isResetSuccess = searchParams.get("reset") === "true";
-  const reason = searchParams.get("reason");
-  const authError = searchParams.get("error");
+  // Capture initial URL error/status parameters so they persist on screen even after the URL bar is cleaned
+  const [authError] = useState(() => searchParams.get("error"));
+  const [reason] = useState(() => searchParams.get("reason"));
+  const [isRegistered] = useState(() => searchParams.get("registered") === "true");
+  const [isResetSuccess] = useState(() => searchParams.get("reset") === "true");
+
   const isIdleTimeout = reason === "idle_timeout";
   const isAccountSuspended = authError === "AccountSuspended";
   const isAccountTerminated = authError === "AccountTerminated";
@@ -256,28 +258,20 @@ function LoginForm() {
       >
         {/* Error Alert Banner */}
         {errorMessage && (
-          <div
-            role="alert"
-            className="p-3.5 rounded-[2px] bg-red-500/[0.08] border border-red-500/30 flex items-start gap-3 animate-content-fade"
+          <Alert
+            variant="danger"
+            title={
+              errorMessage.toLowerCase().includes("google")
+                ? "Google OAuth Required"
+                : errorMessage.toLowerCase().includes("suspended")
+                ? "Account Suspended"
+                : errorMessage.toLowerCase().includes("deactivated")
+                ? "Account Deactivated"
+                : "Invalid Credentials"
+            }
           >
-            <WarningCircle
-              weight="fill"
-              size={18}
-              className="text-red-400 shrink-0 mt-0.5"
-            />
-            <div className="flex-1 flex flex-col gap-1 text-xs font-sans">
-              <span className="font-semibold text-red-200">
-                {errorMessage.toLowerCase().includes("google")
-                  ? "Google OAuth Required"
-                  : errorMessage.toLowerCase().includes("suspended")
-                  ? "Account Suspended"
-                  : errorMessage.toLowerCase().includes("deactivated")
-                  ? "Account Deactivated"
-                  : "Invalid Credentials"}
-              </span>
-              <p className="text-white/70 leading-relaxed">{errorMessage}</p>
-            </div>
-          </div>
+            {errorMessage}
+          </Alert>
         )}
 
         <FormInput

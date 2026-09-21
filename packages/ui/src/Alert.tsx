@@ -3,8 +3,7 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import {
-  WarningOctagon,
-  Warning,
+  WarningCircle,
   CheckCircle,
   Info,
   X,
@@ -12,21 +11,21 @@ import {
 import { cn } from "./utils";
 
 export const alertVariants = cva(
-  "relative w-full rounded-[2px] border p-4 backdrop-blur-md transition-colors leading-relaxed",
+  "relative w-full rounded-[2px] border p-3.5 backdrop-blur-sm transition-colors leading-relaxed animate-content-fade",
   {
     variants: {
       variant: {
         default:
-          "bg-[#01142B]/90 border-white/15 text-white/90 [&>svg]:text-white/60",
-        info: "bg-[#0284C7]/10 border-[#38BDF8]/30 border-l-4 border-l-[#38BDF8] text-white/90 [&>svg]:text-[#38BDF8]",
+          "bg-[#01142B]/90 border-white/15 text-white/90 [&>div>div>svg]:text-white/60",
+        info: "bg-sky-500/[0.08] border-sky-500/30 text-white/90 [&>div>div>svg]:text-sky-400",
         success:
-          "bg-[#10B981]/10 border-[#10B981]/30 border-l-4 border-l-[#10B981] text-white/90 [&>svg]:text-[#10B981]",
+          "bg-emerald-500/[0.08] border-emerald-500/30 text-white/90 [&>div>div>svg]:text-emerald-400",
         warning:
-          "bg-[#F59E0B]/10 border-[#F59E0B]/30 border-l-4 border-l-[#F59E0B] text-white/90 [&>svg]:text-[#F59E0B]",
+          "bg-amber-500/[0.08] border-amber-500/30 text-white/90 [&>div>div>svg]:text-amber-400",
         destructive:
-          "bg-[#EF4444]/10 border-[#EF4444]/30 border-l-4 border-l-[#EF4444] text-white/90 [&>svg]:text-[#EF4444]",
+          "bg-red-500/[0.08] border-red-500/30 text-white/90 [&>div>div>svg]:text-red-400",
         danger:
-          "bg-[#EF4444]/10 border-[#EF4444]/30 border-l-4 border-l-[#EF4444] text-white/90 [&>svg]:text-[#EF4444]",
+          "bg-red-500/[0.08] border-red-500/30 text-white/90 [&>div>div>svg]:text-red-400",
       },
     },
     defaultVariants: {
@@ -39,9 +38,27 @@ const defaultIcons = {
   default: Info,
   info: Info,
   success: CheckCircle,
-  warning: Warning,
-  destructive: WarningOctagon,
-  danger: WarningOctagon,
+  warning: WarningCircle,
+  destructive: WarningCircle,
+  danger: WarningCircle,
+};
+
+const titleColorVariants = {
+  default: "text-white",
+  info: "text-sky-200",
+  success: "text-emerald-200",
+  warning: "text-amber-200",
+  destructive: "text-red-200",
+  danger: "text-red-200",
+};
+
+const iconColorVariants = {
+  default: "text-white/60",
+  info: "text-sky-400",
+  success: "text-emerald-400",
+  warning: "text-amber-400",
+  destructive: "text-red-400",
+  danger: "text-red-400",
 };
 
 export type AlertVariant = "default" | "info" | "success" | "warning" | "destructive" | "danger";
@@ -70,6 +87,8 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
     ref
   ) => {
     const Icon = defaultIcons[variant ?? "default"];
+    const iconColor = iconColorVariants[variant ?? "default"];
+    const titleColor = titleColorVariants[variant ?? "default"];
 
     return (
       <div
@@ -81,19 +100,19 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
         <div className="flex items-start gap-3">
           {showIcon && Icon && (
             <div className="shrink-0 mt-0.5">
-              <Icon size={18} weight="fill" />
+              <Icon size={18} weight="fill" className={iconColor} />
             </div>
           )}
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col gap-1 text-xs font-sans">
             {(title || badgeText) && (
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2">
                 {badgeText && (
                   <span className="font-mono text-[0.625rem] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-[1px] bg-white/10 text-white/80">
                     {badgeText}
                   </span>
                 )}
-                {title && <AlertTitle>{title}</AlertTitle>}
+                {title && <AlertTitle className={titleColor}>{title}</AlertTitle>}
               </div>
             )}
             {typeof children === "string" ? (
@@ -107,7 +126,7 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
             <button
               type="button"
               onClick={onClose}
-              className="shrink-0 rounded-[2px] p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+              className="shrink-0 rounded-[2px] p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
             >
               <X size={14} weight="bold" />
               <span className="sr-only">Dismiss</span>
@@ -121,12 +140,12 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
 Alert.displayName = "Alert";
 
 export const AlertTitle = React.forwardRef<
-  HTMLParagraphElement,
+  HTMLHeadingElement,
   React.HTMLAttributes<HTMLHeadingElement>
 >(({ className, ...props }, ref) => (
   <h5
     ref={ref}
-    className={cn("font-mono text-xs font-bold uppercase tracking-wide leading-none", className)}
+    className={cn("font-sans text-sm font-semibold leading-snug tracking-tight", className)}
     {...props}
   />
 ));
@@ -138,7 +157,7 @@ export const AlertDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-xs leading-relaxed font-sans text-white/80", className)}
+    className={cn("text-xs leading-relaxed font-sans text-white/70", className)}
     {...props}
   />
 ));
