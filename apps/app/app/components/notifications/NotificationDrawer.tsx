@@ -435,11 +435,22 @@ export function NotificationDrawer({
     });
   };
 
-  // Default sort: Newest first to oldest (guaranteed chronological descending order)
+  // Default sort: Newest first to oldest (guaranteed chronological descending order & deduplicated)
   const filteredAlerts = useMemo(() => {
-    return [...optimisticState.alerts]
+    const list = [...optimisticState.alerts]
       .filter((a) => (filterTab === "UNREAD" ? !a.isRead : true))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const seenIds = new Set<string>();
+    const seenContent = new Set<string>();
+    return list.filter((a) => {
+      if (seenIds.has(a.id)) return false;
+      seenIds.add(a.id);
+      const contentKey = `${a.alertType}_${a.message}`;
+      if (seenContent.has(contentKey)) return false;
+      seenContent.add(contentKey);
+      return true;
+    });
   }, [optimisticState.alerts, filterTab]);
 
   const formatAlertTimestamp = (dateStr: string): string => {

@@ -137,6 +137,15 @@ export async function ensureFreshAccountNotifications(
     }
 
     if (welcomeAlerts.length > 0) {
+      // Guard against concurrent invocations duplicating welcome alerts
+      const doubleCheck = await withDbTimeout(
+        db.inAppAlert.count({
+          where: { recipientId: userId },
+        }),
+        1000
+      );
+      if (doubleCheck > 0) return;
+
       await withDbTimeout(
         db.inAppAlert.createMany({
           data: welcomeAlerts.map((a) => ({
@@ -438,10 +447,7 @@ export async function getInAppAlertsAction(): Promise<{
     const alertsRaw = await withDbTimeout(
       db.inAppAlert.findMany({
         where: {
-          OR: [
-            { recipientId: { in: recipientIds } },
-            ...(user.role !== "CLIENT" ? [{ recipientRole: user.role as RoleName }] : []),
-          ],
+          recipientId: { in: recipientIds },
         },
         include: {
           project: {
@@ -453,10 +459,10 @@ export async function getInAppAlertsAction(): Promise<{
       })
     );
 
-    // Deduplicate alerts by recipient + alertType + projectId + message to avoid displaying duplicate rows
+    // Deduplicate alerts by alertType + projectId + message to avoid displaying duplicate cards
     const seenAlertKeys = new Set<string>();
     const deduplicatedAlertsRaw = alertsRaw.filter((a) => {
-      const key = `${a.recipientId}_${a.alertType}_${a.projectId || ""}_${a.message}`;
+      const key = `${a.alertType}_${a.projectId || ""}_${a.message}`;
       if (seenAlertKeys.has(key)) return false;
       seenAlertKeys.add(key);
       return true;
@@ -506,13 +512,13 @@ export async function getUnreadAlertCountAction(): Promise<{
       return { success: true, count: 0 };
     }
 
+    const resolvedRecipientId = await resolveDbUserId(user.id, user.email);
+    const recipientIds = Array.from(new Set([resolvedRecipientId, user.id].filter(Boolean)));
+
     let count = await withDbTimeout(
       db.inAppAlert.count({
         where: {
-          OR: [
-            { recipientId: user.id },
-            { recipientRole: user.role as RoleName },
-          ],
+          recipientId: { in: recipientIds },
           isRead: false,
         },
       })
@@ -521,17 +527,14 @@ export async function getUnreadAlertCountAction(): Promise<{
     // If zero unread, check if this is a fresh account that needs onboarding alerts seeded
     if (count === 0) {
       const totalUserAlerts = await withDbTimeout(
-        db.inAppAlert.count({ where: { recipientId: user.id } })
+        db.inAppAlert.count({ where: { recipientId: { in: recipientIds } } })
       );
       if (totalUserAlerts === 0) {
-        await ensureFreshAccountNotifications(user.id, user.role as RoleName);
+        await ensureFreshAccountNotifications(resolvedRecipientId, user.role as RoleName);
         count = await withDbTimeout(
           db.inAppAlert.count({
             where: {
-              OR: [
-                { recipientId: user.id },
-                { recipientRole: user.role as RoleName },
-              ],
+              recipientId: { in: recipientIds },
               isRead: false,
             },
           })
@@ -591,33 +594,13 @@ export async function markAllAlertsReadAction(): Promise<{
       return { success: false, error: { message: "Authentication required." } };
     }
 
-    let recipientId = user.id;
-    try {
-      const dbUser = await withDbTimeout(
-        db.user.findFirst({
-          where: {
-            OR: [
-              { id: user.id },
-              ...(user.email ? [{ email: user.email.toLowerCase().trim() }] : []),
-            ],
-          },
-          select: { id: true },
-        }),
-        1000
-      );
-      if (dbUser) recipientId = dbUser.id;
-    } catch {
-      // Ignore DB timeout and use user.id
-    }
+    const resolvedRecipientId = await resolveDbUserId(user.id, user.email);
+    const recipientIds = Array.from(new Set([resolvedRecipientId, user.id].filter(Boolean)));
 
     await withDbTimeout(
       db.inAppAlert.updateMany({
         where: {
-          OR: [
-            { recipientId },
-            ...(recipientId !== user.id ? [{ recipientId: user.id }] : []),
-            { recipientRole: user.role as RoleName },
-          ],
+          recipientId: { in: recipientIds },
           isRead: false,
         },
         data: {
@@ -649,9 +632,15 @@ export async function deleteAlertAction(rawInput: { alertId: string }): Promise<
       return { success: false, error: { message: "Alert ID is required." } };
     }
 
+    const resolvedRecipientId = await resolveDbUserId(user.id, user.email);
+    const recipientIds = Array.from(new Set([resolvedRecipientId, user.id].filter(Boolean)));
+
     await withDbTimeout(
-      db.inAppAlert.delete({
-        where: { id: rawInput.alertId },
+      db.inAppAlert.deleteMany({
+        where: {
+          id: rawInput.alertId,
+          recipientId: { in: recipientIds },
+        },
       })
     );
 
@@ -673,33 +662,13 @@ export async function clearAllAlertsAction(): Promise<{
       return { success: false, error: { message: "Authentication required." } };
     }
 
-    let recipientId = user.id;
-    try {
-      const dbUser = await withDbTimeout(
-        db.user.findFirst({
-          where: {
-            OR: [
-              { id: user.id },
-              ...(user.email ? [{ email: user.email.toLowerCase().trim() }] : []),
-            ],
-          },
-          select: { id: true },
-        }),
-        1000
-      );
-      if (dbUser) recipientId = dbUser.id;
-    } catch {
-      // fallback
-    }
+    const resolvedRecipientId = await resolveDbUserId(user.id, user.email);
+    const recipientIds = Array.from(new Set([resolvedRecipientId, user.id].filter(Boolean)));
 
     await withDbTimeout(
       db.inAppAlert.deleteMany({
         where: {
-          OR: [
-            { recipientId },
-            ...(recipientId !== user.id ? [{ recipientId: user.id }] : []),
-            { recipientRole: user.role as RoleName },
-          ],
+          recipientId: { in: recipientIds },
         },
       })
     );
