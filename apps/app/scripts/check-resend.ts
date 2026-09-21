@@ -1,33 +1,58 @@
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
-(process.env as any).NODE_ENV = "production";
-delete process.env.NEXT_PUBLIC_APP_URL;
-
 import { renderEmailTemplate } from "../src/lib/email/renderer";
 
-function testPasswordResetEmailUrl() {
-  console.log("=== Testing Password Reset Email Button URL in Production Mode ===");
-  const testToken = "test_token_abcdef1234567890";
-  const { html, subject } = renderEmailTemplate("PasswordReset", {
-    email: "client@jaxis.dev",
-    resetToken: testToken,
+async function previewAndSendNewResetDesign() {
+  console.log("=== Testing Redesigned Password Reset Email Template ===");
+
+  const rendered = renderEmailTemplate("PasswordReset", {
+    name: "Barth",
+    email: "sercenabarth@gmail.com",
+    resetToken: "test_token_live_12345",
   });
 
-  // Find href in html
-  const match = html.match(/href="([^"]+)"/);
-  const buttonUrl = match ? match[1] : null;
+  console.log("Subject:", rendered.subject);
+  console.log("Plaintext Preview:\n", rendered.text);
 
-  console.log("Subject:", subject);
-  console.log("Button URL in email:", buttonUrl);
+  // Save HTML preview file
+  const previewPath = path.resolve(process.cwd(), "scripts/test-email-preview.html");
+  fs.writeFileSync(previewPath, rendered.html, "utf-8");
+  console.log(`\n✅ Saved HTML preview to: ${previewPath}`);
 
-  if (buttonUrl && buttonUrl.startsWith("https://app.jaxis-statlab.com/reset-password?token=")) {
-    console.log("✅ SUCCESS! The button in the email links directly to the deployed reset password page!");
+  // Send real test email via Resend to sercenabarth@gmail.com
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.log("No RESEND_API_KEY found, skipping live send.");
+    return;
+  }
+
+  console.log("\nDispatching live email to sercenabarth@gmail.com...");
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "JAXIS StatLab <notifications@jaxis-statlab.com>",
+      to: "sercenabarth@gmail.com",
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+    }),
+  });
+
+  const data = await res.json();
+  if (res.ok) {
+    console.log("🎉 SUCCESS! Live email sent to sercenabarth@gmail.com with the NEW design!");
+    console.log("Message ID:", data.id);
   } else {
-    console.error("❌ FAILED! Unexpected button URL:", buttonUrl);
+    console.error("❌ Send failed:", data);
   }
 }
 
-testPasswordResetEmailUrl();
+previewAndSendNewResetDesign();

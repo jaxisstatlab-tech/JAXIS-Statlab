@@ -133,16 +133,180 @@ function renderBaseEmailLayout(params: {
 `;
 }
 
+function extractFirstName(rawName?: string, email?: string): string {
+  if (rawName && rawName.trim() && !rawName.includes("@") && rawName.trim().toLowerCase() !== "client") {
+    const parts = rawName.trim().split(/\s+/);
+    if (parts[0] && parts[0].toLowerCase() === "dr." && parts.length > 1 && parts[1]) {
+      return `Dr. ${parts[1]}`;
+    }
+    if (parts[0]) {
+      return parts[0];
+    }
+  }
+  if (email && email.includes("@")) {
+    const local = email.split("@")[0];
+    if (local) {
+      const clean = local.replace(/[._-]+/g, " ").trim();
+      if (clean) {
+        const first = clean.split(/\s+/)[0];
+        if (first) {
+          return first.charAt(0).toUpperCase() + first.slice(1);
+        }
+      }
+    }
+  }
+  return "there";
+}
+
+function renderPasswordResetEmail(params: {
+  recipientName: string;
+  ctaUrl: string;
+}): EmailRenderResult {
+  const { recipientName, ctaUrl } = params;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset your password</title>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td, a { font-family: Arial, sans-serif !important; }
+  </style>
+  <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; background-color: #EEF2F6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #EEF2F6; padding: 48px 16px 56px 16px; margin: 0; width: 100%;">
+    <tr>
+      <td align="center">
+        <!-- Floating White Card (Inspired by Modern Clean Minimalist UI) -->
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 460px; background-color: #FFFFFF; border-radius: 14px; border: 1px solid #E2E8F0; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04); overflow: hidden; margin: 0 auto;">
+          <tr>
+            <td style="padding: 38px 40px 42px 40px;">
+              
+              <!-- Centered Brand Header -->
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="text-align: center; margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <!-- Modern 5-Bar Stat Spectrum Icon -->
+                    <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto 14px auto;">
+                      <tr>
+                        <td style="padding: 0 2.5px; vertical-align: middle;">
+                          <div style="width: 3px; height: 8px; background-color: #2563EB; border-radius: 2px;"></div>
+                        </td>
+                        <td style="padding: 0 2.5px; vertical-align: middle;">
+                          <div style="width: 3px; height: 15px; background-color: #2563EB; border-radius: 2px;"></div>
+                        </td>
+                        <td style="padding: 0 2.5px; vertical-align: middle;">
+                          <div style="width: 3px; height: 22px; background-color: #2563EB; border-radius: 2px;"></div>
+                        </td>
+                        <td style="padding: 0 2.5px; vertical-align: middle;">
+                          <div style="width: 3px; height: 15px; background-color: #2563EB; border-radius: 2px;"></div>
+                        </td>
+                        <td style="padding: 0 2.5px; vertical-align: middle;">
+                          <div style="width: 3px; height: 8px; background-color: #2563EB; border-radius: 2px;"></div>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Brand Name -->
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #0F172A; text-transform: uppercase; margin: 0 0 8px 0;">
+                      JAXIS STATLAB
+                    </div>
+
+                    <!-- Title -->
+                    <h1 style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 21px; font-weight: 700; color: #0F172A; letter-spacing: -0.2px;">
+                      Reset your password
+                    </h1>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Hairline Divider -->
+              <div style="height: 1px; background-color: #F1F5F9; margin: 0 0 26px 0; width: 100%;"></div>
+
+              <!-- Message Body -->
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: left;">
+                <p style="margin: 0 0 14px 0; font-size: 14px; font-weight: 700; color: #0F172A;">
+                  Hey ${recipientName},
+                </p>
+                <p style="margin: 0 0 28px 0; font-size: 14px; line-height: 1.6; color: #334155;">
+                  Need to reset your password? No problem! Just click the button below and you'll be on your way. If you did not make this request, please ignore this email.
+                </p>
+
+                <!-- Full-Width Action Button -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                  <tr>
+                    <td align="center">
+                      <a href="${ctaUrl}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #2563EB; color: #FFFFFF; text-decoration: none; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 600; padding: 14px 24px; border-radius: 8px; letter-spacing: 0.1px;">
+                        Reset your password
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+            </td>
+          </tr>
+        </table>
+
+        <!-- Subtle Footer -->
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 460px; margin: 24px auto 0 auto; text-align: center;">
+          <tr>
+            <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; color: #94A3B8; line-height: 1.6;">
+              <p style="margin: 0 0 4px 0;">This recovery link will expire in 60 minutes.</p>
+              <p style="margin: 0;">&copy; 2026 JAXIS StatLab Inc. &bull; All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  const text = `Hey ${recipientName},
+
+Need to reset your password? No problem! Just click the link below to choose a new password:
+${ctaUrl}
+
+If you did not make this request, please ignore this email.
+This link will expire in 60 minutes.
+
+JAXIS StatLab Inc.`;
+
+  return {
+    subject: "Reset your password",
+    html,
+    text,
+  };
+}
+
 export function renderEmailTemplate(
   template: EmailTemplateName,
   data: Record<string, any>
 ): EmailRenderResult {
-  const subjectFn = EMAIL_SUBJECTS[template];
-  const subject = subjectFn ? subjectFn(data) : "JAXIS StatLab Notification";
   const isProd = process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     (isProd ? "https://app.jaxis-statlab.com" : process.env.NEXTAUTH_URL || "http://localhost:3001");
+
+  // Specialized Clean Minimalist Reset Password Email matching inspiration
+  if (template === "PasswordReset") {
+    const ctaUrl = data.resetUrl || `${appUrl}/reset-password?token=${data.resetToken}`;
+    const recipientName = extractFirstName(data.userName || data.clientName || data.name, data.email);
+    return renderPasswordResetEmail({
+      recipientName,
+      ctaUrl,
+    });
+  }
+
+  const subjectFn = EMAIL_SUBJECTS[template];
+  const subject = subjectFn ? subjectFn(data) : "JAXIS StatLab Notification";
   const name = data.clientName || data.userName || "Client";
   const intakeId = data.intakeId || "JAXIS Study";
   const title = data.researchTitle || "Statistical Consultation";
@@ -155,23 +319,6 @@ export function renderEmailTemplate(
   let metaRows: Array<{ label: string; value: string }> = [];
 
   switch (template) {
-    case "PasswordReset":
-      badgeText = "SECURITY RECOVERY";
-      badgeColor = "#CC6600";
-      bodyHtml = `
-        <p>We received a request to reset the password for your JAXIS StatLab account (<strong>${data.email || name}</strong>).</p>
-        <p>Click the button below to choose a new password. For your security, this recovery link will expire in <strong>60 minutes</strong>.</p>
-        <p style="margin-top: 18px; font-size: 12px; color: rgba(255, 255, 255, 0.5);">If you did not make this request, you can safely ignore this email. Your password will remain unchanged.</p>
-      `;
-      metaRows = [
-        { label: "Account", value: data.email || name },
-        { label: "Valid For", value: "60 Minutes" },
-        { label: "Security", value: "Single-Use Recovery Link" },
-      ];
-      ctaText = "Reset Password";
-      ctaUrl = data.resetUrl || `${appUrl}/reset-password?token=${data.resetToken}`;
-      break;
-
     case "NewIntake":
       badgeText = "NEW STUDY INTAKE";
       badgeColor = "#38BDF8";
