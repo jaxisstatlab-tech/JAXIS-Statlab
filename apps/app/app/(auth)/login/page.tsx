@@ -8,7 +8,6 @@ import { Alert, Button, LoadingState, FormInput, DividerWithText } from "@repo/u
 import {
   Eye,
   EyeSlash,
-  WarningCircle,
 } from "@phosphor-icons/react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 

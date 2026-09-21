@@ -2,8 +2,6 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { Button } from "@repo/ui";
-import { ArrowLeft } from "@phosphor-icons/react";
 import { AuthGlobeClient } from "@/components/ui/AuthGlobeClient";
 
 interface StepWorkflowCard {
@@ -70,22 +68,8 @@ export function AuthVisualShowcase() {
         className="absolute inset-0 pointer-events-none z-0 bg-[radial-gradient(ellipse_100%_60%_at_50%_100%,rgba(1,22,57,0.50)_0%,rgba(0,4,20,0)_70%)]"
       />
 
-      {/* Top: Desktop Back to Website Button */}
-      <header className="relative z-10 flex items-center justify-end w-full">
-        <a
-          href={process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}
-          className="no-underline"
-        >
-          <Button
-            variant="outline"
-            size="sm"
-            className="font-sans text-xs font-semibold rounded-[2px] gap-1.5 border-white/15 hover:bg-white/[0.06] text-white/80 hover:text-white h-9 px-3"
-          >
-            <ArrowLeft size={14} weight="bold" />
-            <span>Back to Website</span>
-          </Button>
-        </a>
-      </header>
+      {/* Top spacer to align vertical rhythm */}
+      <div className="h-9 w-full shrink-0" aria-hidden="true" />
 
       {/* Middle: Authoritative Headline & Subtitle */}
       <div className="relative z-10 flex flex-col gap-3 my-auto max-w-[560px]">
