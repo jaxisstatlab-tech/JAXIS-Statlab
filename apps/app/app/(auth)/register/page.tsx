@@ -3,7 +3,12 @@
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button, Alert, FormInput, EyeIcon, EyeOffIcon, DividerWithText } from "@repo/ui";
+import { Button, FormInput, DividerWithText } from "@repo/ui";
+import {
+  Eye,
+  EyeSlash,
+  WarningCircle,
+} from "@phosphor-icons/react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { registerClient } from "@/features/auth/actions";
 
@@ -55,44 +60,46 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="w-full flex flex-col gap-6">
+    <div className="w-full flex flex-col gap-6 animate-content-fade">
       {/* Title & Subtitle */}
       <div className="flex flex-col gap-1.5">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-sans">
-          Create Account
+        <h1 className="text-2xl sm:text-[1.65rem] font-bold text-white tracking-tight font-sans">
+          Sign Up Account
         </h1>
         <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
-          Register as a researcher or university client for statistical services.
+          Enter your personal details to create your research account.
         </p>
       </div>
 
       {/* Error Alert */}
       {errorMessage && (
-        <Alert variant="danger" title="Registration Error">
-          {errorMessage}
-        </Alert>
+        <div
+          role="alert"
+          className="p-3.5 rounded-[2px] bg-red-500/[0.08] border border-red-500/30 flex items-start gap-3 animate-content-fade"
+        >
+          <WarningCircle weight="fill" size={18} className="text-red-400 shrink-0 mt-0.5" />
+          <div className="flex-1 flex flex-col gap-1 text-xs font-sans">
+            <span className="font-semibold text-red-200">Registration Error</span>
+            <p className="text-white/70 leading-relaxed">{errorMessage}</p>
+          </div>
+        </div>
       )}
 
       {/* Google Single Sign-On Button */}
       <GoogleSignInButton callbackUrl="/dashboard/client" isRegister />
 
-      {/* Clean Divider */}
-      <DividerWithText className="-my-1">or register with email</DividerWithText>
+      {/* Clean Centered Divider */}
+      <DividerWithText className="-my-1">Or</DividerWithText>
 
-      {/* Registration Form with Reusable FormInput Components */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col"
-        style={{ gap: "1.375rem" }}
-      >
+      {/* Registration Form */}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* Name Fields: First & Last Name */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <FormInput
             label="First Name"
             name="firstName"
             type="text"
             required
-            monoLabel
             variant="auth"
             placeholder="e.g. Eleanor"
             value={firstName}
@@ -100,6 +107,7 @@ export default function RegisterPage() {
             error={fieldErrors.firstName?.[0]}
             disabled={isPending}
             autoComplete="given-name"
+            className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
           />
 
           <FormInput
@@ -107,7 +115,6 @@ export default function RegisterPage() {
             name="lastName"
             type="text"
             required
-            monoLabel
             variant="auth"
             placeholder="e.g. Vance"
             value={lastName}
@@ -115,6 +122,7 @@ export default function RegisterPage() {
             error={fieldErrors.lastName?.[0]}
             disabled={isPending}
             autoComplete="family-name"
+            className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
           />
         </div>
 
@@ -123,7 +131,6 @@ export default function RegisterPage() {
           name="email"
           type="email"
           required
-          monoLabel
           variant="auth"
           placeholder="e.g. e.vance@university.edu"
           value={email}
@@ -131,16 +138,16 @@ export default function RegisterPage() {
           error={fieldErrors.email?.[0]}
           disabled={isPending}
           autoComplete="email"
+          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
         />
 
         <FormInput
-          label="Password (min. 8 characters)"
+          label="Password"
           name="password"
           type={showPassword ? "text" : "password"}
           required
-          monoLabel
           variant="auth"
-          placeholder="Enter a secure password"
+          placeholder="At least 8 characters"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={fieldErrors.password?.[0]}
@@ -151,17 +158,18 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="text-slate-400 hover:text-white transition-colors cursor-pointer p-0.5"
+              className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
               title={showPassword ? "Hide password" : "Show password"}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
-                <EyeOffIcon className="w-4 h-4" />
+                <EyeSlash weight="fill" size={16} />
               ) : (
-                <EyeIcon className="w-4 h-4" />
+                <Eye weight="fill" size={16} />
               )}
             </button>
           }
+          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
         />
 
         <FormInput
@@ -169,7 +177,6 @@ export default function RegisterPage() {
           name="confirmPassword"
           type={showConfirmPassword ? "text" : "password"}
           required
-          monoLabel
           variant="auth"
           placeholder="Re-enter your password"
           value={confirmPassword}
@@ -182,41 +189,48 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="text-slate-400 hover:text-white transition-colors cursor-pointer p-0.5"
+              className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
               title={showConfirmPassword ? "Hide password" : "Show password"}
               aria-label={showConfirmPassword ? "Hide password" : "Show password"}
             >
               {showConfirmPassword ? (
-                <EyeOffIcon className="w-4 h-4" />
+                <EyeSlash weight="fill" size={16} />
               ) : (
-                <EyeIcon className="w-4 h-4" />
+                <Eye weight="fill" size={16} />
               )}
             </button>
           }
+          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
         />
 
-        <div style={{ paddingTop: "0.25rem" }}>
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            className="w-full py-3.5 font-bold tracking-wide rounded-[2px]"
-            loading={isPending}
-            disabled={isPending}
-          >
-            {isPending ? "Creating Account..." : "Create Researcher Account →"}
-          </Button>
-        </div>
+        <p className="text-[11px] text-white/40 font-sans -mt-1">
+          Must be at least 8 characters.
+        </p>
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="sm"
+          className="w-full h-9 min-h-[36px] text-xs sm:text-sm font-semibold rounded-[2px] shadow-sm tracking-normal mt-1"
+          loading={isPending}
+          disabled={isPending}
+        >
+          {isPending ? "Creating Account..." : "Sign Up →"}
+        </Button>
+
+        <p className="text-[11px] text-white/40 text-center font-sans leading-relaxed">
+          By creating an account, you agree to our Terms of Service and Privacy Policy.
+        </p>
       </form>
 
       {/* Footer Login Link */}
-      <div className="pt-2 text-center text-xs text-white/60 font-sans">
+      <div className="text-center text-xs text-white/60 font-sans">
         <span>Already have an account?</span>{" "}
         <Link
           href="/login"
-          className="text-[#CC6600] hover:text-[#E67300] font-semibold transition-colors ml-1"
+          className="text-[#FFA040] hover:text-[#FFB366] font-semibold transition-colors underline ml-1"
         >
-          Sign In Instead →
+          Log in →
         </Link>
       </div>
     </div>

@@ -4,8 +4,12 @@ import React, { useState, useTransition, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Alert, Button, LoadingState, FormInput, EyeIcon, EyeOffIcon, DividerWithText } from "@repo/ui";
-import { IconChevronDown } from "@tabler/icons-react";
+import { Alert, Button, LoadingState, FormInput, DividerWithText } from "@repo/ui";
+import {
+  Eye,
+  EyeSlash,
+  CaretDown,
+} from "@phosphor-icons/react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 const DEV_PRESETS = [
@@ -136,14 +140,14 @@ function LoginForm() {
   };
 
   return (
-    <div className="w-full flex flex-col gap-6">
+    <div className="w-full flex flex-col gap-6 animate-content-fade">
       {/* Title & Subtitle */}
       <div className="flex flex-col gap-1.5">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-sans">
-          Sign In
+        <h1 className="text-2xl sm:text-[1.65rem] font-bold text-white tracking-tight font-sans">
+          Sign In Account
         </h1>
         <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
-          Sign in to access your research desk, studies, and consultations.
+          Enter your credentials to access your research workspace.
         </p>
       </div>
 
@@ -180,24 +184,18 @@ function LoginForm() {
       )}
 
       {/* Stakeholder Preset Dropdown */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between font-mono uppercase tracking-wider text-xs">
-          <span className="font-semibold text-slate-200">Demo Role:</span>
-          <span className="text-[#CC6600] font-semibold">1-Click Sign-In</span>
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between text-xs font-sans">
+          <span className="font-medium text-white/70">Demo Account</span>
+          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-[2px] bg-[#CC6600]/15 text-[#FFA040] border border-[#CC6600]/30 font-semibold tracking-wider">
+            1-Click Access
+          </span>
         </div>
         <div className="relative flex items-center w-full">
           <select
             value={activeRole}
             onChange={(e) => handleSelectPreset(e.target.value)}
-            className="w-full h-12 px-4 pr-10 rounded-[2px] bg-[#01142B] border border-white/15 focus:border-[#CC6600] focus:ring-0 text-sm text-white transition-colors outline-none font-sans appearance-none cursor-pointer"
-            style={{
-              height: "3rem",
-              paddingLeft: "1rem",
-              paddingRight: "2.5rem",
-              boxSizing: "border-box",
-              outline: "none",
-              boxShadow: "none",
-            }}
+            className="w-full h-9 px-3 pr-9 rounded-[2px] bg-[#01142B] border border-white/12 hover:border-white/25 focus:border-[#CC6600] text-xs sm:text-sm text-white transition-colors outline-none font-sans appearance-none cursor-pointer"
           >
             <option
               value=""
@@ -215,8 +213,8 @@ function LoginForm() {
               </option>
             ))}
           </select>
-          <div className="absolute right-3.5 pointer-events-none text-slate-400 flex items-center justify-center">
-            <IconChevronDown size={16} stroke={1.5} className="text-slate-400" />
+          <div className="absolute right-3.5 pointer-events-none text-white/40 flex items-center justify-center">
+            <CaretDown size={14} weight="bold" />
           </div>
         </div>
       </div>
@@ -224,21 +222,19 @@ function LoginForm() {
       {/* Google Single Sign-On */}
       <GoogleSignInButton callbackUrl={callbackUrl} />
 
-      {/* Clean Divider */}
-      <DividerWithText className="-my-1">or authenticate via email</DividerWithText>
+      {/* Clean Centered Divider */}
+      <DividerWithText className="-my-1">Or</DividerWithText>
 
       {/* Main Login Form */}
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col"
-        style={{ gap: "1.375rem" }}
+        className="flex flex-col gap-4"
       >
         <FormInput
           label="Email Address"
           name="email"
           type="email"
           required
-          monoLabel
           variant="auth"
           placeholder="name@institution.edu"
           value={email}
@@ -250,6 +246,7 @@ function LoginForm() {
           }}
           disabled={isPending}
           autoComplete="email"
+          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
         />
 
         <FormInput
@@ -257,7 +254,6 @@ function LoginForm() {
           name="password"
           type={showPassword ? "text" : "password"}
           required
-          monoLabel
           variant="auth"
           placeholder="Enter your password"
           value={password}
@@ -274,30 +270,28 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="text-slate-400 hover:text-white transition-colors cursor-pointer p-0.5"
+              className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
               title={showPassword ? "Hide password" : "Show password"}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
-                <EyeOffIcon className="w-4 h-4" />
+                <EyeSlash weight="fill" size={16} />
               ) : (
-                <EyeIcon className="w-4 h-4" />
+                <Eye weight="fill" size={16} />
               )}
             </button>
           }
+          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
         />
 
         {/* Remember Session & Forgot Password Row */}
-        <div
-          className="flex flex-wrap items-center justify-between gap-2 text-xs font-sans"
-          style={{ marginTop: "-0.25rem" }}
-        >
-          <label className="flex items-center gap-2 cursor-pointer select-none text-slate-300 hover:text-white transition-colors">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-sans pt-0.5">
+          <label className="flex items-center gap-2 cursor-pointer select-none text-white/70 hover:text-white transition-colors">
             <input
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 rounded-[2px] bg-[#011227] border border-white/20 text-[#CC6600] focus:ring-0 focus:ring-offset-0 accent-[#CC6600] cursor-pointer"
+              className="h-4 w-4 rounded-[2px] bg-[#01142B] border border-white/20 text-[#CC6600] focus:ring-0 focus:ring-offset-0 accent-[#CC6600] cursor-pointer"
             />
             <span>Remember me</span>
           </label>
@@ -305,30 +299,28 @@ function LoginForm() {
             href="/forgot-password"
             className="text-[#38BDF8] hover:text-[#7DD3FC] hover:underline font-sans text-xs transition-colors cursor-pointer select-none"
           >
-            Forgot your password?
+            Forgot password?
           </Link>
         </div>
 
-        <div style={{ paddingTop: "0.25rem" }}>
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            className="w-full py-3.5 font-bold tracking-wide rounded-[2px]"
-            loading={isPending}
-            disabled={isPending}
-          >
-            {isPending ? "Signing in..." : "Sign In to Workspace →"}
-          </Button>
-        </div>
+        <Button
+          type="submit"
+          variant="primary"
+          size="sm"
+          className="w-full h-9 min-h-[36px] text-xs sm:text-sm font-semibold rounded-[2px] shadow-sm tracking-normal mt-1"
+          loading={isPending}
+          disabled={isPending}
+        >
+          {isPending ? "Signing in..." : "Sign In to Workspace →"}
+        </Button>
       </form>
 
       {/* Footer Registration Link */}
-      <div className="pt-2 text-center text-xs text-white/60 font-sans">
+      <div className="pt-1 text-center text-xs text-white/60 font-sans">
         <span>New to JAXIS StatLab?</span>{" "}
         <Link
           href="/register"
-          className="text-[#CC6600] hover:text-[#E67300] font-semibold transition-colors ml-1"
+          className="text-[#FFA040] hover:text-[#FFB366] font-semibold transition-colors underline ml-1"
         >
           Create an account →
         </Link>

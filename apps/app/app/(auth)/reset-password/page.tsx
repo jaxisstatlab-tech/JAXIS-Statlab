@@ -4,7 +4,7 @@ import React, { useState, useEffect, useTransition, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Alert, Button, FormInput, LoadingState } from "@repo/ui";
-import { ArrowLeft, CheckCircle, XCircle, Eye, EyeSlash, Lock } from "@phosphor-icons/react";
+import { ArrowLeft, CheckCircle, XCircle, Eye, EyeSlash } from "@phosphor-icons/react";
 import { verifyResetTokenAction, resetPasswordAction } from "@/features/auth/actions";
 
 function ResetPasswordForm() {
@@ -156,15 +156,11 @@ function ResetPasswordForm() {
         </Link>
       </div>
 
+      {/* Title & Subtitle */}
       <div className="flex flex-col gap-1.5">
-        <div className="flex items-center gap-2">
-          <div className="p-1 rounded-[2px] bg-[#CC6600]/10 text-[#CC6600]">
-            <Lock weight="fill" size={16} />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-sans">
-            Set New Password
-          </h1>
-        </div>
+        <h1 className="text-2xl sm:text-[1.65rem] font-bold text-white tracking-tight font-sans">
+          Set New Password
+        </h1>
         <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
           Choose a new password for <strong className="text-white font-medium">{email}</strong>.
         </p>
@@ -196,9 +192,10 @@ function ResetPasswordForm() {
               className="text-slate-400 hover:text-white transition-colors cursor-pointer p-0.5"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? <EyeSlash weight="fill" size={16} /> : <Eye weight="fill" size={16} />}
+              {showPassword ? <EyeSlash weight="fill" size={15} /> : <Eye weight="fill" size={15} />}
             </button>
           }
+          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
         />
 
         <FormInput
@@ -220,9 +217,10 @@ function ResetPasswordForm() {
               className="text-slate-400 hover:text-white transition-colors cursor-pointer p-0.5"
               aria-label={showConfirmPassword ? "Hide password" : "Show password"}
             >
-              {showConfirmPassword ? <EyeSlash weight="fill" size={16} /> : <Eye weight="fill" size={16} />}
+              {showConfirmPassword ? <EyeSlash weight="fill" size={15} /> : <Eye weight="fill" size={15} />}
             </button>
           }
+          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
         />
 
         {/* Security Requirements Checklist */}
@@ -253,8 +251,8 @@ function ResetPasswordForm() {
         <Button
           type="submit"
           variant="primary"
-          size="lg"
-          className="w-full py-3.5 font-bold tracking-wide mt-2 rounded-[2px]"
+          size="sm"
+          className="w-full h-9 min-h-[36px] text-xs sm:text-sm font-semibold rounded-[2px] shadow-sm tracking-normal mt-2"
           loading={isPending}
           disabled={isPending || !isValid}
         >

@@ -215,8 +215,8 @@ export default function ParticleGlobe({
         // Visual radius scaled so vertical diameter spans top to bottom of screen with generous arc
         const visualRadius = (vH / 2) * 1.34;
         const scale = visualRadius / SPHERE_RADIUS;
-        // Left margin from auth panel (shifted further right per user request)
-        const leftMargin = vW * 0.52;
+        // Left margin from auth panel (calibrated to move globe more to the left)
+        const leftMargin = vW * 0.25;
         const crestX = -vW / 2 + leftMargin;
         const posX = crestX + visualRadius;
         return { posX, posY: 0, scale };

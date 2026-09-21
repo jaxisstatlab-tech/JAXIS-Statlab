@@ -21,6 +21,7 @@ const envSchema = z.object({
 
   // Resend (transactional email)
   RESEND_API_KEY: z.string().startsWith("re_", "RESEND_API_KEY must start with 're_'"),
+  RESEND_FROM_EMAIL: z.string().optional(),
 
   // Trigger.dev (background jobs)
   TRIGGER_API_KEY: z.string().min(1, "TRIGGER_API_KEY is required"),

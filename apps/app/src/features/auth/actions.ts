@@ -192,7 +192,10 @@ export async function registerClient(
  * - Generates a single-use 256-bit cryptographic token.
  * - Stores the SHA-256 hash of the token with a 60-minute expiration.
  * - Sends transactional email via Resend with dark precision styling.
- * - Always returns success to prevent user email enumeration.
+/**
+ * Generates a password reset token, saves it to the database, and dispatches an email via Resend.
+ * - Verifies that the email exists on the platform before dispatching.
+ * - Returns an explicit error if the account is not registered, suspended, or deactivated.
  */
 export async function requestPasswordResetAction(
   input: unknown
@@ -212,91 +215,143 @@ export async function requestPasswordResetAction(
   const normalizedEmail = parsed.data.email.toLowerCase().trim();
 
   try {
-    const user = await withDbTimeout(
+    let user = await withDbTimeout(
       db.user.findUnique({
         where: { email: normalizedEmail },
         select: { id: true, email: true, fullName: true, status: true },
       }),
       3000
-    );
+    ).catch(() => null);
 
-    if (user && user.status !== "TERMINATED") {
-      // Generate 256-bit raw token
-      const rawToken = crypto.randomBytes(32).toString("hex");
-      const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes
+    // Development fallback for mock users when running locally
+    if (!user && process.env.NODE_ENV !== "production") {
+      const devUser = getDevUserByEmail(normalizedEmail);
+      if (devUser) {
+        user = {
+          id: devUser.id,
+          email: devUser.email,
+          fullName: devUser.fullName,
+          status: devUser.status,
+        };
+      }
+    }
 
-      // Invalidate existing unused tokens for this email
-      await withDbTimeout(
-        db.passwordResetToken.deleteMany({
-          where: { email: normalizedEmail, usedAt: null },
-        }).catch(() => {})
-      );
-
-      // Persist hashed token
-      await withDbTimeout(
-        db.passwordResetToken.create({
-          data: {
-            email: normalizedEmail,
-            tokenHash,
-            expiresAt,
-          },
-        }),
-        3000
-      );
-
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3001";
-      console.log(`\n🔑 [PASSWORD RECOVERY LINK]: ${appUrl}/reset-password?token=${rawToken}\n`);
-
-      // Dispatch recovery email via Resend abstraction
-      const emailRes = await sendEmail({
-        to: user.email,
-        recipientId: user.id,
-        template: "PasswordReset",
-        data: {
-          email: user.email,
-          userName: user.fullName,
-          resetToken: rawToken,
-        },
-      });
-
-      // Audit trail
-      await withDbTimeout(
-        db.authAuditLog.create({
-          data: {
-            userId: user.id,
-            email: user.email,
-            event: "LOGIN_FAILED",
-            metadata: { action: "PASSWORD_RESET_REQUESTED" },
-          },
-        }).catch(() => {})
-      );
-
-      const isSandboxRestriction = Boolean(emailRes.error?.includes("only send testing emails"));
-
+    if (!user) {
       return {
-        success: true,
-        data: {
-          sent: emailRes.success,
-          sandboxNotice: isSandboxRestriction
-            ? "Resend is in sandbox testing mode. Real emails can currently only be delivered to jaxis.statlab@gmail.com until a custom domain is verified at resend.com/domains."
-            : undefined,
-          devRecoveryUrl:
-            process.env.NODE_ENV !== "production" || isSandboxRestriction
-              ? `${appUrl}/reset-password?token=${rawToken}`
-              : undefined,
+        success: false,
+        error: {
+          code: "USER_NOT_FOUND",
+          message: "No account found with this email address. Please check your spelling or create an account.",
         },
       };
     }
+
+    if (user.status === "TERMINATED") {
+      return {
+        success: false,
+        error: {
+          code: "ACCOUNT_TERMINATED",
+          message: "This account has been deactivated. Please contact support.",
+        },
+      };
+    }
+
+    if (user.status === "SUSPENDED") {
+      return {
+        success: false,
+        error: {
+          code: "ACCOUNT_SUSPENDED",
+          message: "This account is currently suspended. Please contact support.",
+        },
+      };
+    }
+
+    // Generate 256-bit raw token
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes
+
+    // Invalidate existing unused tokens for this email
+    await withDbTimeout(
+      db.passwordResetToken.deleteMany({
+        where: { email: normalizedEmail, usedAt: null },
+      }).catch(() => {})
+    );
+
+    // Persist hashed token
+    await withDbTimeout(
+      db.passwordResetToken.create({
+        data: {
+          email: normalizedEmail,
+          tokenHash,
+          expiresAt,
+        },
+      }),
+      3000
+    );
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3001";
+    console.log(`\n🔑 [PASSWORD RECOVERY LINK]: ${appUrl}/reset-password?token=${rawToken}\n`);
+
+    // Dispatch recovery email via Resend abstraction
+    const emailRes = await sendEmail({
+      to: user.email,
+      recipientId: user.id,
+      template: "PasswordReset",
+      data: {
+        email: user.email,
+        userName: user.fullName,
+        resetToken: rawToken,
+      },
+    });
+
+    if (!emailRes.success) {
+      return {
+        success: false,
+        error: {
+          code: "EMAIL_FAILED",
+          message: emailRes.error || "Unable to send recovery email. Please check your network and try again.",
+        },
+      };
+    }
+
+    // Audit trail
+    await withDbTimeout(
+      db.authAuditLog.create({
+        data: {
+          userId: user.id,
+          email: user.email,
+          event: "LOGIN_FAILED",
+          metadata: { action: "PASSWORD_RESET_REQUESTED" },
+        },
+      }).catch(() => {})
+    );
+
+    const isSandboxRestriction = Boolean(emailRes.error?.includes("only send testing emails"));
+
+    return {
+      success: true,
+      data: {
+        sent: emailRes.success,
+        sandboxNotice: isSandboxRestriction
+          ? "Resend is in sandbox testing mode. Real emails can currently only be delivered to jaxis.statlab@gmail.com until a custom domain is verified at resend.com/domains."
+          : undefined,
+        devRecoveryUrl:
+          process.env.NODE_ENV !== "production" || isSandboxRestriction
+            ? `${appUrl}/reset-password?token=${rawToken}`
+            : undefined,
+      },
+    };
   } catch (err) {
     console.warn("[PasswordReset] Request failed or DB offline:", err);
+    return {
+      success: false,
+      error: {
+        code: "SERVER_ERROR",
+        message: "An unexpected error occurred while processing your request. Please try again.",
+      },
+    };
   }
-
-  // Always return success for security (prevent email enumeration)
-  return {
-    success: true,
-    data: { sent: true },
-  };
 }
 
 /**

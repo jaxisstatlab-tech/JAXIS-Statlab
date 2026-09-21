@@ -31,13 +31,13 @@ export function GoogleSignInButton({
       type="button"
       onClick={handleGoogleSignIn}
       disabled={isLoading}
-      className={`w-full h-12 px-4 rounded-[2px] bg-[#01142B] hover:bg-white/[0.06] text-white border border-white/15 hover:border-white/30 text-sm font-sans font-semibold transition-all active:scale-[0.98] flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm outline-none ${className}`}
+      className={`w-full h-9 px-4 rounded-[2px] bg-[#01142B] hover:bg-white/[0.05] text-white/90 hover:text-white border border-white/12 hover:border-white/25 text-xs sm:text-sm font-sans font-semibold transition-all active:scale-[0.99] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm outline-none ${className}`}
     >
       {isLoading ? (
         <span className="h-4 w-4 border-2 border-white/20 border-t-[#CC6600] rounded-full animate-spin" />
       ) : (
         <svg
-          className="w-5 h-5 flex-shrink-0"
+          className="w-4 h-4 flex-shrink-0"
           viewBox="0 0 24 24"
           aria-hidden="true"
         >

@@ -2,8 +2,14 @@
 
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
-import { Alert, Button, FormInput } from "@repo/ui";
-import { ArrowLeft, EnvelopeSimple, CheckCircle } from "@phosphor-icons/react";
+import { Button, FormInput } from "@repo/ui";
+import {
+  ArrowLeft,
+  EnvelopeSimple,
+  CheckCircle,
+  WarningCircle,
+  ArrowRight,
+} from "@phosphor-icons/react";
 import { requestPasswordResetAction } from "@/features/auth/actions";
 
 export default function ForgotPasswordPage() {
@@ -48,17 +54,18 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="w-full flex flex-col gap-6 animate-content-fade">
-      {/* Back to Sign In Button */}
+      {/* Back to Sign In Link */}
       <div>
-        <Link href="/login" className="inline-block">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2.5 -ml-2.5 text-xs font-sans text-slate-400 hover:text-white rounded-[2px] gap-1.5 font-semibold"
-          >
-            <ArrowLeft weight="bold" size={14} />
-            <span>Back to Sign In</span>
-          </Button>
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-1.5 text-xs font-sans text-white/50 hover:text-white transition-colors group select-none"
+        >
+          <ArrowLeft
+            weight="bold"
+            size={13}
+            className="transition-transform group-hover:-translate-x-0.5 text-white/40 group-hover:text-white"
+          />
+          <span>Back to Sign In</span>
         </Link>
       </div>
 
@@ -73,18 +80,19 @@ export default function ForgotPasswordPage() {
               Check your inbox
             </h1>
             <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans">
-              If an account exists for <strong className="text-white font-semibold">{email}</strong>, we have dispatched a single-use recovery link via Resend.
+              We have sent a single-use recovery link to{" "}
+              <strong className="text-white font-semibold">{email}</strong>.
             </p>
           </div>
 
-          <div className="p-4 rounded-[2px] bg-[#01142B] border border-white/10 flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 font-sans">
-              <CheckCircle weight="fill" size={16} />
-              <span>Recovery Link Active</span>
+          <div className="p-4 rounded-[2px] bg-[#01142B] border border-white/10 flex items-start gap-3">
+            <CheckCircle weight="fill" size={18} className="text-emerald-400 shrink-0 mt-0.5" />
+            <div className="flex flex-col gap-1 text-xs font-sans">
+              <span className="font-semibold text-emerald-400">Recovery Link Active</span>
+              <p className="text-white/60 leading-relaxed">
+                The link expires in <span className="font-mono text-white/80 font-medium">60 minutes</span>. If you do not see it shortly, please check your spam folder.
+              </p>
             </div>
-            <p className="text-[0.75rem] text-white/50 leading-relaxed font-sans">
-              The link expires in <span className="font-mono text-white/80">60 minutes</span>. If you do not see it shortly, please inspect your spam folder.
-            </p>
           </div>
 
           {sandboxNotice && (
@@ -113,7 +121,11 @@ export default function ForgotPasswordPage() {
 
           <div className="flex flex-col gap-3 pt-2">
             <Link href="/login" className="w-full">
-              <Button variant="primary" size="lg" className="w-full py-3.5 font-bold tracking-wide rounded-[2px]">
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full h-9 min-h-[36px] text-xs sm:text-sm font-semibold rounded-[2px] shadow-sm tracking-normal"
+              >
                 Return to Sign In →
               </Button>
             </Link>
@@ -123,7 +135,7 @@ export default function ForgotPasswordPage() {
                 setIsSubmitted(false);
                 setEmail("");
               }}
-              className="text-xs font-sans text-slate-400 hover:text-white transition-colors text-center py-1 cursor-pointer"
+              className="text-xs font-sans text-white/50 hover:text-white transition-colors text-center py-1 cursor-pointer"
             >
               Try a different email address
             </button>
@@ -132,8 +144,9 @@ export default function ForgotPasswordPage() {
       ) : (
         /* Email Input State */
         <div className="flex flex-col gap-6">
+          {/* Title & Subtitle */}
           <div className="flex flex-col gap-1.5">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-sans">
+            <h1 className="text-2xl font-bold text-white tracking-tight font-sans">
               Reset Password
             </h1>
             <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
@@ -142,37 +155,84 @@ export default function ForgotPasswordPage() {
           </div>
 
           {errorMessage && (
-            <Alert variant="danger" title="Unable to Process">
-              {errorMessage}
-            </Alert>
+            <div
+              role="alert"
+              className="p-3.5 rounded-[2px] bg-red-500/[0.08] border border-red-500/30 flex items-start gap-3 animate-content-fade"
+            >
+              <WarningCircle
+                weight="fill"
+                size={18}
+                className="text-red-400 shrink-0 mt-0.5"
+              />
+              <div className="flex-1 flex flex-col gap-1 text-xs font-sans">
+                <span className="font-semibold text-red-200">
+                  {errorMessage.toLowerCase().includes("no account")
+                    ? "Account Not Found"
+                    : "Unable to Process"}
+                </span>
+                <p className="text-white/70 leading-relaxed">{errorMessage}</p>
+                {errorMessage.toLowerCase().includes("no account") && (
+                  <div className="pt-1">
+                    <Link
+                      href="/register"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#FFA040] hover:text-[#FFB366] transition-colors"
+                    >
+                      <span>Create a new account</span>
+                      <ArrowRight size={12} weight="bold" />
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <FormInput
               label="Account Email"
+              name="email"
               type="email"
+              required
+              monoLabel
+              variant="auth"
+              placeholder="name@university.edu.ph"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
                 if (errorMessage) setErrorMessage(null);
               }}
-              placeholder="e.g. name@university.edu.ph"
               disabled={isPending}
               autoComplete="email"
-              required
+              className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
             />
 
             <Button
               type="submit"
               variant="primary"
-              size="lg"
-              className="w-full py-3.5 font-bold tracking-wide mt-1 rounded-[2px]"
+              size="sm"
+              className="w-full h-9 min-h-[36px] text-xs sm:text-sm font-semibold rounded-[2px] shadow-sm tracking-normal mt-1"
               loading={isPending}
               disabled={isPending}
             >
               {isPending ? "Sending Recovery Link..." : "Send Recovery Link →"}
             </Button>
           </form>
+
+          <div className="flex items-center justify-center gap-2 text-xs text-white/50 font-sans pt-1">
+            <span>Remember your password?</span>
+            <Link
+              href="/login"
+              className="text-white hover:text-[#FFA040] font-medium transition-colors underline"
+            >
+              Sign in
+            </Link>
+            <span className="text-white/20">·</span>
+            <Link
+              href="/register"
+              className="text-white hover:text-[#FFA040] font-medium transition-colors underline"
+            >
+              Create account
+            </Link>
+          </div>
         </div>
       )}
     </div>

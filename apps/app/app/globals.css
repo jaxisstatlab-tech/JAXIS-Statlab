@@ -137,6 +137,18 @@ input[type="number"] {
   appearance: textfield;
 }
 
+/* Prevent Chrome / Safari light blue autofill from breaking dark precision theme */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #01142B inset !important;
+  box-shadow: 0 0 0px 1000px #01142B inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: #ffffff !important;
+}
+
 /* ==========================================================================
    Global Select & Dropdown Input Standards
    Ensures every native <select> has an elegant SVG chevron with balanced

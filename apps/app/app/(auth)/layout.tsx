@@ -1,9 +1,9 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { AuthGlobeClient } from "@/components/ui/AuthGlobeClient";
 import { Button } from "@repo/ui";
 import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
+import { AuthVisualShowcase } from "@/components/auth/AuthVisualShowcase";
 
 export default function AuthLayout({
   children,
@@ -12,20 +12,11 @@ export default function AuthLayout({
 }) {
   return (
     <div className="min-h-screen w-full bg-[#010114] text-white flex flex-col lg:flex-row font-sans selection:bg-[#CC6600]/30 selection:text-white">
-      {/* ── Left Side: Industrial Executive Auth Command Panel ─────────── */}
-      <aside
-        className="w-full lg:w-[480px] xl:w-[520px] min-h-screen lg:h-screen lg:max-h-screen flex-shrink-0 bg-[#010B18] border-b lg:border-b-0 lg:border-r border-white/[0.08] z-10 shadow-2xl relative flex flex-col justify-between overflow-y-auto"
-        style={{
-          padding: "2.5rem 2rem",
-          boxSizing: "border-box",
-        }}
-      >
-        {/* Top Header: Brand Logo & Back to Website */}
+      {/* ── Left Side: Focused Auth Form Desk ─────────── */}
+      <aside className="w-full lg:w-1/2 min-h-screen lg:h-screen lg:max-h-screen flex-shrink-0 bg-[#010B18] border-b lg:border-b-0 lg:border-r border-white/[0.08] flex flex-col justify-between overflow-y-auto p-6 sm:p-10 lg:p-12 xl:p-14 z-10 shadow-2xl">
+        {/* Top Header: Brand Logo Anchor & Mobile Website Link */}
         <header className="flex items-center justify-between w-full flex-shrink-0 mb-6 lg:mb-0">
-          <Link
-            href="/login"
-            className="flex items-center gap-2.5 text-decoration-none group"
-          >
+          <Link href="/login" className="flex items-center gap-2.5 group">
             <Image
               src="/jaxislogo.png"
               alt="JAXIS Logo"
@@ -47,23 +38,26 @@ export default function AuthLayout({
             </div>
           </Link>
 
-          <a
-            href={process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}
-            className="no-underline"
-          >
-            <Button
-              variant="outline"
-              size="sm"
-              className="font-sans text-xs font-semibold rounded-[2px] gap-1.5 border-white/15 hover:bg-white/[0.06] text-white/80 hover:text-white"
+          {/* Mobile-only Back to Website button */}
+          <div className="lg:hidden">
+            <a
+              href={process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}
+              className="no-underline"
             >
-              <ArrowLeft size={14} weight="bold" />
-              <span>Back to Website</span>
-            </Button>
-          </a>
+              <Button
+                variant="outline"
+                size="sm"
+                className="font-sans text-xs font-semibold rounded-[2px] gap-1.5 border-white/15 hover:bg-white/[0.06] text-white/80 hover:text-white h-9 px-3"
+              >
+                <ArrowLeft size={14} weight="bold" />
+                <span>Website</span>
+              </Button>
+            </a>
+          </div>
         </header>
 
         {/* Dynamic Form Content: Centered with comfortable breathing room */}
-        <div className="w-full max-w-[400px] mx-auto my-auto py-8 lg:py-6">
+        <div className="w-full max-w-[420px] mx-auto my-auto py-6">
           {children}
         </div>
 
@@ -78,18 +72,10 @@ export default function AuthLayout({
         </footer>
       </aside>
 
-      {/* ── Right Side: Pure Ambient Deep Space & Particle Globe ─────────── */}
-      <main className="hidden lg:flex flex-1 relative bg-[#010114] items-center justify-center overflow-hidden h-screen select-none">
-        {/* 3D Hardware-Accelerated Particle Canvas */}
-        <div className="absolute inset-0 w-full h-full pointer-events-none">
-          <AuthGlobeClient />
-        </div>
-
-        {/* Subtle optical vignette and ambient deep space atmosphere centered behind the globe */}
-        <div aria-hidden="true" className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_85%_75%_at_55%_50%,rgba(2,132,199,0.18),transparent_70%)]" />
-        <div aria-hidden="true" className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_55%_50%,rgba(1,46,87,0.38),transparent_60%)]" />
-        <div aria-hidden="true" className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_90%_60%_at_50%_110%,rgba(1,22,57,0.40)_0%,rgba(0,4,20,0)_65%)]" />
-      </main>
+      {/* ── Right Side: Atmospheric Visual Showcase with 3D Globe & Steps ─────────── */}
+      <div className="hidden lg:flex lg:w-1/2 min-h-screen h-screen max-h-screen sticky top-0 overflow-hidden">
+        <AuthVisualShowcase />
+      </div>
     </div>
   );
 }
