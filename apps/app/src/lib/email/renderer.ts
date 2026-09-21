@@ -177,47 +177,35 @@ function renderPasswordResetEmail(params: {
   </style>
   <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; background-color: #EEF2F6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #EEF2F6; padding: 48px 16px 56px 16px; margin: 0; width: 100%;">
+<body style="margin: 0; padding: 0; background-color: #010114; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #010114; padding: 48px 16px 56px 16px; margin: 0; width: 100%;">
     <tr>
       <td align="center">
-        <!-- Floating White Card (Inspired by Modern Clean Minimalist UI) -->
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 460px; background-color: #FFFFFF; border-radius: 14px; border: 1px solid #E2E8F0; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04); overflow: hidden; margin: 0 auto;">
+        <!-- Floating Dark Precision Card (JAXIS StatLab Studio Theme) -->
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 480px; background-color: #01142B; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5); overflow: hidden; margin: 0 auto;">
           <tr>
-            <td style="padding: 38px 40px 42px 40px;">
+            <td style="padding: 40px 40px 44px 40px;">
               
               <!-- Centered Brand Header -->
               <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="text-align: center; margin-bottom: 24px;">
                 <tr>
                   <td align="center">
-                    <!-- Modern 5-Bar Stat Spectrum Icon -->
-                    <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto 14px auto;">
+                    <!-- Official JAXIS Brand Logo -->
+                    <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto 16px auto;">
                       <tr>
-                        <td style="padding: 0 2.5px; vertical-align: middle;">
-                          <div style="width: 3px; height: 8px; background-color: #2563EB; border-radius: 2px;"></div>
-                        </td>
-                        <td style="padding: 0 2.5px; vertical-align: middle;">
-                          <div style="width: 3px; height: 15px; background-color: #2563EB; border-radius: 2px;"></div>
-                        </td>
-                        <td style="padding: 0 2.5px; vertical-align: middle;">
-                          <div style="width: 3px; height: 22px; background-color: #2563EB; border-radius: 2px;"></div>
-                        </td>
-                        <td style="padding: 0 2.5px; vertical-align: middle;">
-                          <div style="width: 3px; height: 15px; background-color: #2563EB; border-radius: 2px;"></div>
-                        </td>
-                        <td style="padding: 0 2.5px; vertical-align: middle;">
-                          <div style="width: 3px; height: 8px; background-color: #2563EB; border-radius: 2px;"></div>
+                        <td align="center">
+                          <img src="https://app.jaxis-statlab.com/jaxislogo.png" alt="JAXIS Logo" width="52" height="52" style="display: block; width: 52px; height: 52px; border: 0; outline: none; text-decoration: none;" />
                         </td>
                       </tr>
                     </table>
 
                     <!-- Brand Name -->
-                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #0F172A; text-transform: uppercase; margin: 0 0 8px 0;">
-                      JAXIS STATLAB
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 2.5px; color: #FFFFFF; text-transform: uppercase; margin: 0 0 8px 0;">
+                      JAXIS <span style="color: #CC6600;">STATLAB</span>
                     </div>
 
                     <!-- Title -->
-                    <h1 style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 21px; font-weight: 700; color: #0F172A; letter-spacing: -0.2px;">
+                    <h1 style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 22px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.2px;">
                       Reset your password
                     </h1>
                   </td>
@@ -225,24 +213,35 @@ function renderPasswordResetEmail(params: {
               </table>
 
               <!-- Hairline Divider -->
-              <div style="height: 1px; background-color: #F1F5F9; margin: 0 0 26px 0; width: 100%;"></div>
+              <div style="height: 1px; background-color: rgba(255, 255, 255, 0.08); margin: 0 0 26px 0; width: 100%;"></div>
 
               <!-- Message Body -->
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: left;">
-                <p style="margin: 0 0 14px 0; font-size: 14px; font-weight: 700; color: #0F172A;">
+                <p style="margin: 0 0 14px 0; font-size: 14px; font-weight: 700; color: #FFFFFF;">
                   Hey ${recipientName},
                 </p>
-                <p style="margin: 0 0 28px 0; font-size: 14px; line-height: 1.6; color: #334155;">
+                <p style="margin: 0 0 28px 0; font-size: 14px; line-height: 1.65; color: rgba(255, 255, 255, 0.75);">
                   Need to reset your password? No problem! Just click the button below and you'll be on your way. If you did not make this request, please ignore this email.
                 </p>
 
-                <!-- Full-Width Action Button -->
+                <!-- Full-Width JAXIS Action Button -->
                 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                   <tr>
                     <td align="center">
-                      <a href="${ctaUrl}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #2563EB; color: #FFFFFF; text-decoration: none; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 600; padding: 14px 24px; border-radius: 8px; letter-spacing: 0.1px;">
-                        Reset your password
+                      <a href="${ctaUrl}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #CC6600; color: #FFFFFF; text-decoration: none; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 700; padding: 14px 24px; border-radius: 2px; letter-spacing: 0.2px;">
+                        Reset your password &rarr;
                       </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Security Advisory Callout -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top: 24px;">
+                  <tr>
+                    <td style="padding: 12px 16px; background-color: rgba(204, 102, 0, 0.08); border: 1px solid rgba(204, 102, 0, 0.25); border-radius: 2px;">
+                      <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #FFA040; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                        <strong>Security Notice:</strong> This single-use recovery link will expire in <strong>60 minutes</strong>.
+                      </p>
                     </td>
                   </tr>
                 </table>
@@ -253,9 +252,9 @@ function renderPasswordResetEmail(params: {
         </table>
 
         <!-- Subtle Footer -->
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 460px; margin: 24px auto 0 auto; text-align: center;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 480px; margin: 24px auto 0 auto; text-align: center;">
           <tr>
-            <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; color: #94A3B8; line-height: 1.6;">
+            <td style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; color: rgba(255, 255, 255, 0.4); line-height: 1.6;">
               <p style="margin: 0 0 4px 0;">This recovery link will expire in 60 minutes.</p>
               <p style="margin: 0;">&copy; 2026 JAXIS StatLab Inc. &bull; All rights reserved.</p>
             </td>
