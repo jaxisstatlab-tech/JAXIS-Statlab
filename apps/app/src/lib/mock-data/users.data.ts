@@ -3,6 +3,7 @@ import type { RoleName, UserStatus } from "@prisma/client";
 export interface MockStaffProfile {
   bio?: string;
   specializations: string[];
+  signatureUrl?: string | null;
   joinedAt?: string;
   updatedAt?: string;
 }

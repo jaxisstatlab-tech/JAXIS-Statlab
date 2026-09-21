@@ -739,7 +739,7 @@ export async function terminateStaff(
  */
 export async function updateOwnProfile(
   input: unknown
-): Promise<StaffActionResult<{ bio: string | null; specializations: string[] }>> {
+): Promise<StaffActionResult<{ bio: string | null; specializations: string[]; signatureUrl?: string | null }>> {
   const session = await requireRole("STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO");
 
   const parsed = UpdateStaffProfileSchema.safeParse(input);
@@ -754,20 +754,26 @@ export async function updateOwnProfile(
     };
   }
 
-  const { bio, specializations } = parsed.data;
+  const { bio, specializations, signatureUrl } = parsed.data;
   const userId = session.user.id;
 
   try {
+    const updateData: { bio: string | null; specializations: string[]; signatureUrl?: string | null } = {
+      bio: bio?.trim() || null,
+      specializations,
+    };
+    if (signatureUrl !== undefined) {
+      updateData.signatureUrl = signatureUrl;
+    }
+
     const profile = await db.staffProfile.upsert({
       where: { userId },
-      update: {
-        bio: bio?.trim() || null,
-        specializations,
-      },
+      update: updateData,
       create: {
         userId,
         bio: bio?.trim() || null,
         specializations,
+        signatureUrl: signatureUrl || null,
       },
     });
 
@@ -777,6 +783,7 @@ export async function updateOwnProfile(
       devUser.staffProfile = {
         bio: profile.bio || undefined,
         specializations: profile.specializations,
+        signatureUrl: profile.signatureUrl,
         updatedAt: new Date().toISOString(),
       };
       registerDevUser(devUser);
@@ -787,6 +794,7 @@ export async function updateOwnProfile(
       data: {
         bio: profile.bio,
         specializations: profile.specializations,
+        signatureUrl: profile.signatureUrl,
       },
     };
   } catch (dbError) {
@@ -797,6 +805,7 @@ export async function updateOwnProfile(
       devUser.staffProfile = {
         bio: bio?.trim(),
         specializations,
+        signatureUrl: signatureUrl !== undefined ? signatureUrl : (devUser.staffProfile?.signatureUrl || null),
         updatedAt: new Date().toISOString(),
       };
       registerDevUser(devUser);
@@ -805,6 +814,7 @@ export async function updateOwnProfile(
         data: {
           bio: bio?.trim() || null,
           specializations,
+          signatureUrl: devUser.staffProfile.signatureUrl,
         },
       };
     }
@@ -830,6 +840,7 @@ export async function getOwnProfile(): Promise<
     status: UserStatus;
     bio: string | null;
     specializations: string[];
+    signatureUrl?: string | null;
     joinedAt: Date | string;
     updatedAt: Date | string;
     leaveReason?: string | null;
@@ -875,6 +886,7 @@ export async function getOwnProfile(): Promise<
           status: user.status,
           bio: user.staffProfile?.bio || null,
           specializations: user.staffProfile?.specializations || [],
+          signatureUrl: user.staffProfile?.signatureUrl || null,
           joinedAt: user.staffProfile?.joinedAt || user.createdAt,
           updatedAt: user.staffProfile?.updatedAt || user.updatedAt,
           leaveReason: user.leaveReason,
@@ -900,6 +912,7 @@ export async function getOwnProfile(): Promise<
         status: devUser.status,
         bio: devUser.staffProfile?.bio || null,
         specializations: devUser.staffProfile?.specializations || [],
+        signatureUrl: devUser.staffProfile?.signatureUrl || null,
         joinedAt: devUser.staffProfile?.joinedAt || new Date().toISOString(),
         updatedAt: devUser.staffProfile?.updatedAt || new Date().toISOString(),
       },

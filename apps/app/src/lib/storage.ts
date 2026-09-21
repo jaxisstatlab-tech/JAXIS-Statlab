@@ -28,10 +28,22 @@ export async function getR2UploadUrl(key: string, contentType: string): Promise<
   );
 }
 
-export async function getR2DownloadUrl(key: string): Promise<string> {
+export async function getR2DownloadUrl(
+  key: string,
+  fileName?: string,
+  contentType?: string
+): Promise<string> {
+  const safeFileName = fileName ? fileName.replace(/[^\w.-]/g, "_") : undefined;
   return getSignedUrl(
     r2Client,
-    new GetObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }),
+    new GetObjectCommand({
+      Bucket: env.R2_BUCKET_NAME,
+      Key: key,
+      ResponseContentDisposition: safeFileName
+        ? `attachment; filename="${safeFileName}"`
+        : undefined,
+      ResponseContentType: contentType || undefined,
+    }),
     { expiresIn: 3600 } // 1 hour
   );
 }

@@ -148,6 +148,23 @@ export interface AdminDeliverablesDeskDTO {
   revisions: RevisionRequestDTO[];
 }
 
+export interface QaCertificateDTO {
+  certificateId: string;
+  researchTitle: string;
+  clientName: string;
+  clientEmail: string;
+  institution: string;
+  program: string;
+  tierExecuted: string;
+  completionDate: string;
+  qaLeadName: string;
+  qaLeadTitle: string;
+  qaSignatureUrl?: string | null;
+  statisticianName?: string | null;
+  statisticianTitle?: string | null;
+  statisticianSignatureUrl?: string | null;
+}
+
 export interface ClientDeliverablesDTO {
   project: {
     id: string;
@@ -177,4 +194,5 @@ export interface ClientDeliverablesDTO {
   deliverables: DeliverableDTO[];
   revisions: RevisionRequestDTO[];
   hasPendingRevision: boolean;
+  qaCertificate?: QaCertificateDTO | null;
 }

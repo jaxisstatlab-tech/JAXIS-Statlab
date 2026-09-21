@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState, useEffect, useTransition, useRef } from "react";
 import Link from "next/link";
 import {
   PageHeader,
@@ -11,6 +11,7 @@ import {
   Toast,
 } from "@repo/ui";
 import { IconX } from "@tabler/icons-react";
+import { FileText, CheckCircle, UploadSimple, Trash, WarningCircle } from "@phosphor-icons/react";
 import { getOwnProfile, updateOwnProfile } from "@/features/staff/actions";
 import { ChangePasswordCard } from "@/features/auth/components/ChangePasswordCard";
 
@@ -36,12 +37,14 @@ export default function QAProfilePage() {
     status: string;
     bio: string | null;
     specializations: string[];
+    signatureUrl?: string | null;
     joinedAt: Date | string;
     updatedAt: Date | string;
   } | null>(null);
 
   const [bio, setBio] = useState<string>("");
   const [specializations, setSpecializations] = useState<string[]>([]);
+  const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [customTag, setCustomTag] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [toastMessage, setToastMessage] = useState<{
@@ -50,6 +53,7 @@ export default function QAProfilePage() {
     variant: "info" | "success" | "warning" | "danger";
   } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -60,6 +64,7 @@ export default function QAProfilePage() {
           setProfile(res.data);
           setBio(res.data.bio || "");
           setSpecializations(res.data.specializations || []);
+          setSignatureUrl(res.data.signatureUrl || null);
         }
       } catch (err) {
         console.error(err);
@@ -82,6 +87,42 @@ export default function QAProfilePage() {
     setSpecializations((prev) => prev.filter((t) => t !== tagToRemove));
   };
 
+  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setToastMessage({
+        message: "File Too Large",
+        description: "Signature image must be under 2MB.",
+        variant: "danger",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setSignatureUrl(reader.result);
+        setToastMessage({
+          message: "Signature Preview Ready",
+          description: "Click 'Save QA Profile Changes' below to permanently save this signature for all future study certificates.",
+          variant: "info",
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveSignature = () => {
+    setSignatureUrl(null);
+    setToastMessage({
+      message: "Signature Removed",
+      description: "Click 'Save QA Profile Changes' below to apply.",
+      variant: "info",
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -90,12 +131,13 @@ export default function QAProfilePage() {
         const res = await updateOwnProfile({
           bio: bio.trim() || undefined,
           specializations,
+          signatureUrl,
         });
 
         if (res.success) {
           setToastMessage({
             message: "Profile Updated Successfully",
-            description: "QA Review Lead profile and audit domains updated successfully.",
+            description: "QA Review Lead profile, audit domains, and official audit signature saved.",
             variant: "success",
           });
         } else {
@@ -306,6 +348,122 @@ export default function QAProfilePage() {
                     </button>
                   )
                 )}
+              </div>
+            </div>
+          </Card>
+
+          {/* Official Certificate Signature */}
+          <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-4">
+              <div className="flex items-center gap-2.5">
+                <FileText size={18} weight="fill" className="text-[#CC6600]" />
+                <div>
+                  <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                    Official Audit Signature
+                  </h2>
+                  <p className="text-xs text-white/50 mt-0.5">
+                    Your enrolled signature is automatically placed on all Certificate of Statistical Audit documents you approve.
+                  </p>
+                </div>
+              </div>
+              {signatureUrl ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 self-start sm:self-auto">
+                  <CheckCircle size={14} weight="fill" />
+                  Active On Certificates
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-xs font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20 self-start sm:self-auto">
+                  <WarningCircle size={14} weight="fill" />
+                  Signature Not Enrolled
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column: Upload Controls */}
+              <div className="lg:col-span-6 flex flex-col gap-4">
+                <p className="text-xs text-white/70 leading-relaxed">
+                  Upload a clean scan or photo of your handwritten signature. For the highest print quality on A4 certificates, use a transparent PNG or high-contrast black signature on white background (maximum 2MB).
+                </p>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handleSignatureUpload}
+                  className="hidden"
+                />
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-[2px] gap-1.5"
+                  >
+                    <UploadSimple size={16} weight="fill" />
+                    {signatureUrl ? "Replace Signature Image" : "Upload Signature Image"}
+                  </Button>
+
+                  {signatureUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveSignature}
+                      className="rounded-[2px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 gap-1.5"
+                    >
+                      <Trash size={16} weight="fill" />
+                      Remove Signature
+                    </Button>
+                  )}
+                </div>
+
+                <div className="p-3 bg-[#011B38] border border-white/[0.08] rounded-[2px] text-[11px] text-white/50 leading-relaxed">
+                  <strong className="text-white/80 font-mono">Signatory Protocol:</strong> By uploading your signature, you authorize JAXIS StatLab to stamp this digital signature on official Certificates of Statistical Audit whenever you issue a formal QA Approval.
+                </div>
+              </div>
+
+              {/* Right Column: Live Paper Preview Frame */}
+              <div className="lg:col-span-6 flex flex-col gap-2">
+                <span className="text-xs font-mono text-white/50 uppercase tracking-wider">
+                  Live Certificate Paper Preview
+                </span>
+
+                <div className="bg-white text-slate-900 p-6 rounded-[2px] border border-slate-200 shadow-md flex flex-col justify-end min-h-[170px]">
+                  <div className="text-[10px] font-serif font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    AUDITED &amp; APPROVED BY:
+                  </div>
+
+                  <div className="w-full max-w-[270px] flex flex-col items-center text-center">
+                    <div className="h-16 w-full flex items-end justify-center pb-1">
+                      {signatureUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={signatureUrl}
+                          alt="QA Lead Signature"
+                          className="max-h-16 max-w-[220px] object-contain"
+                        />
+                      ) : (
+                        <div className="h-12 flex items-center justify-center text-xs text-slate-400 font-serif italic">
+                          No signature enrolled yet
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="w-full h-[1px] bg-slate-900 mb-1.5" />
+                    <div className="text-xs font-serif font-bold text-slate-900 leading-tight">
+                      {profile?.fullName || "Senior QA Lead"}
+                    </div>
+                    <div className="text-[11px] font-serif text-slate-600 leading-tight mt-0.5">
+                      Statistical Review Editor, Quality Assurance
+                    </div>
+                    <div className="text-[11px] font-serif font-bold text-slate-800 leading-tight mt-0.5">
+                      JAXIS STATLAB
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </Card>

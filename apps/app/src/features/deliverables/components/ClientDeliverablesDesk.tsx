@@ -23,8 +23,10 @@ import {
   ArrowCounterClockwise,
   Info,
   Receipt,
+  SealCheck,
 } from "@phosphor-icons/react";
 import { DELIVERABLE_CATEGORY_METADATA } from "@/lib/delivery-rules";
+import { downloadCertificatePdf } from "../utils/generateCertificatePdf";
 
 interface ClientDeliverablesDeskProps {
   data: ClientDeliverablesDTO;
@@ -35,6 +37,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
   const { project, isReleased, paymentLock, revisionWindow, deliverables, revisions, hasPendingRevision } = data;
 
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [isDownloadingCert, setIsDownloadingCert] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     description: string;
@@ -44,8 +47,22 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
   const handleDownload = async (item: DeliverableDTO) => {
     try {
       setDownloadingId(item.id);
-      const { url } = await getDeliverableDownloadUrl(item.id);
-      window.open(url, "_blank");
+      const { url, fileName } = await getDeliverableDownloadUrl(item.id);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.setAttribute("download", fileName);
+      link.style.position = "fixed";
+      link.style.left = "-9999px";
+      link.style.opacity = "0";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
+        }
+      }, 2000);
+
       setToast({
         message: "Download Started",
         description: `Downloading ${item.fileName}...`,
@@ -59,6 +76,63 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
       });
     } finally {
       setDownloadingId(null);
+    }
+  };
+
+  const handleDownloadCertificate = async () => {
+    if (!data.qaCertificate) return;
+    try {
+      setIsDownloadingCert(true);
+      setToast({
+        message: "Preparing Certificate",
+        description: "Downloading your official Certificate of Statistical Audit (PDF)...",
+        variant: "info",
+      });
+
+      // Use direct server route with guaranteed Content-Disposition: attachment header
+      const rawId = (data.qaCertificate.certificateId || "JAXIS-AUDIT-CERTIFICATE").trim();
+      const cleanId = rawId.replace(/[^\w.-]/g, "_");
+      const fileName = cleanId.toLowerCase().endsWith(".pdf") ? cleanId : `${cleanId}.pdf`;
+
+      const downloadUrl = `/api/deliverables/certificate?studyId=${project.id}`;
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = fileName;
+      link.setAttribute("download", fileName);
+      link.style.position = "fixed";
+      link.style.left = "-9999px";
+      link.style.opacity = "0";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
+        }
+      }, 2000);
+
+      setToast({
+        message: "Download Ready",
+        description: "Your official Certificate of Statistical Audit (PDF) has been downloaded.",
+        variant: "success",
+      });
+    } catch (err: unknown) {
+      console.warn("Server download failed, falling back to client PDF compiler:", err);
+      try {
+        await downloadCertificatePdf(data.qaCertificate);
+        setToast({
+          message: "Download Ready",
+          description: "Your official Certificate of Statistical Audit (PDF) has been downloaded.",
+          variant: "success",
+        });
+      } catch (clientErr: unknown) {
+        setToast({
+          message: "Download Failed",
+          description: clientErr instanceof Error ? clientErr.message : "Unable to download certificate.",
+          variant: "danger",
+        });
+      }
+    } finally {
+      setIsDownloadingCert(false);
     }
   };
 
@@ -99,7 +173,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <KpiCard
             label="FINAL DELIVERABLES"
-            value={String(deliverables.length)}
+            value={String(deliverables.length + (data.qaCertificate ? 1 : 0))}
             unit="FILES"
             badge={
               <span className="flex items-center gap-1">
@@ -108,7 +182,11 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
               </span>
             }
             badgeColor="emerald"
-            description="Verified research deliverables"
+            description={
+              data.qaCertificate
+                ? `${deliverables.length} files + 1 official certificate`
+                : "Verified research deliverables"
+            }
             variant="emerald"
             className="animate-card-reveal stagger-1"
           />
@@ -239,22 +317,23 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
         </Card>
       )}
 
-      {/* Deliverables Download Grid */}
+
+      {/* Deliverables & Credentials Grid */}
       {isReleased && (
         <div className="space-y-4 animate-card-reveal stagger-5">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-sans font-bold text-lg text-white">Download Final Outputs</h2>
               <p className="font-sans text-xs text-white/60">
-                High-resolution reports, statistical worksheets, syntax scripts, and appendices.
+                High-resolution reports, statistical worksheets, syntax scripts, and official audit credentials.
               </p>
             </div>
             <span className="text-xs font-mono text-white/50">
-              {deliverables.length} {deliverables.length === 1 ? "FILE READY" : "FILES READY"}
+              {deliverables.length + (data.qaCertificate ? 1 : 0)} ITEMS READY {data.qaCertificate ? `(${deliverables.length} FILES + 1 CERTIFICATE)` : ""}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {deliverables.map((file) => {
               const catMeta = DELIVERABLE_CATEGORY_METADATA[file.category];
               return (
@@ -309,6 +388,59 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
                 </Card>
               );
             })}
+
+            {/* Official Certificate of Statistical Audit Card in Grid */}
+            {data.qaCertificate && (
+              <Card className="p-6 border border-[#CC6600]/40 bg-[#01142B] hover:border-[#CC6600]/70 transition-all flex flex-col justify-between relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#CC6600]/5 rounded-full blur-2xl pointer-events-none -mr-8 -mt-8 group-hover:bg-[#CC6600]/10 transition-all" />
+
+                <div>
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <span className="px-2 py-0.5 rounded-[2px] text-[10px] font-mono font-bold bg-[#CC6600]/20 text-[#FFA040] border border-[#CC6600]/30 uppercase tracking-wider">
+                      ACCREDITED RESEARCH CREDENTIAL
+                    </span>
+                    <span className="font-mono text-xs text-white/40">
+                      A4 PRINT / PDF
+                    </span>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="p-2.5 rounded-[2px] bg-[#CC6600]/15 text-[#FFA040] border border-[#CC6600]/30 shrink-0">
+                      <SealCheck size={20} weight="fill" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-sans font-bold text-sm text-white">
+                        Certificate of Statistical Audit
+                      </h4>
+                      <p className="font-sans text-xs text-white/60 mt-1 line-clamp-2">
+                        Official peer-reviewed statistical audit attestation signed by {data.qaCertificate.qaLeadName}, featuring the official JAXIS seal.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-white/40">
+                    Audited {data.qaCertificate.completionDate}
+                  </span>
+
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={isDownloadingCert}
+                    onClick={handleDownloadCertificate}
+                    className="bg-[#CC6600] hover:bg-[#E67300] text-white gap-1.5"
+                  >
+                    {isDownloadingCert ? (
+                      <CircleNotch size={14} className="animate-spin" />
+                    ) : (
+                      <DownloadSimple size={14} weight="bold" />
+                    )}
+                    <span>{isDownloadingCert ? "Preparing..." : "Download File"}</span>
+                  </Button>
+                </div>
+              </Card>
+            )}
           </div>
         </div>
       )}

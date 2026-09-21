@@ -100,6 +100,7 @@ export const UpdateStaffProfileSchema = z.object({
   specializations: z
     .array(z.string())
     .min(1, "Select at least one specialization area"),
+  signatureUrl: z.string().optional().nullable(),
 });
 
 export type UpdateStaffProfileInput = z.infer<typeof UpdateStaffProfileSchema>;

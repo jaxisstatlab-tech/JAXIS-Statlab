@@ -151,6 +151,7 @@ model StaffProfile {
   userId          String   @unique
   bio             String?
   specializations String[]
+  signatureUrl    String?
   joinedAt        DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

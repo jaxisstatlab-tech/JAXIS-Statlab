@@ -23,6 +23,7 @@ import {
   type ClassifyRevisionInput,
   type ClientDeliverablesDTO,
   type DeliverableDTO,
+  type QaCertificateDTO,
   type ReleaseDeliverablesInput,
   type RevisionRequestDTO,
   type SubmitRevisionRequestInput,
@@ -384,6 +385,37 @@ export async function getClientDeliverables(projectId: string): Promise<ClientDe
   let project = await db.project.findUnique({
     where: { id: projectId },
     include: {
+      client: {
+        include: {
+          clientProfile: true,
+        },
+      },
+      assignment: {
+        include: {
+          statistician: {
+            include: {
+              staffProfile: true,
+            },
+          },
+          qaLead: {
+            include: {
+              staffProfile: true,
+            },
+          },
+        },
+      },
+      qaReviews: {
+        where: { decision: "QA_APPROVED" },
+        include: {
+          reviewer: {
+            include: {
+              staffProfile: true,
+            },
+          },
+        },
+        orderBy: { reviewedAt: "desc" },
+        take: 1,
+      },
       deliverables: {
         where: isClient ? { isFinalReleased: true } : undefined,
         include: {
@@ -394,6 +426,13 @@ export async function getClientDeliverables(projectId: string): Promise<ClientDe
       },
       analysisFiles: {
         where: { isCurrent: true },
+        include: {
+          statistician: {
+            include: {
+              staffProfile: true,
+            },
+          },
+        },
       },
       revisionRequests: {
         where: isClient ? { clientId: session.user.id } : undefined,
@@ -466,6 +505,37 @@ export async function getClientDeliverables(projectId: string): Promise<ClientDe
       const refreshed = await db.project.findUnique({
         where: { id: projectId },
         include: {
+          client: {
+            include: {
+              clientProfile: true,
+            },
+          },
+          assignment: {
+            include: {
+              statistician: {
+                include: {
+                  staffProfile: true,
+                },
+              },
+              qaLead: {
+                include: {
+                  staffProfile: true,
+                },
+              },
+            },
+          },
+          qaReviews: {
+            where: { decision: "QA_APPROVED" },
+            include: {
+              reviewer: {
+                include: {
+                  staffProfile: true,
+                },
+              },
+            },
+            orderBy: { reviewedAt: "desc" },
+            take: 1,
+          },
           deliverables: {
             where: isClient ? { isFinalReleased: true } : undefined,
             include: {
@@ -476,6 +546,13 @@ export async function getClientDeliverables(projectId: string): Promise<ClientDe
           },
           analysisFiles: {
             where: { isCurrent: true },
+            include: {
+              statistician: {
+                include: {
+                  staffProfile: true,
+                },
+              },
+            },
           },
           revisionRequests: {
             where: isClient ? { clientId: session.user.id } : undefined,
@@ -514,6 +591,69 @@ export async function getClientDeliverables(projectId: string): Promise<ClientDe
   const pendingRevision = project.revisionRequests.some(
     (r) => r.status === "PENDING_REVIEW" || r.status === "INCLUDED"
   );
+
+  // Format package tier label
+  const formatTierExecuted = (pkg?: string | null): string => {
+    if (!pkg) return "JX-04 Advanced Analysis (Econometrics Specialty)";
+    if (pkg.includes("04") || pkg.includes("ADVANCED")) {
+      return "JX-04 Advanced Analysis (Econometrics Specialty)";
+    }
+    if (pkg.includes("03") || pkg.includes("CORE")) {
+      return "JX-03 Core Analytical Processing (Multivariate Modeling)";
+    }
+    if (pkg.includes("02") || pkg.includes("START")) {
+      return "JX-02 Start (Foundational Statistical Package)";
+    }
+    if (pkg.includes("01") || pkg.includes("DATACHECK")) {
+      return "JX-01 DataCheck (Exploratory Data Diagnostics)";
+    }
+    return pkg;
+  };
+
+  // Resolve assigned statistician and QA signatory details
+  const assignedStatistician =
+    project.assignment?.statistician ||
+    project.analysisFiles?.find((f) => f.statistician)?.statistician;
+
+  const statisticianName =
+    assignedStatistician?.fullName || "Lead Consulting Statistician";
+  const statisticianTitle =
+    assignedStatistician?.staffProfile?.bio ||
+    "Lead Consulting Statistician, Statistical Computing & Analytics";
+  const statisticianSignatureUrl =
+    assignedStatistician?.staffProfile?.signatureUrl || null;
+
+  const approvedReview = project.qaReviews?.[0];
+  const qaUser = approvedReview?.reviewer || project.assignment?.qaLead;
+  const qaLeadName = qaUser?.fullName || "Senior QA Review Lead";
+  const qaLeadTitle = qaUser?.staffProfile?.bio || "Statistical Review Editor, Quality Assurance";
+  const qaSignatureUrl = qaUser?.staffProfile?.signatureUrl || null;
+
+  const cleanIntakeNum = project.intakeId.replace(/^JAXIS-?/i, "");
+  const certificateId = `JAXIS-AUDIT-2026-${cleanIntakeNum}`;
+
+  const completionDate = (project.deliveredAt || approvedReview?.reviewedAt || new Date()).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const qaCertificate: QaCertificateDTO = {
+    certificateId,
+    researchTitle: project.researchTitle,
+    clientName: project.client?.fullName || "Lead Researcher",
+    clientEmail: project.client?.email || "",
+    institution: project.client?.clientProfile?.institutionSchool || "Higher Education Institution",
+    program: project.client?.clientProfile?.academicProgram || "Graduate & Doctoral Research",
+    tierExecuted: formatTierExecuted(project.packageName),
+    completionDate,
+    statisticianName,
+    statisticianTitle,
+    statisticianSignatureUrl,
+    qaLeadName,
+    qaLeadTitle,
+    qaSignatureUrl,
+  };
 
   return {
     project: {
@@ -554,6 +694,7 @@ export async function getClientDeliverables(projectId: string): Promise<ClientDe
       })
     ),
     hasPendingRevision: pendingRevision,
+    qaCertificate: (isReleased || project.qaApproved || project.masterStatus === "DELIVERED") ? qaCertificate : null,
   };
 }
 
@@ -597,7 +738,11 @@ export async function getDeliverableDownloadUrl(
     data: { downloadCount: { increment: 1 } },
   });
 
-  const url = await getR2DownloadUrl(deliverable.filePath);
+  const url = await getR2DownloadUrl(
+    deliverable.filePath,
+    deliverable.fileName,
+    deliverable.fileType
+  );
   return { url, fileName: deliverable.fileName };
 }
 
