@@ -44,6 +44,14 @@ function LoginForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // Clean URL search parameters (e.g. ?error=Configuration, ?reason=idle_timeout) on mount
+  // so refreshing the page reloads a clean /login without lingering error states
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
+
   // Load remembered email on mount if user previously checked "Remember me"
   React.useEffect(() => {
     try {
