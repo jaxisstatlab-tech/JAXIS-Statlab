@@ -13,9 +13,9 @@ export default function AuthLayout({
   return (
     <div className="min-h-screen w-full bg-[#010114] text-white flex flex-col lg:flex-row font-sans selection:bg-[#CC6600]/30 selection:text-white">
       {/* ── Left Side: Focused Auth Form Desk ─────────── */}
-      <aside className="w-full lg:w-1/2 min-h-screen lg:h-screen lg:max-h-screen flex-shrink-0 bg-[#010B18] border-b lg:border-b-0 lg:border-r border-white/[0.08] flex flex-col justify-between overflow-y-auto p-6 sm:p-10 lg:p-12 xl:p-14 z-10 shadow-2xl">
+      <aside className="w-full lg:w-1/2 min-h-screen lg:h-screen lg:max-h-screen flex-shrink-0 bg-[#010B18] border-b lg:border-b-0 lg:border-r border-white/[0.08] flex flex-col justify-between overflow-y-auto p-5 sm:p-7 lg:p-8 xl:p-10 z-10 shadow-2xl">
         {/* Top Header: Brand Logo Anchor & Mobile Website Link */}
-        <header className="flex items-center justify-between w-full flex-shrink-0 mb-6 lg:mb-0">
+        <header className="flex items-center justify-between w-full flex-shrink-0 mb-4 lg:mb-0">
           <Link href="/login" className="flex items-center gap-2.5 group">
             <Image
               src="/jaxislogo.png"
@@ -57,18 +57,14 @@ export default function AuthLayout({
         </header>
 
         {/* Dynamic Form Content: Centered with comfortable breathing room */}
-        <div className="w-full max-w-[420px] mx-auto my-auto py-6">
+        <div className="w-full max-w-[420px] mx-auto my-auto py-3">
           {children}
         </div>
 
         {/* Bottom Compliance & Security Footer */}
         <footer className="border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-2 text-[0.688rem] text-slate-400 font-mono w-full flex-shrink-0 pt-4 sm:pt-5 mt-6 lg:mt-0">
           <span>© 2026 JAXIS StatLab Inc.</span>
-          <div className="flex items-center gap-3 text-slate-500">
-            <span>ISO/IEC 27001</span>
-            <span>·</span>
-            <span>APA 7th</span>
-          </div>
+          <span className="text-slate-500">v2.4.0</span>
         </footer>
       </aside>
 

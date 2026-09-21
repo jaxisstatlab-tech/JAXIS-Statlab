@@ -9,6 +9,7 @@ import {
   Eye,
   EyeSlash,
   CaretDown,
+  WarningCircle,
 } from "@phosphor-icons/react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
@@ -32,6 +33,8 @@ function LoginForm() {
   const isAccountSuspended = authError === "AccountSuspended";
   const isAccountTerminated = authError === "AccountTerminated";
   const isSessionRevoked = authError === "SessionRevoked";
+  const isConfigurationError = authError === "Configuration";
+  const isOAuthError = authError === "OAuthSignin" || authError === "OAuthCallback";
 
   const [email, setEmail] = useState("admin@jaxis.dev");
   const [password, setPassword] = useState("JaxisAdmin2026!");
@@ -182,6 +185,16 @@ function LoginForm() {
           Your password has been reset successfully. Please sign in with your new credentials.
         </Alert>
       )}
+      {isConfigurationError && (
+        <Alert variant="danger" title="Google OAuth Required">
+          Google Sign-In is not configured yet. Please add AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET to your .env file, or use email and password to sign in.
+        </Alert>
+      )}
+      {isOAuthError && (
+        <Alert variant="danger" title="Google Sign-In Failed">
+          Unable to complete Google sign-in. Please verify your Google Cloud OAuth credentials and authorized redirect URIs.
+        </Alert>
+      )}
 
       {/* Stakeholder Preset Dropdown */}
       <div className="flex flex-col gap-1.5">
@@ -220,7 +233,10 @@ function LoginForm() {
       </div>
 
       {/* Google Single Sign-On */}
-      <GoogleSignInButton callbackUrl={callbackUrl} />
+      <GoogleSignInButton
+        callbackUrl={callbackUrl}
+        onError={(err) => setErrorMessage(err)}
+      />
 
       {/* Clean Centered Divider */}
       <DividerWithText className="-my-1">Or</DividerWithText>
@@ -230,6 +246,32 @@ function LoginForm() {
         onSubmit={handleSubmit}
         className="flex flex-col gap-4"
       >
+        {/* Error Alert Banner */}
+        {errorMessage && (
+          <div
+            role="alert"
+            className="p-3.5 rounded-[2px] bg-red-500/[0.08] border border-red-500/30 flex items-start gap-3 animate-content-fade"
+          >
+            <WarningCircle
+              weight="fill"
+              size={18}
+              className="text-red-400 shrink-0 mt-0.5"
+            />
+            <div className="flex-1 flex flex-col gap-1 text-xs font-sans">
+              <span className="font-semibold text-red-200">
+                {errorMessage.toLowerCase().includes("google")
+                  ? "Google OAuth Required"
+                  : errorMessage.toLowerCase().includes("suspended")
+                  ? "Account Suspended"
+                  : errorMessage.toLowerCase().includes("deactivated")
+                  ? "Account Deactivated"
+                  : "Invalid Credentials"}
+              </span>
+              <p className="text-white/70 leading-relaxed">{errorMessage}</p>
+            </div>
+          </div>
+        )}
+
         <FormInput
           label="Email Address"
           name="email"
@@ -257,6 +299,7 @@ function LoginForm() {
           variant="auth"
           placeholder="Enter your password"
           value={password}
+          isInvalid={Boolean(errorMessage)}
           onChange={(e) => {
             setPassword(e.target.value);
             setActiveRole("");
@@ -264,8 +307,6 @@ function LoginForm() {
           }}
           disabled={isPending}
           autoComplete="current-password"
-          error={errorMessage || undefined}
-          errorVariant="banner"
           rightIcon={
             <button
               type="button"

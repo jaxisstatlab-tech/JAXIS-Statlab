@@ -10,6 +10,7 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { PasswordRequirements } from "@/components/auth/PasswordRequirements";
 import { registerClient } from "@/features/auth/actions";
 
 export default function RegisterPage() {
@@ -141,36 +142,50 @@ export default function RegisterPage() {
           className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
         />
 
-        <FormInput
-          label="Password"
-          name="password"
-          type={showPassword ? "text" : "password"}
-          required
-          variant="auth"
-          placeholder="At least 8 characters"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          error={fieldErrors.password?.[0]}
-          errorVariant="banner"
-          disabled={isPending}
-          autoComplete="new-password"
-          rightIcon={
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
-              title={showPassword ? "Hide password" : "Show password"}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? (
-                <EyeSlash weight="fill" size={16} />
-              ) : (
-                <Eye weight="fill" size={16} />
-              )}
-            </button>
-          }
-          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
-        />
+        <div className="flex flex-col">
+          <FormInput
+            label="Password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            required
+            variant="auth"
+            placeholder="At least 8 characters"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (fieldErrors.password) {
+                setFieldErrors((prev) => {
+                  const next = { ...prev };
+                  delete next.password;
+                  return next;
+                });
+              }
+            }}
+            error={fieldErrors.password?.[0]}
+            errorVariant="banner"
+            disabled={isPending}
+            autoComplete="new-password"
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
+                title={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeSlash weight="fill" size={16} />
+                ) : (
+                  <Eye weight="fill" size={16} />
+                )}
+              </button>
+            }
+            className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
+          />
+
+          {/* Dynamic Real-time Password Requirements Checklist */}
+          <PasswordRequirements password={password} />
+        </div>
 
         <FormInput
           label="Confirm Password"
@@ -180,7 +195,16 @@ export default function RegisterPage() {
           variant="auth"
           placeholder="Re-enter your password"
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            if (fieldErrors.confirmPassword) {
+              setFieldErrors((prev) => {
+                const next = { ...prev };
+                delete next.confirmPassword;
+                return next;
+              });
+            }
+          }}
           error={fieldErrors.confirmPassword?.[0]}
           errorVariant="banner"
           disabled={isPending}
@@ -202,10 +226,6 @@ export default function RegisterPage() {
           }
           className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
         />
-
-        <p className="text-[11px] text-white/40 font-sans -mt-1">
-          Must be at least 8 characters.
-        </p>
 
         <Button
           type="submit"

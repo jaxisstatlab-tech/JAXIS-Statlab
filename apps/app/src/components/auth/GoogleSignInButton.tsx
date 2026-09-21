@@ -1,28 +1,39 @@
 "use client";
 
 import React, { useState } from "react";
-import { signIn } from "next-auth/react";
+import { getProviders, signIn } from "next-auth/react";
 
 interface GoogleSignInButtonProps {
   callbackUrl?: string;
   isRegister?: boolean;
   className?: string;
+  onError?: (message: string) => void;
 }
 
 export function GoogleSignInButton({
   callbackUrl = "/dashboard",
   isRegister = false,
   className = "",
+  onError,
 }: GoogleSignInButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      signIn("google", { callbackUrl });
+      const providers = await getProviders();
+      if (!providers?.google) {
+        setIsLoading(false);
+        onError?.(
+          "Google Sign-In is not configured yet. Please add AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET to your .env file."
+        );
+        return;
+      }
+      await signIn("google", { callbackUrl });
     } catch (err) {
       console.error("[GoogleSignIn] Error initiating Google sign-in:", err);
       setIsLoading(false);
+      onError?.("Unable to initiate Google sign-in. Please try again.");
     }
   };
 

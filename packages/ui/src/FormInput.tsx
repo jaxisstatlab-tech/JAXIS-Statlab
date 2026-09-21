@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Eye, EyeSlash, Warning } from "@phosphor-icons/react";
+import { Eye, EyeSlash, WarningCircle } from "@phosphor-icons/react";
 import { Label } from "./Label";
 import { Input, type InputProps } from "./Input";
 import { cn } from "./utils";
@@ -10,6 +10,8 @@ export interface FormInputProps extends Omit<InputProps, "error"> {
   label?: string;
   labelRightAction?: React.ReactNode;
   error?: string;
+  errorTitle?: string;
+  errorAction?: React.ReactNode;
   isInvalid?: boolean;
   errorVariant?: "text" | "banner";
   helper?: string;
@@ -33,6 +35,8 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
       label,
       labelRightAction,
       error,
+      errorTitle,
+      errorAction,
       isInvalid = false,
       errorVariant = "text",
       helper,
@@ -103,16 +107,29 @@ export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
         {/* Error or Helper text */}
         {error ? (
           errorVariant === "banner" ? (
-            <div className="flex items-start gap-2.5 rounded-[5px] bg-[#EF4444]/10 border border-[#EF4444]/35 text-[#FCA5A5] text-xs font-sans leading-relaxed mt-1 p-3 border-l-4 border-l-[#EF4444]">
-              <div className="w-5 h-5 rounded-[3px] bg-[#EF4444]/20 border border-[#EF4444]/40 flex items-center justify-center text-[#EF4444] shrink-0 mt-0.5">
-                <Warning size={14} weight="fill" />
+            <div
+              role="alert"
+              className="p-3.5 rounded-[2px] bg-red-500/[0.08] border border-red-500/30 flex items-start gap-3 mt-1.5 animate-content-fade"
+            >
+              <WarningCircle
+                weight="fill"
+                size={18}
+                className="text-red-400 shrink-0 mt-0.5"
+              />
+              <div className="flex-1 flex flex-col gap-1 text-xs font-sans">
+                {errorTitle && (
+                  <span className="font-semibold text-red-200">
+                    {errorTitle}
+                  </span>
+                )}
+                <p className="text-white/70 leading-relaxed">{error}</p>
+                {errorAction && <div className="pt-1">{errorAction}</div>}
               </div>
-              <span className="font-medium text-white/90">{error}</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 px-0.5 mt-0.5">
-              <Warning size={14} weight="fill" className="text-[#EF4444] shrink-0" />
-              <span className="text-xs text-[#EF4444] font-sans font-medium leading-relaxed">
+              <WarningCircle size={14} weight="fill" className="text-red-400 shrink-0" />
+              <span className="text-xs text-red-400 font-sans font-medium leading-relaxed">
                 {error}
               </span>
             </div>
