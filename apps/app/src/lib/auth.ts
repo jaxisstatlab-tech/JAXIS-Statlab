@@ -22,10 +22,17 @@ export function computePasswordFingerprint(passwordHash: string): string {
   return crypto.createHash("sha256").update(passwordHash).digest("hex").slice(0, 16);
 }
 
+// Enforce canonical production URL in production / Vercel environments
+if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+  process.env.AUTH_URL = "https://app.jaxis-statlab.com";
+  process.env.NEXTAUTH_URL = "https://app.jaxis-statlab.com";
+}
+
 export const authConfig: NextAuthConfig = {
   ...baseAuthConfig,
   trustHost: true,
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "dev_secret_key_minimum_32_characters_long_for_jaxis_statlab",
+  debug: process.env.NODE_ENV !== "production",
   providers: [
     ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
       ? [

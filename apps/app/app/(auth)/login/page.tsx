@@ -186,8 +186,8 @@ function LoginForm() {
         </Alert>
       )}
       {isConfigurationError && (
-        <Alert variant="danger" title="Google OAuth Required">
-          Google Sign-In is not configured yet. Please add AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET to your .env file, or use email and password to sign in.
+        <Alert variant="danger" title="Google Sign-In Error">
+          Unable to complete Google sign-in. Please verify that your Vercel deployment has finished building, or sign in using your email and password below.
         </Alert>
       )}
       {isOAuthError && (

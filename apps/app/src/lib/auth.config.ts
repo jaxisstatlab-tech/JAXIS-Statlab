@@ -19,9 +19,16 @@ const LEGACY_DEV_ID_MAP: Record<string, string> = {
   cmt5plwpt0006lrrk1vi05x2g: "cmu99br9u0006lrowo3liwjhd",
 };
 
+// Enforce canonical production URL in production / Vercel environments
+if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+  process.env.AUTH_URL = "https://app.jaxis-statlab.com";
+  process.env.NEXTAUTH_URL = "https://app.jaxis-statlab.com";
+}
+
 export const authConfig: NextAuthConfig = {
   trustHost: true,
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "dev_secret_key_minimum_32_characters_long_for_jaxis_statlab",
+  debug: process.env.NODE_ENV !== "production",
   providers: [],
   session: {
     strategy: "jwt",
@@ -38,11 +45,11 @@ export const authConfig: NextAuthConfig = {
         if (user.email) {
           token.email = user.email;
         }
-        token.role = user.role;
-        token.fullName = user.fullName;
-        token.status = user.status;
-        if (user.pwdFp) {
-          token.pwdFp = user.pwdFp;
+        token.role = (user as any).role || token.role || "CLIENT";
+        token.fullName = (user as any).fullName || user.name || "Research Client";
+        token.status = (user as any).status || "ACTIVE";
+        if ((user as any).pwdFp) {
+          token.pwdFp = (user as any).pwdFp;
         }
         if (user.rememberMe !== undefined) {
           token.rememberMe = user.rememberMe;
@@ -50,6 +57,9 @@ export const authConfig: NextAuthConfig = {
         }
       } else if (token.id && typeof token.id === "string" && LEGACY_DEV_ID_MAP[token.id]) {
         token.id = LEGACY_DEV_ID_MAP[token.id];
+      }
+      if (!token.role) {
+        token.role = "CLIENT";
       }
       return token;
     },
