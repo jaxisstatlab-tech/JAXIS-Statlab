@@ -24,6 +24,8 @@ export function computePasswordFingerprint(passwordHash: string): string {
 
 export const authConfig: NextAuthConfig = {
   ...baseAuthConfig,
+  trustHost: true,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "dev_secret_key_minimum_32_characters_long_for_jaxis_statlab",
   providers: [
     ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
       ? [

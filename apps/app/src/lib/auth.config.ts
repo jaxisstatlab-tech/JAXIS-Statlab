@@ -21,6 +21,7 @@ const LEGACY_DEV_ID_MAP: Record<string, string> = {
 
 export const authConfig: NextAuthConfig = {
   trustHost: true,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "dev_secret_key_minimum_32_characters_long_for_jaxis_statlab",
   providers: [],
   session: {
     strategy: "jwt",
