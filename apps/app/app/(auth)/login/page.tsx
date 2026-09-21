@@ -8,19 +8,9 @@ import { Alert, Button, LoadingState, FormInput, DividerWithText } from "@repo/u
 import {
   Eye,
   EyeSlash,
-  CaretDown,
   WarningCircle,
 } from "@phosphor-icons/react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-
-const DEV_PRESETS = [
-  { label: "Admin", email: "admin@jaxis.dev", pass: "JaxisAdmin2026!", role: "ADMIN" },
-  { label: "Client", email: "client@jaxis.dev", pass: "JaxisClient2026!", role: "CLIENT" },
-  { label: "Stat", email: "stat@jaxis.dev", pass: "JaxisStat2026!", role: "STATISTICIAN" },
-  { label: "QA Lead", email: "qa@jaxis.dev", pass: "JaxisQA2026!", role: "SENIOR_QA_LEAD" },
-  { label: "Finance", email: "finance@jaxis.dev", pass: "JaxisFin2026!", role: "FINANCE_OFFICER" },
-  { label: "CEO", email: "ceo@jaxis.dev", pass: "JaxisCeo2026!", role: "CEO" },
-];
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -38,11 +28,10 @@ function LoginForm() {
   const isConfigurationError = authError === "Configuration";
   const isOAuthError = authError === "OAuthSignin" || authError === "OAuthCallback";
 
-  const [email, setEmail] = useState("admin@jaxis.dev");
-  const [password, setPassword] = useState("JaxisAdmin2026!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [activeRole, setActiveRole] = useState("ADMIN");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -61,28 +50,11 @@ function LoginForm() {
       if (savedEmail) {
         setEmail(savedEmail);
         setRememberMe(true);
-        setActiveRole("");
       }
     } catch {
       // ignore localStorage in restricted environments
     }
   }, []);
-
-  const handleSelectPreset = (roleValue: string) => {
-    if (!roleValue) {
-      setActiveRole("");
-      setEmail("");
-      setPassword("");
-      setErrorMessage(null);
-      return;
-    }
-    const preset = DEV_PRESETS.find((p) => p.role === roleValue);
-    if (!preset) return;
-    setEmail(preset.email);
-    setPassword(preset.pass);
-    setActiveRole(preset.role);
-    setErrorMessage(null);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,21 +101,7 @@ function LoginForm() {
           return;
         }
 
-        // Determine destination desk directly to avoid the intermediate /dashboard 307 redirect bounce
-        const roleHomeMap: Record<string, string> = {
-          ADMIN: "/dashboard/admin",
-          CLIENT: "/dashboard/client",
-          STATISTICIAN: "/dashboard/statistician",
-          SENIOR_QA_LEAD: "/dashboard/qa",
-          FINANCE_OFFICER: "/dashboard/finance",
-          CEO: "/dashboard/ceo",
-        };
-
-        const targetDestination =
-          callbackUrl && callbackUrl !== "/dashboard"
-            ? callbackUrl
-            : (activeRole && roleHomeMap[activeRole]) || "/dashboard";
-
+        const targetDestination = callbackUrl || "/dashboard";
         window.location.href = targetDestination;
       } catch (err) {
         console.error("Login submission error:", err);
@@ -206,41 +164,6 @@ function LoginForm() {
         </Alert>
       )}
 
-      {/* Stakeholder Preset Dropdown */}
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between text-xs font-sans">
-          <span className="font-medium text-white/70">Demo Account</span>
-          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-[2px] bg-[#CC6600]/15 text-[#FFA040] border border-[#CC6600]/30 font-semibold tracking-wider">
-            1-Click Access
-          </span>
-        </div>
-        <div className="relative flex items-center w-full">
-          <select
-            value={activeRole}
-            onChange={(e) => handleSelectPreset(e.target.value)}
-            className="w-full h-9 px-3 pr-9 rounded-[2px] bg-[#01142B] border border-white/12 hover:border-white/25 focus:border-[#CC6600] text-xs sm:text-sm text-white transition-colors outline-none font-sans appearance-none cursor-pointer"
-          >
-            <option
-              value=""
-              className="bg-[#01142B] text-slate-300 py-2 font-sans"
-            >
-              None (Enter custom credentials)
-            </option>
-            {DEV_PRESETS.map((preset) => (
-              <option
-                key={preset.role}
-                value={preset.role}
-                className="bg-[#01142B] text-white py-2"
-              >
-                {preset.label} — {preset.email} ({preset.role})
-              </option>
-            ))}
-          </select>
-          <div className="absolute right-3.5 pointer-events-none text-white/40 flex items-center justify-center">
-            <CaretDown size={14} weight="bold" />
-          </div>
-        </div>
-      </div>
 
       {/* Google Single Sign-On */}
       <GoogleSignInButton
@@ -285,7 +208,6 @@ function LoginForm() {
           isInvalid={Boolean(errorMessage)}
           onChange={(e) => {
             setEmail(e.target.value);
-            setActiveRole("");
             if (errorMessage) setErrorMessage(null);
           }}
           disabled={isPending}
@@ -304,7 +226,6 @@ function LoginForm() {
           isInvalid={Boolean(errorMessage)}
           onChange={(e) => {
             setPassword(e.target.value);
-            setActiveRole("");
             if (errorMessage) setErrorMessage(null);
           }}
           disabled={isPending}
