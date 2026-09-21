@@ -139,7 +139,10 @@ export function renderEmailTemplate(
 ): EmailRenderResult {
   const subjectFn = EMAIL_SUBJECTS[template];
   const subject = subjectFn ? subjectFn(data) : "JAXIS StatLab Notification";
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001";
+  const isProd = process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (isProd ? "https://app.jaxis-statlab.com" : process.env.NEXTAUTH_URL || "http://localhost:3001");
   const name = data.clientName || data.userName || "Client";
   const intakeId = data.intakeId || "JAXIS Study";
   const title = data.researchTitle || "Statistical Consultation";
@@ -166,7 +169,7 @@ export function renderEmailTemplate(
         { label: "Security", value: "Single-Use Recovery Link" },
       ];
       ctaText = "Reset Password";
-      ctaUrl = `${appUrl}/reset-password?token=${data.resetToken}`;
+      ctaUrl = data.resetUrl || `${appUrl}/reset-password?token=${data.resetToken}`;
       break;
 
     case "NewIntake":

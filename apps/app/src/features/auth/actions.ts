@@ -290,8 +290,12 @@ export async function requestPasswordResetAction(
       3000
     );
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3001";
-    console.log(`\n🔑 [PASSWORD RECOVERY LINK]: ${appUrl}/reset-password?token=${rawToken}\n`);
+    const isProd = process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (isProd ? "https://app.jaxis-statlab.com" : process.env.NEXTAUTH_URL || "http://localhost:3001");
+    const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
+    console.log(`\n🔑 [PASSWORD RECOVERY LINK]: ${resetUrl}\n`);
 
     // Dispatch recovery email via Resend abstraction
     const emailRes = await sendEmail({
@@ -302,6 +306,7 @@ export async function requestPasswordResetAction(
         email: user.email,
         userName: user.fullName,
         resetToken: rawToken,
+        resetUrl,
       },
     });
 
@@ -376,7 +381,7 @@ export async function verifyResetTokenAction(
       db.passwordResetToken.findUnique({
         where: { tokenHash },
       }),
-      3000
+      8000
     );
 
     if (!record) {
@@ -451,7 +456,7 @@ export async function resetPasswordAction(
       db.passwordResetToken.findUnique({
         where: { tokenHash },
       }),
-      3000
+      8000
     );
 
     if (!record || record.usedAt || record.expiresAt < new Date()) {
@@ -478,7 +483,7 @@ export async function resetPasswordAction(
           data: { usedAt: new Date() },
         }),
       ]),
-      5000
+      10000
     );
 
     // Sync dev mock user store if dev logins are enabled
