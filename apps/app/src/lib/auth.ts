@@ -59,6 +59,10 @@ export const authConfig: NextAuthConfig = {
         const { email, password, rememberMe } = parsed.data;
         const isRemembered = Boolean(rememberMe);
         const normalizedEmail = email.toLowerCase().trim();
+        const isDemoAccount = normalizedEmail.endsWith("@jaxis.dev");
+        const allowDevLogins =
+          process.env.DISABLE_DEV_LOGINS !== "true" &&
+          (process.env.NODE_ENV !== "production" || isDemoAccount);
 
         // 1. Attempt DB Lookup with fast timeout fallback
         try {
@@ -71,7 +75,7 @@ export const authConfig: NextAuthConfig = {
                 },
               },
             }),
-            2500
+            8000
           );
 
           if (user) {
@@ -120,10 +124,7 @@ export const authConfig: NextAuthConfig = {
               isValidPassword = false;
             }
 
-            // Dev password fallback check (strictly disabled in production)
-            const allowDevLogins =
-              process.env.NODE_ENV !== "production" &&
-              process.env.DISABLE_DEV_LOGINS !== "true";
+            // Dev password fallback check for demo presets or dev environments
             const devFallback = getDevUserByEmail(normalizedEmail) || DEV_USERS[normalizedEmail];
             if (!isValidPassword && allowDevLogins && devFallback && devFallback.password === password) {
               isValidPassword = true;
@@ -179,10 +180,7 @@ export const authConfig: NextAuthConfig = {
           console.warn("[Auth] Live DB unreachable or offline. Checking dev user fallback.", dbError);
         }
 
-        // 2. Development Quick Credentials Fallback (Offline / Employee QA Testing Mode; disabled in production)
-        const allowDevLogins =
-          process.env.NODE_ENV !== "production" &&
-          process.env.DISABLE_DEV_LOGINS !== "true";
+        // 2. Demo Presets & Development Fallback (Handles DB cold starts / offline demo testing)
         if (allowDevLogins) {
           const devUser = getDevUserByEmail(normalizedEmail) || DEV_USERS[normalizedEmail];
           if (devUser) {
@@ -377,7 +375,7 @@ export const getLiveAccountState = cache(async (userId: string) => {
           },
         },
       }),
-      2500
+      8000
     );
     return liveUser;
   } catch (err) {
@@ -436,10 +434,11 @@ export async function requireRole(...roles: RoleName[]) {
     return session;
   }
 
-  // 2. Offline / Dev User Fallback (Disabled in Production)
+  // 2. Demo Presets & Dev User Fallback
+  const isDemoAccount = session.user.email?.endsWith("@jaxis.dev");
   const allowDevLogins =
-    process.env.NODE_ENV !== "production" &&
-    process.env.DISABLE_DEV_LOGINS !== "true";
+    process.env.DISABLE_DEV_LOGINS !== "true" &&
+    (process.env.NODE_ENV !== "production" || isDemoAccount);
 
   if (allowDevLogins && session.user.email) {
     const devUser = getDevUserByEmail(session.user.email) || DEV_USERS[session.user.email];
