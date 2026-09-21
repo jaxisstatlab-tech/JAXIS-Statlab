@@ -4,8 +4,9 @@ import React, { useState, useEffect, useTransition, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Alert, Button, FormInput, LoadingState } from "@repo/ui";
-import { ArrowLeft, CheckCircle, XCircle, Eye, EyeSlash } from "@phosphor-icons/react";
+import { ArrowLeft, XCircle, Eye, EyeSlash } from "@phosphor-icons/react";
 import { verifyResetTokenAction, resetPasswordAction } from "@/features/auth/actions";
+import { PasswordRequirements } from "@/components/auth/PasswordRequirements";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -57,22 +58,25 @@ function ResetPasswordForm() {
 
   // Real-time password requirement checks
   const hasMinLength = password.length >= 8;
+  const hasLowercase = /[a-z]/.test(password);
   const hasUppercase = /[A-Z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
-  const passwordsMatch = password.length > 0 && password === confirmPassword;
-  const isValid = hasMinLength && hasUppercase && hasNumber && passwordsMatch;
+  const passwordsMatch = password.length > 0 && confirmPassword.length > 0 && password === confirmPassword;
+  const isValid = hasMinLength && hasLowercase && hasUppercase && hasNumber && passwordsMatch;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
     if (!isValid) {
-      if (!hasMinLength) {
-        setFormError("Password must be at least 8 characters long.");
+      if (!hasLowercase) {
+        setFormError("Password must contain at least one lowercase letter.");
       } else if (!hasUppercase) {
         setFormError("Password must contain at least one uppercase letter.");
       } else if (!hasNumber) {
         setFormError("Password must contain at least one number.");
+      } else if (!hasMinLength) {
+        setFormError("Password must be at least 8 characters long.");
       } else if (!passwordsMatch) {
         setFormError("Passwords do not match.");
       }
@@ -173,33 +177,42 @@ function ResetPasswordForm() {
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <FormInput
-          label="New Password"
-          type={showPassword ? "text" : "password"}
-          value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            if (formError) setFormError(null);
-          }}
-          placeholder="Enter new password"
-          disabled={isPending}
-          autoComplete="new-password"
-          required
-          rightIcon={
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="text-slate-400 hover:text-white transition-colors cursor-pointer p-0.5"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeSlash weight="fill" size={15} /> : <Eye weight="fill" size={15} />}
-            </button>
-          }
-          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
-        />
+        <div className="flex flex-col">
+          <FormInput
+            label="New Password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (formError) setFormError(null);
+            }}
+            placeholder="At least 8 characters"
+            disabled={isPending}
+            autoComplete="new-password"
+            required
+            variant="auth"
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
+                title={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeSlash weight="fill" size={16} /> : <Eye weight="fill" size={16} />}
+              </button>
+            }
+            className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
+          />
+
+          {/* Dynamic Real-time Password Requirements Checklist matching register */}
+          <PasswordRequirements password={password} />
+        </div>
 
         <FormInput
           label="Confirm New Password"
+          name="confirmPassword"
           type={showConfirmPassword ? "text" : "password"}
           value={confirmPassword}
           onChange={(e) => {
@@ -210,43 +223,22 @@ function ResetPasswordForm() {
           disabled={isPending}
           autoComplete="new-password"
           required
+          variant="auth"
+          error={confirmPassword && password !== confirmPassword ? "Passwords do not match" : undefined}
+          errorVariant="banner"
           rightIcon={
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="text-slate-400 hover:text-white transition-colors cursor-pointer p-0.5"
+              className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
+              title={showConfirmPassword ? "Hide password" : "Show password"}
               aria-label={showConfirmPassword ? "Hide password" : "Show password"}
             >
-              {showConfirmPassword ? <EyeSlash weight="fill" size={15} /> : <Eye weight="fill" size={15} />}
+              {showConfirmPassword ? <EyeSlash weight="fill" size={16} /> : <Eye weight="fill" size={16} />}
             </button>
           }
           className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
         />
-
-        {/* Security Requirements Checklist */}
-        <div className="p-3.5 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-2">
-          <span className="text-[0.688rem] font-mono text-white/50 uppercase tracking-wider font-semibold">
-            Security Requirements
-          </span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-sans">
-            <div className={`flex items-center gap-1.5 ${hasMinLength ? "text-emerald-400" : "text-white/40"}`}>
-              <CheckCircle weight="fill" size={14} className={hasMinLength ? "text-emerald-400" : "text-white/20"} />
-              <span>8+ characters</span>
-            </div>
-            <div className={`flex items-center gap-1.5 ${hasUppercase ? "text-emerald-400" : "text-white/40"}`}>
-              <CheckCircle weight="fill" size={14} className={hasUppercase ? "text-emerald-400" : "text-white/20"} />
-              <span>1 uppercase letter</span>
-            </div>
-            <div className={`flex items-center gap-1.5 ${hasNumber ? "text-emerald-400" : "text-white/40"}`}>
-              <CheckCircle weight="fill" size={14} className={hasNumber ? "text-emerald-400" : "text-white/20"} />
-              <span>1 number</span>
-            </div>
-            <div className={`flex items-center gap-1.5 ${passwordsMatch ? "text-emerald-400" : "text-white/40"}`}>
-              <CheckCircle weight="fill" size={14} className={passwordsMatch ? "text-emerald-400" : "text-white/20"} />
-              <span>Passwords match</span>
-            </div>
-          </div>
-        </div>
 
         <Button
           type="submit"
