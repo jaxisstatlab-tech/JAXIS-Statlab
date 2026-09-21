@@ -80,6 +80,9 @@ function ResetPasswordForm() {
       } else if (!passwordsMatch) {
         setFormError("Passwords do not match.");
       }
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
       return;
     }
 
@@ -95,10 +98,16 @@ function ResetPasswordForm() {
           window.location.href = "/login?reset=success";
         } else {
           setFormError(res.error.message || "Failed to update password. Please try again.");
+          if (typeof window !== "undefined") {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
         }
       } catch (err) {
         console.error("Password reset error:", err);
         setFormError("An unexpected error occurred. Please try again.");
+        if (typeof window !== "undefined") {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
       }
     });
   };
@@ -170,8 +179,22 @@ function ResetPasswordForm() {
         </p>
       </div>
 
+      {/* Error Alert Banner on Top */}
       {formError && (
-        <Alert variant="danger" title="Validation Error">
+        <Alert
+          variant="danger"
+          title={
+            formError.toLowerCase().includes("same") ||
+            formError.toLowerCase().includes("current") ||
+            formError.toLowerCase().includes("old")
+              ? "Password Already Used"
+              : formError.toLowerCase().includes("recovery link") ||
+                formError.toLowerCase().includes("expired") ||
+                formError.toLowerCase().includes("invalid")
+              ? "Invalid Recovery Link"
+              : "Validation Error"
+          }
+        >
           {formError}
         </Alert>
       )}

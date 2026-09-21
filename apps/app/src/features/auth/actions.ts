@@ -469,13 +469,64 @@ export async function resetPasswordAction(
       };
     }
 
+    // Check existing password to prevent reusing the same password
+    const user = await withDbTimeout(
+      db.user.findFirst({
+        where: { email: { equals: record.email, mode: "insensitive" } },
+        select: { id: true, email: true, passwordHash: true },
+      }),
+      8000
+    );
+
+    if (user && user.passwordHash) {
+      let isSamePassword = false;
+      try {
+        if (
+          user.passwordHash.startsWith("$2a$") ||
+          user.passwordHash.startsWith("$2b$") ||
+          user.passwordHash.startsWith("$2y$")
+        ) {
+          isSamePassword = await bcrypt.compare(password, user.passwordHash);
+        } else {
+          isSamePassword = user.passwordHash === password;
+        }
+      } catch {
+        isSamePassword = user.passwordHash === password;
+      }
+
+      if (isSamePassword) {
+        return {
+          success: false,
+          error: {
+            code: "SAME_PASSWORD",
+            message: "New password cannot be the same as your current password. Please choose a different password.",
+          },
+        };
+      }
+    }
+
+    // Dev fallback if active
+    const allowDevLogins = process.env.DISABLE_DEV_LOGINS !== "true";
+    if (allowDevLogins && record.email) {
+      const dev = getDevUserByEmail(record.email) || DEV_USERS[record.email];
+      if (dev && dev.password === password) {
+        return {
+          success: false,
+          error: {
+            code: "SAME_PASSWORD",
+            message: "New password cannot be the same as your current password. Please choose a different password.",
+          },
+        };
+      }
+    }
+
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Update user password and mark token as consumed
     await withDbTimeout(
       db.$transaction([
         db.user.update({
-          where: { email: record.email },
+          where: user ? { id: user.id } : { email: record.email },
           data: { passwordHash },
         }),
         db.passwordResetToken.update({
@@ -487,7 +538,6 @@ export async function resetPasswordAction(
     );
 
     // Sync dev mock user store if dev logins are enabled
-    const allowDevLogins = process.env.DISABLE_DEV_LOGINS !== "true";
     if (allowDevLogins) {
       const dev = getDevUserByEmail(record.email) || DEV_USERS[record.email];
       if (dev) {
