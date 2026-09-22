@@ -1,4 +1,7 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
+# JAXIS StatLab — Web Marketing App (`apps/web`)
+
+> - **Current Page Documentation**: [Main Page Breakdown](docs/main-page.md)
+> - **Section-by-Section Revamp Blueprint**: [Revamp Roadmap & Specs](docs/section-by-section-revamp.md)
 
 ## Getting Started
 

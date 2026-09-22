@@ -55,6 +55,10 @@ Before shipping any new feature, updating existing modules, or refactoring code,
    - Public-facing endpoints (login, registration, lead intake, file upload endpoints) must enforce rate limiting (IP-based and account-based) to thwart brute-force and scraping attempts.
 6. **Communication Firewall**:
    - In-app chat must pass through the communication firewall to detect and flag off-platform contact evasion (phone numbers, personal emails, external links).
+7. **Unified Access Control Engine (`src/lib/access-control.ts`)**:
+   - All operational mutations and data retrieval must pass through centralized access control assertion functions (`assertStudyAccess`, `assertProjectParticipant`, `assertAdminOrCeo`, `assertFinanceAccess`, `assertCanDownloadDeliverable`). Never duplicate ad-hoc permission checks in individual route handlers.
+8. **Secure Server-Side File & PDF Streaming**:
+   - Deliverables, audit certificates, and research files must be served via authenticated server-side streaming endpoints (`/api/deliverables/certificate`, `/api/files/preview`) with verified session checks and security headers. Direct public exposure of Cloudflare R2 bucket keys or raw unauthenticated URLs is strictly prohibited.
 
 ---
 

@@ -40,15 +40,18 @@ apps/app/docs/
 │   ├── 04-specialist-statistician-guide.md # Analysis workbench & QA audit rules
 │   └── 05-client-journey-guide.md     # Client onboarding, SOW signing & DefenseLab
 │
-└── flows/                         ← 🔄 5. Operational Workflows & User Journeys
-    ├── README.md                  # Visual flow directory
-    ├── 00-master-lifecycle-flow.md# Master 9-stage state diagram
-    ├── 01-client-flow.md          # Client portal interaction flow
-    ├── 02-admin-flow.md           # Admin triage & quotation flow
-    ├── 03-statistician-flow.md    # Analysis execution & scope creep flow
-    ├── 04-qa-review-flow.md       # Senior QA audit & rejection loop
-    ├── 05-finance-hr-flow.md      # Payment verification & payroll flow
-    └── 06-ceo-flow.md             # Executive oversight & pricing matrix flow
+├── flows/                         ← 🔄 5. Operational Workflows & User Journeys
+│   ├── README.md                  # Visual flow directory
+│   ├── 00-master-lifecycle-flow.md# Master 9-stage state diagram
+│   ├── 01-client-flow.md          # Client portal interaction flow
+│   ├── 02-admin-flow.md           # Admin triage & quotation flow
+│   ├── 03-statistician-flow.md    # Analysis execution & scope creep flow
+│   ├── 04-qa-review-flow.md       # Senior QA audit & rejection loop
+│   ├── 05-finance-hr-flow.md      # Payment verification & payroll flow
+│   └── 06-ceo-flow.md             # Executive oversight & pricing matrix flow
+│
+└── marketing-web/                 ← 🌐 6. Companion Marketing Web Documentation
+    └── docs/marketing-web/        # Section-by-section landing page revamp blueprints (00–07)
 ```
 
 ---
@@ -57,12 +60,14 @@ apps/app/docs/
 
 - **Software Engineers & AI Agents**:
   1. [info/08-engineering-standards.md](./info/08-engineering-standards.md) — Pre-Implementation Standards & Checklist
-  2. [info/02-architecture.md](./info/02-architecture.md) — System Architecture
+  2. [info/02-architecture.md](./info/02-architecture.md) — System Architecture & Monorepo Topology
   3. [info/03-data-storage.md](./info/03-data-storage.md) — Database & Cloud Storage
   4. [info/04-design-system.md](./info/04-design-system.md) — Design System Tokens
   5. [info/05-ui-design-upgrade.md](./info/05-ui-design-upgrade.md) — Dashdark Precision UI
   6. [info/09-notification-triggers.md](./info/09-notification-triggers.md) — Real-Time Notification Engine & Trigger Catalog
-  7. [tasks/01-master-tasks.md](./tasks/01-master-tasks.md) — Active Tasks Checklist
+  7. [modules/specs/12-deliverables.md](./modules/specs/12-deliverables.md) — Certificate of Statistical Audit & PDF Streaming
+  8. [tasks/01-master-tasks.md](./tasks/01-master-tasks.md) — Active Tasks Checklist
+  9. [Marketing Web Revamp Blueprint](../../docs/marketing-web/README.md) — Public Landing Page Section Specifications
 
 - **Product & Business Operations**:
   1. [info/01-scope.md](./info/01-scope.md) — Platform Scope & Commercial Tiers
@@ -72,3 +77,4 @@ apps/app/docs/
 - **Quality Assurance & Testing**:
   1. [modules/README.md](./modules/README.md) — Module Matrix
   2. [modules/verifications/](./modules/verifications/) — Verification Audit Logs
+  3. [modules/verifications/12-deliverables-verification.md](./modules/verifications/12-deliverables-verification.md) — Certificate of Statistical Audit Verification

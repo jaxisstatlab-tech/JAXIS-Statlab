@@ -3,6 +3,13 @@
 import React, { useEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import {
+  LockKey,
+  Scales,
+  FileText,
+  ShieldCheck,
+  CheckCircle,
+} from "@phosphor-icons/react";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -10,7 +17,8 @@ if (typeof window !== "undefined") {
 
 const SECURITY_PILLARS = [
   {
-    code: "SEC_01 // ANONYMITY",
+    code: "SEC 01 · ANONYMITY",
+    icon: LockKey,
     title: "100% Anonymity & Data Privacy",
     subtitle: "ZERO IDENTITY LEAKAGE",
     desc: "We remove all participant names, student IDs, emails, and school identifiers from your raw data before our analysts begin work. Your participants stay 100% anonymous.",
@@ -21,7 +29,8 @@ const SECURITY_PILLARS = [
     ],
   },
   {
-    code: "SEC_02 // HONEST MATH",
+    code: "SEC 02 · HONEST MATH",
+    icon: Scales,
     title: "We Never Fake or Manipulate Data",
     subtitle: "ZERO P-HACKING POLICY",
     desc: "We never fabricate numbers or alter survey data to force statistical significance. If your results show no significant difference, we provide legitimate academic explanations so your panel respects your research integrity.",
@@ -32,7 +41,8 @@ const SECURITY_PILLARS = [
     ],
   },
   {
-    code: "SEC_03 // OWNERSHIP",
+    code: "SEC 03 · OWNERSHIP",
+    icon: FileText,
     title: "You Own 100% of Your Research & Code",
     subtitle: "STRICT NON-DISCLOSURE AGREEMENTS",
     desc: "Every JAXIS statistician signs a legally binding Non-Disclosure Agreement (NDA). Your data, analysis scripts, and findings belong 100% to you. We never publish or claim co-authorship.",
@@ -43,7 +53,8 @@ const SECURITY_PILLARS = [
     ],
   },
   {
-    code: "SEC_04 // ESCROW",
+    code: "SEC 04 · ESCROW PROTECTION",
+    icon: ShieldCheck,
     title: "Safe Escrow Payment Protection",
     subtitle: "VERIFIED BEFORE FINAL RELEASE",
     desc: "Your payment is held safely in escrow upon project agreement. Deliverables are only released once an independent Senior QA Lead validates 100% decimal accuracy.",
@@ -78,7 +89,7 @@ export default function Security() {
 
       // 2. Security Cards Entry
       gsap.fromTo(
-        ".security-card",
+        ".security-card-box",
         { opacity: 0, y: 35 },
         {
           opacity: 1,
@@ -87,7 +98,7 @@ export default function Security() {
           stagger: 0.1,
           ease: "power3.out",
           scrollTrigger: {
-            trigger: ".security-grid",
+            trigger: ".security-grid-wrap",
             start: "top 85%",
             once: true,
           },
@@ -102,248 +113,105 @@ export default function Security() {
     <section
       id="security"
       ref={sectionRef}
-      style={{
-        position: "relative",
-        backgroundColor: "#010114",
-        color: "#FFFFFF",
-        padding: "6rem 2rem 8rem 2rem",
-        zIndex: 10,
-      }}
+      className="relative bg-[#010114] text-white py-24 sm:py-32 px-6 z-10"
     >
-      <div style={{ maxWidth: "1280px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+      <div className="max-w-[1280px] mx-auto relative z-10">
         
         {/* Header Block */}
-        <div
-          className="security-header"
-          style={{
-            borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
-            paddingBottom: "2.5rem",
-            marginBottom: "4rem",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "2.5rem",
-            alignItems: "flex-end",
-          }}
-        >
+        <div className="security-header border-b border-white/10 pb-10 mb-12 grid grid-cols-1 lg:grid-cols-2 gap-6 items-end">
           <div>
-            <span
-              style={{
-                fontFamily: "var(--font-mono), monospace",
-                fontSize: "0.72rem",
-                letterSpacing: "0.14em",
-                color: "#CC6600",
-                textTransform: "uppercase",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginBottom: "0.75rem",
-                fontWeight: 600,
-              }}
-            >
-              <span style={{ display: "inline-block", width: "6px", height: "6px", backgroundColor: "#CC6600" }} />
-              SECTION // 05 — PRIVACY & INTEGRITY
-            </span>
+            <div className="text-[10px] font-mono text-white/40 tracking-[0.18em] uppercase mb-3">
+              JAXIS STATLAB · DATA PRIVACY & RESEARCH ETHICS
+            </div>
+            <div className="text-xs font-mono text-[#CC6600] tracking-wider uppercase font-semibold flex items-center gap-2 mb-3">
+              <span className="inline-block w-1.5 h-1.5 bg-[#CC6600]" />
+              SECTION 05 · PRIVACY & INTEGRITY
+            </div>
 
-            <h2
-              style={{
-                fontFamily: "var(--font-sans), sans-serif",
-                fontSize: "clamp(2.2rem, 5vw, 3.6rem)",
-                fontWeight: 300,
-                lineHeight: 1.08,
-                letterSpacing: "-0.03em",
-                margin: 0,
-                color: "#FFFFFF",
-              }}
-            >
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-sans font-light tracking-tight text-white leading-tight">
               Your Research Data Is Safe.
               <br />
-              <span style={{ color: "#38bdf8", fontWeight: 400 }}>
+              <span className="text-[#38bdf8] font-normal">
                 Guaranteed 100%.
               </span>
             </h2>
           </div>
 
           <div>
-            <p
-              style={{
-                fontFamily: "var(--font-sans), sans-serif",
-                fontSize: "0.88rem",
-                lineHeight: 1.72,
-                color: "rgba(255, 255, 255, 0.70)",
-                margin: 0,
-                maxWidth: "480px",
-              }}
-            >
+            <p className="text-sm sm:text-base font-sans text-white/70 leading-relaxed max-w-lg">
               We protect your student identity, intellectual property, and academic reputation with four strict privacy and ethical guarantees.
             </p>
           </div>
         </div>
 
         {/* 2x2 Security Grid */}
-        <div
-          className="security-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))",
-            gap: "2rem",
-            marginBottom: "4rem",
-          }}
-        >
-          {SECURITY_PILLARS.map((item, idx) => (
-            <div
-              key={idx}
-              className="security-card"
-              style={{
-                backgroundColor: "rgba(2, 11, 34, 0.85)",
-                border: "1px solid rgba(255, 255, 255, 0.12)",
-                padding: "2.25rem 2rem",
-                borderRadius: 0,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                minHeight: "290px",
-                position: "relative",
-                transition: "background 0.25s ease, border-color 0.25s ease",
-              }}
-            >
-              {/* Corner crosshairs */}
-              <span style={{ position: "absolute", top: "5px", left: "5px", fontFamily: "monospace", fontSize: "9px", color: "rgba(255,255,255,0.20)" }}>+</span>
-              <span style={{ position: "absolute", top: "5px", right: "5px", fontFamily: "monospace", fontSize: "9px", color: "rgba(255,255,255,0.20)" }}>+</span>
-              <span style={{ position: "absolute", bottom: "5px", left: "5px", fontFamily: "monospace", fontSize: "9px", color: "rgba(255,255,255,0.20)" }}>+</span>
-              <span style={{ position: "absolute", bottom: "5px", right: "5px", fontFamily: "monospace", fontSize: "9px", color: "rgba(255,255,255,0.20)" }}>+</span>
-
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-                    paddingBottom: "0.85rem",
-                    marginBottom: "1.25rem",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: "0.72rem",
-                      color: "#CC6600",
-                      letterSpacing: "0.12em",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {item.code}
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: "0.62rem",
-                      color: "#38bdf8",
-                      letterSpacing: "0.06em",
-                      padding: "2px 8px",
-                      backgroundColor: "rgba(56, 189, 248, 0.08)",
-                      border: "1px solid rgba(56, 189, 248, 0.25)",
-                    }}
-                  >
-                    {item.badge}
-                  </span>
-                </div>
-
-                <h3
-                  style={{
-                    fontFamily: "var(--font-sans), sans-serif",
-                    fontSize: "1.35rem",
-                    fontWeight: 500,
-                    color: "#FFFFFF",
-                    letterSpacing: "-0.01em",
-                    margin: "0 0 0.5rem 0",
-                  }}
-                >
-                  {item.title}
-                </h3>
-
-                <p
-                  style={{
-                    fontFamily: "var(--font-sans), sans-serif",
-                    fontSize: "0.84rem",
-                    lineHeight: 1.65,
-                    color: "rgba(255, 255, 255, 0.70)",
-                    margin: "0 0 1.5rem 0",
-                  }}
-                >
-                  {item.desc}
-                </p>
-              </div>
-
-              {/* Spec Rows */}
+        <div className="security-grid-wrap grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          {SECURITY_PILLARS.map((item, idx) => {
+            const Icon = item.icon;
+            return (
               <div
-                style={{
-                  borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-                  paddingTop: "0.85rem",
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "8px",
-                }}
+                key={idx}
+                className="security-card-box bg-[#01142B] border border-white/10 rounded-[2px] p-6 sm:p-8 flex flex-col justify-between relative hover:border-white/20 transition-all duration-200"
               >
-                {item.specs.map((spec, sIdx) => (
-                  <div
-                    key={sIdx}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "2px",
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: "0.64rem",
-                      padding: "5px 8px",
-                      backgroundColor: "rgba(255, 255, 255, 0.02)",
-                      borderLeft: "1px solid rgba(56, 189, 248, 0.40)",
-                    }}
-                  >
-                    <span style={{ color: "rgba(255, 255, 255, 0.40)", letterSpacing: "0.04em", fontSize: "0.56rem" }}>
-                      {spec.label}
-                    </span>
-                    <span style={{ color: "#FFFFFF", fontWeight: 500 }}>
-                      {spec.value}
+                {/* Corner crosshairs */}
+                <span className="absolute top-1.5 left-2 font-mono text-[9px] text-white/20 select-none">+</span>
+                <span className="absolute top-1.5 right-2 font-mono text-[9px] text-white/20 select-none">+</span>
+                <span className="absolute bottom-1.5 left-2 font-mono text-[9px] text-white/20 select-none">+</span>
+                <span className="absolute bottom-1.5 right-2 font-mono text-[9px] text-white/20 select-none">+</span>
+
+                <div>
+                  <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-5 gap-2">
+                    <div className="flex items-center gap-2">
+                      <Icon size={18} weight="fill" className="text-[#CC6600] shrink-0" />
+                      <span className="font-mono text-xs text-[#CC6600] tracking-wider font-semibold">
+                        {item.code}
+                      </span>
+                    </div>
+
+                    <span className="font-mono text-[10px] text-[#38bdf8] tracking-wider uppercase px-2 py-0.5 bg-[#38bdf8]/10 border border-[#38bdf8]/25 rounded-[2px]">
+                      {item.badge}
                     </span>
                   </div>
-                ))}
+
+                  <h3 className="text-xl sm:text-2xl font-sans font-normal text-white mb-2 tracking-tight">
+                    {item.title}
+                  </h3>
+
+                  <p className="text-sm font-sans text-white/70 leading-relaxed mb-6">
+                    {item.desc}
+                  </p>
+                </div>
+
+                {/* Spec Rows */}
+                <div className="border-t border-white/10 pt-4 grid grid-cols-2 gap-2">
+                  {item.specs.map((spec, sIdx) => (
+                    <div
+                      key={sIdx}
+                      className="p-2 bg-white/[0.02] border-l border-sky-400/40 font-mono flex flex-col gap-0.5"
+                    >
+                      <span className="text-white/40 tracking-wider text-[9px] uppercase">
+                        {spec.label}
+                      </span>
+                      <span className="text-xs text-white font-medium tracking-wide">
+                        {spec.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Security Matrix Certification Footer */}
-        <div
-          style={{
-            paddingTop: "1.5rem",
-            borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "1rem",
-          }}
-        >
-          <span
-            style={{
-              fontFamily: "var(--font-mono), monospace",
-              fontSize: "0.64rem",
-              color: "rgba(255, 255, 255, 0.40)",
-              letterSpacing: "0.1em",
-            }}
-          >
-            SYS // STRICT_NDA_LOCK // PII_CLEANSED // ZERO_P_HACKING_POLICY // JAXIS_SEC
+        <div className="pt-6 border-t border-white/10 flex justify-between items-center flex-wrap gap-4">
+          <span className="font-mono text-[10px] text-white/40 tracking-wider uppercase">
+            SYS · STRICT NDA LOCK · PII CLEANSED · ZERO DATA MANIPULATION · JAXIS SEC
           </span>
 
-          <span
-            style={{
-              fontFamily: "var(--font-mono), monospace",
-              fontSize: "0.64rem",
-              color: "#38bdf8",
-              letterSpacing: "0.08em",
-            }}
-          >
-            RULE_ETH_01 & RULE_REL_01 VERIFIED ✓
+          <span className="font-mono text-[10px] text-[#38bdf8] tracking-wider uppercase flex items-center gap-1.5">
+            <CheckCircle size={12} weight="fill" className="text-emerald-400" />
+            ETHICAL INTEGRITY STANDARDS [VERIFIED]
           </span>
         </div>
 

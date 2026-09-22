@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
-import { Inter } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import SmoothScroll from "./components/layout/SmoothScroll";
 
-const disketMono = localFont({
-  src: "./fonts/Disket-Mono-Regular.ttf",
-  variable: "--font-disket",
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sans-custom",
   display: "swap",
 });
 
-const inter = Inter({
+const ibmPlexMono = IBM_Plex_Mono({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-mono-custom",
   display: "swap",
 });
 
@@ -103,7 +104,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${disketMono.variable} ${inter.variable}`}
+      className={`${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
       style={{ backgroundColor: "#010114" }}
     >
       <head>

@@ -14,14 +14,11 @@ const STACKED_CARDS: StackedCardData[] = [
   {
     id: "intake-diagnostics",
     step: "01",
-    badge: "DELIVERABLE 01 // DATA CLEANING",
+    badge: "DELIVERABLE 01 · DATA CLEANING",
     title: "Spreadsheet Cleaning & Data Health Checks",
     subtitle:
       "We organize messy survey spreadsheets, clean up duplicate or invalid entries, and ensure your data is 100% mathematically valid before testing.",
     accent: "#CC6600",
-    bgGradient: "rgba(2, 11, 34, 0.96)",
-    tabBg: "rgba(2, 16, 48, 0.98)",
-    borderColor: "rgba(255, 255, 255, 0.12)",
     pills: [
       "Survey Data Cleanup",
       "Missing Response Handling",
@@ -63,14 +60,11 @@ const STACKED_CARDS: StackedCardData[] = [
   {
     id: "inferential-modeling",
     step: "02",
-    badge: "DELIVERABLE 02 // STATISTICAL TESTS",
+    badge: "DELIVERABLE 02 · STATISTICAL TESTS",
     title: "Accurate Calculations & Ready APA 7th Tables",
     subtitle:
       "We compute every demographic profile, hypothesis test, and regression model, then format them into ready-to-paste APA 7th Edition tables.",
     accent: "#CC6600",
-    bgGradient: "rgba(2, 11, 34, 0.96)",
-    tabBg: "rgba(2, 16, 48, 0.98)",
-    borderColor: "rgba(255, 255, 255, 0.12)",
     pills: [
       "Demographic Profiles & Frequencies",
       "T-Tests & ANOVA Group Comparisons",
@@ -112,14 +106,11 @@ const STACKED_CARDS: StackedCardData[] = [
   {
     id: "qa-verification",
     step: "03",
-    badge: "DELIVERABLE 03 // QUALITY ASSURANCE",
+    badge: "DELIVERABLE 03 · QUALITY ASSURANCE",
     title: "Double-Checked by 2 Independent Statisticians",
     subtitle:
       "No guesswork or solo errors. Your analysis is independently calculated by two separate statisticians to ensure 100% accuracy before you receive it.",
     accent: "#CC6600",
-    bgGradient: "rgba(2, 11, 34, 0.96)",
-    tabBg: "rgba(2, 16, 48, 0.98)",
-    borderColor: "rgba(255, 255, 255, 0.12)",
     pills: [
       "Double-Blind Recalculation",
       "Zero Data Fabrication Policy",
@@ -160,14 +151,11 @@ const STACKED_CARDS: StackedCardData[] = [
   {
     id: "defense-synthesis",
     step: "04",
-    badge: "DELIVERABLE 04 // DEFENSE READINESS",
+    badge: "DELIVERABLE 04 · DEFENSE READINESS",
     title: "Plain-English Speaking Scripts & Mock Defense",
     subtitle:
       "We translate statistical jargon into simple words you can read aloud, and coach you on how to answer tough panel questions with confidence.",
     accent: "#CC6600",
-    bgGradient: "rgba(2, 11, 34, 0.96)",
-    tabBg: "rgba(2, 16, 48, 0.98)",
-    borderColor: "rgba(255, 255, 255, 0.12)",
     pills: [
       "Live 1-on-1 Mock Panel Defense",
       "Top 20 Defense Questions Script",
@@ -248,127 +236,50 @@ export default function Solutions() {
     <section
       id="solutions"
       ref={sectionRef}
-      style={{
-        position: "relative",
-        backgroundColor: "#010114",
-        color: "#FFFFFF",
-        minHeight: "100vh",
-        padding: "6rem 2rem 8rem 2rem",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-      }}
+      className="relative bg-[#010114] text-white min-h-screen py-24 sm:py-32 px-6 flex flex-col justify-center"
     >
-      <div
-        style={{
-          maxWidth: "1280px",
-          margin: "0 auto",
-          position: "relative",
-          zIndex: 1,
-          width: "100%",
-        }}
-      >
+      <div className="max-w-[1280px] mx-auto relative z-10 w-full">
         {/* Section Header */}
-        <div
-          style={{
-            textAlign: "center",
-            marginBottom: "2rem",
-            paddingTop: "0",
-            paddingBottom: "0",
-          }}
-        >
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              background: "rgba(204, 102, 0, 0.08)",
-              border: "1px solid rgba(204, 102, 0, 0.3)",
-              padding: "0.25rem 0.8rem",
-              borderRadius: "0px",
-              marginBottom: "0.75rem",
-            }}
-          >
-            <span
-              style={{
-                width: "6px",
-                height: "6px",
-                background: "var(--accent-orange)",
-              }}
-            />
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "0.7rem",
-                letterSpacing: "0.15em",
-                color: "var(--accent-orange)",
-                textTransform: "uppercase",
-                fontWeight: 600,
-              }}
-            >
-              SECTION 03 // WHAT YOU RECEIVE
+        <div className="text-center mb-10">
+          <div className="text-[10px] font-mono text-white/40 tracking-[0.18em] uppercase mb-3">
+            JAXIS STATLAB · COMPLETE RESEARCH DELIVERABLES
+          </div>
+
+          <div className="inline-flex items-center gap-2 bg-[#CC6600]/10 border border-[#CC6600]/30 px-3 py-1 rounded-[2px] mb-3">
+            <span className="w-1.5 h-1.5 bg-[#CC6600] inline-block" />
+            <span className="font-mono text-xs tracking-wider text-[#CC6600] uppercase font-semibold">
+              SECTION 03 · WHAT YOU RECEIVE
             </span>
           </div>
 
-          <h2
-            style={{
-              fontFamily: "var(--font-sans), sans-serif",
-              fontSize: "clamp(1.85rem, 3.5vw, 2.8rem)",
-              fontWeight: 300,
-              letterSpacing: "-0.03em",
-              lineHeight: 1.15,
-              maxWidth: "1050px",
-              margin: "0 auto",
-              color: "#FFFFFF",
-            }}
-          >
+          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-sans font-light tracking-tight text-white leading-tight max-w-4xl mx-auto">
             Complete Deliverables.{" "}
-            <span style={{ color: "var(--text-secondary)" }}>
+            <span className="text-white/60 font-normal">
               Zero Statistical Anxiety.
             </span>
           </h2>
 
-          <p
-            style={{
-              fontFamily: "var(--font-sans), sans-serif",
-              fontSize: "0.88rem",
-              lineHeight: 1.55,
-              color: "var(--text-secondary)",
-              maxWidth: "880px",
-              margin: "0.5rem auto 0",
-            }}
-          >
+          <p className="text-sm sm:text-base font-sans text-white/70 leading-relaxed max-w-2xl mx-auto mt-3">
             Explore the 4 core deliverables included in your JAXIS package — from cleaned data spreadsheets to your personal thesis defense script.
           </p>
         </div>
 
         {/* ── Cards Stacking Deck ── */}
-        <div
-          className="stacked-cards-deck"
-          style={{
-            position: "relative",
-            width: "100%",
-            minHeight: "560px",
-            paddingBottom: "3rem",
-          }}
-        >
+        <div className="stacked-cards-deck relative w-full min-h-[560px] pb-12">
           {STACKED_CARDS.map((card, idx) => (
             <div
               key={card.id}
               ref={(el) => {
                 cardWrapperRefs.current[idx] = el;
               }}
+              className={[
+                "w-full will-change-transform",
+                idx === 0 ? "relative" : "absolute left-0 right-0",
+              ].join(" ")}
               style={{
-                position: idx === 0 ? "relative" : "absolute",
                 top: idx === 0 ? 0 : `${idx * 52}px`,
-                left: 0,
-                right: 0,
                 zIndex: idx + 1,
-                width: "100%",
-                willChange: "transform",
                 transform: "translate3d(0, 0, 0)",
-                backfaceVisibility: "hidden",
-                WebkitBackfaceVisibility: "hidden",
               }}
             >
               <SolutionCard card={card} index={idx} isStaticLayout={true} />

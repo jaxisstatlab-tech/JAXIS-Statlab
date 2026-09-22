@@ -152,6 +152,12 @@ model RevisionRequest {
 2. **Client Revision Requests**: `submitClientRevision` triggers real-time alerts to Admin and assigned Statistician (`REVISION_REQUEST`), opening directly to `/dashboard/admin/revisions`.
 3. **Warranty Classification**: `classifyRevision` triggers real-time alerts to the Client with explicit next steps and updates the project state across active client browser tabs via the `jaxis:study-updated` DOM event.
 
+### 4.6 Certificate of Statistical Audit & Server-Side PDF Streaming
+1. **Client Certificate Preview**: Client deliverables desk renders `<StatisticalAuditCertificate />` inside an interactive modal (`CertificateModal.tsx`) once deliverables are released.
+2. **Dynamic Signature & Seal Verification**: Certificate binds Study Title, Client Name, Package Tier, Lead Statistician, and Senior QA Lead credentials with verified signature assets (`/signatures/qa-lead-maria.png`) and JAXIS seal (`/jaxis-seal.png`). Signature padding limits strictly enforced to avoid layout overflow.
+3. **Server-Side PDF Streaming Endpoint**: Direct download requests to `/api/deliverables/certificate?projectId=...` stream vector PDF output generated dynamically via `@react-pdf/renderer` (`generateCertificatePdf.ts`) with security headers (`Content-Disposition: attachment; filename="JAXIS-Audit-Certificate-..."`).
+4. **Verification QR Code**: Embedded QR code resolves directly to the study verification portal for academic panel confirmation.
+
 ---
 
 ## 5. Quality Gate Summary

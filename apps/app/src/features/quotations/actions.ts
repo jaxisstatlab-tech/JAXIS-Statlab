@@ -34,25 +34,101 @@ import {
   type ClientQuoteEntry,
 } from "./schemas";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
-import { type QuotationStatus, type LineItemType, type ProjectStatus, type AddOnName, Prisma } from "@prisma/client";
+import { type QuotationStatus, type LineItemType, type ProjectStatus, type AddOnName, PackageName, Prisma } from "@prisma/client";
 
 const DEV_QUOTATIONS_FILE = path.join(process.cwd(), ".dev-quotations.json");
 const DEV_PROJECTS_FILE = path.join(process.cwd(), ".dev-projects.json");
-const DEV_CATALOG_FILE = path.join(process.cwd(), ".dev-catalog.json");
+
+function getDevCatalogFilePaths(): string[] {
+  const cwd = process.cwd();
+  return [
+    path.join(cwd, ".dev-catalog.json"),
+    path.join(cwd, "apps", "app", ".dev-catalog.json"),
+  ];
+}
+
+function writeDevCatalogFile(data: CommercialCatalogData): void {
+  const serialized = JSON.stringify(data, null, 2);
+  for (const filePath of getDevCatalogFilePaths()) {
+    try {
+      const dir = path.dirname(filePath);
+      if (fs.existsSync(dir)) {
+        fs.writeFileSync(filePath, serialized, "utf-8");
+      }
+    } catch (err) {
+      console.warn(`[commercial-catalog] Dev file write skipped at ${filePath}:`, err);
+    }
+  }
+}
+
+function deleteDevCatalogFile(): void {
+  for (const filePath of getDevCatalogFilePaths()) {
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (err) {
+      console.warn(`[commercial-catalog] Dev file delete skipped at ${filePath}:`, err);
+    }
+  }
+}
 
 export async function getCommercialCatalog(): Promise<CommercialCatalogData> {
-  try {
-    if (fs.existsSync(DEV_CATALOG_FILE)) {
-      const data = fs.readFileSync(DEV_CATALOG_FILE, "utf-8");
-      return JSON.parse(data);
-    }
-  } catch {
-    // Fall back to defaults
-  }
-  return {
-    packages: PACKAGES_CATALOG,
-    addOns: ADDONS_CATALOG,
+  const catalog: CommercialCatalogData = {
+    packages: { ...PACKAGES_CATALOG },
+    addOns: { ...ADDONS_CATALOG },
   };
+
+  // 1. Merge persisted dev file if available (custom packages, addons, and metadata)
+  try {
+    for (const filePath of getDevCatalogFilePaths()) {
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, "utf-8");
+        const parsed = JSON.parse(raw);
+        if (parsed.packages && typeof parsed.packages === "object") {
+          catalog.packages = { ...catalog.packages, ...parsed.packages };
+        }
+        if (parsed.addOns && typeof parsed.addOns === "object") {
+          catalog.addOns = { ...catalog.addOns, ...parsed.addOns };
+        }
+        break;
+      }
+    }
+  } catch (err) {
+    console.warn("[getCommercialCatalog] Error reading dev catalog file:", err);
+  }
+
+  // 2. Overlay live PostgreSQL database records (canonical source of truth for pricing)
+  try {
+    const dbConfigs = await withDbTimeout(
+      db.packagePriceConfig.findMany(),
+      3000
+    );
+
+    for (const config of dbConfigs) {
+      const pkgKey = config.packageName;
+      if (catalog.packages[pkgKey]) {
+        const minPrice = Number(config.minPrice);
+        const maxPrice = config.maxPrice !== null && config.maxPrice !== undefined ? Number(config.maxPrice) : null;
+        const currentDefault = catalog.packages[pkgKey].defaultPrice;
+
+        catalog.packages[pkgKey] = {
+          ...catalog.packages[pkgKey],
+          minPrice,
+          maxPrice,
+          isUpfront: config.isUpfront,
+          defaultPrice: Math.max(
+            minPrice,
+            maxPrice !== null ? Math.min(currentDefault, maxPrice) : currentDefault
+          ),
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("[getCommercialCatalog] DB query fallback to defaults:", err);
+  }
+
+  return catalog;
 }
 
 export async function saveCommercialCatalog(
@@ -76,16 +152,61 @@ export async function saveCommercialCatalog(
   }
 
   try {
-    fs.writeFileSync(DEV_CATALOG_FILE, JSON.stringify(data, null, 2), "utf-8");
-    revalidatePath("/dashboard/admin/quotations");
+    // 1. Atomic Database Persistence for standard packages
+    const validPackageNames: string[] = Object.values(PackageName);
+    const upsertPromises = [];
+
+    for (const [key, pkg] of Object.entries(data.packages || {})) {
+      if (validPackageNames.includes(key)) {
+        upsertPromises.push(
+          db.packagePriceConfig.upsert({
+            where: { packageName: key as PackageName },
+            update: {
+              minPrice: new Prisma.Decimal(pkg.minPrice),
+              maxPrice: pkg.maxPrice !== null && pkg.maxPrice !== undefined ? new Prisma.Decimal(pkg.maxPrice) : null,
+              isUpfront: Boolean(pkg.isUpfront),
+            },
+            create: {
+              packageName: key as PackageName,
+              minPrice: new Prisma.Decimal(pkg.minPrice),
+              maxPrice: pkg.maxPrice !== null && pkg.maxPrice !== undefined ? new Prisma.Decimal(pkg.maxPrice) : null,
+              isUpfront: Boolean(pkg.isUpfront),
+            },
+          })
+        );
+      }
+    }
+
+    if (upsertPromises.length > 0) {
+      await withDbTimeout(
+        db.$transaction(upsertPromises),
+        8000
+      );
+    }
+
+    // 2. Dev file fallback synchronization (best-effort, non-blocking)
+    writeDevCatalogFile(data);
+
+    // 3. Invalidate relevant dashboard paths
+    try {
+      revalidatePath("/dashboard/admin/quotations");
+      revalidatePath("/dashboard/ceo");
+    } catch {
+      // Non-fatal if called without active request context
+    }
+
     return {
       success: true,
       data,
     };
-  } catch {
+  } catch (err: unknown) {
+    console.error("[saveCommercialCatalog] Failed to persist commercial catalog changes:", err);
     return {
       success: false,
-      error: { code: "SERVER_ERROR", message: "Failed to persist commercial catalog changes." },
+      error: {
+        code: "SERVER_ERROR",
+        message: err instanceof Error ? `Failed to save commercial catalog changes: ${err.message}` : "Failed to persist commercial catalog changes.",
+      },
     };
   }
 }
@@ -109,19 +230,54 @@ export async function resetCommercialCatalog(): Promise<ActionResponse<Commercia
   }
 
   try {
-    if (fs.existsSync(DEV_CATALOG_FILE)) {
-      fs.unlinkSync(DEV_CATALOG_FILE);
-    }
+    // 1. Reset standard packages in Database
+    const defaultPackageConfigs = [
+      { packageName: PackageName.JX_01_DATACHECK, minPrice: 1000, maxPrice: 1000, isUpfront: true },
+      { packageName: PackageName.JX_02_START, minPrice: 1500, maxPrice: 1800, isUpfront: true },
+      { packageName: PackageName.JX_03_CORE, minPrice: 1800, maxPrice: 3000, isUpfront: false },
+      { packageName: PackageName.JX_04_ADVANCED, minPrice: 3000, maxPrice: null, isUpfront: false },
+    ];
+
+    const resetPromises = defaultPackageConfigs.map((cfg) =>
+      db.packagePriceConfig.upsert({
+        where: { packageName: cfg.packageName },
+        update: {
+          minPrice: new Prisma.Decimal(cfg.minPrice),
+          maxPrice: cfg.maxPrice !== null ? new Prisma.Decimal(cfg.maxPrice) : null,
+          isUpfront: cfg.isUpfront,
+        },
+        create: {
+          packageName: cfg.packageName,
+          minPrice: new Prisma.Decimal(cfg.minPrice),
+          maxPrice: cfg.maxPrice !== null ? new Prisma.Decimal(cfg.maxPrice) : null,
+          isUpfront: cfg.isUpfront,
+        },
+      })
+    );
+
+    await withDbTimeout(db.$transaction(resetPromises), 8000);
+
+    // 2. Clean up dev file if present
+    deleteDevCatalogFile();
+
     const defaultData: CommercialCatalogData = {
       packages: PACKAGES_CATALOG,
       addOns: ADDONS_CATALOG,
     };
-    revalidatePath("/dashboard/admin/quotations");
+
+    try {
+      revalidatePath("/dashboard/admin/quotations");
+      revalidatePath("/dashboard/ceo");
+    } catch {
+      // Non-fatal
+    }
+
     return {
       success: true,
       data: defaultData,
     };
-  } catch {
+  } catch (err: unknown) {
+    console.error("[resetCommercialCatalog] Failed to reset catalog:", err);
     return {
       success: false,
       error: { code: "SERVER_ERROR", message: "Failed to reset catalog." },
@@ -219,8 +375,11 @@ export async function createQuotation(
   const { projectId, packageName, basePrice, addOns, customDownpayment, notes, expiresInDays } =
     parsed.data;
 
+  // Fetch commercial catalog with DB overlays
+  const catalog = await getCommercialCatalog();
+
   // Validate package base price
-  const priceValidation = validatePackageBasePrice(packageName, basePrice);
+  const priceValidation = validatePackageBasePrice(packageName, basePrice, catalog.packages);
   if (!priceValidation.valid) {
     return {
       success: false,
@@ -232,12 +391,15 @@ export async function createQuotation(
   }
 
   // Calculate pricing breakdown & downpayment rules (RULE_QUO_02)
-  const breakdown = calculateQuotationTotals({
-    packageName,
-    basePrice,
-    addOns,
-    customDownpayment,
-  });
+  const breakdown = calculateQuotationTotals(
+    {
+      packageName,
+      basePrice,
+      addOns,
+      customDownpayment,
+    },
+    catalog
+  );
 
   const expiresAtDate = computeQuotationExpiry(expiresInDays);
 
@@ -445,8 +607,11 @@ export async function updateQuotation(
   const { quotationId, packageName, basePrice, addOns, customDownpayment, notes, expiresInDays } =
     parsed.data;
 
+  // Fetch commercial catalog with DB overlays
+  const catalog = await getCommercialCatalog();
+
   // Validate price guardrails
-  const priceValidation = validatePackageBasePrice(packageName, basePrice);
+  const priceValidation = validatePackageBasePrice(packageName, basePrice, catalog.packages);
   if (!priceValidation.valid) {
     return {
       success: false,
@@ -454,12 +619,15 @@ export async function updateQuotation(
     };
   }
 
-  const breakdown = calculateQuotationTotals({
-    packageName,
-    basePrice,
-    addOns,
-    customDownpayment,
-  });
+  const breakdown = calculateQuotationTotals(
+    {
+      packageName,
+      basePrice,
+      addOns,
+      customDownpayment,
+    },
+    catalog
+  );
 
   const expiresAtDate = computeQuotationExpiry(expiresInDays);
 

@@ -696,6 +696,31 @@
 - [x] Integrated real-time notification dispatching across all payroll mutations (`saveCompanyPayrollSchedule`, `saveRoleCompensationConfig`, `saveStaffCompensationOverride`, `generateBatchPayslips`, `disbursePayslip`, `approvePayslip`).
 - [x] Authored master operational specification in `docs/info/09-notification-triggers.md`.
 
+### Task 20 — Certificate of Statistical Audit & Server-Side PDF Streaming
+- [x] Implemented official **Certificate of Statistical Audit** (`StatisticalAuditCertificate.tsx`) and interactive modal viewer (`CertificateModal.tsx`) on client deliverables desk.
+- [x] Built server-side vector PDF generation utility (`generateCertificatePdf.ts`) using `@react-pdf/renderer` with official JAXIS seal (`/jaxis-seal.png`), QR validation code, and QA Lead Maria verified signature asset (`/signatures/qa-lead-maria.png`).
+- [x] Implemented strict signature image padding limits to prevent layout overflow or multi-page spillage.
+- [x] Created authenticated server-side PDF streaming endpoint (`/api/deliverables/certificate/route.ts`) returning binary PDF with download disposition headers.
+- [x] Updated Module 12 specification (`docs/modules/specs/12-deliverables.md`) and verification log (`docs/modules/verifications/12-deliverables-verification.md`).
+
+### Task 21 — Unified Access Control Engine & Secure File Preview
+- [x] Centralized cross-role access control in [`src/lib/access-control.ts`](../../src/lib/access-control.ts) with strict assertions (`assertStudyAccess`, `assertProjectParticipant`, `assertAdminOrCeo`, `assertFinanceAccess`, `assertQaLeadAccess`, `assertStatisticianAccess`, `assertCanDownloadDeliverable`).
+- [x] Secured server actions across deliverables, assignments, defenselab, finance, messaging, payments, projects, and SOW workflows.
+- [x] Implemented secure server-side file preview streaming endpoint (`/api/files/preview/route.ts`) with MIME validation and session authorization.
+- [x] Codified access control and secure file streaming standards in `docs/info/08-engineering-standards.md`.
+
+### Task 22 — Staff Roster Client & Role Profile Workbenches
+- [x] Implemented interactive administrative staff directory (`StaffRosterClient.tsx`) at `/dashboard/admin/staff` with role filtering, specialization badges, and assignment counters.
+- [x] Standardized role profile workbenches across Admin, CEO, Client, Finance, and Senior QA Lead (`app/dashboard/*/profile/page.tsx`).
+- [x] Refactored `NotificationDrawer.tsx` to strictly scope in-app notifications by `recipientId` and eliminate cross-account duplicate alerts.
+- [x] Upgraded password reset flow with dynamic `PasswordRequirements` checklist, prevention of old password reuse, and Enterprise Orange dark theme email template.
+
+### Task 23 — Public Marketing Web Documentation & Revamp Roadmap
+- [x] Documented complete landing page architecture, behavior, and copywriting in `apps/web/docs/main-page.md`.
+- [x] Created canonical Section-by-Section Revamp Blueprint in `apps/web/docs/section-by-section-revamp.md` enforcing Dashdark precision UI standards.
+- [x] Generated 8 section specification documents (`00-navigation-bar.md` through `07-footer-and-cta.md`) in `docs/marketing-web/`.
+- [x] Updated `apps/app/docs/README.md` and monorepo documentation portals to index the marketing web revamp suite.
+
 ---
 
 ## Roadmap Status Matrix

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { ShieldCheck, CheckCircle } from "@phosphor-icons/react";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -57,8 +58,8 @@ function MethodologyLockCAD() {
       <text x="20" y="130" fill="rgba(255,255,255,0.50)" fontSize="8" fontFamily="monospace" letterSpacing="0.6">
         SOW BOUNDS: [FROZEN]
       </text>
-      <text x="230" y="130" fill="rgba(255,255,255,0.50)" fontSize="8" fontFamily="monospace" letterSpacing="0.6">
-        POWER: 1-β = .80 ✓
+      <text x="220" y="130" fill="rgba(255,255,255,0.50)" fontSize="8" fontFamily="monospace" letterSpacing="0.6">
+        POWER: 1-β = .80 [PASS]
       </text>
     </svg>
   );
@@ -98,7 +99,7 @@ function GaussianPreFlightLineArt() {
         +1.96σ
       </text>
       <text x="20" y="26" fill="#38bdf8" fontSize="8" fontFamily="monospace" letterSpacing="0.6">
-        SHAPIRO-WILK: P=.240 [NORMAL] ✓
+        SHAPIRO-WILK: P=.240 [NORMAL] [PASS]
       </text>
     </svg>
   );
@@ -143,7 +144,7 @@ function DualPassQALineArt() {
         TRACE_02: SENIOR QA (REPLICATED)
       </text>
       <text x="20" y="128" fill="#38bdf8" fontSize="8" fontFamily="monospace" letterSpacing="0.6">
-        CONCORDANCE: r=0.998 [100% MATCH] ✓
+        CONCORDANCE: r=0.998 [100% MATCH] [PASS]
       </text>
     </svg>
   );
@@ -185,10 +186,10 @@ function RegressionDefenseLineArt() {
       ))}
 
       <text x="48" y="26" fill="#38bdf8" fontSize="8" fontFamily="monospace" letterSpacing="0.6">
-        FIT: R²=0.942 | P&lt;.001 ✓
+        FIT: R²=0.942 | P&lt;.001 [PASS]
       </text>
-      <text x="215" y="128" fill="#CC6600" fontSize="8" fontFamily="monospace" letterSpacing="0.6">
-        RESIDUALS: GAUSSIAN NORMAL ✓
+      <text x="195" y="128" fill="#CC6600" fontSize="8" fontFamily="monospace" letterSpacing="0.6">
+        RESIDUALS: GAUSSIAN NORMAL [PASS]
       </text>
     </svg>
   );
@@ -199,6 +200,7 @@ function RegressionDefenseLineArt() {
 interface GateData {
   code: string;
   index: string;
+  stepSummary: string;
   tag: string;
   title: string;
   subtitle: string;
@@ -212,6 +214,7 @@ const GATES: GateData[] = [
   {
     code: "STEP_01",
     index: "01",
+    stepSummary: "Send Data & Free Review",
     tag: "FREE INITIAL REVIEW",
     title: "Send Us Your Chapter 1 & Data",
     subtitle: "EXACT TEST MATCHING & FREE QUOTE",
@@ -228,6 +231,7 @@ const GATES: GateData[] = [
   {
     code: "STEP_02",
     index: "02",
+    stepSummary: "We Clean Your Data",
     tag: "DATA CLEANING & CHECKS",
     title: "We Clean Your Data & Fix Errors",
     subtitle: "SURVEY HEALTH & VALIDITY AUDIT",
@@ -244,6 +248,7 @@ const GATES: GateData[] = [
   {
     code: "STEP_03",
     index: "03",
+    stepSummary: "Two Experts Calculate",
     tag: "2-STATISTICIAN CHECK",
     title: "Two Experts Calculate Your Numbers",
     subtitle: "ZERO CALCULATION ERROR GUARANTEE",
@@ -260,6 +265,7 @@ const GATES: GateData[] = [
   {
     code: "STEP_04",
     index: "04",
+    stepSummary: "Tables & Defense Script",
     tag: "DEFENSE SCRIPT & TABLES",
     title: "You Get Tables & Plain Speaking Scripts",
     subtitle: "READY TO PASTE INTO CHAPTER 4",
@@ -272,6 +278,33 @@ const GATES: GateData[] = [
       { label: "SOURCE CODE", value: "R / PYTHON / SPSS INCLUDED" },
       { label: "DEFENSE SUPPORT", value: "100% READY FOR PANEL", isHighlight: true },
     ],
+  },
+];
+
+const QUALITY_STANDARDS = [
+  {
+    metric: "99.8%",
+    label: "Calculation Precision",
+    desc: "Replication tolerance strictly at 0.00% across dual runs",
+    status: "PASS",
+  },
+  {
+    metric: "100%",
+    label: "Data Health Audit",
+    desc: "Outliers isolated, normality tested, Cronbach cleared",
+    status: "PASS",
+  },
+  {
+    metric: "APA 7th",
+    label: "Manuscript Compliance",
+    desc: "Formatted directly to paste into Chapter 4 with notes",
+    status: "PASS",
+  },
+  {
+    metric: "2-Tier",
+    label: "Independent QA",
+    desc: "Primary statistician + senior reviewer sign-off",
+    status: "PASS",
   },
 ];
 
@@ -331,219 +364,112 @@ export default function Approach() {
     <section
       id="approach"
       ref={sectionRef}
-      style={{
-        backgroundColor: "#010114",
-        color: "#FFFFFF",
-        padding: "6rem 2rem 8rem 2rem",
-        position: "relative",
-        zIndex: 10,
-        borderRadius: 0,
-      }}
+      className="bg-[#010114] text-white py-24 sm:py-32 px-6 relative z-10"
     >
-      <div style={{ maxWidth: "1280px", margin: "0 auto", position: "relative", zIndex: 5 }}>
+      <div className="max-w-[1280px] mx-auto relative z-10">
         
         {/* ── Section Header ── */}
-        <div
-          className="approach-header"
-          style={{
-            borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
-            paddingBottom: "2.5rem",
-            marginBottom: "3.5rem",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "2.5rem",
-            alignItems: "flex-end",
-          }}
-        >
+        <div className="approach-header border-b border-white/10 pb-10 mb-10 grid grid-cols-1 lg:grid-cols-2 gap-6 items-end">
           <div>
-            <div
-              style={{
-                fontFamily: "var(--font-mono), monospace",
-                fontSize: "0.72rem",
-                letterSpacing: "0.14em",
-                color: "#CC6600",
-                textTransform: "uppercase",
-                marginBottom: "0.75rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <span style={{ display: "inline-block", width: "6px", height: "6px", backgroundColor: "#CC6600" }} />
-              SECTION // 02 — HOW WE WORK
+            <div className="text-[10px] font-mono text-white/40 tracking-[0.18em] uppercase mb-3">
+              JAXIS STATLAB · VERIFICATION WORKFLOW
             </div>
-            <h2
-              style={{
-                fontFamily: "var(--font-sans), sans-serif",
-                fontSize: "clamp(2.2rem, 5vw, 3.6rem)",
-                fontWeight: 300,
-                lineHeight: 1.08,
-                letterSpacing: "-0.03em",
-                margin: 0,
-                color: "#FFFFFF",
-              }}
-            >
+            <div className="text-xs font-mono text-[#CC6600] tracking-wider uppercase font-semibold flex items-center gap-2 mb-3">
+              <span className="inline-block w-1.5 h-1.5 bg-[#CC6600]" />
+              SECTION 02 · HOW WE WORK
+            </div>
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-sans font-light tracking-tight text-white leading-tight">
               From Raw Data To
               <br />
-              <span style={{ color: "#38bdf8", fontWeight: 400 }}>Passed Defense.</span>
+              <span className="text-[#38bdf8] font-normal">Passed Defense.</span>
             </h2>
           </div>
 
           <div>
-            <p
-              style={{
-                fontFamily: "var(--font-sans), sans-serif",
-                fontSize: "0.88rem",
-                lineHeight: 1.72,
-                color: "rgba(255, 255, 255, 0.70)",
-                margin: 0,
-                maxWidth: "480px",
-              }}
-            >
+            <p className="text-sm sm:text-base text-white/70 leading-relaxed max-w-lg font-sans">
               Never walk into a panel defense unsure of what your numbers mean. Here is our 4-step process to ensure your research data is 100% accurate, error-free, and easy for you to explain.
             </p>
           </div>
         </div>
 
-        {/* ── Strict 2x2 Architectural Bento Matrix (High Surface Contrast & Tactile Depth) ── */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))",
-            gap: "2rem",
-          }}
-        >
+        {/* ── Syntethic-style Horizontal Step Ribbon ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {GATES.map((gate) => (
+            <div
+              key={`step-${gate.code}`}
+              className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex items-center gap-3.5 hover:border-white/20 transition-colors"
+            >
+              <span className="text-xs font-mono font-bold text-[#CC6600] bg-[#CC6600]/10 border border-[#CC6600]/20 px-2 py-1 rounded-[2px] shrink-0">
+                {gate.index}
+              </span>
+              <div className="min-w-0">
+                <div className="text-[9px] font-mono text-white/40 uppercase tracking-wider">{gate.code}</div>
+                <div className="text-xs font-sans font-medium text-white truncate">{gate.stepSummary}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Strict 2x2 Architectural Bento Matrix ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {GATES.map((gate) => (
             <div
               key={gate.code}
-              className="approach-bento-card"
-              style={{
-                backgroundColor: "rgba(2, 11, 34, 0.85)", // Elevated surface token
-                border: "1px solid rgba(255, 255, 255, 0.12)",
-                padding: "2rem",
-                borderRadius: 0,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                position: "relative",
-              }}
+              className="approach-bento-card bg-[#01142B] border border-white/10 rounded-[2px] p-6 sm:p-8 flex flex-col justify-between relative hover:border-white/20 transition-all duration-200"
             >
               {/* Corner crosshairs */}
-              <span style={{ position: "absolute", top: "5px", left: "5px", fontFamily: "monospace", fontSize: "9px", color: "rgba(255,255,255,0.20)" }}>+</span>
-              <span style={{ position: "absolute", top: "5px", right: "5px", fontFamily: "monospace", fontSize: "9px", color: "rgba(255,255,255,0.20)" }}>+</span>
-              <span style={{ position: "absolute", bottom: "5px", left: "5px", fontFamily: "monospace", fontSize: "9px", color: "rgba(255,255,255,0.20)" }}>+</span>
-              <span style={{ position: "absolute", bottom: "5px", right: "5px", fontFamily: "monospace", fontSize: "9px", color: "rgba(255,255,255,0.20)" }}>+</span>
+              <span className="absolute top-1.5 left-2 font-mono text-[9px] text-white/20 select-none">+</span>
+              <span className="absolute top-1.5 right-2 font-mono text-[9px] text-white/20 select-none">+</span>
+              <span className="absolute bottom-1.5 left-2 font-mono text-[9px] text-white/20 select-none">+</span>
+              <span className="absolute bottom-1.5 right-2 font-mono text-[9px] text-white/20 select-none">+</span>
 
               <div>
                 {/* Top Bar: Gate Index & Deliverable Tag */}
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-                    paddingBottom: "0.85rem",
-                    marginBottom: "1.25rem",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: "0.74rem",
-                      color: "#CC6600",
-                      letterSpacing: "0.12em",
-                      fontWeight: 600,
-                    }}
-                  >
+                <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-5 gap-2">
+                  <span className="font-mono text-xs text-[#CC6600] tracking-wider font-semibold">
                     [{gate.index}] {gate.code}
                   </span>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: "0.64rem",
-                      color: "rgba(255, 255, 255, 0.45)",
-                      letterSpacing: "0.06em",
-                    }}
-                  >
+                  <span className="font-mono text-[10px] text-white/50 tracking-wider uppercase truncate">
                     {gate.deliverableBadge}
                   </span>
                 </div>
 
                 {/* Gate Title */}
-                <h3
-                  style={{
-                    fontFamily: "var(--font-sans), sans-serif",
-                    fontSize: "1.45rem",
-                    fontWeight: 400,
-                    letterSpacing: "-0.01em",
-                    margin: "0 0 0.65rem 0",
-                    color: "#FFFFFF",
-                  }}
-                >
+                <h3 className="text-xl sm:text-2xl font-sans font-normal text-white mb-2 tracking-tight">
                   {gate.title}
                 </h3>
 
                 {/* Gate Description */}
-                <p
-                  style={{
-                    fontFamily: "var(--font-sans), sans-serif",
-                    fontSize: "0.84rem",
-                    lineHeight: 1.65,
-                    color: "rgba(255, 255, 255, 0.70)",
-                    margin: "0 0 1.5rem 0",
-                  }}
-                >
+                <p className="text-sm font-sans text-white/70 leading-relaxed mb-6">
                   {gate.desc}
                 </p>
 
                 {/* CAD Vector Schematic Box */}
-                <div
-                  style={{
-                    backgroundColor: "#00000a",
-                    border: "1px solid rgba(255, 255, 255, 0.08)",
-                    padding: "0.85rem",
-                    marginBottom: "1.5rem",
-                  }}
-                >
+                <div className="bg-[#00000a] border border-white/10 p-3 mb-6 rounded-[2px]">
                   {gate.illustration}
                 </div>
               </div>
 
               {/* Auditable Spec Matrix (2x2 Grid) */}
-              <div
-                style={{
-                  borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-                  paddingTop: "0.85rem",
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "6px",
-                }}
-              >
+              <div className="border-t border-white/10 pt-4 grid grid-cols-2 gap-2">
                 {gate.specs.map((spec, sIdx) => (
                   <div
                     key={sIdx}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "2px",
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: "0.66rem",
-                      padding: "5px 8px",
-                      backgroundColor: "rgba(255, 255, 255, 0.02)",
-                      borderLeft: spec.isHighlight
-                        ? "1px solid #CC6600"
-                        : "1px solid rgba(56, 189, 248, 0.40)",
-                    }}
+                    className={[
+                      "flex flex-col gap-0.5 font-mono p-2 bg-white/[0.02] border-l",
+                      spec.isHighlight
+                        ? "border-[#CC6600]"
+                        : "border-sky-400/40",
+                    ].join(" ")}
                   >
-                    <span style={{ color: "rgba(255, 255, 255, 0.45)", letterSpacing: "0.04em", fontSize: "0.58rem" }}>
+                    <span className="text-white/45 tracking-wider text-[9px] uppercase">
                       {spec.label}
                     </span>
                     <span
-                      style={{
-                        color: spec.isHighlight ? "#38bdf8" : "#FFFFFF",
-                        fontWeight: 500,
-                        letterSpacing: "0.02em",
-                      }}
+                      className={[
+                        "text-xs font-medium tracking-wide",
+                        spec.isHighlight ? "text-[#38bdf8]" : "text-white",
+                      ].join(" ")}
                     >
                       {spec.value}
                     </span>
@@ -553,6 +479,52 @@ export default function Approach() {
             </div>
           ))}
         </div>
+
+        {/* ── Quality Spec Matrix Panel (Syntethic-style Quality Standards) ── */}
+        <div className="mt-6 p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5 mb-6">
+            <div>
+              <div className="text-[10px] font-mono text-[#CC6600] tracking-wider uppercase font-semibold flex items-center gap-2 mb-1">
+                <ShieldCheck size={16} weight="fill" className="text-[#CC6600]" />
+                QUALITY ASSURANCE SPECIFICATION
+              </div>
+              <h4 className="text-lg sm:text-xl font-sans font-normal text-white">
+                Statistical Accuracy & Defense Verification Standards
+              </h4>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-[2px] border border-emerald-500/20 w-fit shrink-0">
+              <CheckCircle size={14} weight="fill" className="text-emerald-400" />
+              100% AUDIT REPRODUCIBILITY
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {QUALITY_STANDARDS.map((spec) => (
+              <div
+                key={spec.label}
+                className="p-4 bg-white/[0.02] border border-white/5 rounded-[2px] flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-baseline justify-between gap-2 mb-2">
+                    <span className="text-2xl sm:text-3xl font-mono font-bold text-white">
+                      {spec.metric}
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-[2px]">
+                      {spec.status}
+                    </span>
+                  </div>
+                  <div className="text-xs font-sans font-medium text-white mb-1">
+                    {spec.label}
+                  </div>
+                  <div className="text-xs font-sans text-white/50 leading-relaxed">
+                    {spec.desc}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </div>
     </section>
   );

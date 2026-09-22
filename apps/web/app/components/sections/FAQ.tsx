@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { CaretDown } from "@phosphor-icons/react";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -60,7 +61,7 @@ export default function FAQ() {
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo(
-        ".faq-header",
+        ".faq-header-box",
         { opacity: 0, y: 25 },
         {
           opacity: 1,
@@ -68,14 +69,14 @@ export default function FAQ() {
           duration: 0.75,
           ease: "power3.out",
           scrollTrigger: {
-            trigger: ".faq-header",
+            trigger: ".faq-header-box",
             start: "top 85%",
           },
         }
       );
 
       gsap.fromTo(
-        ".faq-item",
+        ".faq-item-box",
         { opacity: 0, y: 20 },
         {
           opacity: 1,
@@ -84,7 +85,7 @@ export default function FAQ() {
           stagger: 0.08,
           ease: "power3.out",
           scrollTrigger: {
-            trigger: ".faq-container",
+            trigger: ".faq-list-container",
             start: "top 85%",
             once: true,
           },
@@ -103,210 +104,104 @@ export default function FAQ() {
     <section
       id="faq"
       ref={sectionRef}
-      style={{
-        position: "relative",
-        backgroundColor: "#010114",
-        padding: "6rem 2rem 8rem 2rem",
-        color: "#FFFFFF",
-        zIndex: 10,
-      }}
+      className="relative bg-[#010114] py-24 sm:py-32 px-6 text-white z-10"
     >
-      <div style={{ maxWidth: "1280px", width: "100%", margin: "0 auto", position: "relative", zIndex: 1 }}>
+      <div className="max-w-[1280px] w-full mx-auto relative z-10">
         
         {/* Header Block */}
-        <div
-          className="faq-header"
-          style={{
-            borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
-            paddingBottom: "2.5rem",
-            marginBottom: "3.5rem",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "2rem",
-            alignItems: "flex-end",
-          }}
-        >
+        <div className="faq-header-box border-b border-white/10 pb-10 mb-12 grid grid-cols-1 lg:grid-cols-2 gap-6 items-end">
           <div>
-            <span
-              style={{
-                fontFamily: "var(--font-mono), monospace",
-                fontSize: "0.72rem",
-                letterSpacing: "0.14em",
-                color: "#CC6600",
-                textTransform: "uppercase",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginBottom: "0.75rem",
-                fontWeight: 600,
-              }}
-            >
-              <span style={{ display: "inline-block", width: "6px", height: "6px", backgroundColor: "#CC6600" }} />
-              SECTION // 06 — FREQUENTLY ASKED QUESTIONS
-            </span>
-            <h2
-              style={{
-                fontFamily: "var(--font-sans), sans-serif",
-                fontSize: "clamp(2.2rem, 5vw, 3.4rem)",
-                fontWeight: 300,
-                lineHeight: 1.08,
-                letterSpacing: "-0.03em",
-                margin: 0,
-                color: "#FFFFFF",
-              }}
-            >
+            <div className="text-[10px] font-mono text-white/40 tracking-[0.18em] uppercase mb-3">
+              JAXIS STATLAB · FREQUENTLY ASKED QUESTIONS & POLICIES
+            </div>
+            <div className="text-xs font-mono text-[#CC6600] tracking-wider uppercase font-semibold flex items-center gap-2 mb-3">
+              <span className="inline-block w-1.5 h-1.5 bg-[#CC6600]" />
+              SECTION 06 · FREQUENTLY ASKED QUESTIONS
+            </div>
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-sans font-light tracking-tight text-white leading-tight">
               Clear Answers.
               <br />
-              <span style={{ color: "#38bdf8", fontWeight: 400 }}>
+              <span className="text-[#38bdf8] font-normal">
                 Zero Ambiguity.
               </span>
             </h2>
           </div>
 
           <div>
-            <p
-              style={{
-                fontFamily: "var(--font-sans), sans-serif",
-                fontSize: "0.88rem",
-                lineHeight: 1.72,
-                color: "rgba(255, 255, 255, 0.70)",
-                margin: 0,
-                maxWidth: "420px",
-              }}
-            >
+            <p className="text-sm sm:text-base font-sans text-white/70 leading-relaxed max-w-lg">
               Everything you need to know about our statistical protocols, turnaround times, academic revisions, and code deliverables.
             </p>
           </div>
         </div>
 
         {/* FAQ Accordion Container */}
-        <div className="faq-container" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div className="faq-list-container flex flex-col gap-4">
           {FAQ_DATA.map((faq, index) => {
             const isOpen = openIndex === index;
 
             return (
               <div
                 key={index}
-                className="faq-item"
-                style={{
-                  border: isOpen
-                    ? "1px solid rgba(56, 189, 248, 0.55)"
-                    : "1px solid rgba(255, 255, 255, 0.12)",
-                  borderRadius: 0,
-                  backgroundColor: isOpen
-                    ? "rgba(2, 16, 48, 0.95)"
-                    : "rgba(2, 11, 34, 0.85)",
-                  transition: "background 0.25s ease, border-color 0.25s ease",
-                  position: "relative",
-                }}
+                className={[
+                  "faq-item-box rounded-[2px] relative transition-all duration-200 border",
+                  isOpen
+                    ? "border-white/25 bg-[#011B38]"
+                    : "border-white/10 bg-[#01142B] hover:border-white/20",
+                ].join(" ")}
               >
                 {/* Active Indicator Line */}
                 {isOpen && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      bottom: 0,
-                      width: "3px",
-                      backgroundColor: "#CC6600",
-                    }}
-                  />
+                  <div className="absolute top-0 left-0 bottom-0 w-[3px] bg-[#CC6600]" />
                 )}
 
                 <button
+                  type="button"
                   onClick={() => toggleAccordion(index)}
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "1.5rem 1.75rem",
-                    background: "none",
-                    border: "none",
-                    color: "#FFFFFF",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    gap: "1.5rem",
-                  }}
+                  className="w-full flex justify-between items-center p-6 sm:p-7 text-left gap-6 cursor-pointer focus:outline-none"
+                  aria-expanded={isOpen}
                 >
-                  <div style={{ display: "flex", alignItems: "baseline", gap: "1rem" }}>
+                  <div className="flex items-baseline gap-4 min-w-0">
                     <span
-                      style={{
-                        fontFamily: "var(--font-mono), monospace",
-                        fontSize: "0.78rem",
-                        color: isOpen ? "#CC6600" : "rgba(255, 255, 255, 0.40)",
-                        fontWeight: 600,
-                        letterSpacing: "0.08em",
-                      }}
+                      className={[
+                        "font-mono text-xs font-bold tracking-wider shrink-0",
+                        isOpen ? "text-[#CC6600]" : "text-white/40",
+                      ].join(" ")}
                     >
                       [{faq.index}]
                     </span>
                     <span
-                      style={{
-                        fontFamily: "var(--font-sans), sans-serif",
-                        fontSize: "1.08rem",
-                        fontWeight: 500,
-                        letterSpacing: "-0.01em",
-                        color: isOpen ? "#FFFFFF" : "rgba(255, 255, 255, 0.90)",
-                        transition: "color 0.2s ease",
-                      }}
+                      className={[
+                        "font-sans text-base sm:text-lg font-medium tracking-tight transition-colors",
+                        isOpen ? "text-white" : "text-white/90",
+                      ].join(" ")}
                     >
                       {faq.question}
                     </span>
                   </div>
 
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono), monospace",
-                      fontSize: "1.25rem",
-                      color: isOpen ? "#CC6600" : "#38bdf8",
-                      transform: isOpen ? "rotate(45deg)" : "rotate(0deg)",
-                      transition: "transform 0.3s ease, color 0.3s ease",
-                      flexShrink: 0,
-                    }}
-                  >
-                    +
-                  </span>
+                  <CaretDown
+                    size={18}
+                    weight="fill"
+                    className={[
+                      "shrink-0 transition-transform duration-300",
+                      isOpen ? "rotate-180 text-[#CC6600]" : "text-white/40",
+                    ].join(" ")}
+                  />
                 </button>
 
+                {/* Pure CSS grid height transition */}
                 <div
-                  style={{
-                    display: "grid",
-                    gridTemplateRows: isOpen ? "1fr" : "0fr",
-                    transition: "grid-template-rows 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
-                  }}
+                  className={[
+                    "grid transition-[grid-template-rows] duration-350 ease-out",
+                    isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                  ].join(" ")}
                 >
-                  <div style={{ overflow: "hidden" }}>
-                    <div
-                      style={{
-                        padding: "0 1.75rem 1.5rem 3.5rem",
-                        borderTop: "1px solid rgba(255, 255, 255, 0.06)",
-                        paddingTop: "1rem",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontFamily: "var(--font-mono), monospace",
-                          fontSize: "0.60rem",
-                          color: "#38bdf8",
-                          letterSpacing: "0.1em",
-                          textTransform: "uppercase",
-                          display: "block",
-                          marginBottom: "0.5rem",
-                        }}
-                      >
-                        {"// "}{faq.category}
+                  <div className="overflow-hidden">
+                    <div className="px-6 pb-6 pt-0 sm:px-7 sm:pb-7 sm:pt-0 border-t border-white/10 mt-1">
+                      <span className="font-mono text-[10px] text-[#38bdf8] tracking-wider uppercase block my-3 font-semibold">
+                        {faq.category}
                       </span>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontFamily: "var(--font-sans), sans-serif",
-                          fontSize: "0.88rem",
-                          lineHeight: 1.72,
-                          color: "rgba(255, 255, 255, 0.72)",
-                        }}
-                      >
+                      <p className="font-sans text-sm text-white/75 leading-relaxed m-0">
                         {faq.answer}
                       </p>
                     </div>

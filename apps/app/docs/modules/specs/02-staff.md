@@ -37,6 +37,7 @@
 | `STF-F16` | **Staff HR & People Operations Portal** — Centralized self-service portal at `/dashboard/staff/hr` across all internal roles (`STATISTICIAN`, `SENIOR_QA_LEAD`, `FINANCE_OFFICER`, `ADMIN`, `CEO`) featuring interactive shift calendar, leave center, overtime adjustments, and monthly duty payslips |
 | `STF-F17` | **Self-Service Settlement & Banking Methods (Tab 6)** — Internal staff members can configure and manage their preferred Philippine settlement destination (GCash, Maya, Philippine Banks, or Cash Window) with Live Treasury Verification preview and 1-click clipboard copy |
 | `STF-F18` | **Historical Payslips Ledger & Past Cycle Inspection** — Full chronological duty earnings ledger allowing staff to browse, audit, and print official statements across historical cut-off periods |
+| `STF-F19` | **Staff Roster Client & Workload Table** — Interactive administrative staff directory (`StaffRosterClient.tsx`) at `/dashboard/admin/staff` with live role filtering, specialization badges, active assignment indicators, and status management |
 
 ### ❌ Explicitly Out of Scope
 

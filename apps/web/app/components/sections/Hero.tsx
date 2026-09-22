@@ -5,8 +5,16 @@ import dynamic from "next/dynamic";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { CheckCircle } from "@phosphor-icons/react";
 import { globeScrollState } from "@/lib/globeState";
 import { REGISTER_URL } from "@/lib/config";
+
+const KPI_STATS = [
+  { value: "99.8%", label: "Accuracy rate" },
+  { value: "2", label: "Statisticians per study" },
+  { value: "24h", label: "Quote turnaround" },
+  { value: "500+", label: "Studies completed" },
+];
 
 const ParticleGlobe = dynamic(() => import("../ui/ParticleGlobe"), {
   ssr: false,
@@ -25,14 +33,14 @@ const SNIPPET_BLOCK_STAGGER = 250;   // ms between each snippet block
 const SNIPPET_LINE_STAGGER  = 180;   // ms between lines within a block
 const TYPEWRITER_DURATION   = 800;   // ms
 
-// Plain-English telemetry annotations
+// Plain-English telemetry annotations (HUD callouts)
 const CODE_SNIPPETS = [
   {
     id: "snippet-top-left",
     code: "01",
     tag: "DATA_AUDIT",
     line1: "Raw survey data checked",
-    line2: "No missing entries | Clean ✓",
+    line2: "No missing entries",
     position: { top: "20%", left: "5%", right: "auto", bottom: "auto" } as React.CSSProperties,
     align: "left" as const,
     blockDelay: 0,
@@ -42,7 +50,7 @@ const CODE_SNIPPETS = [
     code: "02",
     tag: "TEST_SELECTION",
     line1: "Correct tests selected",
-    line2: "Matched to research questions ✓",
+    line2: "Matched to research questions",
     position: { top: "20%", right: "5%", left: "auto", bottom: "auto" } as React.CSSProperties,
     align: "right" as const,
     blockDelay: 1,
@@ -52,7 +60,7 @@ const CODE_SNIPPETS = [
     code: "03",
     tag: "APA_TABLES",
     line1: "APA 7th Edition tables",
-    line2: "Ready to paste into Chapter 4 ✓",
+    line2: "Ready to paste into Chapter 4",
     position: { bottom: "20%", left: "5%", top: "auto", right: "auto" } as React.CSSProperties,
     align: "left" as const,
     blockDelay: 2,
@@ -62,7 +70,7 @@ const CODE_SNIPPETS = [
     code: "04",
     tag: "QA_VERIFIED",
     line1: "Double-checked by 2 experts",
-    line2: "Ready for Thesis Defense ✓",
+    line2: "Ready for Thesis Defense",
     position: { bottom: "20%", right: "5%", top: "auto", left: "auto" } as React.CSSProperties,
     align: "right" as const,
     blockDelay: 3,
@@ -253,17 +261,21 @@ export default function Hero() {
                   >
                     {[snippet.line1, snippet.line2].map((line, lineIdx) => {
                       const lineDelay = blockStart + lineIdx * (TYPEWRITER_DURATION + SNIPPET_LINE_STAGGER);
-                      const isSuccess = line.includes("✓") || line.includes("SUCCESS") || line.includes("PASSED");
                       return (
                         <div
                           key={lineIdx}
                           className={`snippet-line${lineIdx === 1 ? " snippet-line-last" : ""}`}
                           style={{
                             animationDelay: `${lineDelay}ms`,
-                            color: isSuccess ? "rgba(255, 255, 255, 0.48)" : "rgba(255, 255, 255, 0.32)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            color: "rgba(255, 255, 255, 0.40)",
+                            justifyContent: snippet.align === "right" ? "flex-end" : "flex-start",
                           }}
                         >
-                          {line}
+                          <CheckCircle weight="fill" size={10} style={{ color: "#10B981", flexShrink: 0 }} />
+                          <span>{line}</span>
                         </div>
                       );
                     })}
@@ -281,21 +293,38 @@ export default function Hero() {
               zIndex: 10,
               textAlign: "center",
               padding: "0 1.5rem",
-              maxWidth: "900px",
+              maxWidth: "1050px",
               width: "100%",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
             }}
           >
+            {/* ── Eyebrow Breadcrumb (Syntethic-style) ── */}
+            <p
+              className="hero-caption"
+              style={{
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: "0.68rem",
+                fontWeight: 500,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.45)",
+                margin: "0 0 1.25rem",
+                animationDelay: `${HEADLINE_BASE_DELAY - 100}ms`,
+              }}
+            >
+              JAXIS STATLAB · STATISTICAL ANALYSIS & CONSULTING
+            </p>
+
             <h1
               id="hero-headline"
               style={{
                 fontFamily: "var(--font-heading), sans-serif",
-                fontSize: "clamp(2.6rem, 7vw, 5.5rem)",
-                fontWeight: 300,
-                lineHeight: 1.12,
-                letterSpacing: "-0.02em",
+                fontSize: "clamp(2.4rem, 5.8vw, 4.4rem)",
+                fontWeight: 500,
+                lineHeight: 1.14,
+                letterSpacing: "-0.03em",
                 color: "#FFFFFF",
                 margin: 0,
                 textAlign: "center",
@@ -320,63 +349,148 @@ export default function Hero() {
             <p
               className="hero-caption"
               style={{
-                fontFamily: "var(--font-sans), sans-serif",
-                fontSize: "0.82rem",
+                fontFamily: "var(--font-mono), monospace",
+                fontSize: "clamp(0.80rem, 1.4vw, 0.90rem)",
                 fontWeight: 400,
-                color: "rgba(255,255,255,0.80)",
-                lineHeight: 1.68,
-                maxWidth: "460px",
+                color: "rgba(255,255,255,0.65)",
+                lineHeight: 1.65,
+                maxWidth: "580px",
                 margin: "1.75rem auto 0",
-                letterSpacing: "0.01em",
+                letterSpacing: "-0.015em",
                 animationDelay: `${HEADLINE_BASE_DELAY + HEADLINE_LINE_STAGGER * 3 + 200}ms`,
               }}
             >
               We analyze your survey data, format your APA 7th Edition tables, and give you the exact speaking script to defend your results — with 100% accuracy.
             </p>
 
-            <div className="hero-cta-wrapper" style={{ marginTop: "2rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
+            <div className="hero-cta-wrapper" style={{ marginTop: "2rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
+              {/* Primary CTA */}
               <a
                 href={REGISTER_URL}
                 id="hero-cta"
                 className="hero-caption hero-cta-btn"
                 style={{
                   fontFamily: "var(--font-sans), sans-serif",
-                  fontSize: "0.72rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.14em",
+                  fontSize: "0.74rem",
+                  fontWeight: 500,
+                  letterSpacing: "0.08em",
                   textTransform: "uppercase",
                   color: "#FFFFFF",
                   textDecoration: "none",
-                  padding: "13px 34px",
-                  border: "1px solid rgba(204,102,0,0.65)",
-                  borderRadius: "0px",
-                  background: "rgba(204,102,0,0.14)",
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
+                  padding: "14px 36px",
+                  border: "1px solid #CC6600",
+                  borderRadius: "2px",
+                  background: "#CC6600",
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "10px",
+                  boxShadow: "0 2px 12px rgba(204,102,0,0.30)",
                   transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
                   animationDelay: `${HEADLINE_BASE_DELAY + HEADLINE_LINE_STAGGER * 3 + 450}ms`,
                 }}
                 onMouseEnter={(e) => {
                   const el = e.currentTarget;
-                  el.style.borderColor = "var(--accent-orange)";
-                  el.style.background = "rgba(204,102,0,0.25)";
+                  el.style.background = "#E67300";
+                  el.style.borderColor = "#E67300";
                   const arrow = el.querySelector<HTMLElement>(".hero-cta-arrow");
                   if (arrow) arrow.style.transform = "translateX(4px)";
                 }}
                 onMouseLeave={(e) => {
                   const el = e.currentTarget;
-                  el.style.borderColor = "rgba(204,102,0,0.65)";
-                  el.style.background = "rgba(204,102,0,0.14)";
+                  el.style.background = "#CC6600";
+                  el.style.borderColor = "#CC6600";
                   const arrow = el.querySelector<HTMLElement>(".hero-cta-arrow");
                   if (arrow) arrow.style.transform = "translateX(0)";
                 }}
               >
                 <span>Get Started</span>
-                <span className="hero-cta-arrow" style={{ transition: "transform 0.2s ease", display: "inline-block" }}>→</span>
+                <span className="hero-cta-arrow" style={{ transition: "transform 0.2s ease", display: "inline-block" }}>&#8594;</span>
               </a>
+
+              {/* Secondary ghost CTA */}
+              <a
+                href="#approach"
+                id="hero-secondary-cta"
+                className="hero-caption"
+                style={{
+                  fontFamily: "var(--font-sans), sans-serif",
+                  fontSize: "0.74rem",
+                  fontWeight: 500,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.75)",
+                  textDecoration: "none",
+                  padding: "14px 26px",
+                  border: "1px solid rgba(255,255,255,0.16)",
+                  borderRadius: "2px",
+                  background: "rgba(255,255,255,0.03)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+                  animationDelay: `${HEADLINE_BASE_DELAY + HEADLINE_LINE_STAGGER * 3 + 600}ms`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                  e.currentTarget.style.color = "#FFFFFF";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.16)";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                  e.currentTarget.style.color = "rgba(255,255,255,0.75)";
+                }}
+              >
+                Explore Methodology
+              </a>
+            </div>
+
+            {/* ── Syntethic-style 4-metric KPI stats strip ── */}
+            <div
+              className="hero-caption"
+              style={{
+                marginTop: "2.5rem",
+                paddingTop: "1.5rem",
+                borderTop: "1px solid rgba(255,255,255,0.08)",
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: "0",
+                width: "100%",
+                maxWidth: "680px",
+                animationDelay: `${HEADLINE_BASE_DELAY + HEADLINE_LINE_STAGGER * 3 + 750}ms`,
+              }}
+            >
+              {KPI_STATS.map((stat, i) => (
+                <div
+                  key={stat.label}
+                  style={{
+                    textAlign: "center",
+                    padding: "0 1rem",
+                    borderRight: i < KPI_STATS.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none",
+                  }}
+                >
+                  <div style={{
+                    fontFamily: "var(--font-heading), sans-serif",
+                    fontSize: "clamp(1.3rem, 2.6vw, 1.8rem)",
+                    fontWeight: 500,
+                    color: "#FFFFFF",
+                    lineHeight: 1,
+                    letterSpacing: "-0.02em",
+                    marginBottom: "0.35rem",
+                  }}>
+                    {stat.value}
+                  </div>
+                  <div style={{
+                    fontFamily: "var(--font-mono), monospace",
+                    fontSize: "0.62rem",
+                    color: "rgba(255,255,255,0.40)",
+                    letterSpacing: "0.02em",
+                    lineHeight: 1.3,
+                  }}>
+                    {stat.label}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

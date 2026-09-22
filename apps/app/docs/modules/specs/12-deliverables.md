@@ -36,6 +36,8 @@
 | `DLV-F14` | **Revision window countdown** — Client sees remaining days to request revision |
 | `DLV-F15` | **Multiple deliverable files** — Admin can upload multiple files per project (e.g., SPSS output + PDF report) |
 | `DLV-F16` | **Real-time notification dispatching** — Automatically alerts client and team on deliverable upload, dual-gate release, client revision request, and warranty classification via `dispatchRealtimeNotification` |
+| `DLV-F17` | **Certificate of Statistical Audit & Verification Seal** — Formal, cryptographically verifiable certificate issued upon final delivery with Lead Statistician and Senior QA Lead credentials, official JAXIS seal, unique certificate ID, and verification QR code |
+| `DLV-F18` | **Server-side PDF streaming endpoint** — `/api/deliverables/certificate` generates and streams high-resolution vector PDF certificate using `@react-pdf/renderer` with strict signature padding limits and security headers |
 
 ### ❌ Explicitly Out of Scope
 
@@ -203,7 +205,7 @@ const seedDeliverables = [
 - [x] **Revision Triage & Routing:** Admin classifies client revision requests: `INCLUDED` (routes back to Statistician), `METHODOLOGY_CHANGE` (supplemental SOW), or `NEW_PAID_WORK`.
 - [x] **Project Completion & Closure:** Project automatically transitions to `CLOSED` upon revision window expiry, unlocking expert payout calculation in Module 14.
 - [x] **Real-Time Delivery & Revision Alerts:** Instant notifications dispatched across connected sessions on output upload, release, revision request, and triage classification.
-
+- [x] **Certificate of Statistical Audit & PDF Generation:** Client can preview and download an official signed certificate (`StatisticalAuditCertificate.tsx`, `CertificateModal.tsx`) with dynamic QR code verification, official seal, and Senior QA Lead credentials streamed directly from `/api/deliverables/certificate`.
 
 ## 8. Acceptance Criteria (Done Checklist)
 
@@ -215,6 +217,13 @@ const seedDeliverables = [
 - [x] `files_purge_at` = `delivered_at + 90 days` set on project
 - [x] `revision_window_expires_at` = `delivered_at + 3 business days` set on project
 - [x] Upload and release dispatch real-time in-app alerts to client and assigned team
+
+### Certificate of Statistical Audit
+- [x] Certificate generated dynamically upon final delivery authorization
+- [x] Includes Study Title, Client Name, Methodological Scope, Lead Statistician, and QA Lead credentials
+- [x] Official JAXIS Seal (`/jaxis-seal.png`) and verified QA signature rendered with strict padding limits
+- [x] Vector PDF streamed directly via `/api/deliverables/certificate` with content-disposition download headers
+- [x] Embedded verification QR code resolving to canonical project verification portal
 
 ### Client Download
 - [x] Client download returns 403 before release

@@ -195,9 +195,10 @@ export interface CalculatedQuotationBreakdown {
  * Core Pricing Calculation Engine (RULE_QUO_02)
  */
 export function calculateQuotationTotals(
-  input: CalculateQuotationInput
+  input: CalculateQuotationInput,
+  customCatalog?: CommercialCatalogData
 ): CalculatedQuotationBreakdown {
-  const packageDef = PACKAGES_CATALOG[input.packageName];
+  const packageDef = customCatalog?.packages?.[input.packageName] || PACKAGES_CATALOG[input.packageName];
   if (!packageDef) {
     throw new Error(`Invalid package selected: ${input.packageName}`);
   }
@@ -205,7 +206,7 @@ export function calculateQuotationTotals(
   const basePrice = Math.max(0, Number(input.basePrice));
   
   const addOnsBreakdown = (input.addOns || []).map((addon) => {
-    const def = ADDONS_CATALOG[addon.name];
+    const def = customCatalog?.addOns?.[addon.name] || ADDONS_CATALOG[addon.name];
     const amount = addon.amount !== undefined ? Math.max(0, Number(addon.amount)) : (def ? def.defaultPrice : 0);
     return {
       name: addon.name,
@@ -218,11 +219,11 @@ export function calculateQuotationTotals(
   const addOnsTotal = addOnsBreakdown.reduce((sum, item) => sum + item.amount, 0);
   const totalAmount = basePrice + addOnsTotal;
 
-  const isUpfrontEnforced = UPFRONT_PACKAGES.includes(input.packageName);
+  const isUpfrontEnforced = packageDef.isUpfront ?? UPFRONT_PACKAGES.includes(input.packageName);
 
   let downpaymentRequired = 0;
   if (isUpfrontEnforced) {
-    // RULE_QUO_02: JX-01 and JX-02 require 100% upfront
+    // RULE_QUO_02: JX-01 and JX-02 require 100% upfront (or configured as upfront)
     downpaymentRequired = totalAmount;
   } else if (input.customDownpayment !== undefined && input.customDownpayment > 0) {
     // Custom specified downpayment bounded by [50%, 100%]
@@ -266,9 +267,10 @@ export function assertCanManageQuotation(role: RoleName | string): void {
  */
 export function validatePackageBasePrice(
   packageName: PackageName,
-  price: number
+  price: number,
+  customCatalog?: Record<string, PackageDefinition>
 ): { valid: boolean; error?: string } {
-  const pkg = PACKAGES_CATALOG[packageName];
+  const pkg = customCatalog?.[packageName] || PACKAGES_CATALOG[packageName];
   if (!pkg) {
     return { valid: false, error: `Unrecognized package: ${packageName}` };
   }
