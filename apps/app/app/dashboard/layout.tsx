@@ -84,7 +84,11 @@ export default async function DashboardLayout({
           <strong>SSR TRACE LOG:</strong>
           <pre>{JSON.stringify(trace, null, 2)}</pre>
         </div>
-        <main>{children}</main>
+        <main>
+          <div id="test-isolation-success" className="text-emerald-400 font-mono text-lg font-bold">
+            ISOLATION TEST: CHILDREN OMITTED. LAYOUT ALIVE!
+          </div>
+        </main>
       </div>
     );
   } catch (layoutError: unknown) {
