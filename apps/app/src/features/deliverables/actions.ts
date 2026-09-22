@@ -30,6 +30,7 @@ import {
   type UploadDeliverableInput,
 } from "./schemas";
 import { Deliverable, RevisionRequest, RoleName, DeliverableCategory } from "@prisma/client";
+import { assertStudyAccess } from "@/lib/access-control";
 
 /**
  * Maps Deliverable Prisma record to DeliverableDTO
@@ -107,10 +108,13 @@ export async function getAdminDeliverablesDesk(projectId: string): Promise<Admin
     throw new Error("Authentication required.");
   }
 
-  const allowedRoles: RoleName[] = ["ADMIN", "CEO", "FINANCE_OFFICER", "STATISTICIAN", "SENIOR_QA_LEAD"];
-  const userRole = (session.user as { role?: RoleName })?.role;
-  if (!userRole || !allowedRoles.includes(userRole)) {
-    throw new Error("Unauthorized: You do not have permission to view this deliverables desk.");
+  if (session.user.role === "CLIENT") {
+    throw new Error("Unauthorized: Clients cannot access the administrative deliverables desk.");
+  }
+
+  const access = await assertStudyAccess(projectId, session.user);
+  if (!access.hasAccess) {
+    throw new Error(access.error?.message || "Unauthorized: You do not have permission to view this deliverables desk.");
   }
 
   const project = await db.project.findUnique({
@@ -185,13 +189,12 @@ export async function uploadDeliverable(rawInput: UploadDeliverableInput): Promi
     throw new Error("Authentication required.");
   }
 
-  const allowedRoles: RoleName[] = ["ADMIN", "CEO", "STATISTICIAN"];
-  const userRole = (session.user as { role?: RoleName })?.role;
-  if (!userRole || !allowedRoles.includes(userRole)) {
+  const input = UploadDeliverableSchema.parse(rawInput);
+
+  const access = await assertStudyAccess(input.projectId, session.user);
+  if (!access.hasAccess || (!access.isManager && !access.isAssignedStatistician)) {
     throw new Error("Unauthorized: Only administrators and assigned statisticians can upload deliverables.");
   }
-
-  const input = UploadDeliverableSchema.parse(rawInput);
 
   const deliverable = await db.deliverable.create({
     data: {
@@ -244,18 +247,17 @@ export async function deleteDeliverable(deliverableId: string): Promise<{ succes
     throw new Error("Authentication required.");
   }
 
-  const allowedRoles: RoleName[] = ["ADMIN", "CEO", "STATISTICIAN"];
-  const userRole = (session.user as { role?: RoleName })?.role;
-  if (!userRole || !allowedRoles.includes(userRole)) {
-    throw new Error("Unauthorized: Only administrators and assigned statisticians can remove deliverables.");
-  }
-
   const deliverable = await db.deliverable.findUnique({
     where: { id: deliverableId },
   });
 
   if (!deliverable) {
     throw new Error("Deliverable not found.");
+  }
+
+  const access = await assertStudyAccess(deliverable.projectId, session.user);
+  if (!access.hasAccess || (!access.isManager && !access.isAssignedStatistician)) {
+    throw new Error("Unauthorized: Only administrators and assigned statisticians can remove deliverables.");
   }
 
   if (deliverable.isFinalReleased) {
@@ -723,13 +725,13 @@ export async function getDeliverableDownloadUrl(
     throw new Error("Deliverable file not found.");
   }
 
-  if (isClient) {
-    if (deliverable.project.clientId !== session.user.id) {
-      throw new Error("Unauthorized: You do not own this research study.");
-    }
-    if (!deliverable.isFinalReleased) {
-      throw new Error("This file has not been released by the administration yet.");
-    }
+  const access = await assertStudyAccess(deliverable.projectId, session.user);
+  if (!access.hasAccess) {
+    throw new Error(access.error?.message || "Unauthorized: You do not have access to this deliverable.");
+  }
+
+  if (session.user.role === "CLIENT" && !deliverable.isFinalReleased) {
+    throw new Error("This file has not been released by the administration yet.");
   }
 
   // Increment download counter

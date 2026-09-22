@@ -28,6 +28,11 @@ import { listAllR2Objects, deleteMultipleR2Objects } from "@/lib/storage";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import type { AuditTelemetryEvent } from "@/types/project";
 import type { ProjectStatus, FileCategory, Prisma, RoleName } from "@prisma/client";
+import {
+  assertStudyAccess,
+  buildProjectRoleWhereClause,
+  sanitizeProjectForSpecialist,
+} from "@/lib/access-control";
 
 const DEV_PROJECTS_FILE = path.join(process.cwd(), ".dev-projects.json");
 const DEV_PAYMENTS_FILE = path.join(process.cwd(), "dev_data", "payments.json");
@@ -513,6 +518,13 @@ const fetchCachedProjectsDb = unstable_cache(
             orderBy: { createdAt: "desc" },
             take: 1,
           },
+          assignment: {
+            select: {
+              statisticianId: true,
+              qaLeadId: true,
+              isActive: true,
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
       })
@@ -600,6 +612,13 @@ const fetchCachedProjectDetailDb = unstable_cache(
             orderBy: { createdAt: "desc" },
             take: 1,
           },
+          assignment: {
+            select: {
+              statisticianId: true,
+              qaLeadId: true,
+              isActive: true,
+            },
+          },
         },
       })
     );
@@ -626,7 +645,6 @@ export async function getProjects(
   }
 
   const userRole = session.user.role as string;
-  const isClient = userRole === "CLIENT";
 
   const parsed = ProjectFilterSchema.safeParse(filters || {});
   const { status, search, page, pageSize } = parsed.success
@@ -634,27 +652,36 @@ export async function getProjects(
     : { status: undefined, search: undefined, page: undefined, pageSize: undefined };
 
   try {
-    const whereClause: Prisma.ProjectWhereInput = {
-      ...(isClient
-        ? {
-            OR: [
-              { clientId: session.user.id },
-              ...(session.user.email
-                ? [{ client: { email: session.user.email.toLowerCase().trim() } }]
-                : []),
-            ],
-          }
-        : {}),
-      ...(status && status !== "ALL" ? { masterStatus: status as ProjectStatus } : {}),
-      ...(search?.trim()
-        ? {
-            OR: [
-              { researchTitle: { contains: search.trim(), mode: "insensitive" as const } },
-              { intakeId: { contains: search.trim(), mode: "insensitive" as const } },
-            ],
-          }
-        : {}),
-    };
+    const roleWhere = buildProjectRoleWhereClause({
+      id: session.user.id,
+      role: session.user.role,
+      email: session.user.email,
+    });
+
+    const andConditions: Prisma.ProjectWhereInput[] = [];
+    if (Object.keys(roleWhere).length > 0) {
+      andConditions.push(roleWhere);
+    }
+
+    if (status && status !== "ALL") {
+      andConditions.push({ masterStatus: status as ProjectStatus });
+    }
+
+    if (search?.trim()) {
+      andConditions.push({
+        OR: [
+          { researchTitle: { contains: search.trim(), mode: "insensitive" as const } },
+          { intakeId: { contains: search.trim(), mode: "insensitive" as const } },
+        ],
+      });
+    }
+
+    const whereClause: Prisma.ProjectWhereInput =
+      andConditions.length > 1
+        ? { AND: andConditions }
+        : andConditions.length === 1
+        ? andConditions[0]!
+        : {};
 
     const take = pageSize && pageSize > 0 ? Math.min(pageSize, 100) : undefined;
     const skip = page && page > 0 && take ? (page - 1) * take : undefined;
@@ -664,22 +691,22 @@ export async function getProjects(
 
     const mappedProjects = (projects as unknown as Array<ProjectDetailItem & { payments?: Array<{ paymentStatus: string }> }>).map((p) => {
       const latestPay = p.payments?.[0];
-      return {
+      const item: ProjectDetailItem = {
         ...p,
         latestPaymentStatus: latestPay?.paymentStatus || null,
         hasPendingPaymentVerification: latestPay?.paymentStatus === "PROOF_SUBMITTED",
       };
+      return sanitizeProjectForSpecialist(item, userRole);
     });
 
     return {
       success: true,
-      data: mappedProjects as unknown as ProjectDetailItem[],
+      data: mappedProjects,
     };
   } catch (dbError) {
     console.warn("[getProjects] DB offline, reading from dev projects cache.", dbError);
 
     let devProjects = readPersistedDevProjects();
-
 
     const devPayments = readPersistedDevPayments();
     devProjects = devProjects.map((p) => {
@@ -698,9 +725,19 @@ export async function getProjects(
       devProjects = devProjects.filter(
         (p) =>
           p.clientId === session.user.id ||
-          p.client.email === session.user?.email ||
-          p.client.email === "client@jaxis.dev" ||
-          p.clientId === "usr_dev_client_001"
+          (session.user.email && p.client?.email?.toLowerCase() === session.user.email.toLowerCase())
+      );
+    } else if (userRole === "STATISTICIAN") {
+      devProjects = devProjects.filter(
+        (p) =>
+          (p as ProjectDetailItem & { assignment?: { statisticianId?: string; qaLeadId?: string } })
+            .assignment?.statisticianId === session.user.id
+      );
+    } else if (userRole === "SENIOR_QA_LEAD") {
+      devProjects = devProjects.filter(
+        (p) =>
+          (p as ProjectDetailItem & { assignment?: { statisticianId?: string; qaLeadId?: string } })
+            .assignment?.qaLeadId === session.user.id
       );
     }
 
@@ -722,9 +759,13 @@ export async function getProjects(
       devProjects = devProjects.slice(startIndex, startIndex + pageSize);
     }
 
+    const sanitizedDevProjects = devProjects.map((p) =>
+      sanitizeProjectForSpecialist(p, userRole)
+    );
+
     return {
       success: true,
-      data: devProjects,
+      data: sanitizedDevProjects,
     };
   }
 }
@@ -744,20 +785,20 @@ export async function getProjectById(
   }
 
   try {
+    const access = await assertStudyAccess(id, session.user);
+    if (!access.hasAccess) {
+      return {
+        success: false,
+        error: access.error || { code: "FORBIDDEN", message: "You do not have access to this study." },
+      };
+    }
+
     const project = await fetchCachedProjectDetailDb(id);
 
     if (!project) {
       return {
         success: false,
         error: { code: "NOT_FOUND", message: "Project not found." },
-      };
-    }
-
-    // Role-based authorization
-    if (session.user.role === "CLIENT" && project.clientId !== session.user.id) {
-      return {
-        success: false,
-        error: { code: "FORBIDDEN", message: "You do not have access to this study." },
       };
     }
 
@@ -790,9 +831,14 @@ export async function getProjectById(
       },
     };
 
+    const sanitized = sanitizeProjectForSpecialist(
+      mapped as unknown as ProjectDetailItem,
+      session.user.role
+    );
+
     return {
       success: true,
-      data: mapped as unknown as ProjectDetailItem,
+      data: sanitized,
     };
   } catch (dbError) {
     console.warn("[getProjectById] DB offline, reading from dev projects cache.", dbError);
@@ -807,11 +853,36 @@ export async function getProjectById(
       };
     }
 
-    if (session.user.role === "CLIENT" && project.clientId !== session.user.id && project.client.email !== session.user.email) {
-      return {
-        success: false,
-        error: { code: "FORBIDDEN", message: "You do not have access to this study." },
-      };
+    if (session.user.role === "CLIENT") {
+      const isOwner =
+        project.clientId === session.user.id ||
+        (session.user.email && project.client?.email?.toLowerCase() === session.user.email.toLowerCase());
+      if (!isOwner) {
+        return {
+          success: false,
+          error: { code: "FORBIDDEN", message: "You do not have access to this study." },
+        };
+      }
+    } else if (session.user.role === "STATISTICIAN") {
+      const isAssigned = (
+        project as ProjectDetailItem & { assignment?: { statisticianId?: string; qaLeadId?: string } }
+      ).assignment?.statisticianId === session.user.id;
+      if (!isAssigned) {
+        return {
+          success: false,
+          error: { code: "FORBIDDEN", message: "You are not assigned to this study." },
+        };
+      }
+    } else if (session.user.role === "SENIOR_QA_LEAD") {
+      const isAssigned = (
+        project as ProjectDetailItem & { assignment?: { statisticianId?: string; qaLeadId?: string } }
+      ).assignment?.qaLeadId === session.user.id;
+      if (!isAssigned) {
+        return {
+          success: false,
+          error: { code: "FORBIDDEN", message: "You are not assigned to review this study." },
+        };
+      }
     }
 
     const devPayments = readPersistedDevPayments();
@@ -820,13 +891,15 @@ export async function getProjectById(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )[0];
 
+    const devItem: ProjectDetailItem = {
+      ...project,
+      latestPaymentStatus: latestPay?.paymentStatus || null,
+      hasPendingPaymentVerification: latestPay?.paymentStatus === "PROOF_SUBMITTED",
+    };
+
     return {
       success: true,
-      data: {
-        ...project,
-        latestPaymentStatus: latestPay?.paymentStatus || null,
-        hasPendingPaymentVerification: latestPay?.paymentStatus === "PROOF_SUBMITTED",
-      },
+      data: sanitizeProjectForSpecialist(devItem, session.user.role),
     };
   }
 }
@@ -1249,6 +1322,15 @@ export async function deleteProjectFile(
       };
     }
 
+    const isOwner = project.clientId === session.user.id;
+    const isManager = session.user.role === "ADMIN" || session.user.role === "CEO";
+    if (!isOwner && !isManager) {
+      return {
+        success: false,
+        error: { code: "FORBIDDEN", message: "Only the study owner or administrator can delete study files." },
+      };
+    }
+
     if (
       project.masterStatus === "SOW_SIGNED" ||
       project.masterStatus === "ACTIVE" ||
@@ -1282,6 +1364,15 @@ export async function deleteProjectFile(
     const pIndex = devProjects.findIndex((p) => p.id === projectId || p.intakeId === projectId);
 
     if (pIndex !== -1) {
+      const devProj = devProjects[pIndex]!;
+      const isOwner = devProj.clientId === session.user.id;
+      const isManager = session.user.role === "ADMIN" || session.user.role === "CEO";
+      if (!isOwner && !isManager) {
+        return {
+          success: false,
+          error: { code: "FORBIDDEN", message: "Only the study owner or administrator can delete study files." },
+        };
+      }
       devProjects[pIndex]!.files = devProjects[pIndex]!.files.filter((f) => f.id !== fileId);
       writePersistedDevProjects(devProjects);
     }
@@ -1322,6 +1413,15 @@ export async function addProjectFile(
       return {
         success: false,
         error: { code: "NOT_FOUND", message: "Project not found." },
+      };
+    }
+
+    const isOwner = project.clientId === session.user.id;
+    const isManager = session.user.role === "ADMIN" || session.user.role === "CEO";
+    if (!isOwner && !isManager) {
+      return {
+        success: false,
+        error: { code: "FORBIDDEN", message: "Only the study owner or administrator can upload study intake files." },
       };
     }
 
@@ -1593,6 +1693,14 @@ export async function getProjectAuditTrail(
   }
 
   try {
+    const access = await assertStudyAccess(id, session.user);
+    if (!access.hasAccess) {
+      return {
+        success: false,
+        error: access.error || { code: "FORBIDDEN", message: "You do not have access to this study's audit trail." },
+      };
+    }
+
     const project = await withDbTimeout(
       db.project.findFirst({
         where: {
@@ -1663,6 +1771,7 @@ export async function getProjectAuditTrail(
       return { success: false, error: { code: "NOT_FOUND", message: "Project not found." } };
     }
 
+    const isSpecialist = session.user.role === "STATISTICIAN" || session.user.role === "SENIOR_QA_LEAD";
     const events: AuditTelemetryEvent[] = [];
 
     // 1. Project Intake creation
@@ -1723,7 +1832,9 @@ export async function getProjectAuditTrail(
         actorRole: "ADMIN",
         action: "Quotation Generated",
         targetId: project.intakeId,
-        detail: `Package ${q.packageName.replace(/_/g, " ")} valued at ₱${Number(q.totalAmount).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`,
+        detail: isSpecialist
+          ? `Package ${q.packageName.replace(/_/g, " ")} service scope prepared.`
+          : `Package ${q.packageName.replace(/_/g, " ")} valued at ₱${Number(q.totalAmount).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`,
         badgeText: "Quote",
         badgeType: "info",
       });
@@ -1743,7 +1854,9 @@ export async function getProjectAuditTrail(
           actorRole: "CLIENT",
           action: "Quotation Approved",
           targetId: project.intakeId,
-          detail: `Approved ₱${Number(q.totalAmount).toLocaleString("en-PH", { minimumFractionDigits: 2 })} quotation terms.`,
+          detail: isSpecialist
+            ? "Quotation terms and research package approved by client."
+            : `Approved ₱${Number(q.totalAmount).toLocaleString("en-PH", { minimumFractionDigits: 2 })} quotation terms.`,
           badgeText: "Approved",
           badgeType: "success",
         });
@@ -1812,65 +1925,67 @@ export async function getProjectAuditTrail(
       }
     }
 
-    // 5. Payment milestones
-    for (const p of project.payments) {
-      events.push({
-        id: `pay-submit-${p.id}`,
-        timestamp: new Date(p.createdAt).toLocaleString("en-PH", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        }),
-        rawDate: p.createdAt,
-        actor: project.client.fullName || "Lead Researcher",
-        actorRole: "CLIENT",
-        action: "Payment Deposit Submitted",
-        targetId: project.intakeId,
-        detail: `${p.paymentType.replace(/_/g, " ")} of ₱${Number(p.amountSubmitted).toLocaleString("en-PH", { minimumFractionDigits: 2 })} via ${p.paymentMethod || "Electronic Deposit"}${p.referenceNumber ? ` (Ref: ${p.referenceNumber})` : ""}.`,
-        badgeText: "Deposit",
-        badgeType: "info",
-      });
+    // 5. Payment milestones (Omitted for specialists to protect client commercial financial privacy)
+    if (!isSpecialist) {
+      for (const p of project.payments) {
+        events.push({
+          id: `pay-submit-${p.id}`,
+          timestamp: new Date(p.createdAt).toLocaleString("en-PH", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          }),
+          rawDate: p.createdAt,
+          actor: project.client.fullName || "Lead Researcher",
+          actorRole: "CLIENT",
+          action: "Payment Deposit Submitted",
+          targetId: project.intakeId,
+          detail: `${p.paymentType.replace(/_/g, " ")} of ₱${Number(p.amountSubmitted).toLocaleString("en-PH", { minimumFractionDigits: 2 })} via ${p.paymentMethod || "Electronic Deposit"}${p.referenceNumber ? ` (Ref: ${p.referenceNumber})` : ""}.`,
+          badgeText: "Deposit",
+          badgeType: "info",
+        });
 
-      if (p.paymentStatus === "VERIFIED" || p.paymentStatus === "FULLY_PAID") {
-        events.push({
-          id: `pay-verified-${p.id}`,
-          timestamp: new Date(p.verifiedAt || p.updatedAt).toLocaleString("en-PH", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          }),
-          rawDate: p.verifiedAt || p.updatedAt,
-          actor: "Finance Officer",
-          actorRole: "FINANCE_OFFICER",
-          action: p.paymentStatus === "FULLY_PAID" ? "Full Settlement Cleared" : "Downpayment Cleared",
-          targetId: project.intakeId,
-          detail: `Cleared ₱${Number(p.amountSubmitted).toLocaleString("en-PH", { minimumFractionDigits: 2 })} into verified project escrow.`,
-          badgeText: "Cleared",
-          badgeType: "success",
-        });
-      } else if (p.paymentStatus === "REJECTED") {
-        events.push({
-          id: `pay-rejected-${p.id}`,
-          timestamp: new Date(p.updatedAt).toLocaleString("en-PH", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          }),
-          rawDate: p.updatedAt,
-          actor: "Finance Officer",
-          actorRole: "FINANCE_OFFICER",
-          action: "Payment Proof Rejected",
-          targetId: project.intakeId,
-          detail: p.rejectionReason || "Receipt did not meet verification criteria.",
-          badgeText: "Rejected",
-          badgeType: "danger",
-        });
+        if (p.paymentStatus === "VERIFIED" || p.paymentStatus === "FULLY_PAID") {
+          events.push({
+            id: `pay-verified-${p.id}`,
+            timestamp: new Date(p.verifiedAt || p.updatedAt).toLocaleString("en-PH", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            }),
+            rawDate: p.verifiedAt || p.updatedAt,
+            actor: "Finance Officer",
+            actorRole: "FINANCE_OFFICER",
+            action: p.paymentStatus === "FULLY_PAID" ? "Full Settlement Cleared" : "Downpayment Cleared",
+            targetId: project.intakeId,
+            detail: `Cleared ₱${Number(p.amountSubmitted).toLocaleString("en-PH", { minimumFractionDigits: 2 })} into verified project escrow.`,
+            badgeText: "Cleared",
+            badgeType: "success",
+          });
+        } else if (p.paymentStatus === "REJECTED") {
+          events.push({
+            id: `pay-rejected-${p.id}`,
+            timestamp: new Date(p.updatedAt).toLocaleString("en-PH", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            }),
+            rawDate: p.updatedAt,
+            actor: "Finance Officer",
+            actorRole: "FINANCE_OFFICER",
+            action: "Payment Proof Rejected",
+            targetId: project.intakeId,
+            detail: p.rejectionReason || "Receipt did not meet verification criteria.",
+            badgeText: "Rejected",
+            badgeType: "danger",
+          });
+        }
       }
     }
 

@@ -10,6 +10,7 @@ import {
   calculateSpecializationScore,
   assessBurnoutRisk,
 } from "@/lib/assignment-rules";
+import { assertStudyAccess } from "@/lib/access-control";
 import {
   computeSlaDueDate,
   calculateSlaRemaining,
@@ -386,6 +387,18 @@ export async function requestSlaPause(
       return { success: false, error: { code: "NOT_FOUND", message: "Assignment not found." } };
     }
 
+    if (
+      session.user.role !== "ADMIN" &&
+      session.user.role !== "CEO" &&
+      assignment.statisticianId !== session.user.id &&
+      assignment.qaLeadId !== session.user.id
+    ) {
+      return {
+        success: false,
+        error: { code: "FORBIDDEN", message: "You can only request deadline pauses for your assigned studies." },
+      };
+    }
+
     await db.assignment.update({
       where: { id: assignment.id },
       data: {
@@ -678,6 +691,17 @@ const fetchCachedStaffUsers = unstable_cache(
 export async function getStaffCapacity(
   projectIntakeId?: string
 ): Promise<ActionResponse<{ statisticians: StaffCapacityItem[]; qaLeads: StaffCapacityItem[] }>> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: { code: "UNAUTHORIZED", message: "You must be logged in." } };
+  }
+
+  try {
+    assertCanManageAssignments(session.user.role);
+  } catch (err: unknown) {
+    return { success: false, error: { code: "FORBIDDEN", message: (err as Error).message } };
+  }
+
   try {
     let targetMethod: string | null = null;
     let targetField: string | null = null;
@@ -903,6 +927,10 @@ export async function getStatisticianWorkload(): Promise<ActionResponse<Assignme
     return { success: false, error: { code: "UNAUTHORIZED", message: "You must be logged in." } };
   }
 
+  if (session.user.role !== "STATISTICIAN" && session.user.role !== "ADMIN" && session.user.role !== "CEO") {
+    return { success: false, error: { code: "FORBIDDEN", message: "Only Lead Statisticians can access this workload." } };
+  }
+
   try {
     const assignments = await db.assignment.findMany({
       where: {
@@ -982,6 +1010,10 @@ export async function getQaWorkload(): Promise<ActionResponse<AssignmentDetailIt
     return { success: false, error: { code: "UNAUTHORIZED", message: "You must be logged in." } };
   }
 
+  if (session.user.role !== "SENIOR_QA_LEAD" && session.user.role !== "ADMIN" && session.user.role !== "CEO") {
+    return { success: false, error: { code: "FORBIDDEN", message: "Only Senior QA Leads can access this workload." } };
+  }
+
   try {
     const assignments = await db.assignment.findMany({
       where: {
@@ -1058,6 +1090,19 @@ export async function getQaWorkload(): Promise<ActionResponse<AssignmentDetailIt
 export async function getProjectAssignment(
   projectId: string
 ): Promise<ActionResponse<AssignmentDetailItem | null>> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: { code: "UNAUTHORIZED", message: "You must be logged in." } };
+  }
+
+  const access = await assertStudyAccess(projectId, session.user);
+  if (!access.hasAccess) {
+    return {
+      success: false,
+      error: access.error || { code: "FORBIDDEN", message: "You do not have access to this study." },
+    };
+  }
+
   try {
     const assignment = await db.assignment.findFirst({
       where: {

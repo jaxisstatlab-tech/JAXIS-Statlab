@@ -22,6 +22,7 @@ import {
 } from "./schemas";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import type { ProjectStatus } from "@prisma/client";
+import { assertStudyAccess } from "@/lib/access-control";
 
 const DEV_SOWS_FILE = path.join(process.cwd(), ".dev-sows.json");
 const DEV_PROJECTS_FILE = path.join(process.cwd(), ".dev-projects.json");
@@ -439,6 +440,14 @@ export async function getSOWByProject(
     };
   }
 
+  const access = await assertStudyAccess(projectId, session.user);
+  if (!access.hasAccess) {
+    return {
+      success: false,
+      error: access.error || { code: "FORBIDDEN", message: "Access to this Statement of Work is restricted." },
+    };
+  }
+
   try {
     const sow = await withDbTimeout(
       db.sOW.findFirst({
@@ -460,19 +469,6 @@ export async function getSOWByProject(
       const devSows = readPersistedDevSows();
       const devSow = devSows.find((s) => s.projectId === projectId && s.sowType === "PRIMARY");
       return { success: true, data: devSow || null };
-    }
-
-    // Role check: Client must own the study or user must be Admin/CEO/Statistician
-    const isOwner = sow.project.clientId === session.user.id;
-    const isStaff = ["ADMIN", "CEO", "STATISTICIAN", "SENIOR_QA_LEAD"].includes(
-      session.user.role || ""
-    );
-
-    if (!isOwner && !isStaff) {
-      return {
-        success: false,
-        error: { code: "FORBIDDEN", message: "Access to this Statement of Work is restricted." },
-      };
     }
 
     return {

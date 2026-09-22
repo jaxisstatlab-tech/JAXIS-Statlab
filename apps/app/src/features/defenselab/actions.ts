@@ -280,6 +280,25 @@ export async function bookDefenseLabSession(
       };
     }
 
+    // Verify client ownership of project
+    const projectRecord = await withDbTimeout(
+      db.project.findUnique({
+        where: { id: projectId },
+        select: { clientId: true },
+      })
+    );
+    if (!projectRecord) {
+      return { success: false, error: { code: "NOT_FOUND", message: "Study not found." } };
+    }
+    const isProjectOwner = projectRecord.clientId === session.user.id;
+    const isProjectManager = session.user.role === "ADMIN" || session.user.role === "CEO";
+    if (!isProjectOwner && !isProjectManager) {
+      return {
+        success: false,
+        error: { code: "FORBIDDEN", message: "You can only book DefenseLab sessions for your own studies." },
+      };
+    }
+
     // Verify entitlement & payment
     const entitlement = await assertDefenseLabEntitlement(projectId);
 
@@ -494,9 +513,18 @@ export async function rescheduleDefenseLabSession(
       };
     }
 
-    const isClient = session.user.role === "CLIENT" || session.user.id === existing.clientId;
+    const isClientOwner = session.user.id === existing.clientId;
     const isExpert = session.user.id === existing.expertId;
     const isManager = session.user.role === "ADMIN" || session.user.role === "CEO";
+
+    if (!isClientOwner && !isExpert && !isManager) {
+      return {
+        success: false,
+        error: { code: "FORBIDDEN", message: "You do not have permission to reschedule this session." },
+      };
+    }
+
+    const isClient = isClientOwner;
 
     const eligibility = assertRescheduleEligible(existing.scheduledAt, new Date(), isClient);
 
@@ -737,6 +765,30 @@ export async function completeDefenseLabSession(
   try {
     const client = getDb();
     const defenseDelegate = (client as any).defenseLabSession || (db as any).defenseLabSession;
+
+    if (session.user.role === "STATISTICIAN") {
+      let existingSession: any = null;
+      if (defenseDelegate) {
+        existingSession = await withDbTimeout(
+          defenseDelegate.findUnique({
+            where: { id: sessionId },
+            select: { expertId: true },
+          })
+        );
+      } else {
+        const rows: any[] = await client.$queryRawUnsafe(
+          `SELECT "expertId" FROM "defense_lab_sessions" WHERE "id" = $1 LIMIT 1`,
+          sessionId
+        );
+        existingSession = rows?.[0];
+      }
+      if (!existingSession || existingSession.expertId !== session.user.id) {
+        return {
+          success: false,
+          error: { code: "FORBIDDEN", message: "You are not the assigned expert for this session." },
+        };
+      }
+    }
 
     let sessionData: { projectId?: string; clientId?: string } | null = null;
     if (defenseDelegate) {

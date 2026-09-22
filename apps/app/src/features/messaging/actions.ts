@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import type { RoleName, Prisma } from "@prisma/client";
 import { runFirewall, getFirewallWarningMessage } from "@/lib/messaging/firewall";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
+import { assertProjectParticipant } from "@/lib/access-control";
 import {
   SendMessageSchema,
   ReviewBlockedMessageSchema,
@@ -237,6 +238,14 @@ export async function syncNewMessages(
     };
   }
 
+  const participant = await assertProjectParticipant(projectId, session.user);
+  if (!participant.isParticipant) {
+    return {
+      success: false,
+      error: participant.error || { code: "FORBIDDEN", message: "You do not have access to this conversation." },
+    };
+  }
+
   try {
     return await withDbTimeout((async () => {
       const sinceDate = new Date(sinceIso);
@@ -361,6 +370,14 @@ export async function markMessagesAsRead(
     return { success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized." } };
   }
 
+  const participant = await assertProjectParticipant(projectId, session.user);
+  if (!participant.isParticipant) {
+    return {
+      success: false,
+      error: participant.error || { code: "FORBIDDEN", message: "You do not have access to this conversation." },
+    };
+  }
+
   const userId = session.user.id;
   if (!messageIds || messageIds.length === 0 || !userId) {
     return { success: true, data: { readCount: 0 } };
@@ -431,6 +448,14 @@ export async function getProjectMessages(
     return {
       success: false,
       error: { code: "UNAUTHORIZED", message: "You must be logged in to view messages." },
+    };
+  }
+
+  const participant = await assertProjectParticipant(projectId, session.user);
+  if (!participant.isParticipant) {
+    return {
+      success: false,
+      error: participant.error || { code: "FORBIDDEN", message: "You do not have access to this conversation." },
     };
   }
 

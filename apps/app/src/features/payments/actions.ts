@@ -23,6 +23,7 @@ import {
 } from "@/lib/payment-rules";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import type { PaymentStatus, PackageName, ProjectStatus } from "@prisma/client";
+import { assertStudyAccess } from "@/lib/access-control";
 import fs from "fs";
 import path from "path";
 
@@ -779,6 +780,22 @@ export async function getPaymentsByProject(
     };
   }
 
+  // Statisticians and QA Leads are strictly forbidden from viewing client commercial payments
+  if (session.user.role === "STATISTICIAN" || session.user.role === "SENIOR_QA_LEAD") {
+    return {
+      success: false,
+      error: { code: "FORBIDDEN", message: "You do not have permission to view study payments." },
+    };
+  }
+
+  const access = await assertStudyAccess(projectId, session.user);
+  if (!access.hasAccess) {
+    return {
+      success: false,
+      error: access.error || { code: "FORBIDDEN", message: "You don't have access to this study's payments." },
+    };
+  }
+
   try {
     const project = await withDbTimeout(
       db.project.findUnique({
@@ -874,10 +891,22 @@ export async function getPaymentsByProject(
         const raw = fs.readFileSync(DEV_PROJECTS_FILE, "utf-8");
         const devProjects = JSON.parse(raw);
         const p = devProjects.find((x: { id: string }) => x.id === projectId);
-        if (p?.quotation) {
-          totalAmount = Number(p.quotation.totalAmount) || totalAmount;
-          downpaymentRequired = Number(p.quotation.downpaymentRequired) || downpaymentRequired;
-          quotationId = p.quotation.id || null;
+        if (p) {
+          if (
+            session.user.role === "CLIENT" &&
+            p.clientId !== session.user.id &&
+            p.client?.email?.toLowerCase() !== session.user.email?.toLowerCase()
+          ) {
+            return {
+              success: false,
+              error: { code: "FORBIDDEN", message: "You do not have access to this study's payments." },
+            };
+          }
+          if (p.quotation) {
+            totalAmount = Number(p.quotation.totalAmount) || totalAmount;
+            downpaymentRequired = Number(p.quotation.downpaymentRequired) || downpaymentRequired;
+            quotationId = p.quotation.id || null;
+          }
         }
       }
     } catch {
