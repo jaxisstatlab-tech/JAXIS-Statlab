@@ -721,31 +721,22 @@ export function NotificationDrawer({
           >
           {/* Header (Matching Sidebar Studio Vibe - h-16, #010114, border-white/[0.08]) */}
           <div className="h-16 px-5 border-b border-white/[0.08] flex items-center justify-between bg-[#010114] shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-[2px] bg-[#CC6600]/10 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] shrink-0 shadow-sm">
-                <Bell
-                  size={18}
-                  weight="fill"
-                  className={optimisticState.unreadCount > 0 ? "text-[#FFA040]" : "text-white/60"}
-                />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-white font-sans tracking-wide leading-none">
+                  Notifications
+                </h2>
+                {optimisticState.unreadCount > 0 && (
+                  <span className="bg-[#CC6600] text-white font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-[2px] shadow-sm leading-none">
+                    {optimisticState.unreadCount} NEW
+                  </span>
+                )}
               </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-bold text-white font-sans tracking-wide leading-none">
-                    Notifications
-                  </h2>
-                  {optimisticState.unreadCount > 0 && (
-                    <span className="bg-[#CC6600] text-white font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-[2px] shadow-sm leading-none">
-                      {optimisticState.unreadCount} NEW
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs text-white/40 font-sans mt-1">
-                  {optimisticState.unreadCount === 0
-                    ? "All caught up"
-                    : `${optimisticState.unreadCount} unread alert${optimisticState.unreadCount > 1 ? "s" : ""}`}
-                </span>
-              </div>
+              <span className="text-xs text-white/40 font-sans mt-1">
+                {optimisticState.unreadCount === 0
+                  ? "All caught up"
+                  : `${optimisticState.unreadCount} unread alert${optimisticState.unreadCount > 1 ? "s" : ""}`}
+              </span>
             </div>
 
             <div className="flex items-center gap-1.5">

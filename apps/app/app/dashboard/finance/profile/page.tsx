@@ -6,11 +6,25 @@ import {
   PageHeader,
   Card,
   Button,
-  FormTextarea,
-  FormFooter,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  LoadingState,
   Toast,
+  CopyButton,
 } from "@repo/ui";
-import { IconX } from "@tabler/icons-react";
+import {
+  UserCircle,
+  Key,
+  IdentificationCard,
+  Article,
+  Briefcase,
+  Plus,
+  X,
+  CheckCircle,
+  ShieldCheck,
+} from "@phosphor-icons/react";
 import { getOwnProfile, updateOwnProfile } from "@/features/staff/actions";
 import { ChangePasswordCard } from "@/features/auth/components/ChangePasswordCard";
 
@@ -116,6 +130,16 @@ export default function FinanceProfilePage() {
     });
   };
 
+  const initials = profile?.fullName
+    ? profile.fullName
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "FN";
+
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
       {toastMessage && (
@@ -126,17 +150,18 @@ export default function FinanceProfilePage() {
           onClose={() => setToastMessage(null)}
         />
       )}
+
       <PageHeader
-        title="Finance &amp; HR Officer Profile"
+        title="Finance & HR Officer Profile"
         description="Manage your officer identity, treasury signing credentials, and operational competencies."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "Finance & HR", href: "/dashboard/finance" },
-          { label: "My Profile" },
+          { label: "Profile Settings" },
         ]}
         actions={
           <Link href="/dashboard/finance">
-            <Button variant="outline" size="sm" className="rounded-[2px]">
+            <Button variant="outline" size="sm" className="rounded-[2px] font-sans">
               Back to Finance Desk
             </Button>
           </Link>
@@ -144,191 +169,320 @@ export default function FinanceProfilePage() {
       />
 
       {isLoading ? (
-        <Card className="p-12 text-center text-white/40 font-mono text-xs">
-          Loading profile parameters...
+        <Card className="p-12 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl">
+          <LoadingState variant="card" label="Loading profile..." />
         </Card>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          {/* Identity & Corporate Metadata (Read-Only) */}
-          <Card className="p-6 bg-[#010D1F] border border-white/[0.08]">
-            <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider mb-4 pb-3 border-b border-white/[0.08]">
-              Officer Identity
-            </h2>
+        <Tabs defaultValue="profile" className="flex flex-col gap-6 w-full">
+          <TabsList className="self-start">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <UserCircle size={15} weight="fill" />
+              <span>Officer Profile &amp; Scope</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Key size={15} weight="fill" />
+              <span>Account Security</span>
+            </TabsTrigger>
+          </TabsList>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-mono text-white/50 uppercase tracking-wider">
-                  Full Legal Name
-                </span>
-                <span className="text-sm font-semibold text-white">
-                  {profile?.fullName || "—"}
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-mono text-white/50 uppercase tracking-wider">
-                  Company Email
-                </span>
-                <span className="text-sm font-mono text-white/80">
-                  {profile?.email || "—"}
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-mono text-white/50 uppercase tracking-wider">
-                  Assigned Role
-                </span>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-[2px] text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    FINANCE &amp; HR OFFICER
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-mono text-emerald-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    Active
+          {/* ── TAB 1: OFFICER PROFILE ── */}
+          <TabsContent value="profile" className="flex flex-col gap-6 outline-none">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+              {/* Officer Identity Card */}
+              <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-6">
+                {/* Canonical Card Header (Rule 21) */}
+                <div className="border-b border-white/10 pb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
+                      <IdentificationCard size={18} weight="fill" className="text-[#CC6600]" />
+                      <span>Officer Identity</span>
+                    </h3>
+                    <p className="text-xs text-white/60 font-sans mt-0.5">
+                      Corporate credentials &amp; signing authority
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-400 uppercase font-semibold px-2 py-0.5 rounded-[2px] bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Active Duty
                   </span>
                 </div>
-              </div>
-            </div>
-          </Card>
 
-          {/* Bio / Summary */}
-          <Card className="p-6 bg-[#010D1F] border border-white/[0.08]">
-            <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider mb-1">
-              Professional Summary &amp; Scope
-            </h2>
-            <p className="text-xs text-white/50 mb-4">
-              Describe your financial oversight background, payroll experience, and human resources administration scope.
-            </p>
+                {/* Profile Identity Banner Row */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[2px] bg-[#010D1F] border border-white/10">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-[2px] bg-[#011B38] border border-white/15 flex items-center justify-center font-sans font-bold text-base text-white shadow-inner shrink-0">
+                      {initials}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-base font-bold text-white font-sans truncate">
+                        {profile?.fullName || "Finance & HR Officer"}
+                      </span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          FINANCE &amp; HR OFFICER
+                        </span>
+                        <span className="text-xs font-mono text-white/40">
+                          Corporate Finance &amp; HR Operations
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-            <FormTextarea
-              label="Professional Summary / Officer Profile"
-              placeholder="e.g., Finance & HR Officer managing corporate payroll disbursement, milestone verification, leave authorizations, and staff compensation compliance."
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={4}
-              monoLabel
-            />
-          </Card>
+                {/* Key-Value Details Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+                  <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#010D1F]/50 border border-white/[0.06]">
+                    <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
+                      Company Email
+                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-xs font-mono text-white/90 truncate">
+                        {profile?.email || "finance@jaxis.dev"}
+                      </span>
+                      <CopyButton
+                        value={profile?.email || "finance@jaxis.dev"}
+                        variant="ghost"
+                        className="p-0.5 text-white/40 hover:text-white shrink-0"
+                      />
+                    </div>
+                  </div>
 
-          {/* Competencies Multi-Tag Manager */}
-          <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-5">
-            <div>
-              <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider mb-1">
-                Operational Competencies &amp; Domains
-              </h2>
-              <p className="text-xs text-white/50">
-                Tag your primary operational duties across treasury, banking, compensation, and personnel administration.
-              </p>
-            </div>
+                  <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#010D1F]/50 border border-white/[0.06]">
+                    <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
+                      Operational Desk
+                    </span>
+                    <span className="text-xs font-sans text-white/90 truncate">
+                      Finance &amp; Treasury Desk
+                    </span>
+                  </div>
 
-            {/* Active Tags */}
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-mono text-white/50 uppercase tracking-wider">
-                Active Competencies ({specializations.length})
-              </span>
-              <div className="flex flex-wrap gap-2 min-h-[42px] p-3 rounded-[2px] bg-[#011B38] border border-white/[0.12] items-center">
-                {specializations.length === 0 ? (
-                  <span className="text-xs text-white/30 italic font-mono">
-                    No competencies added yet. Select from suggestions below or type a custom tag.
+                  <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#010D1F]/50 border border-white/[0.06]">
+                    <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
+                      Signing Authority
+                    </span>
+                    <span className="text-xs font-sans text-emerald-400 font-medium truncate">
+                      Disbursement &amp; Payroll Approver
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#010D1F]/50 border border-white/[0.06]">
+                    <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
+                      Officer ID
+                    </span>
+                    <span className="text-xs font-mono text-white/70">
+                      {profile?.id ? `FIN-${profile.id.slice(-6).toUpperCase()}` : "FIN-001"}
+                    </span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Professional Summary & Scope Card */}
+              <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-6">
+                {/* Canonical Card Header (Rule 21) */}
+                <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
+                      <Article size={18} weight="fill" className="text-[#CC6600]" />
+                      <span>Professional Summary &amp; Scope</span>
+                    </h3>
+                    <p className="text-xs text-white/60 font-sans mt-1">
+                      Describe your financial oversight background, payroll experience, and human resources administration scope.
+                    </p>
+                  </div>
+                  <span className="text-xs font-mono text-white/70 uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-white/[0.06] border border-white/10 flex-shrink-0 self-start sm:self-auto">
+                    Officer Bio
                   </span>
-                ) : (
-                  specializations.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-xs font-mono bg-[#012E57] text-sky-200 border border-sky-400/30"
-                    >
-                      {tag}
+                </div>
+
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-mono text-white/70 uppercase tracking-wider font-semibold">
+                      Professional Summary / Officer Profile
+                    </label>
+                    <span className="text-[11px] font-mono text-white/40">
+                      {bio.length} characters
+                    </span>
+                  </div>
+                  <textarea
+                    placeholder="e.g., Finance & HR Officer managing corporate payroll disbursement, milestone verification, leave authorizations, and staff compensation compliance."
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    rows={4}
+                    className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] p-3.5 text-sm font-sans text-white placeholder:text-white/30 focus:outline-none focus:border-[#CC6600] transition-colors leading-relaxed resize-y"
+                  />
+                  <p className="text-[11px] font-sans text-white/40">
+                    This profile is recorded on corporate payroll audit ledgers and official company filings.
+                  </p>
+                </div>
+              </Card>
+
+              {/* Operational Competencies Card */}
+              <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-6">
+                {/* Canonical Card Header (Rule 21) */}
+                <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
+                      <Briefcase size={18} weight="fill" className="text-[#CC6600]" />
+                      <span>Operational Competencies &amp; Domains</span>
+                    </h3>
+                    <p className="text-xs text-white/60 font-sans mt-1">
+                      Tag your primary operational duties across treasury, banking, compensation, and personnel administration.
+                    </p>
+                  </div>
+                  <span className="text-xs font-mono text-[#FFA040] uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-[#CC6600]/10 border border-[#CC6600]/30 flex-shrink-0 self-start sm:self-auto">
+                    {specializations.length} Domains
+                  </span>
+                </div>
+
+                {/* Active Competencies Tag Pool */}
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-white/70 uppercase tracking-wider font-semibold">
+                      Active Operational Competencies ({specializations.length})
+                    </span>
+                    {specializations.length > 0 && (
                       <button
                         type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="text-sky-400 hover:text-white transition-colors cursor-pointer"
-                        title={`Remove ${tag}`}
+                        onClick={() => setSpecializations([])}
+                        className="text-[11px] font-sans text-white/40 hover:text-red-400 transition-colors cursor-pointer"
                       >
-                        <IconX size={12} stroke={2} />
+                        Clear All
                       </button>
-                    </span>
-                  ))
-                )}
-              </div>
-            </div>
+                    )}
+                  </div>
 
-            <div className="flex items-stretch gap-2">
-              <input
-                type="text"
-                placeholder="Type custom competency (e.g., Escrow Disbursement)..."
-                value={customTag}
-                onChange={(e) => setCustomTag(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAddTag(customTag);
-                  }
-                }}
-                className="flex-1 bg-[#011B38] border border-white/[0.12] rounded-[2px] text-xs font-mono text-white placeholder-white/40 focus:outline-none focus:border-[#CC6600] transition-colors"
-                style={{
-                  height: "2.5rem",
-                  paddingLeft: "1rem",
-                  paddingRight: "1rem",
-                  boxSizing: "border-box",
-                }}
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => handleAddTag(customTag)}
-                disabled={!customTag.trim()}
-                className="h-10 px-4 text-xs font-mono whitespace-nowrap flex items-center justify-center rounded-[2px]"
-                style={{
-                  height: "2.5rem",
-                  boxSizing: "border-box",
-                }}
-              >
-                + ADD TAG
-              </Button>
-            </div>
+                  {specializations.length === 0 ? (
+                    <div className="p-4 rounded-[2px] bg-[#010D1F] border border-dashed border-white/10 text-center">
+                      <span className="text-xs text-white/40 font-sans">
+                        No competencies selected yet. Add tags below or click from popular domains.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2 p-3 rounded-[2px] bg-[#010D1F] border border-white/10 min-h-[52px]">
+                      {specializations.map((spec) => (
+                        <span
+                          key={spec}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-xs font-mono bg-[#CC6600]/15 text-[#FFA040] border border-[#CC6600]/30 hover:border-[#CC6600]/50 transition-colors"
+                        >
+                          {spec}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTag(spec)}
+                            className="text-[#FFA040]/70 hover:text-white transition-colors cursor-pointer"
+                            title={`Remove ${spec}`}
+                          >
+                            <X size={12} weight="bold" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-            {/* Quick-Add Suggestions */}
-            <div className="flex flex-col gap-2 pt-3 border-t border-white/[0.06]">
-              <span className="text-xs font-mono text-white/50 uppercase tracking-wider">
-                Quick-Add Standard Competencies
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {POPULAR_FINANCE_SPECIALIZATIONS.filter((s) => !specializations.includes(s)).map(
-                  (spec) => (
-                    <button
-                      key={spec}
+                {/* Custom Tag Input */}
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                  <input
+                    type="text"
+                    placeholder="Add custom duty (e.g., SSS & PhilHealth Compliance, Petty Cash Auditing)..."
+                    value={customTag}
+                    onChange={(e) => setCustomTag(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTag(customTag);
+                      }
+                    }}
+                    className="flex-1 bg-[#010D1F] border border-white/10 rounded-[2px] px-3.5 py-2 text-xs font-sans text-white placeholder:text-white/30 focus:outline-none focus:border-[#CC6600] transition-colors"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddTag(customTag)}
+                    disabled={!customTag.trim()}
+                    className="rounded-[2px] font-sans text-xs gap-1.5 shrink-0"
+                  >
+                    <Plus size={14} weight="bold" />
+                    <span>Add Competency</span>
+                  </Button>
+                </div>
+
+                {/* Recommended Quick-Add Pool */}
+                <div className="flex flex-col gap-2 pt-2 border-t border-white/[0.06]">
+                  <span className="text-[11px] font-mono text-white/40 uppercase tracking-wider">
+                    Recommended Finance &amp; HR Operational Domains
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {POPULAR_FINANCE_SPECIALIZATIONS.filter((s) => !specializations.includes(s)).map((spec) => (
+                      <button
+                        key={spec}
+                        type="button"
+                        onClick={() => handleAddTag(spec)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-xs font-sans bg-white/[0.04] text-white/70 border border-white/10 hover:border-[#CC6600]/40 hover:text-white hover:bg-[#CC6600]/10 transition-colors cursor-pointer text-left"
+                      >
+                        <Plus size={11} weight="bold" className="text-[#CC6600] shrink-0" />
+                        <span>{spec}</span>
+                      </button>
+                    ))}
+                    {POPULAR_FINANCE_SPECIALIZATIONS.filter((s) => !specializations.includes(s)).length === 0 && (
+                      <span className="text-xs text-white/40 font-sans italic">
+                        All standard operational domains have been added.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Save Action Bar */}
+              <Card className="p-4 sm:p-5 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-2 text-xs text-white/50 font-sans">
+                  <CheckCircle size={15} weight="fill" className="text-emerald-400 shrink-0" />
+                  <span>Changes update your signing records across corporate payroll and treasury receipts.</span>
+                </div>
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                  <Link href="/dashboard/finance">
+                    <Button
                       type="button"
-                      onClick={() => handleAddTag(spec)}
-                      className="px-2.5 py-1 rounded-[2px] text-xs font-mono bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isPending}
+                      className="rounded-[2px] active:scale-[0.97] transition-transform font-sans"
                     >
-                      + {spec}
-                    </button>
-                  )
-                )}
+                      Cancel
+                    </Button>
+                  </Link>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    loading={isPending}
+                    className="rounded-[2px] active:scale-[0.97] transition-transform font-sans font-semibold px-5"
+                  >
+                    Save Officer Profile
+                  </Button>
+                </div>
+              </Card>
+            </form>
+          </TabsContent>
+
+          {/* ── TAB 2: ACCOUNT SECURITY ── */}
+          <TabsContent value="security" className="flex flex-col gap-6 outline-none">
+            <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-3">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck size={20} weight="fill" className="text-[#CC6600]" />
+                <h3 className="text-base font-bold text-white font-sans">
+                  Account Security &amp; Credentials
+                </h3>
               </div>
-            </div>
-          </Card>
+              <p className="text-xs text-white/60 font-sans leading-relaxed max-w-2xl">
+                Manage your login password to ensure security across treasury approvals and payroll disbursement desks.
+              </p>
+            </Card>
 
-          {/* Form Actions */}
-          <FormFooter className="mt-4">
-            <Link href="/dashboard/finance">
-              <Button type="button" variant="ghost" disabled={isPending}>
-                Cancel
-              </Button>
-            </Link>
-            <Button
-              type="submit"
-              variant="primary"
-              loading={isPending}
-            >
-              Save Profile Changes
-            </Button>
-          </FormFooter>
-        </form>
+            <ChangePasswordCard />
+          </TabsContent>
+        </Tabs>
       )}
-
-      {!isLoading && <ChangePasswordCard />}
     </div>
   );
 }
