@@ -34,8 +34,8 @@ import {
   sanitizeProjectForSpecialist,
 } from "@/lib/access-control";
 
-const DEV_PROJECTS_FILE = path.join(process.cwd(), ".dev-projects.json");
-const DEV_PAYMENTS_FILE = path.join(process.cwd(), "dev_data", "payments.json");
+const DEV_PROJECTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
+const DEV_PAYMENTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), "dev_data", "payments.json");
 
 interface PersistedDevPaymentRecord {
   id: string;

@@ -95,7 +95,7 @@ export const DEV_USERS: Record<string, MockUser> = {
 import fs from "fs";
 import path from "path";
 
-const DEV_USERS_FILE = path.join(process.cwd(), ".dev-users.json");
+const DEV_USERS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-users.json");
 
 function readPersistedDevUsers(): Record<string, MockUser> {
   try {

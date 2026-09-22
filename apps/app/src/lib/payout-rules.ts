@@ -38,7 +38,7 @@ export type TreasuryPayoutMode = "PERCENTAGE" | "FIXED";
 
 export const QA_LEAD_PAYOUT_PERCENT_OF_STAT = 10.0; // QA Lead receives 10% of the Statistician's payout amount fallback
 
-const DEV_DATA_DIR = path.join(process.cwd(), "dev_data");
+const DEV_DATA_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), "dev_data");
 const PACKAGE_RATES_FILE = path.join(DEV_DATA_DIR, "package_rates.json");
 
 export interface PackageRateRecord {

@@ -36,14 +36,14 @@ import {
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import { type QuotationStatus, type LineItemType, type ProjectStatus, type AddOnName, PackageName, Prisma } from "@prisma/client";
 
-const DEV_QUOTATIONS_FILE = path.join(process.cwd(), ".dev-quotations.json");
-const DEV_PROJECTS_FILE = path.join(process.cwd(), ".dev-projects.json");
+const DEV_QUOTATIONS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-quotations.json");
+const DEV_PROJECTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
 
 function getDevCatalogFilePaths(): string[] {
   const cwd = process.cwd();
   return [
-    path.join(cwd, ".dev-catalog.json"),
-    path.join(cwd, "apps", "app", ".dev-catalog.json"),
+    path.join(/*turbopackIgnore: true*/ cwd, ".dev-catalog.json"),
+    path.join(/*turbopackIgnore: true*/ cwd, "apps", "app", ".dev-catalog.json"),
   ];
 }
 

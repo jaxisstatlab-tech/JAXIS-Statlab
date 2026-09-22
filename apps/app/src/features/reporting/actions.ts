@@ -1815,7 +1815,7 @@ export async function getDatabaseResetPreviewAction(): Promise<{
     // Safely count payslips from dev_data/payslips.json
     let payslipsCount = 0;
     try {
-      const devDataDir = path.join(process.cwd(), "dev_data");
+      const devDataDir = path.join(/*turbopackIgnore: true*/ process.cwd(), "dev_data");
       const payslipsFile = path.join(devDataDir, "payslips.json");
       if (fs.existsSync(payslipsFile)) {
         const raw = fs.readFileSync(payslipsFile, "utf-8");
@@ -1975,7 +1975,7 @@ export async function freshDatabaseResetAction(
       const payoutDel = await db.payout.deleteMany({});
       let wipedPayslips = 0;
       try {
-        const devDataDir = path.join(process.cwd(), "dev_data");
+        const devDataDir = path.join(/*turbopackIgnore: true*/ process.cwd(), "dev_data");
         const payslipsFile = path.join(devDataDir, "payslips.json");
         const payoutDetailsFile = path.join(devDataDir, "payout_details.json");
         const configsFile = path.join(devDataDir, "payroll_configs.json");

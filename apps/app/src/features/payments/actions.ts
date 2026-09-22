@@ -29,9 +29,9 @@ import path from "path";
 
 // ─── Local Dev Persistence Fallback ──────────────────────────────────────────
 
-const DEV_DATA_DIR = path.join(process.cwd(), "dev_data");
+const DEV_DATA_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), "dev_data");
 const DEV_PAYMENTS_FILE = path.join(DEV_DATA_DIR, "payments.json");
-const DEV_PROJECTS_FILE = path.join(process.cwd(), ".dev-projects.json");
+const DEV_PROJECTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
 const DEV_PAYMENT_CHANNELS_FILE = path.join(DEV_DATA_DIR, "payment_channels.json");
 
 function ensureDevDataDir() {

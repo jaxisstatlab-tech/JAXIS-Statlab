@@ -24,9 +24,9 @@ import { dispatchRealtimeNotification } from "@/features/notifications/dispatche
 import type { ProjectStatus } from "@prisma/client";
 import { assertStudyAccess } from "@/lib/access-control";
 
-const DEV_SOWS_FILE = path.join(process.cwd(), ".dev-sows.json");
-const DEV_PROJECTS_FILE = path.join(process.cwd(), ".dev-projects.json");
-const DEV_QUOTATIONS_FILE = path.join(process.cwd(), ".dev-quotations.json");
+const DEV_SOWS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-sows.json");
+const DEV_PROJECTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
+const DEV_QUOTATIONS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-quotations.json");
 
 function readPersistedDevSows(): SOWDetailItem[] {
   try {

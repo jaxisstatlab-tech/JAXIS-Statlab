@@ -26,7 +26,7 @@ import {
 } from "./schemas";
 import { getDevUsers } from "@/lib/mock-data/users.data";
 
-const DEV_DATA_DIR = path.join(process.cwd(), "dev_data");
+const DEV_DATA_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), "dev_data");
 const CONFIGS_FILE = path.join(DEV_DATA_DIR, "payroll_configs.json");
 const PAYSLIPS_FILE = path.join(DEV_DATA_DIR, "payslips.json");
 const PAYOUT_DETAILS_FILE = path.join(DEV_DATA_DIR, "payout_details.json");
@@ -653,13 +653,13 @@ export async function generateBatchPayslips(
   // Also check dev-projects.json if assignments is empty
   if (assignments.length === 0) {
     try {
-      const devProjPath = path.join(process.cwd(), ".dev-projects.json");
+      const devProjPath = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
       if (fs.existsSync(devProjPath)) {
         const rawProjs = JSON.parse(fs.readFileSync(devProjPath, "utf-8"));
 
         // Cross-reference with .dev-quotations.json for dynamic SOW amounts
         let devQuotations: { projectId?: string; status?: string; totalAmount?: number; packageName?: string }[] = [];
-        const devQuotePath = path.join(process.cwd(), ".dev-quotations.json");
+        const devQuotePath = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-quotations.json");
         if (fs.existsSync(devQuotePath)) {
           devQuotations = JSON.parse(fs.readFileSync(devQuotePath, "utf-8"));
         }
