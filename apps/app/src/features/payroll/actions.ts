@@ -32,8 +32,12 @@ const PAYSLIPS_FILE = path.join(DEV_DATA_DIR, "payslips.json");
 const PAYOUT_DETAILS_FILE = path.join(DEV_DATA_DIR, "payout_details.json");
 
 function ensureDevDataDir() {
-  if (!fs.existsSync(DEV_DATA_DIR)) {
-    fs.mkdirSync(DEV_DATA_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(DEV_DATA_DIR)) {
+      fs.mkdirSync(DEV_DATA_DIR, { recursive: true });
+    }
+  } catch {
+    // Read-only filesystem in serverless environments (e.g. Vercel)
   }
 }
 

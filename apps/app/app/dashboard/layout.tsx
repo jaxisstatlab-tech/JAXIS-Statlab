@@ -7,6 +7,8 @@ import { getClientProfile } from "@/features/client-profile/actions";
 import { getActiveShift } from "@/features/attendance/actions";
 import { getUnreadMessagesCount } from "@/features/messaging/actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -15,8 +17,12 @@ export default async function DashboardLayout({
   const session = await auth();
   const user = session?.user;
 
+  if (!user?.id) {
+    redirect("/login");
+  }
+
   // Real-time security verification: bounce suspended accounts and invalidated sessions
-  if (user?.id) {
+  try {
     const liveState = await getLiveAccountState(user.id);
     if (liveState) {
       if (liveState.status === "SUSPENDED") {
@@ -31,6 +37,14 @@ export default async function DashboardLayout({
         }
       }
     }
+  } catch (err: unknown) {
+    if (typeof err === "object" && err !== null && "digest" in err) {
+      const digest = String((err as { digest?: unknown }).digest || "");
+      if (digest.startsWith("NEXT_REDIRECT")) {
+        throw err;
+      }
+    }
+    console.warn("[DashboardLayout] Live account check non-blocking warning:", err);
   }
 
   const userRole = (user?.role as RoleName) || "ADMIN";
@@ -39,15 +53,34 @@ export default async function DashboardLayout({
 
   let clientProfileIncomplete = false;
   if (userRole === "CLIENT" && user?.id) {
-    const profile = await getClientProfile();
-    if (!profile || !profile.institutionSchool || !profile.contactNumber) {
-      clientProfileIncomplete = true;
+    try {
+      const profile = await getClientProfile();
+      if (!profile || !profile.institutionSchool || !profile.contactNumber) {
+        clientProfileIncomplete = true;
+      }
+    } catch (err) {
+      console.warn("[DashboardLayout] Client profile check warning:", err);
     }
   }
 
   const isInternal = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO"].includes(userRole);
-  const initialActiveShift = isInternal ? await getActiveShift() : null;
-  const initialUnreadMessagesCount = await getUnreadMessagesCount();
+  let initialActiveShift = null;
+  if (isInternal) {
+    try {
+      initialActiveShift = await getActiveShift();
+    } catch (err) {
+      console.warn("[DashboardLayout] getActiveShift fallback to null:", err);
+      initialActiveShift = null;
+    }
+  }
+
+  let initialUnreadMessagesCount = 0;
+  try {
+    initialUnreadMessagesCount = await getUnreadMessagesCount();
+  } catch (err) {
+    console.warn("[DashboardLayout] getUnreadMessagesCount fallback to 0:", err);
+    initialUnreadMessagesCount = 0;
+  }
 
   return (
     <DashboardShell

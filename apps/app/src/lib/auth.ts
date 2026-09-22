@@ -22,10 +22,14 @@ export function computePasswordFingerprint(passwordHash: string): string {
   return crypto.createHash("sha256").update(passwordHash).digest("hex").slice(0, 16);
 }
 
-// Enforce canonical production URL in production / Vercel environments
-if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
-  process.env.AUTH_URL = "https://app.jaxis-statlab.com";
-  process.env.NEXTAUTH_URL = "https://app.jaxis-statlab.com";
+// Enforce canonical production URL in Vercel environments if not already specified
+if (process.env.VERCEL) {
+  if (!process.env.AUTH_URL) {
+    process.env.AUTH_URL = "https://app.jaxis-statlab.com";
+  }
+  if (!process.env.NEXTAUTH_URL) {
+    process.env.NEXTAUTH_URL = "https://app.jaxis-statlab.com";
+  }
 }
 
 export const authConfig: NextAuthConfig = {

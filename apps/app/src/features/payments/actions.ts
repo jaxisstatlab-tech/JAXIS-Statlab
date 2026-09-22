@@ -35,8 +35,12 @@ const DEV_PROJECTS_FILE = path.join(process.cwd(), ".dev-projects.json");
 const DEV_PAYMENT_CHANNELS_FILE = path.join(DEV_DATA_DIR, "payment_channels.json");
 
 function ensureDevDataDir() {
-  if (!fs.existsSync(DEV_DATA_DIR)) {
-    fs.mkdirSync(DEV_DATA_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(DEV_DATA_DIR)) {
+      fs.mkdirSync(DEV_DATA_DIR, { recursive: true });
+    }
+  } catch {
+    // Read-only filesystem in serverless environments (e.g. Vercel)
   }
 }
 
@@ -1171,12 +1175,17 @@ export async function getFinanceReceivablesSummary(): Promise<ActionResponse<Fin
         completedStudiesCount++;
       }
 
+      const firstPayment = p.payments[0];
+      const lastPaymentAt = firstPayment?.createdAt
+        ? (firstPayment.createdAt instanceof Date ? firstPayment.createdAt.toISOString() : new Date(firstPayment.createdAt).toISOString())
+        : (devPayments.find((dp) => dp.projectId === p.id)?.createdAt || null);
+
       receivables.push({
         id: p.id,
         intakeId: p.intakeId,
         researchTitle: p.researchTitle,
-        clientName: p.client.fullName,
-        university: p.client.clientProfile?.institutionSchool || "State University",
+        clientName: p.client?.fullName || "Lead Researcher",
+        university: p.client?.clientProfile?.institutionSchool || "State University",
         masterStatus: p.masterStatus,
         totalContractAmount: totalContract,
         totalPaidAmount: totalPaid,
@@ -1187,7 +1196,7 @@ export async function getFinanceReceivablesSummary(): Promise<ActionResponse<Fin
         isOverpaid,
         overpaidAmount,
         paymentCount: p.payments.length + devPayments.filter((dp) => dp.projectId === p.id).length,
-        lastPaymentAt: p.payments[0]?.createdAt.toISOString() || devPayments.find((dp) => dp.projectId === p.id)?.createdAt || null,
+        lastPaymentAt,
       });
     }
 
