@@ -351,9 +351,25 @@ export function StaffRosterClient({
     });
   };
 
+  const getLoginUrl = () => {
+    if (process.env.NEXT_PUBLIC_APP_URL) {
+      return `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/login`;
+    }
+    if (
+      typeof window !== "undefined" &&
+      window.location.hostname &&
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1"
+    ) {
+      return `${window.location.origin}/login`;
+    }
+    return "https://app.jaxis-statlab.com/login";
+  };
+
   const copyCredentials = () => {
     if (!provisionedData) return;
-    const text = `JAXIS StatLab Internal Account Credentials\nName: ${provisionedData.fullName}\nRole: ${provisionedData.role}\nEmail: ${provisionedData.email}\nTemporary Password: ${provisionedData.temporaryPassword}\nLogin URL: http://localhost:3001/login`;
+    const loginUrl = getLoginUrl();
+    const text = `JAXIS StatLab Internal Account Credentials\nName: ${provisionedData.fullName}\nRole: ${provisionedData.role}\nEmail: ${provisionedData.email}\nTemporary Password: ${provisionedData.temporaryPassword}\nLogin URL: ${loginUrl}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setToastMessage({
@@ -1459,6 +1475,12 @@ export function StaffRosterClient({
                   Institutional Email
                 </span>
                 <span className="text-white">{provisionedData.email}</span>
+              </div>
+              <div className="flex justify-between items-center border-b border-white/5 pb-2.5">
+                <span className="text-white/50 uppercase tracking-wider">
+                  Portal Login URL
+                </span>
+                <span className="text-sky-400 font-mono text-xs">{getLoginUrl()}</span>
               </div>
               <div className="flex justify-between items-center pt-1">
                 <span className="text-white/50 uppercase tracking-wider">
