@@ -152,24 +152,33 @@ export async function saveCommercialCatalog(
   }
 
   try {
-    // 1. Atomic Database Persistence for standard packages
+    // 1. Dev file fallback synchronization (always writes locally so dev updates succeed immediately)
+    writeDevCatalogFile(data);
+
+    // 2. Atomic Database Persistence for standard packages (when database is connected)
     const validPackageNames: string[] = Object.values(PackageName);
     const upsertPromises = [];
 
     for (const [key, pkg] of Object.entries(data.packages || {})) {
       if (validPackageNames.includes(key)) {
+        const minPriceNum = Number(pkg.minPrice) || 0;
+        const maxPriceNum =
+          pkg.maxPrice !== null && pkg.maxPrice !== undefined && !isNaN(Number(pkg.maxPrice))
+            ? Number(pkg.maxPrice)
+            : null;
+
         upsertPromises.push(
           db.packagePriceConfig.upsert({
             where: { packageName: key as PackageName },
             update: {
-              minPrice: new Prisma.Decimal(pkg.minPrice),
-              maxPrice: pkg.maxPrice !== null && pkg.maxPrice !== undefined ? new Prisma.Decimal(pkg.maxPrice) : null,
+              minPrice: new Prisma.Decimal(minPriceNum),
+              maxPrice: maxPriceNum !== null ? new Prisma.Decimal(maxPriceNum) : null,
               isUpfront: Boolean(pkg.isUpfront),
             },
             create: {
               packageName: key as PackageName,
-              minPrice: new Prisma.Decimal(pkg.minPrice),
-              maxPrice: pkg.maxPrice !== null && pkg.maxPrice !== undefined ? new Prisma.Decimal(pkg.maxPrice) : null,
+              minPrice: new Prisma.Decimal(minPriceNum),
+              maxPrice: maxPriceNum !== null ? new Prisma.Decimal(maxPriceNum) : null,
               isUpfront: Boolean(pkg.isUpfront),
             },
           })
@@ -177,15 +186,34 @@ export async function saveCommercialCatalog(
       }
     }
 
+    let dbPersisted = false;
+    let dbErrorMessage: string | null = null;
+
     if (upsertPromises.length > 0) {
-      await withDbTimeout(
-        db.$transaction(upsertPromises),
-        8000
-      );
+      try {
+        await withDbTimeout(
+          db.$transaction(upsertPromises),
+          15000
+        );
+        dbPersisted = true;
+      } catch (dbErr: unknown) {
+        dbErrorMessage = dbErr instanceof Error ? dbErr.message : String(dbErr);
+        console.warn("[saveCommercialCatalog] Database write skipped or timed out, preserved in dev catalog:", dbErrorMessage);
+      }
     }
 
-    // 2. Dev file fallback synchronization (best-effort, non-blocking)
-    writeDevCatalogFile(data);
+    // In production, database persistence is required
+    if (!dbPersisted && process.env.NODE_ENV === "production") {
+      return {
+        success: false,
+        error: {
+          code: "DATABASE_ERROR",
+          message: dbErrorMessage
+            ? `Failed to save changes to production database: ${dbErrorMessage}`
+            : "Failed to persist commercial catalog changes to the database.",
+        },
+      };
+    }
 
     // 3. Invalidate relevant dashboard paths
     try {
@@ -230,7 +258,10 @@ export async function resetCommercialCatalog(): Promise<ActionResponse<Commercia
   }
 
   try {
-    // 1. Reset standard packages in Database
+    // 1. Clean up dev file if present
+    deleteDevCatalogFile();
+
+    // 2. Reset standard packages in Database
     const defaultPackageConfigs = [
       { packageName: PackageName.JX_01_DATACHECK, minPrice: 1000, maxPrice: 1000, isUpfront: true },
       { packageName: PackageName.JX_02_START, minPrice: 1500, maxPrice: 1800, isUpfront: true },
@@ -255,10 +286,27 @@ export async function resetCommercialCatalog(): Promise<ActionResponse<Commercia
       })
     );
 
-    await withDbTimeout(db.$transaction(resetPromises), 8000);
+    let dbPersisted = false;
+    let dbErrorMessage: string | null = null;
+    try {
+      await withDbTimeout(db.$transaction(resetPromises), 15000);
+      dbPersisted = true;
+    } catch (dbErr: unknown) {
+      dbErrorMessage = dbErr instanceof Error ? dbErr.message : String(dbErr);
+      console.warn("[resetCommercialCatalog] Database reset skipped or timed out:", dbErrorMessage);
+    }
 
-    // 2. Clean up dev file if present
-    deleteDevCatalogFile();
+    if (!dbPersisted && process.env.NODE_ENV === "production") {
+      return {
+        success: false,
+        error: {
+          code: "DATABASE_ERROR",
+          message: dbErrorMessage
+            ? `Failed to reset packages in production database: ${dbErrorMessage}`
+            : "Failed to reset commercial catalog in the database.",
+        },
+      };
+    }
 
     const defaultData: CommercialCatalogData = {
       packages: PACKAGES_CATALOG,

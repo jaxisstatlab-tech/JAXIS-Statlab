@@ -1,3 +1,28 @@
+/**
+ * ============================================================================
+ * 🔒 PRODUCTION DATABASE INTEGRITY & SAFETY GUARDRAILS (CRITICAL)
+ * ============================================================================
+ * THIS FILE INITIALIZES THE CORE PRISMA CLIENT CONNECTED TO THE PRODUCTION DATABASE.
+ * 
+ * STRICT RULES FOR ALL AI AGENTS & DEVELOPERS:
+ * 1. ZERO UNCONTROLLED MUTATIONS:
+ *    - Never execute bulk delete, truncate, drop table, or forced schema resets
+ *      against the production database (PostgreSQL / Supabase).
+ *    - Schema updates must ONLY be applied via tested, reversible Prisma migrations.
+ *      NEVER run `prisma db push --force-reset` on environments with live data.
+ * 2. SEPARATION OF MOCK FALLBACKS:
+ *    - Dev-only JSON files (.dev-*.json, dev_data/*) exist exclusively for offline
+ *      local development. They must NEVER overwrite, delete, or desync production
+ *      database records.
+ * 3. TRANSACTION INTEGRITY:
+ *    - Multi-entity writes (financial payments, status transitions, study allocations)
+ *      MUST be wrapped in atomic `db.$transaction()` blocks to prevent partial states.
+ * 4. CREDENTIAL CONFIDENTIALITY:
+ *    - DATABASE_URL and DIRECT_URL are server-only secrets. Under no circumstances
+ *      should connection strings or query raw outputs be logged or exposed to clients.
+ * ============================================================================
+ */
+
 import { PrismaClient } from "@prisma/client";
 import { env } from "@/lib/env";
 

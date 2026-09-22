@@ -92,6 +92,21 @@ export const DEV_USERS: Record<string, MockUser> = {
   },
 };
 
+// ────────────────────────────────────────────────────────────────────────────
+// ⚠️ GUARDRAIL: LOCAL DEVELOPMENT OFFLINE PERSISTENCE ONLY
+// ────────────────────────────────────────────────────────────────────────────
+// The file operations below (.dev-users.json) are strictly for offline local
+// developer prototyping when the real PostgreSQL / Supabase database is unreachable.
+//
+// CRITICAL RULES FOR ALL AGENTS & DEVELOPERS:
+// 1. THIS IS NOT THE PRODUCTION DATABASE: Real user records, roles, credentials,
+//    and profiles are stored in PostgreSQL via Prisma (`db.user`, `db.staffProfile`).
+// 2. NEVER OVERWRITE PROD WITH DEV MOCKS: Mock users in this file must NEVER be
+//    synced into, overwrite, or mutate production database tables.
+// 3. ZERO IMPACT ON PRODUCTION: In staging and production environments, all user
+//    authentications and queries must resolve strictly through `db`.
+// ────────────────────────────────────────────────────────────────────────────
+
 import fs from "fs";
 import path from "path";
 

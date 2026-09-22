@@ -1,3 +1,16 @@
+// ============================================================================
+// 🔒 PRODUCTION DATABASE SCHEMA & MIGRATION GUARDRAILS (CRITICAL)
+// ============================================================================
+// Target: PostgreSQL / Supabase Production Database
+//
+// 1. NEVER RUN DESTRUCTIVE MIGRATIONS: Never execute `prisma db push --force-reset`
+//    or manual drop operations on production data.
+// 2. ALWAYS USE VERSIONED MIGRATIONS: Changes to models or columns must be done
+//    via `prisma migrate dev` in local dev and applied via `prisma migrate deploy`.
+// 3. ZERO CLIENT LEAKAGE: Connection strings (`DATABASE_URL`, `DIRECT_URL`) must
+//    remain server-only environment variables.
+// ============================================================================
+
 generator client {
   provider = "prisma-client-js"
 }

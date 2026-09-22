@@ -222,6 +222,18 @@ export function ServiceCatalogModal({
 
   // Save all changes
   const handleSave = async () => {
+    // Client-side pricing validation
+    for (const pkg of Object.values(catalog.packages || {})) {
+      if (pkg.minPrice < 0) {
+        setErrorMsg(`Minimum price for ${pkg.name} cannot be negative.`);
+        return;
+      }
+      if (pkg.maxPrice !== null && pkg.maxPrice !== undefined && pkg.maxPrice < pkg.minPrice) {
+        setErrorMsg(`Maximum price for ${pkg.name} cannot be less than its minimum price (₱${pkg.minPrice.toLocaleString()}).`);
+        return;
+      }
+    }
+
     setIsSaving(true);
     setErrorMsg(null);
     try {
