@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { renderToStaticMarkup } from "react-dom/server";
 import { auth, getLiveAccountState, computePasswordFingerprint } from "@/lib/auth";
 import { getActiveShift } from "@/features/attendance/actions";
 import { getUnreadMessagesCount } from "@/features/messaging/actions";
 import { projectService } from "@/features/projects/services/project.service";
 import { getFinanceReceivablesSummary } from "@/features/payments/actions";
 import { db } from "@/lib/db";
+import DashboardLayout from "@/app/dashboard/layout";
+import CEODashboardPage from "@/app/dashboard/ceo/page";
 
 export const dynamic = "force-dynamic";
 
@@ -81,5 +84,44 @@ export async function GET(request: Request) {
     result.dbError = err instanceof Error ? { message: err.message, stack: err.stack } : String(err);
   }
 
+  // 8. Test DashboardLayout async execution
+  try {
+    const layoutNode = await DashboardLayout({ children: "TEST_DASHBOARD_CHILDREN" });
+    result.layoutExecuted = true;
+    try {
+      const markup = renderToStaticMarkup(layoutNode as React.ReactElement);
+      result.layoutRenderSuccess = true;
+      result.layoutMarkupLength = markup.length;
+    } catch (renderErr: unknown) {
+      result.layoutRenderError = renderErr instanceof Error
+        ? { message: renderErr.message, stack: renderErr.stack }
+        : String(renderErr);
+    }
+  } catch (layoutErr: unknown) {
+    result.layoutExecError = layoutErr instanceof Error
+      ? { message: layoutErr.message, stack: layoutErr.stack }
+      : String(layoutErr);
+  }
+
+  // 9. Test CEODashboardPage async execution
+  try {
+    const pageNode = await CEODashboardPage();
+    result.ceoPageExecuted = true;
+    try {
+      const pageMarkup = renderToStaticMarkup(pageNode as React.ReactElement);
+      result.ceoPageRenderSuccess = true;
+      result.ceoPageMarkupLength = pageMarkup.length;
+    } catch (pageRenderErr: unknown) {
+      result.ceoPageRenderError = pageRenderErr instanceof Error
+        ? { message: pageRenderErr.message, stack: pageRenderErr.stack }
+        : String(pageRenderErr);
+    }
+  } catch (pageErr: unknown) {
+    result.ceoPageExecError = pageErr instanceof Error
+      ? { message: pageErr.message, stack: pageErr.stack }
+      : String(pageErr);
+  }
+
   return NextResponse.json(result, { status: 200 });
 }
+
