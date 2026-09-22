@@ -13,78 +13,95 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-  const user = session?.user;
+  const trace: Record<string, unknown> = {};
 
-  if (!user?.id) {
-    redirect("/login");
-  }
-
-  // Real-time security verification: bounce suspended accounts and invalidated sessions
   try {
-    const liveState = await getLiveAccountState(user.id);
-    if (liveState) {
-      if (liveState.status === "SUSPENDED") {
-        redirect("/login?error=AccountSuspended");
-      }
-      if (liveState.status === "TERMINATED") {
-        redirect("/login?error=AccountTerminated");
-      }
-      if (user.pwdFp && liveState.passwordHash) {
-        if (computePasswordFingerprint(liveState.passwordHash) !== user.pwdFp) {
-          redirect("/login?error=SessionRevoked");
+    trace.step = "auth_start";
+    const session = await auth();
+    trace.session = !!session;
+    trace.userId = session?.user?.id;
+    trace.userRole = session?.user?.role;
+
+    const user = session?.user;
+    if (!user?.id) {
+      trace.step = "redirecting_to_login";
+      redirect("/login");
+    }
+
+    trace.step = "live_account_start";
+    try {
+      const liveState = await getLiveAccountState(user.id);
+      trace.hasLiveState = !!liveState;
+      if (liveState) {
+        if (liveState.status === "SUSPENDED") {
+          redirect("/login?error=AccountSuspended");
+        }
+        if (liveState.status === "TERMINATED") {
+          redirect("/login?error=AccountTerminated");
+        }
+        if (user.pwdFp && liveState.passwordHash) {
+          if (computePasswordFingerprint(liveState.passwordHash) !== user.pwdFp) {
+            redirect("/login?error=SessionRevoked");
+          }
         }
       }
+    } catch (liveErr: unknown) {
+      if (typeof liveErr === "object" && liveErr !== null && "digest" in liveErr) {
+        const digest = String((liveErr as { digest?: unknown }).digest || "");
+        if (digest.startsWith("NEXT_REDIRECT")) throw liveErr;
+      }
+      trace.liveStateErr = String(liveErr);
     }
-  } catch (err: unknown) {
-    if (typeof err === "object" && err !== null && "digest" in err) {
-      const digest = String((err as { digest?: unknown }).digest || "");
+
+    const userRole = (user?.role as RoleName) || "ADMIN";
+
+    trace.step = "shift_start";
+    let initialActiveShift = null;
+    const isInternal = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO"].includes(userRole);
+    if (isInternal) {
+      try {
+        initialActiveShift = await getActiveShift();
+        trace.activeShiftOk = true;
+      } catch (err) {
+        trace.activeShiftErr = String(err);
+      }
+    }
+
+    trace.step = "unread_start";
+    let initialUnreadMessagesCount = 0;
+    try {
+      initialUnreadMessagesCount = await getUnreadMessagesCount();
+      trace.unreadOk = true;
+    } catch (err) {
+      trace.unreadErr = String(err);
+    }
+
+    trace.step = "returning_layout";
+
+    return (
+      <div className="min-h-screen bg-[#010114] text-white p-6">
+        <div className="bg-[#01142B] p-4 border border-white/10 mb-4 font-mono text-xs">
+          <strong>SSR TRACE LOG:</strong>
+          <pre>{JSON.stringify(trace, null, 2)}</pre>
+        </div>
+        <main>{children}</main>
+      </div>
+    );
+  } catch (layoutError: unknown) {
+    if (typeof layoutError === "object" && layoutError !== null && "digest" in layoutError) {
+      const digest = String((layoutError as { digest?: unknown }).digest || "");
       if (digest.startsWith("NEXT_REDIRECT")) {
-        throw err;
+        throw layoutError;
       }
     }
-    console.warn("[DashboardLayout] Live account check non-blocking warning:", err);
+    const errMsg = layoutError instanceof Error ? layoutError.stack || layoutError.message : String(layoutError);
+    return (
+      <div style={{ padding: 40, background: "#010114", color: "#ff4444", fontFamily: "monospace" }}>
+        <h1>DASHBOARD LAYOUT CRASH CAUGHT</h1>
+        <p>Last Step: {String(trace.step)}</p>
+        <pre>{errMsg}</pre>
+      </div>
+    );
   }
-
-  const userRole = (user?.role as RoleName) || "ADMIN";
-  const userFullName = user?.fullName || user?.name || "Dr. Aris Thorne";
-  const userEmail = user?.email || "admin@jaxis.dev";
-
-  let clientProfileIncomplete = false;
-  if (userRole === "CLIENT" && user?.id) {
-    try {
-      const profile = await getClientProfile();
-      if (!profile || !profile.institutionSchool || !profile.contactNumber) {
-        clientProfileIncomplete = true;
-      }
-    } catch (err) {
-      console.warn("[DashboardLayout] Client profile check warning:", err);
-    }
-  }
-
-  const isInternal = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO"].includes(userRole);
-  let initialActiveShift = null;
-  if (isInternal) {
-    try {
-      initialActiveShift = await getActiveShift();
-    } catch (err) {
-      console.warn("[DashboardLayout] getActiveShift fallback to null:", err);
-      initialActiveShift = null;
-    }
-  }
-
-  let initialUnreadMessagesCount = 0;
-  try {
-    initialUnreadMessagesCount = await getUnreadMessagesCount();
-  } catch (err) {
-    console.warn("[DashboardLayout] getUnreadMessagesCount fallback to 0:", err);
-    initialUnreadMessagesCount = 0;
-  }
-
-  return (
-    <div className="min-h-screen bg-[#010114] text-white">
-      <main className="max-w-7xl mx-auto p-6">{children}</main>
-    </div>
-  );
 }
 
