@@ -6,6 +6,7 @@ import type { RoleName } from "@prisma/client";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { getActiveShift } from "@/features/attendance/actions";
 import { getUnreadMessagesCount } from "@/features/messaging/actions";
+import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,22 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
   const user = session?.user;
+
+  try {
+    await db.authAuditLog.create({
+      data: {
+        userId: user?.id ?? null,
+        email: user?.email ?? "unknown",
+        event: "SSR_LAYOUT_START",
+        metadata: {
+          role: user?.role,
+          hasUserId: !!user?.id,
+        },
+      },
+    });
+  } catch {
+    // ignore
+  }
 
   if (!user?.id) {
     redirect("/login");
@@ -82,6 +99,23 @@ export default async function DashboardLayout({
     initialUnreadMessagesCount = 0;
   }
 
+  try {
+    await db.authAuditLog.create({
+      data: {
+        userId: user?.id ?? null,
+        email: user?.email ?? "unknown",
+        event: "SSR_LAYOUT_FINISH",
+        metadata: {
+          role: userRole,
+          hasInitialShift: !!initialActiveShift,
+          unreadMessages: initialUnreadMessagesCount,
+        },
+      },
+    });
+  } catch {
+    // ignore
+  }
+
   return (
     <DashboardShell
       userFullName={userFullName}
@@ -95,3 +129,4 @@ export default async function DashboardLayout({
     </DashboardShell>
   );
 }
+
