@@ -1,12 +1,10 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { DashboardShell } from "../components/layout/DashboardShell";
 import { auth, getLiveAccountState, computePasswordFingerprint } from "@/lib/auth";
 import type { RoleName } from "@prisma/client";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { getActiveShift } from "@/features/attendance/actions";
 import { getUnreadMessagesCount } from "@/features/messaging/actions";
-import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -17,22 +15,6 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
   const user = session?.user;
-
-  try {
-    await db.authAuditLog.create({
-      data: {
-        userId: user?.id ?? null,
-        email: user?.email ?? "unknown",
-        event: "SSR_LAYOUT_START",
-        metadata: {
-          role: user?.role,
-          hasUserId: !!user?.id,
-        },
-      },
-    });
-  } catch {
-    // ignore
-  }
 
   if (!user?.id) {
     redirect("/login");
@@ -99,34 +81,10 @@ export default async function DashboardLayout({
     initialUnreadMessagesCount = 0;
   }
 
-  try {
-    await db.authAuditLog.create({
-      data: {
-        userId: user?.id ?? null,
-        email: user?.email ?? "unknown",
-        event: "SSR_LAYOUT_FINISH",
-        metadata: {
-          role: userRole,
-          hasInitialShift: !!initialActiveShift,
-          unreadMessages: initialUnreadMessagesCount,
-        },
-      },
-    });
-  } catch {
-    // ignore
-  }
-
   return (
-    <DashboardShell
-      userFullName={userFullName}
-      userRole={userRole}
-      userEmail={userEmail}
-      clientProfileIncomplete={clientProfileIncomplete}
-      initialActiveShift={initialActiveShift}
-      initialUnreadMessagesCount={initialUnreadMessagesCount}
-    >
-      {children}
-    </DashboardShell>
+    <div className="min-h-screen bg-[#010114] text-white">
+      <main className="max-w-7xl mx-auto p-6">{children}</main>
+    </div>
   );
 }
 

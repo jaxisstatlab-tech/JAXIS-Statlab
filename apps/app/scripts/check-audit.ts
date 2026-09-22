@@ -13,7 +13,7 @@ async function checkRecentAuditLogs() {
       take: 10,
     });
 
-    console.log(`Found ${logs.length} recent audit logs:`);
+    console.log(`Found ${logs.length} SSR audit logs:`);
     for (const log of logs) {
       console.log(`- [${log.createdAt.toISOString()}] Event: ${log.event}, Email: ${log.email}, Metadata:`, log.metadata);
     }
