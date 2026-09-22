@@ -52,11 +52,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+import { recordSsrTrace } from "@/lib/ssr-trace";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await recordSsrTrace("ROOT_LAYOUT_START");
   return (
     <html
       lang="en"

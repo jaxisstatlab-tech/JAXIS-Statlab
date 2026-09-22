@@ -8,11 +8,14 @@ import { getUnreadMessagesCount } from "@/features/messaging/actions";
 
 export const dynamic = "force-dynamic";
 
+import { recordSsrTrace } from "@/lib/ssr-trace";
+
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  await recordSsrTrace("DASHBOARD_LAYOUT_TOP");
   const trace: Record<string, unknown> = {};
 
   try {
@@ -21,6 +24,7 @@ export default async function DashboardLayout({
     trace.session = !!session;
     trace.userId = session?.user?.id;
     trace.userRole = session?.user?.role;
+    await recordSsrTrace("DASHBOARD_LAYOUT_AUTH", { userId: session?.user?.id, role: session?.user?.role });
 
     const user = session?.user;
     if (!user?.id) {
@@ -77,6 +81,7 @@ export default async function DashboardLayout({
     }
 
     trace.step = "returning_layout";
+    await recordSsrTrace("DASHBOARD_LAYOUT_RETURNING", trace);
 
     return (
       <div className="min-h-screen bg-[#010114] text-white p-6">
@@ -99,6 +104,7 @@ export default async function DashboardLayout({
       }
     }
     const errMsg = layoutError instanceof Error ? layoutError.stack || layoutError.message : String(layoutError);
+    await recordSsrTrace("DASHBOARD_LAYOUT_CAUGHT", { error: errMsg, lastStep: trace.step });
     return (
       <div style={{ padding: 40, background: "#010114", color: "#ff4444", fontFamily: "monospace" }}>
         <h1>DASHBOARD LAYOUT CRASH CAUGHT</h1>
