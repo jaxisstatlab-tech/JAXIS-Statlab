@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { renderToStaticMarkup } from "react-dom/server";
 import { auth, getLiveAccountState, computePasswordFingerprint } from "@/lib/auth";
 import { getActiveShift } from "@/features/attendance/actions";
 import { getUnreadMessagesCount } from "@/features/messaging/actions";
@@ -88,15 +87,7 @@ export async function GET(request: Request) {
   try {
     const layoutNode = await DashboardLayout({ children: "TEST_DASHBOARD_CHILDREN" });
     result.layoutExecuted = true;
-    try {
-      const markup = renderToStaticMarkup(layoutNode as React.ReactElement);
-      result.layoutRenderSuccess = true;
-      result.layoutMarkupLength = markup.length;
-    } catch (renderErr: unknown) {
-      result.layoutRenderError = renderErr instanceof Error
-        ? { message: renderErr.message, stack: renderErr.stack }
-        : String(renderErr);
-    }
+    result.layoutNodeType = typeof layoutNode;
   } catch (layoutErr: unknown) {
     result.layoutExecError = layoutErr instanceof Error
       ? { message: layoutErr.message, stack: layoutErr.stack }
@@ -107,15 +98,7 @@ export async function GET(request: Request) {
   try {
     const pageNode = await CEODashboardPage();
     result.ceoPageExecuted = true;
-    try {
-      const pageMarkup = renderToStaticMarkup(pageNode as React.ReactElement);
-      result.ceoPageRenderSuccess = true;
-      result.ceoPageMarkupLength = pageMarkup.length;
-    } catch (pageRenderErr: unknown) {
-      result.ceoPageRenderError = pageRenderErr instanceof Error
-        ? { message: pageRenderErr.message, stack: pageRenderErr.stack }
-        : String(pageRenderErr);
-    }
+    result.ceoPageNodeType = typeof pageNode;
   } catch (pageErr: unknown) {
     result.ceoPageExecError = pageErr instanceof Error
       ? { message: pageErr.message, stack: pageErr.stack }
