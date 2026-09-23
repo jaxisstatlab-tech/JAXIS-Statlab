@@ -19,13 +19,13 @@ const LEGACY_DEV_ID_MAP: Record<string, string> = {
   cmt5plwpt0006lrrk1vi05x2g: "cmu99br9u0006lrowo3liwjhd",
 };
 
-// Enforce canonical production URL in Vercel environments if not already specified
+// Enforce production URL in Vercel environments if not already specified
 if (process.env.VERCEL) {
   if (!process.env.AUTH_URL) {
-    process.env.AUTH_URL = "https://app.jaxis-statlab.com";
+    process.env.AUTH_URL = "https://jaxis-statlab-app.vercel.app";
   }
   if (!process.env.NEXTAUTH_URL) {
-    process.env.NEXTAUTH_URL = "https://app.jaxis-statlab.com";
+    process.env.NEXTAUTH_URL = "https://jaxis-statlab-app.vercel.app";
   }
 }
 
