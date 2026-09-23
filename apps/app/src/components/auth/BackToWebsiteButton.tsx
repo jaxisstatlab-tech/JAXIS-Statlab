@@ -11,30 +11,28 @@ export function BackToWebsiteButton({
   className = "",
 }: BackToWebsiteButtonProps) {
   const getSiteUrl = () => {
-    if (process.env.NEXT_PUBLIC_SITE_URL) {
+    // If an explicit non-localhost site URL is provided via environment, use it
+    if (
+      process.env.NEXT_PUBLIC_SITE_URL &&
+      !process.env.NEXT_PUBLIC_SITE_URL.includes("localhost")
+    ) {
       return process.env.NEXT_PUBLIC_SITE_URL;
     }
-    if (typeof window !== "undefined") {
-      const isLocalhost =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1";
-      return isLocalhost
-        ? "http://localhost:3002"
-        : "https://jaxis-statlab-web.vercel.app";
-    }
-    return "http://localhost:3002";
+
+    // Default to the live Vercel web domain
+    return "https://jaxis-statlab-web.vercel.app";
   };
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (typeof window !== "undefined") {
       const referrer = document.referrer;
-      // If the user arrived from the website or a valid prior page
+      // Only navigate back to referrer if it's the official vercel or custom domain (never localhost)
       if (
         referrer &&
         !referrer.includes(window.location.host) &&
-        (referrer.includes("3002") ||
-          referrer.includes("jaxis-statlab.com") ||
-          referrer.includes("jaxis-statlab-web.vercel.app"))
+        !referrer.includes("localhost") &&
+        (referrer.includes("jaxis-statlab-web.vercel.app") ||
+          referrer.includes("jaxis-statlab.com"))
       ) {
         e.preventDefault();
         window.location.href = referrer;
