@@ -34,8 +34,9 @@ import {
   requestMissingInfo,
   markIntakeComplete,
 } from "@/features/projects/actions";
-import { getQuotationByProject } from "@/features/quotations/actions";
+import { getQuotationByProject, getCommercialCatalog } from "@/features/quotations/actions";
 import { QuotationBuilderModal } from "@/features/quotations/components/QuotationBuilderModal";
+import type { CommercialCatalogData } from "@/lib/pricing-rules";
 import { getSOWByProject } from "@/features/sow/actions";
 import type { SOWDetailItem } from "@/features/sow/schemas";
 import {
@@ -79,6 +80,7 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
   const [statusModalError, setStatusModalError] = useState<string | null>(null);
 
   const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
+  const [catalog, setCatalog] = useState<CommercialCatalogData | undefined>(undefined);
   const [assignment, setAssignment] = useState<AssignmentDetailItem | null>(null);
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
 
@@ -104,11 +106,12 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
     setIsLoading(true);
     setError(null);
     try {
-      const [projectRes, quoteRes, assignRes, sowRes] = await Promise.all([
+      const [projectRes, quoteRes, assignRes, sowRes, catalogData] = await Promise.all([
         getProjectById(projectId),
         getQuotationByProject(projectId),
         getProjectAssignment(projectId),
         getSOWByProject(projectId),
+        getCommercialCatalog(),
       ]);
 
       if (projectRes.success) {
@@ -118,6 +121,9 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
       }
 
       setQuotation(quoteRes);
+      if (catalogData) {
+        setCatalog(catalogData);
+      }
 
       if (assignRes.success) {
         setAssignment(assignRes.data);
@@ -1005,6 +1011,7 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
           projectTitle={project.researchTitle}
           clientName={project.client.fullName}
           existingQuotation={quotation}
+          customCatalog={catalog}
           onSuccess={loadProject}
         />
       )}

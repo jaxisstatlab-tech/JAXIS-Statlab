@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
+import Link from "next/link";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -214,7 +215,6 @@ export default function Solutions() {
           end: "+=220%",
           pin: true,
           scrub: 0.6,
-          anticipatePin: 1,
           invalidateOnRefresh: true,
         },
       });
@@ -236,32 +236,31 @@ export default function Solutions() {
     <section
       id="solutions"
       ref={sectionRef}
-      className="relative bg-[#010114] text-white min-h-screen py-24 sm:py-32 px-6 flex flex-col justify-center"
+      className="relative bg-[#010114] text-white min-h-screen py-16 sm:py-20 lg:py-24 flex flex-col justify-center"
     >
-      <div className="max-w-[1280px] mx-auto relative z-10 w-full">
+      <div className="w-full max-w-[90rem] mx-auto px-6 lg:px-8 relative z-10">
         {/* Section Header */}
-        <div className="text-center mb-10">
-          <div className="text-[10px] font-mono text-white/40 tracking-[0.18em] uppercase mb-3">
-            JAXIS STATLAB · COMPLETE RESEARCH DELIVERABLES
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 sm:mb-12">
+          <div>
+            <div className="font-mono text-xs uppercase tracking-[0.15em] text-[#CC6600] mb-2 font-medium">
+              COMPLETE RESEARCH DELIVERABLES
+            </div>
+            <h2 className="font-sans text-2xl sm:text-3xl lg:text-[2rem] font-medium text-white tracking-[-0.03em] leading-tight">
+              Complete Deliverables. <span className="text-white/50 font-normal">Zero Statistical Anxiety.</span>
+            </h2>
+            <p className="font-mono text-xs sm:text-sm text-white/60 mt-2 max-w-3xl lg:max-w-4xl leading-relaxed">
+              Explore the 4 core deliverables included in your JAXIS package — from cleaned data spreadsheets to your personal thesis defense script.
+            </p>
           </div>
-
-          <div className="inline-flex items-center gap-2 bg-[#CC6600]/10 border border-[#CC6600]/30 px-3 py-1 rounded-[2px] mb-3">
-            <span className="w-1.5 h-1.5 bg-[#CC6600] inline-block" />
-            <span className="font-mono text-xs tracking-wider text-[#CC6600] uppercase font-semibold">
-              SECTION 03 · WHAT YOU RECEIVE
-            </span>
+          <div className="shrink-0">
+            <Link
+              href="/dashboard/client/quotations"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#CC6600] hover:bg-[#b35500] text-white font-sans text-xs sm:text-sm font-semibold rounded-[2px] active:scale-[0.97] transition-all"
+            >
+              <span>Get a quotation</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-white/90" />
+            </Link>
           </div>
-
-          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-sans font-light tracking-tight text-white leading-tight max-w-4xl mx-auto">
-            Complete Deliverables.{" "}
-            <span className="text-white/60 font-normal">
-              Zero Statistical Anxiety.
-            </span>
-          </h2>
-
-          <p className="text-sm sm:text-base font-sans text-white/70 leading-relaxed max-w-2xl mx-auto mt-3">
-            Explore the 4 core deliverables included in your JAXIS package — from cleaned data spreadsheets to your personal thesis defense script.
-          </p>
         </div>
 
         {/* ── Cards Stacking Deck ── */}

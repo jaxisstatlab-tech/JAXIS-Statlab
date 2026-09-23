@@ -19,6 +19,43 @@ Each section will be upgraded through a structured 4-phase protocol:
 
 ---
 
+## 1.1 Master Section Container Width & Typography Lock Standard (MANDATORY)
+
+To prevent visual jumps, claustrophobic content stacking, or inconsistent typography across landing page sections, all current and future sections in `apps/web` **MUST** adhere to this locked standard:
+
+### 1. Locked Container Width & Margins
+- **Standard Container Wrapper**:
+  ```tsx
+  <div className="w-full max-w-[90rem] mx-auto px-6 lg:px-8">
+  ```
+  - **Width**: Strictly `max-w-[90rem]` (1,440px). Never use narrow `max-w-5xl` (1024px), `max-w-6xl` (1152px), or legacy `max-w-[73.625rem]` (1178px).
+  - **Gutters**: Responsive padding `px-6 lg:px-8` (24px mobile/tablet, 32px desktop).
+  - **Section Vertical Rhythm**: `py-12 sm:py-16 lg:py-20` on `<section className="section relative ... bg-[#010114]">`.
+  - **Header Bottom Margin**: `mb-8 sm:mb-10`.
+
+### 2. Comprehensive Typography & Font Rules Lock
+| Hierarchy Level | Font Family | Size | Weight | Tracking / Leading | Color & Casing | Usage & Rules |
+|---|---|---|---|---|---|---|
+| **Section Eyebrow / Kicker** | `font-mono` | `text-xs` (12px) | `font-medium` (500) | `tracking-[0.15em]` | `#CC6600`, ALL-CAPS | Category tag (e.g. `RESEARCH METHODOLOGIES`). Zero double slashes (`//`). |
+| **Section Primary Headline** | `font-sans` | `text-2xl sm:text-3xl lg:text-[1.875rem]` | `font-medium` (500) | `tracking-[-0.03em] leading-tight` | `text-white`, Title Case | Primary value prop. Clean sans-serif with tight optical tracking. |
+| **Section Subtitle (1-Liner)** | `font-mono` | `text-xs sm:text-sm` (12-14px) | `font-normal` (400) | `leading-relaxed` | `text-white/60`, Sentence Case | **1-Liner Standard**: Must use `max-w-3xl lg:max-w-4xl` so it renders on a single line on desktop without orphan word wraps. |
+| **Bento / Feature Card Title** | `font-sans` | `text-sm sm:text-[15px]` (aux) / `text-lg sm:text-xl` (hero) | `font-medium` (500) | `tracking-[-0.02em] leading-snug` | `text-white`, Title Case | High scannability, no aggressive bolding. |
+| **Bento Card Description** | `font-mono` | `text-xs` (12px) | `font-normal` (400) | `leading-relaxed` | `text-white/60`, Sentence Case | Short, informative technical scope description (2-3 lines max). |
+| **Card Telemetry / Stat Footers** | `font-mono` | `text-[11px] sm:text-xs` | Metric: `font-bold` (700)<br>Label: `font-normal` (400) | `tracking-normal` | Metric: `text-white`<br>Label: `text-white/40` | Inline telemetry pair (e.g. `100% Upfront delivery`, `α > .80 Reliability target`). |
+| **Table Column Headers** | `font-mono` | `text-[9.5px]` | `font-normal` (400) | `tracking-wider`, uppercase | `text-white/40` | Minimalist border division (`pb-1.5 border-b border-white/10`). |
+| **Table Data Cells** | `font-mono` | `text-[10.5px]` | `font-normal` (400) / values `font-semibold` | Tabular figures | `text-white/80` (values `text-white/90`) | Calm monochrome figures. Decision in `text-white/70`. Anti-rainbow mandate: no neon cyan or green. |
+| **Table Diagnostic Footer** | `font-mono` | `text-[9.5px]` | `font-normal` (400) | `tracking-normal` | `text-white/50`, dot `#CC6600` | Micro-audit tag (e.g. `● Shapiro-Wilk (p = .240, Normal) • N = 384 Responses`). |
+| **Action Buttons / CTAs** | `font-sans` | `text-xs sm:text-sm` (12-14px) | `font-medium` (500) | Normal tracking | `text-white`, Title Case | Precision `rounded-[2px]`, `px-5 py-2.5 bg-[#CC6600] active:scale-[0.97]`. Zero shouting ALL-CAPS. |
+| **Document Badges** | `font-mono` | `text-[9px]` | `font-normal` (400) | `tracking-wider`, uppercase | `text-white/60 bg-white/[0.06] border border-white/10 px-2 py-0.5 rounded-[2px]` | Subtle verification tag (e.g. `APA 7TH VERIFIED`). |
+
+### 3. Icon Standard (Single-Color Enterprise Orange)
+- **Mandatory Icon Library**: Phosphor Icons (`@phosphor-icons/react`) with `weight="fill"`.
+- **Single Brand Color**: Every feature icon in a grid matrix **MUST** strictly use `text-[#CC6600]`.
+- **Anti-Rainbow Mandate**: Never assign arbitrary neon blue, green, or yellow hues to adjacent icons.
+- **Sizing**: `w-5 h-5` (auxiliary cards) or `w-5 h-5 sm:w-6 sm:h-6` (hero/wide cards) with `mb-2` or `mb-2.5`.
+
+---
+
 ## 2. Section-by-Section Roadmap & Specifications
 
 ```mermaid
@@ -107,49 +144,35 @@ graph TD
 
 ### Section 02: Our Approach (`Approach.tsx`)
 
-**File**: [apps/web/app/components/sections/Approach.tsx](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/web/app/components/sections/Approach.tsx)
+**File**: [apps/web/app/components/sections/Approach.tsx](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/web/app/components/sections/Approach.tsx)  
+**Status**: UPGRADED & LOCKED TO STANDARD (Scale AI Bento Architecture)
 
-#### 1. Current State & Anti-Patterns Identified
-- Banned double-slash in section kicker: `SECTION // 02 — HOW WE WORK`.
-- Inline styles for all card grids, padding, and text wrappers.
-- CAD vector line drawings look great, but the surrounding cards lack consistent 24px grid rhythm (`gap-6`) and Dashdark precision surfaces (`#01142B`).
+#### 1. Architecture & Layout Specification
+- **Master Container Wrapper**:
+  ```tsx
+  <div className="w-full max-w-[90rem] mx-auto px-6 lg:px-8">
+  ```
+  - Standard locked width: `max-w-[90rem]` (1,440px) with responsive `px-6 lg:px-8` gutters.
+- **Section Header**:
+  - Eyebrow: `<div className="font-mono text-xs uppercase tracking-[0.15em] text-[#CC6600] mb-2 font-medium">RESEARCH METHODOLOGIES</div>`
+  - Headline: `<h2 className="font-sans text-2xl sm:text-3xl lg:text-[1.875rem] font-medium text-white tracking-[-0.03em] leading-tight">Every statistical analysis your study needs</h2>`
+  - Subtitle (1-Liner): `<p className="font-mono text-xs sm:text-sm text-white/60 mt-2 max-w-3xl lg:max-w-4xl leading-relaxed">From dataset screening to oral defense — peer-reviewed statistical deliverables in publication-ready formats.</p>` (constrained with `max-w-3xl lg:max-w-4xl` to guarantee 1-line desktop rendering).
+  - CTA Button: `<Link className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-[#CC6600] text-white font-sans text-xs sm:text-sm font-medium rounded-[2px] hover:bg-[#b35500] active:scale-[0.97]">Get a quotation <span className="w-1.5 h-1.5 rounded-full bg-white/90" /></Link>`
 
-#### 2. Revamp Specification
-- **Header Structure**:
-  - Kicker tag: `<span className="text-xs font-mono text-[#CC6600] tracking-wider uppercase font-semibold">STEP-BY-STEP WORKFLOW</span>` (zero double slashes).
-  - Title: `From Raw Survey Data To Passed Defense.` with Analytical Sky accent.
-  - Subtitle: Clear plain-English prose (`text-sm sm:text-base text-white/60 font-sans max-w-xl`).
-- **2x2 Bento Matrix**:
-  - Grid: `grid grid-cols-1 md:grid-cols-2 gap-6`.
-  - Substrate: Flat `#01142B` card, `border border-white/10`, precision `rounded-[2px]`, `p-6 sm:p-8`.
-  - Corner Accents: Precision crosshairs (`+`) rendered with subtle opacity (`text-white/20`).
-- **Vector Blueprint Visuals**:
-  - Retain the interactive SVG stroke-dash animation (draws paths on scroll entry).
-  - Upgrade color hierarchy: Sky Blue (`#38BDF8`) for data traces, Enterprise Orange (`#CC6600`) for dimension calipers, white/80 for empirical points.
-- **Auditable Spec Matrix**:
-  - 2x2 parameter strip at the bottom of each card with clean 1px borders and high-contrast labels.
-
-#### 3. Copywriting Plan (Zero Double Slashes)
-- **Step 01**:
-  - Code: `STEP 01 OF 04` | Badge: `CUSTOM SOW QUOTE IN 24H`
-  - Title: `Send Us Your Chapter 1 & Data`
-  - Subtitle: `EXACT TEST MATCHING & FREE REVIEW`
-  - Body: "We review your research objectives, statement of the problem, and raw survey data. We determine the exact statistical tests your study actually needs before you spend a single peso."
-- **Step 02**:
-  - Code: `STEP 02 OF 04` | Badge: `CLEAN DATASET & HEALTH REPORT`
-  - Title: `We Clean Your Data & Fix Errors`
-  - Subtitle: `SURVEY HEALTH & VALIDITY AUDIT`
-  - Body: "We organize your spreadsheet, clean up missing survey responses, and run normality and outlier tests so your panel and adviser never reject your raw data."
-- **Step 03**:
-  - Code: `STEP 03 OF 04` | Badge: `DOUBLE-VERIFIED CALCULATIONS`
-  - Title: `Two Experts Calculate Your Numbers`
-  - Subtitle: `ZERO CALCULATION ERROR GUARANTEE`
-  - Body: "Your data is analyzed by one statistician and recalculated from scratch by a second senior reviewer. If a single decimal differs, we fix it before you receive your results."
-- **Step 04**:
-  - Code: `STEP 04 OF 04` | Badge: `APA TABLES & DEFENSE SCRIPT`
-  - Title: `You Get Tables & Plain Speaking Scripts`
-  - Subtitle: `READY TO PASTE INTO CHAPTER 4`
-  - Body: "You receive clean APA tables ready to paste into your manuscript, plus a word-for-word speaking script explaining what every p-value and percentage means during your defense."
+#### 2. 4-Column Asymmetric Bento Grid
+- **Container**: `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 bg-[#01142B] border border-white/10 rounded-[2px] overflow-hidden`
+- **Single-Color Icon Standard**: Every card strictly uses Phosphor Fill (`weight="fill"`) in **Enterprise Orange (`text-[#CC6600]`)**. Zero rainbow colors (sky blue, emerald, and amber icons are strictly forbidden).
+- **Cells Distribution**:
+  1. **Card 1 (Top-Left 2x2 Hero)**: `md:col-span-2 lg:col-span-2 lg:row-span-2 border-b lg:border-r border-white/10`
+     - Content: `Calculator` icon (`w-5 h-5 sm:w-6 sm:h-6 text-[#CC6600]`), `Multi-Tier Statistical Consultation` title (`text-lg sm:text-xl font-sans`), description.
+     - Findings Preview Window: Compact mock findings table (`OUTPUT_CHAPTER_4_FINDINGS.DOCX` + `APA 7TH VERIFIED` badge), 3 data rows in monochrome monospace (`text-[10.5px]`), `Shapiro-Wilk Normality` diagnostic footer.
+  2. **Card 2 (Col 3, Row 1)**: `Table` (`text-[#CC6600]`) — `Descriptive Statistics` | `100% Upfront delivery`
+  3. **Card 3 (Col 4, Row 1)**: `ChartLineUp` (`text-[#CC6600]`) — `Inferential Testing` | `50/50 Milestone escrow`
+  4. **Card 4 (Col 3, Row 2)**: `TreeStructure` (`text-[#CC6600]`) — `Multivariate Modeling` | `Doctoral Scopus/WOS grade`
+  5. **Card 5 (Col 4, Row 2)**: `ShieldCheck` (`text-[#CC6600]`) — `Dual-Pass Peer Review` | `r = 1.00 Concordance gate`
+  6. **Card 6 (Bottom-Left 2x1 Wide)**: `md:col-span-2 lg:col-span-2 lg:border-r` — `Code` (`text-[#CC6600]`) — `Reproducible Computational Scripts (.R / SPSS / Python)` | `100% Complete script ownership`
+  7. **Card 7 (Col 3, Row 3)**: `CheckCircle` (`text-[#CC6600]`) — `Instrument Reliability` | `α > .80 Reliability target`
+  8. **Card 8 (Col 4, Row 3)**: `GraduationCap` (`text-[#CC6600]`) — `DefenseLab™ Coaching` | `1-on-1 Simulated oral panel`
 
 ---
 

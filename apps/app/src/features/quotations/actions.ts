@@ -41,10 +41,13 @@ const DEV_PROJECTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".d
 
 function getDevCatalogFilePaths(): string[] {
   const cwd = process.cwd();
-  return [
+  const paths = [
     path.join(/*turbopackIgnore: true*/ cwd, ".dev-catalog.json"),
     path.join(/*turbopackIgnore: true*/ cwd, "apps", "app", ".dev-catalog.json"),
+    path.resolve(/*turbopackIgnore: true*/ cwd, "..", ".dev-catalog.json"),
+    path.resolve(/*turbopackIgnore: true*/ cwd, "..", "apps", "app", ".dev-catalog.json"),
   ];
+  return Array.from(new Set(paths));
 }
 
 function writeDevCatalogFile(data: CommercialCatalogData): void {
@@ -215,10 +218,14 @@ export async function saveCommercialCatalog(
       };
     }
 
-    // 3. Invalidate relevant dashboard paths
+    // 3. Invalidate relevant dashboard paths & server cache tags
     try {
       revalidatePath("/dashboard/admin/quotations");
+      revalidatePath("/dashboard/admin/intake");
+      revalidatePath("/dashboard/admin/projects");
       revalidatePath("/dashboard/ceo");
+      revalidatePath("/dashboard/ceo/finance");
+      invalidateCacheTags(CACHE_TAGS.QUOTATIONS);
     } catch {
       // Non-fatal if called without active request context
     }
@@ -315,7 +322,11 @@ export async function resetCommercialCatalog(): Promise<ActionResponse<Commercia
 
     try {
       revalidatePath("/dashboard/admin/quotations");
+      revalidatePath("/dashboard/admin/intake");
+      revalidatePath("/dashboard/admin/projects");
       revalidatePath("/dashboard/ceo");
+      revalidatePath("/dashboard/ceo/finance");
+      invalidateCacheTags(CACHE_TAGS.QUOTATIONS);
     } catch {
       // Non-fatal
     }

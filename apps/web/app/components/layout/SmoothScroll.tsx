@@ -35,6 +35,36 @@ export default function SmoothScroll({
     // Disable GSAP's lag smoothing to prevent jank with Lenis
     gsap.ticker.lagSmoothing(0);
 
+    // Expose lenis globally for programmatic navigation
+    (window as any).__lenis = lenis;
+
+    // Smoothly handle anchor links (Navbar, buttons, in-page links)
+    const handleAnchorClick = (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest<HTMLAnchorElement>("a[href^='#']");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href || href === "#" || href === "#!") return;
+      const targetEl = document.querySelector(href);
+      if (targetEl) {
+        e.preventDefault();
+        window.history.pushState(null, "", href);
+        lenis.scrollTo(targetEl as HTMLElement, { offset: -64, duration: 1.2 });
+      }
+    };
+    document.addEventListener("click", handleAnchorClick);
+
+    // Refresh ScrollTrigger after DOM has fully settled
+    const refreshTimer = setTimeout(() => {
+      ScrollTrigger.refresh();
+      // If user arrived with a hash, smoothly scroll to it
+      if (window.location.hash) {
+        const hashEl = document.querySelector(window.location.hash);
+        if (hashEl) {
+          lenis.scrollTo(hashEl as HTMLElement, { offset: -64, duration: 1.0 });
+        }
+      }
+    }, 250);
+
     // Suppress external browser extension unhandled rejections from interrupting Next.js Dev Overlay
     const onUnhandledRejection = (e: PromiseRejectionEvent) => {
       const reason = e.reason?.toString?.() || "";
@@ -52,6 +82,8 @@ export default function SmoothScroll({
     return () => {
       lenis.destroy();
       gsap.ticker.remove(update);
+      document.removeEventListener("click", handleAnchorClick);
+      clearTimeout(refreshTimer);
       window.removeEventListener("unhandledrejection", onUnhandledRejection);
     };
   }, []);

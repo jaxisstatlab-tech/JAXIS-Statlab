@@ -1,218 +1,146 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import gsap from "gsap";
-import ScrollTrigger from "gsap/ScrollTrigger";
-import {
-  LockKey,
-  Scales,
-  FileText,
-  ShieldCheck,
-  CheckCircle,
-} from "@phosphor-icons/react";
+import React from "react";
+import Link from "next/link";
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
+interface SecurityRow {
+  id: string;
+  tag: string;
+  title: string;
+  description: string;
+  stat1: {
+    value: string;
+    label: string;
+  };
+  stat2: {
+    value: string;
+    label: string;
+  };
 }
 
-const SECURITY_PILLARS = [
+const SECURITY_ROWS: SecurityRow[] = [
   {
-    code: "SEC 01 · ANONYMITY",
-    icon: LockKey,
-    title: "100% Anonymity & Data Privacy",
-    subtitle: "ZERO IDENTITY LEAKAGE",
-    desc: "We remove all participant names, student IDs, emails, and school identifiers from your raw data before our analysts begin work. Your participants stay 100% anonymous.",
-    badge: "CONFIDENTIAL & PRIVATE",
-    specs: [
-      { label: "IDENTITY PROTECTION", value: "NAMES & IDS REMOVED" },
-      { label: "STORAGE SECURITY", value: "ENCRYPTED AT REST" },
-    ],
+    id: "nda-ownership",
+    tag: "DATA PRIVACY · STRICT NDA",
+    title: "100% Client Ownership — legally binding non-disclosure",
+    description:
+      "Every JAXIS statistician signs a legally binding Non-Disclosure Agreement before touching client data. Your research questions, dataset, and findings belong 100% to you. We never publish or claim co-authorship.",
+    stat1: {
+      value: "100%",
+      label: "Client data ownership",
+    },
+    stat2: {
+      value: "0",
+      label: "Data leaks or shared sets",
+    },
   },
   {
-    code: "SEC 02 · HONEST MATH",
-    icon: Scales,
-    title: "We Never Fake or Manipulate Data",
-    subtitle: "ZERO P-HACKING POLICY",
-    desc: "We never fabricate numbers or alter survey data to force statistical significance. If your results show no significant difference, we provide legitimate academic explanations so your panel respects your research integrity.",
-    badge: "ACADEMIC HONESTY",
-    specs: [
-      { label: "DATA MANIPULATION", value: "0.00 ZERO TOLERANCE" },
-      { label: "NULL FINDINGS", value: "SCIENTIFICALLY DEFENDED" },
-    ],
+    id: "honest-math",
+    tag: "RESEARCH ETHICS · ZERO P-HACKING",
+    title: "Zero Data Manipulation — honest scientific mathematics",
+    description:
+      "We never fabricate numbers or alter raw survey data to force statistical significance. If your results show no significant difference, we provide legitimate academic explanations so your panel respects your research integrity.",
+    stat1: {
+      value: "0.00",
+      label: "Tolerance for p-hacking",
+    },
+    stat2: {
+      value: "100%",
+      label: "Methodology defended",
+    },
   },
   {
-    code: "SEC 03 · OWNERSHIP",
-    icon: FileText,
-    title: "You Own 100% of Your Research & Code",
-    subtitle: "STRICT NON-DISCLOSURE AGREEMENTS",
-    desc: "Every JAXIS statistician signs a legally binding Non-Disclosure Agreement (NDA). Your data, analysis scripts, and findings belong 100% to you. We never publish or claim co-authorship.",
-    badge: "100% YOUR PROPERTY",
-    specs: [
-      { label: "NDA SIGNED", value: "ALL STAFF LEGALLY BOUND" },
-      { label: "AUTHORSHIP", value: "100% RETAINED BY YOU" },
-    ],
-  },
-  {
-    code: "SEC 04 · ESCROW PROTECTION",
-    icon: ShieldCheck,
-    title: "Safe Escrow Payment Protection",
-    subtitle: "VERIFIED BEFORE FINAL RELEASE",
-    desc: "Your payment is held safely in escrow upon project agreement. Deliverables are only released once an independent Senior QA Lead validates 100% decimal accuracy.",
-    badge: "PAYMENT PROTECTED",
-    specs: [
-      { label: "QUALITY CHECK", value: "SENIOR QA STAMP REQUIRED" },
-      { label: "PAYMENT GATING", value: "ESCROW SECURITY VERIFIED" },
-    ],
+    id: "escrow-qa",
+    tag: "ESCROW PROTECTION · DUAL-AUDITOR QA",
+    title: "Milestone Escrow & Dual-Pass Peer Review",
+    description:
+      "Your payment is held safely in escrow upon project agreement. Deliverables are only released once an independent Senior QA Lead validates 100% calculation decimal accuracy and APA 7th formatting.",
+    stat1: {
+      value: "r = 1.00",
+      label: "Concordance gate",
+    },
+    stat2: {
+      value: "50/50",
+      label: "Milestone escrow split",
+    },
   },
 ];
 
 export default function Security() {
-  const sectionRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      // 1. Header Animation
-      gsap.fromTo(
-        ".security-header",
-        { opacity: 0, y: 25 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.75,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: ".security-header",
-            start: "top 85%",
-          },
-        }
-      );
-
-      // 2. Security Cards Entry
-      gsap.fromTo(
-        ".security-card-box",
-        { opacity: 0, y: 35 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.7,
-          stagger: 0.1,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: ".security-grid-wrap",
-            start: "top 85%",
-            once: true,
-          },
-        }
-      );
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <section
-      id="security"
-      ref={sectionRef}
-      className="relative bg-[#010114] text-white py-24 sm:py-32 px-6 z-10"
-    >
-      <div className="max-w-[1280px] mx-auto relative z-10">
+    <section id="security" className="section relative py-16 sm:py-20 lg:py-24 bg-[#010114] text-white">
+      <div className="w-full max-w-[90rem] mx-auto px-6 lg:px-8">
         
-        {/* Header Block */}
-        <div className="security-header border-b border-white/10 pb-10 mb-12 grid grid-cols-1 lg:grid-cols-2 gap-6 items-end">
+        {/* Section Header Block */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 lg:mb-16">
           <div>
-            <div className="text-[10px] font-mono text-white/40 tracking-[0.18em] uppercase mb-3">
-              JAXIS STATLAB · DATA PRIVACY & RESEARCH ETHICS
+            <div className="font-mono text-xs uppercase tracking-[0.15em] text-[#CC6600] mb-2 font-medium">
+              SECURITY & ETHICS
             </div>
-            <div className="text-xs font-mono text-[#CC6600] tracking-wider uppercase font-semibold flex items-center gap-2 mb-3">
-              <span className="inline-block w-1.5 h-1.5 bg-[#CC6600]" />
-              SECTION 05 · PRIVACY & INTEGRITY
-            </div>
-
-            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-sans font-light tracking-tight text-white leading-tight">
-              Your Research Data Is Safe.
-              <br />
-              <span className="text-[#38bdf8] font-normal">
-                Guaranteed 100%.
-              </span>
+            <h2 className="font-sans text-2xl sm:text-3xl lg:text-[2rem] font-medium text-white tracking-[-0.03em] leading-tight">
+              The standards behind every thesis defense
             </h2>
           </div>
-
-          <div>
-            <p className="text-sm sm:text-base font-sans text-white/70 leading-relaxed max-w-lg">
-              We protect your student identity, intellectual property, and academic reputation with four strict privacy and ethical guarantees.
-            </p>
+          <div className="shrink-0">
+            <Link
+              href="/dashboard/client/quotations"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#CC6600] hover:bg-[#b35500] text-white font-sans text-xs sm:text-sm font-semibold rounded-[2px] active:scale-[0.97] transition-all"
+            >
+              <span>Get a quotation</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-white/90" />
+            </Link>
           </div>
         </div>
 
-        {/* 2x2 Security Grid */}
-        <div className="security-grid-wrap grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          {SECURITY_PILLARS.map((item, idx) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={idx}
-                className="security-card-box bg-[#01142B] border border-white/10 rounded-[2px] p-6 sm:p-8 flex flex-col justify-between relative hover:border-white/20 transition-all duration-200"
-              >
-                {/* Corner crosshairs */}
-                <span className="absolute top-1.5 left-2 font-mono text-[9px] text-white/20 select-none">+</span>
-                <span className="absolute top-1.5 right-2 font-mono text-[9px] text-white/20 select-none">+</span>
-                <span className="absolute bottom-1.5 left-2 font-mono text-[9px] text-white/20 select-none">+</span>
-                <span className="absolute bottom-1.5 right-2 font-mono text-[9px] text-white/20 select-none">+</span>
-
-                <div>
-                  <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-5 gap-2">
-                    <div className="flex items-center gap-2">
-                      <Icon size={18} weight="fill" className="text-[#CC6600] shrink-0" />
-                      <span className="font-mono text-xs text-[#CC6600] tracking-wider font-semibold">
-                        {item.code}
-                      </span>
-                    </div>
-
-                    <span className="font-mono text-[10px] text-[#38bdf8] tracking-wider uppercase px-2 py-0.5 bg-[#38bdf8]/10 border border-[#38bdf8]/25 rounded-[2px]">
-                      {item.badge}
-                    </span>
-                  </div>
-
-                  <h3 className="text-xl sm:text-2xl font-sans font-normal text-white mb-2 tracking-tight">
-                    {item.title}
-                  </h3>
-
-                  <p className="text-sm font-sans text-white/70 leading-relaxed mb-6">
-                    {item.desc}
-                  </p>
+        {/* 3-Row Horizontal Stacked Container */}
+        <div className="w-full border border-white/10 rounded-[2px] bg-[#01142B] overflow-hidden">
+          {SECURITY_ROWS.map((row, idx) => (
+            <div
+              key={row.id}
+              className={[
+                "p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8 sm:gap-10 transition-colors duration-150 hover:bg-white/[0.015]",
+                idx < SECURITY_ROWS.length - 1 ? "border-b border-white/10" : "",
+              ].join(" ")}
+            >
+              {/* Left Column: Category Kicker, Title & Scope Description */}
+              <div className="lg:max-w-2xl xl:max-w-3xl flex flex-col justify-center">
+                <div className="font-mono text-xs uppercase tracking-[0.15em] text-[#CC6600] mb-1.5 font-medium">
+                  {row.tag}
                 </div>
 
-                {/* Spec Rows */}
-                <div className="border-t border-white/10 pt-4 grid grid-cols-2 gap-2">
-                  {item.specs.map((spec, sIdx) => (
-                    <div
-                      key={sIdx}
-                      className="p-2 bg-white/[0.02] border-l border-sky-400/40 font-mono flex flex-col gap-0.5"
-                    >
-                      <span className="text-white/40 tracking-wider text-[9px] uppercase">
-                        {spec.label}
-                      </span>
-                      <span className="text-xs text-white font-medium tracking-wide">
-                        {spec.value}
-                      </span>
-                    </div>
-                  ))}
+                <h3 className="font-sans text-lg sm:text-xl font-medium text-white mb-2 tracking-[-0.02em] leading-snug">
+                  {row.title}
+                </h3>
+
+                <p className="font-mono text-xs sm:text-sm text-white/60 leading-relaxed">
+                  {row.description}
+                </p>
+              </div>
+
+              {/* Right Column: Dual High-Contrast Telemetry Stats */}
+              <div className="shrink-0 grid grid-cols-2 gap-8 sm:gap-12 lg:gap-14 min-w-[260px] sm:min-w-[320px]">
+                {/* Stat 1 */}
+                <div className="flex flex-col">
+                  <span className="font-mono font-bold text-3xl sm:text-4xl text-white tracking-tight">
+                    {row.stat1.value}
+                  </span>
+                  <span className="font-mono text-[11px] sm:text-xs text-white/50 uppercase tracking-wider mt-1">
+                    {row.stat1.label}
+                  </span>
+                </div>
+
+                {/* Stat 2 */}
+                <div className="flex flex-col">
+                  <span className="font-mono font-bold text-3xl sm:text-4xl text-white tracking-tight">
+                    {row.stat2.value}
+                  </span>
+                  <span className="font-mono text-[11px] sm:text-xs text-white/50 uppercase tracking-wider mt-1">
+                    {row.stat2.label}
+                  </span>
                 </div>
               </div>
-            );
-          })}
-        </div>
-
-        {/* Security Matrix Certification Footer */}
-        <div className="pt-6 border-t border-white/10 flex justify-between items-center flex-wrap gap-4">
-          <span className="font-mono text-[10px] text-white/40 tracking-wider uppercase">
-            SYS · STRICT NDA LOCK · PII CLEANSED · ZERO DATA MANIPULATION · JAXIS SEC
-          </span>
-
-          <span className="font-mono text-[10px] text-[#38bdf8] tracking-wider uppercase flex items-center gap-1.5">
-            <CheckCircle size={12} weight="fill" className="text-emerald-400" />
-            ETHICAL INTEGRITY STANDARDS [VERIFIED]
-          </span>
+            </div>
+          ))}
         </div>
 
       </div>

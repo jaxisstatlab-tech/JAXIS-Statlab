@@ -62,11 +62,15 @@ export function QuotationBuilderModal({
 
   const [selectedPackage, setSelectedPackage] = useState<PackageName>("JX_03_CORE");
   const [basePrice, setBasePrice] = useState<number>(2500);
-  const [selectedAddOns, setSelectedAddOns] = useState<Record<string, { selected: boolean; amount: number }>>({
-    DEFENSELAB: { selected: false, amount: 250 },
-    RUSH: { selected: false, amount: 300 },
-    EXPRESS: { selected: false, amount: 600 },
-    EMERGENCY: { selected: false, amount: 1000 },
+  const [selectedAddOns, setSelectedAddOns] = useState<Record<string, { selected: boolean; amount: number }>>(() => {
+    const initial: Record<string, { selected: boolean; amount: number }> = {};
+    Object.keys(addOnsCatalog).forEach((k) => {
+      const item = addOnsCatalog[k];
+      if (item) {
+        initial[k] = { selected: false, amount: item.defaultPrice };
+      }
+    });
+    return initial;
   });
   const [customDownpayment, setCustomDownpayment] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
@@ -128,7 +132,8 @@ export function QuotationBuilderModal({
     if (def) {
       setBasePrice(def.defaultPrice);
     }
-    if (UPFRONT_PACKAGES.includes(pkg)) {
+    const isUpfront = def?.isUpfront ?? UPFRONT_PACKAGES.includes(pkg);
+    if (isUpfront) {
       setCustomDownpayment("");
     }
   };
@@ -162,21 +167,24 @@ export function QuotationBuilderModal({
   const breakdown = useMemo(() => {
     const customDp = customDownpayment ? Number(customDownpayment) : undefined;
     try {
-      return calculateQuotationTotals({
-        packageName: selectedPackage,
-        basePrice,
-        addOns: activeAddOnsList,
-        customDownpayment: customDp,
-      });
+      return calculateQuotationTotals(
+        {
+          packageName: selectedPackage,
+          basePrice,
+          addOns: activeAddOnsList,
+          customDownpayment: customDp,
+        },
+        customCatalog
+      );
     } catch {
       return null;
     }
-  }, [selectedPackage, basePrice, activeAddOnsList, customDownpayment]);
+  }, [selectedPackage, basePrice, activeAddOnsList, customDownpayment, customCatalog]);
 
   // Validation
   const priceValidation = useMemo(() => {
-    return validatePackageBasePrice(selectedPackage, basePrice);
-  }, [selectedPackage, basePrice]);
+    return validatePackageBasePrice(selectedPackage, basePrice, packagesCatalog);
+  }, [selectedPackage, basePrice, packagesCatalog]);
 
   const currentPkgDef: PackageDefinition =
     packagesCatalog[selectedPackage] || PACKAGES_CATALOG.JX_03_CORE;
@@ -640,7 +648,7 @@ export function QuotationBuilderModal({
                       Selected Add-Ons:
                     </div>
                     {activeAddOnsList.map((addon) => {
-                      const addonDef = ADDONS_CATALOG[addon.name];
+                      const addonDef = addOnsCatalog[addon.name] || ADDONS_CATALOG[addon.name];
                       return (
                         <div key={addon.name} className="flex justify-between items-center text-amber-300 text-xs">
                           <span className="text-[0.75rem] truncate pr-2">+ {addonDef?.name || addon.name}</span>

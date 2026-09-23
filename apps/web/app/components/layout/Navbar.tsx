@@ -8,17 +8,12 @@ import { REGISTER_URL, LOGIN_URL } from "@/lib/config";
 
 const NAV_LINKS = [
   { label: "Our Approach", href: "#approach" },
+  { label: "How It Works", href: "#how-it-works" },
   { label: "Solutions", href: "#solutions" },
   { label: "Packages", href: "#pricing" },
   { label: "Security", href: "#security" },
   { label: "FAQ", href: "#faq" },
   { label: "Contact", href: "#contact" },
-];
-
-const STATS_CHIPS = [
-  { label: "99.8% Accuracy" },
-  { label: "2 Statisticians" },
-  { label: "24h Quote" },
 ];
 
 export default function Navbar() {
@@ -93,18 +88,6 @@ export default function Navbar() {
 
         {/* Live Stats Chip + Action Buttons (Desktop) */}
         <div className="hidden lg:flex items-center gap-3 xl:gap-4 shrink-0">
-          {/* Live Stats Chip (Shown on xl screens to maintain clean spacing on laptops) */}
-          <div className="hidden xl:flex items-center gap-2 text-[10px] font-mono text-white/50 border border-white/10 px-2.5 py-1.5 rounded-[2px] bg-white/[0.03] select-none whitespace-nowrap">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            {STATS_CHIPS.map((chip, i) => (
-              <React.Fragment key={chip.label}>
-                <span>{chip.label}</span>
-                {i < STATS_CHIPS.length - 1 && (
-                  <span className="w-1 h-1 rounded-full bg-white/20 inline-block shrink-0" />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
 
           {/* Sign In ghost link */}
           <a
@@ -183,18 +166,6 @@ export default function Navbar() {
             </a>
           </div>
 
-          {/* Mobile stats strip */}
-          <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-white/40 pt-2 flex-wrap">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            {STATS_CHIPS.map((chip, i) => (
-              <React.Fragment key={chip.label}>
-                <span>{chip.label}</span>
-                {i < STATS_CHIPS.length - 1 && (
-                  <span className="w-1 h-1 rounded-full bg-white/20 inline-block shrink-0" />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
         </div>
       </div>
     </header>

@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
-import { CaretDown } from "@phosphor-icons/react";
+import { Plus } from "@phosphor-icons/react";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -11,81 +12,82 @@ if (typeof window !== "undefined") {
 
 const FAQ_DATA = [
   {
-    index: "01",
-    question: "How fast will I receive my analysis?",
+    question: "How fast will I receive my statistical analysis?",
     answer:
-      "Standard thesis and survey packages (DataCheck, Start, Core) take 3 to 7 business days. Complex structural equation modeling (SEM) or medical dissertations take 2 to 3 weeks. If you are on a tight deadline, our 24-Hour and 48-Hour Rush delivery upgrades guarantee you submit on time.",
+      "Standard thesis and survey packages take 3 to 7 business days. Complex structural equation modeling (SEM), medical dissertations, or multi-wave panel studies take 2 to 3 weeks. Rush 24-hour and 48-hour delivery upgrades are available if you are on a tight deadline.",
     category: "TIMELINE & TURNAROUND",
   },
   {
-    index: "02",
     question: "What if my thesis adviser or panel asks for revisions?",
     answer:
-      "Revisions are 100% free. If your panel, adviser, or committee asks for changes, clarifications, or alternate tables within your study's original scope, our senior statisticians will revise your deliverables promptly at zero additional cost.",
+      "Revisions within your study's original scope are 100% free of charge. If your committee, adviser, or panel asks for alternate tables, clarifications, or extra diagnostic checks, our senior statisticians revise your deliverables promptly with zero additional fees.",
     category: "FREE REVISION GUARANTEE",
   },
   {
-    index: "03",
     question: "Is my survey data and student identity kept confidential?",
     answer:
-      "Yes, completely. We scrub all respondent names, emails, and student ID numbers from your files before our analysts ever see them. Every statistician operates under legally binding NDAs, and your research findings remain 100% your own intellectual property.",
-    category: "PRIVACY & NDAS",
+      "Yes, completely. We scrub all respondent names, emails, and student ID numbers from your dataset before our analysts begin work. Every statistician operates under legally binding non-disclosure agreements (NDAs), and your research findings remain 100% your own intellectual property.",
+    category: "PRIVACY & STRICT NDA",
   },
   {
-    index: "04",
     question: "What happens if my results are not statistically significant (p > .05)?",
     answer:
-      "Non-significant results are a normal part of real academic research! We never fake data or manipulate numbers. Instead, we provide rigorous theoretical explanations and sample justifications so you can defend your findings to your panel with complete academic credibility.",
+      "Non-significant results are a normal and valid part of empirical academic research. We never fake data or manipulate numbers. Instead, we provide rigorous theoretical explanations, effect sizes, and sample justifications so you can defend your findings with total academic integrity.",
     category: "ETHICAL INTEGRITY & P-VALUES",
   },
   {
-    index: "05",
-    question: "I know nothing about statistics. How will I defend my numbers?",
+    question: "I know very little about statistics. How will I defend my numbers?",
     answer:
-      "That is exactly why students choose JAXIS! You don't just get raw numbers — you receive a plain-English speaking script that explains what each table means in simple words, plus the exact answers to the top 20 questions your panel is likely to ask. You can also book our 1-on-1 mock defense session to practice.",
-    category: "DEFENSE READINESS",
+      "You don't need to be a statistician to defend with confidence. Every consultation includes a plain-English speaking script that explains what each Chapter 4 table means in simple words, plus direct answers to the top 20 questions thesis panels ask.",
+    category: "DEFENSELAB™ COACHING",
   },
   {
-    index: "06",
-    question: "What exact files will I receive upon delivery?",
+    question: "What exact files and reproducible scripts will I receive upon delivery?",
     answer:
-      "You receive: (1) Publication-ready APA 7th Edition tables ready to paste into Chapter 4, (2) A plain-English narrative report explaining your findings, (3) The cleaned dataset file (.sav / .csv), and (4) The full statistical software code (R, Python, or SPSS) so your study is 100% reproducible.",
-    category: "DELIVERABLES & CODE",
+      "You receive: (1) Publication-ready APA 7th Edition tables formatted for Microsoft Word, (2) A plain-English narrative writeup explaining your findings, (3) The cleaned dataset (.sav / .csv), and (4) The full reproducible syntax code in R, Python, or SPSS.",
+    category: "DELIVERABLES & CODE OWNERSHIP",
+  },
+  {
+    question: "Can I get a custom quote and Scope of Work before paying anything?",
+    answer:
+      "Yes. Submit your statement of the problem, methodology, and raw data to receive a transparent, fixed Scope of Work (SOW) within 24 hours. No upfront payment or commitment is required to receive your quotation.",
+    category: "TRANSPARENT QUOTATIONS",
   },
 ];
 
 export default function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo(
-        ".faq-header-box",
-        { opacity: 0, y: 25 },
+        ".faq-left-col",
+        { opacity: 0, y: 20 },
         {
           opacity: 1,
           y: 0,
           duration: 0.75,
           ease: "power3.out",
           scrollTrigger: {
-            trigger: ".faq-header-box",
+            trigger: ".faq-left-col",
             start: "top 85%",
+            once: true,
           },
         }
       );
 
       gsap.fromTo(
-        ".faq-item-box",
-        { opacity: 0, y: 20 },
+        ".faq-row-item",
+        { opacity: 0, y: 15 },
         {
           opacity: 1,
           y: 0,
-          duration: 0.55,
-          stagger: 0.08,
+          duration: 0.5,
+          stagger: 0.06,
           ease: "power3.out",
           scrollTrigger: {
-            trigger: ".faq-list-container",
+            trigger: ".faq-rows-container",
             start: "top 85%",
             once: true,
           },
@@ -104,114 +106,102 @@ export default function FAQ() {
     <section
       id="faq"
       ref={sectionRef}
-      className="relative bg-[#010114] py-24 sm:py-32 px-6 text-white z-10"
+      className="relative bg-[#010114] py-16 sm:py-20 lg:py-28 text-white z-10"
     >
-      <div className="max-w-[1280px] w-full mx-auto relative z-10">
-        
-        {/* Header Block */}
-        <div className="faq-header-box border-b border-white/10 pb-10 mb-12 grid grid-cols-1 lg:grid-cols-2 gap-6 items-end">
-          <div>
-            <div className="text-[10px] font-mono text-white/40 tracking-[0.18em] uppercase mb-3">
-              JAXIS STATLAB · FREQUENTLY ASKED QUESTIONS & POLICIES
+      <div className="w-full max-w-[90rem] mx-auto px-6 lg:px-8 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 xl:gap-24 items-start">
+          
+          {/* Left Column: Heading & Contact Subtext */}
+          <div className="faq-left-col lg:col-span-5 lg:sticky lg:top-28">
+            <div className="font-mono text-xs uppercase tracking-[0.15em] text-[#CC6600] mb-3 font-medium">
+              FREQUENTLY ASKED QUESTIONS
             </div>
-            <div className="text-xs font-mono text-[#CC6600] tracking-wider uppercase font-semibold flex items-center gap-2 mb-3">
-              <span className="inline-block w-1.5 h-1.5 bg-[#CC6600]" />
-              SECTION 06 · FREQUENTLY ASKED QUESTIONS
-            </div>
-            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-sans font-light tracking-tight text-white leading-tight">
-              Clear Answers.
-              <br />
-              <span className="text-[#38bdf8] font-normal">
-                Zero Ambiguity.
-              </span>
+            <h2 className="font-sans text-2xl sm:text-3xl lg:text-[2.25rem] font-medium text-white tracking-[-0.03em] leading-tight mb-4">
+              Common questions about our statistical consultation
             </h2>
-          </div>
-
-          <div>
-            <p className="text-sm sm:text-base font-sans text-white/70 leading-relaxed max-w-lg">
-              Everything you need to know about our statistical protocols, turnaround times, academic revisions, and code deliverables.
-            </p>
-          </div>
-        </div>
-
-        {/* FAQ Accordion Container */}
-        <div className="faq-list-container flex flex-col gap-4">
-          {FAQ_DATA.map((faq, index) => {
-            const isOpen = openIndex === index;
-
-            return (
-              <div
-                key={index}
-                className={[
-                  "faq-item-box rounded-[2px] relative transition-all duration-200 border",
-                  isOpen
-                    ? "border-white/25 bg-[#011B38]"
-                    : "border-white/10 bg-[#01142B] hover:border-white/20",
-                ].join(" ")}
+            <p className="font-mono text-xs sm:text-sm text-white/50 leading-relaxed max-w-sm">
+              Can&apos;t find what you need? Reach out to{" "}
+              <a
+                href="mailto:consult@jaxisstatlab.com"
+                className="text-white/80 hover:text-[#CC6600] underline underline-offset-4 decoration-white/30 transition-colors"
               >
-                {/* Active Indicator Line */}
-                {isOpen && (
-                  <div className="absolute top-0 left-0 bottom-0 w-[3px] bg-[#CC6600]" />
-                )}
+                consult@jaxisstatlab.com
+              </a>{" "}
+              — we&apos;re happy to answer anything.
+            </p>
 
-                <button
-                  type="button"
-                  onClick={() => toggleAccordion(index)}
-                  className="w-full flex justify-between items-center p-6 sm:p-7 text-left gap-6 cursor-pointer focus:outline-none"
-                  aria-expanded={isOpen}
+            <div className="mt-8">
+              <Link
+                href="/dashboard/client/quotations"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#CC6600] hover:bg-[#b35500] text-white font-sans text-xs sm:text-sm font-semibold rounded-[2px] active:scale-[0.97] transition-all shadow-sm"
+              >
+                <span>Get a quotation</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-white/90" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Column: Clean Hairline Accordion List */}
+          <div className="faq-rows-container lg:col-span-7 border-t border-white/[0.08]">
+            {FAQ_DATA.map((faq, index) => {
+              const isOpen = openIndex === index;
+
+              return (
+                <div
+                  key={index}
+                  className="faq-row-item border-b border-white/[0.08] transition-colors"
                 >
-                  <div className="flex items-baseline gap-4 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => toggleAccordion(index)}
+                    className="w-full py-5 sm:py-6 flex items-center justify-between gap-6 text-left group cursor-pointer focus:outline-none"
+                    aria-expanded={isOpen}
+                  >
                     <span
                       className={[
-                        "font-mono text-xs font-bold tracking-wider shrink-0",
-                        isOpen ? "text-[#CC6600]" : "text-white/40",
-                      ].join(" ")}
-                    >
-                      [{faq.index}]
-                    </span>
-                    <span
-                      className={[
-                        "font-sans text-base sm:text-lg font-medium tracking-tight transition-colors",
-                        isOpen ? "text-white" : "text-white/90",
+                        "font-sans text-sm sm:text-[15px] lg:text-base font-normal sm:font-medium transition-colors duration-150 leading-snug",
+                        isOpen
+                          ? "text-white"
+                          : "text-white/85 group-hover:text-white",
                       ].join(" ")}
                     >
                       {faq.question}
                     </span>
-                  </div>
 
-                  <CaretDown
-                    size={18}
-                    weight="fill"
+                    <span
+                      className={[
+                        "shrink-0 transition-transform duration-200 text-white/40 group-hover:text-white/80",
+                        isOpen ? "rotate-45 text-[#CC6600]" : "",
+                      ].join(" ")}
+                    >
+                      <Plus size={16} weight="bold" />
+                    </span>
+                  </button>
+
+                  {/* Pure CSS grid height transition */}
+                  <div
                     className={[
-                      "shrink-0 transition-transform duration-300",
-                      isOpen ? "rotate-180 text-[#CC6600]" : "text-white/40",
+                      "grid transition-[grid-template-rows] duration-300 ease-out",
+                      isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
                     ].join(" ")}
-                  />
-                </button>
-
-                {/* Pure CSS grid height transition */}
-                <div
-                  className={[
-                    "grid transition-[grid-template-rows] duration-350 ease-out",
-                    isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-                  ].join(" ")}
-                >
-                  <div className="overflow-hidden">
-                    <div className="px-6 pb-6 pt-0 sm:px-7 sm:pb-7 sm:pt-0 border-t border-white/10 mt-1">
-                      <span className="font-mono text-[10px] text-[#38bdf8] tracking-wider uppercase block my-3 font-semibold">
-                        {faq.category}
-                      </span>
-                      <p className="font-sans text-sm text-white/75 leading-relaxed m-0">
-                        {faq.answer}
-                      </p>
+                  >
+                    <div className="overflow-hidden">
+                      <div className="pb-6 pt-1 pr-6 sm:pr-8">
+                        <p className="font-sans text-xs sm:text-sm text-white/60 leading-relaxed m-0">
+                          {faq.answer}
+                        </p>
+                        <span className="inline-block mt-3 font-mono text-[10px] text-[#CC6600] uppercase tracking-wider font-semibold">
+                          {faq.category}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
+        </div>
       </div>
     </section>
   );

@@ -74,12 +74,12 @@ export default function SolutionCard({
       {/* ── Card Content Body ── */}
       <div className="p-6 sm:p-8">
         {/* Title */}
-        <h3 className="text-xl sm:text-2xl lg:text-3xl font-sans font-normal text-white tracking-tight mb-2">
+        <h3 className="text-xl sm:text-2xl font-sans font-medium text-white tracking-[-0.02em] mb-2">
           {card.title}
         </h3>
 
         {/* Subtitle */}
-        <p className="text-sm font-sans text-white/70 leading-relaxed max-w-3xl mb-5">
+        <p className="font-mono text-xs sm:text-sm text-white/60 leading-relaxed max-w-3xl mb-5">
           {card.subtitle}
         </p>
 
@@ -88,7 +88,7 @@ export default function SolutionCard({
           {card.pills.map((pill, pIdx) => (
             <div
               key={pIdx}
-              className="bg-white/[0.04] border border-white/10 px-3 py-1.5 rounded-[2px] font-mono text-xs text-white/90 inline-flex items-center gap-2"
+              className="bg-white/[0.04] border border-white/10 px-3 py-1.5 rounded-[2px] font-mono text-xs text-white/80 inline-flex items-center gap-2"
             >
               <CheckCircle size={13} weight="fill" className="text-[#CC6600] shrink-0" />
               <span>{pill}</span>
@@ -104,7 +104,7 @@ export default function SolutionCard({
               className="bg-[#010114]/70 border border-white/10 rounded-[2px] p-4 flex flex-col justify-between min-h-[140px] hover:border-white/20 transition-colors"
             >
               <div>
-                <div className="font-mono text-[10px] tracking-wider text-white/40 uppercase mb-1.5">
+                <div className="font-mono text-[10px] tracking-wider text-[#CC6600] uppercase mb-1 font-medium">
                   {feat.tag}
                 </div>
 
@@ -112,18 +112,18 @@ export default function SolutionCard({
                   {feat.title}
                 </div>
 
-                <div className="font-sans text-xs text-white/60 leading-relaxed">
+                <div className="font-mono text-xs text-white/60 leading-relaxed">
                   {feat.desc}
                 </div>
               </div>
 
               {/* Bottom Metric Badge */}
               <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center gap-2">
-                <span className="font-mono text-xs font-bold text-[#38bdf8]">
+                <span className="font-mono text-xs font-bold text-white">
                   {feat.metric}
                 </span>
 
-                <span className="font-mono text-[9px] tracking-wider text-white/40 uppercase">
+                <span className="font-mono text-[9.5px] tracking-wider text-white/40 uppercase">
                   {feat.metricLabel}
                 </span>
               </div>

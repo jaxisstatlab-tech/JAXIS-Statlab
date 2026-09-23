@@ -10,7 +10,11 @@ import {
   Modal,
   LoadingState,
   Peso,
+  Toast,
 } from "@repo/ui";
+import { ServiceCatalogModal } from "@/features/quotations/components/ServiceCatalogModal";
+import { getCommercialCatalog } from "@/features/quotations/actions";
+import type { CommercialCatalogData } from "@/lib/pricing-rules";
 import {
   getCeoFinancialOverviewAction,
   updatePayoutRateConfigAction,
@@ -38,12 +42,27 @@ export default function CeoFinancePage() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Commercial Pricing & Service Catalog Modal
+  const [catalog, setCatalog] = useState<CommercialCatalogData | undefined>(undefined);
+  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<{
+    message: string;
+    description?: string;
+    variant: "info" | "success" | "warning" | "danger";
+  } | null>(null);
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await getCeoFinancialOverviewAction();
+      const [res, catalogRes] = await Promise.all([
+        getCeoFinancialOverviewAction(),
+        getCommercialCatalog(),
+      ]);
       if (res.success && res.data) {
         setOverview(res.data);
+      }
+      if (catalogRes) {
+        setCatalog(catalogRes);
       }
     } catch (err) {
       console.error("Failed to load CEO financial overview:", err);
@@ -135,7 +154,16 @@ export default function CeoFinancePage() {
         title="Company Financials & Pay Rates"
         description="Company financial overview, package profitability breakdown, and commission rate settings."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCatalogModalOpen(true)}
+              className="rounded-[2px] border-white/20 text-white hover:bg-white/[0.06] flex items-center gap-1.5"
+            >
+              <IconEdit size={14} stroke={2} />
+              <span>Configure Services &amp; Packages</span>
+            </Button>
             <Badge variant="emerald" className="text-xs font-mono flex items-center gap-1">
               <IconShieldLock size={14} stroke={2} />
               <span>CEO Authority Verified</span>
@@ -495,6 +523,34 @@ export default function CeoFinancePage() {
             })()}
           </div>
         </Modal>
+      )}
+
+      {/* Commercial Service Catalog & Pricing Governance Modal */}
+      {catalog && (
+        <ServiceCatalogModal
+          isOpen={isCatalogModalOpen}
+          onClose={() => setIsCatalogModalOpen(false)}
+          initialCatalog={catalog}
+          onSaveSuccess={(updated) => {
+            setCatalog(updated);
+            setToastMessage({
+              message: "Pricing Catalog Updated",
+              description: "Commercial service packages and pricing limits updated.",
+              variant: "success",
+            });
+            loadData();
+          }}
+        />
+      )}
+
+      {/* Toast Notifications */}
+      {toastMessage && (
+        <Toast
+          message={toastMessage.message}
+          description={toastMessage.description}
+          variant={toastMessage.variant}
+          onClose={() => setToastMessage(null)}
+        />
       )}
     </div>
   );

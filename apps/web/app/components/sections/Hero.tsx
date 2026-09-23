@@ -309,7 +309,7 @@ export default function Hero() {
                 fontWeight: 500,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
-                color: "rgba(255,255,255,0.45)",
+                color: "#CC6600",
                 margin: "0 0 1.25rem",
                 animationDelay: `${HEADLINE_BASE_DELAY - 100}ms`,
               }}
