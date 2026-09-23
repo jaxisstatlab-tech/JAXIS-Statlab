@@ -8,17 +8,31 @@ interface GoogleSignInButtonProps {
   isRegister?: boolean;
   className?: string;
   onError?: (message: string) => void;
+  /** Set to true temporarily while custom domain DNS is being resolved */
+  temporarilyUnavailable?: boolean;
 }
+
+// [TEMPORARY DOMAIN MAINTENANCE]: Set to true while custom domain is down.
+// Once app.jaxis-statlab.com is active again, simply flip this flag to false!
+const DOMAIN_MAINTENANCE_ACTIVE = true;
 
 export function GoogleSignInButton({
   callbackUrl = "/dashboard",
   isRegister = false,
   className = "",
   onError,
+  temporarilyUnavailable = DOMAIN_MAINTENANCE_ACTIVE,
 }: GoogleSignInButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
+    if (temporarilyUnavailable) {
+      onError?.(
+        "Google sign-in is temporarily paused during domain maintenance. Please sign in with your email and password."
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
       const providers = await getProviders();
@@ -41,14 +55,23 @@ export function GoogleSignInButton({
     <button
       type="button"
       onClick={handleGoogleSignIn}
-      disabled={isLoading}
-      className={`w-full h-9 px-4 rounded-[2px] bg-[#01142B] hover:bg-white/[0.05] text-white/90 hover:text-white border border-white/12 hover:border-white/25 text-xs sm:text-sm font-sans font-semibold transition-all active:scale-[0.99] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm outline-none ${className}`}
+      disabled={isLoading || temporarilyUnavailable}
+      title={
+        temporarilyUnavailable
+          ? "Google sign-in is temporarily paused during domain maintenance. Please sign in with email and password."
+          : undefined
+      }
+      className={`w-full h-9 px-4 rounded-[2px] bg-[#01142B] border text-xs sm:text-sm font-sans font-semibold transition-all flex items-center justify-center gap-2.5 shadow-sm outline-none ${
+        temporarilyUnavailable
+          ? "opacity-55 cursor-not-allowed select-none border-white/10 text-white/50 bg-white/[0.02]"
+          : "hover:bg-white/[0.05] text-white/90 hover:text-white border-white/12 hover:border-white/25 cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+      } ${className}`}
     >
       {isLoading ? (
         <span className="h-4 w-4 border-2 border-white/20 border-t-[#CC6600] rounded-full animate-spin" />
       ) : (
         <svg
-          className="w-4 h-4 flex-shrink-0"
+          className={`w-4 h-4 flex-shrink-0 ${temporarilyUnavailable ? "opacity-60" : ""}`}
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
@@ -70,7 +93,14 @@ export function GoogleSignInButton({
           />
         </svg>
       )}
-      <span>{isRegister ? "Sign up with Google" : "Continue with Google"}</span>
+      <span>
+        {isRegister ? "Sign up with Google" : "Continue with Google"}
+        {temporarilyUnavailable && (
+          <span className="ml-1.5 text-[11px] font-normal text-white/40">
+            (Unavailable)
+          </span>
+        )}
+      </span>
     </button>
   );
 }

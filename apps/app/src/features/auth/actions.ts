@@ -293,7 +293,9 @@ export async function requestPasswordResetAction(
     const isProd = process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
-      (isProd ? "https://app.jaxis-statlab.com" : process.env.NEXTAUTH_URL || "http://localhost:3001");
+      process.env.AUTH_URL ||
+      process.env.NEXTAUTH_URL ||
+      (isProd ? "https://jaxis-statlab-app.vercel.app" : "http://localhost:3001");
     const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
     console.log(`\n🔑 [PASSWORD RECOVERY LINK]: ${resetUrl}\n`);
 

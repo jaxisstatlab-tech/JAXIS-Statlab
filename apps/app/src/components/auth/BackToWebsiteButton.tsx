@@ -18,7 +18,9 @@ export function BackToWebsiteButton({
       const isLocalhost =
         window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1";
-      return isLocalhost ? "http://localhost:3002" : "https://jaxis-statlab.com";
+      return isLocalhost
+        ? "http://localhost:3002"
+        : "https://jaxis-statlab-web.vercel.app";
     }
     return "http://localhost:3002";
   };
@@ -30,7 +32,9 @@ export function BackToWebsiteButton({
       if (
         referrer &&
         !referrer.includes(window.location.host) &&
-        (referrer.includes("3002") || referrer.includes("jaxis-statlab.com"))
+        (referrer.includes("3002") ||
+          referrer.includes("jaxis-statlab.com") ||
+          referrer.includes("jaxis-statlab-web.vercel.app"))
       ) {
         e.preventDefault();
         window.location.href = referrer;
