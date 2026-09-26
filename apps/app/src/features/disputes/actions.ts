@@ -1,5 +1,7 @@
 "use server";
 
+import fs from "fs";
+import path from "path";
 import { db, withDbTimeout } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
@@ -184,8 +186,59 @@ export async function getClientEligibleDisputesAction(): Promise<{
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to load dispute eligibility.";
     console.error("getClientEligibleDisputesAction error:", err);
+    if (process.env.NODE_ENV !== "production") {
+      const session = await auth();
+      if (session?.user?.id) {
+        // Offline dev: delivered studies from the local store; there is no local claims store.
+        return {
+          success: true,
+          data: { eligibleProjects: readDevDeliveredStudies(session.user.id, session.user.email), clientDisputes: [] },
+        };
+      }
+    }
     return { success: false, error: { message: msg } };
   }
+}
+
+/** Local dev only: delivered studies from .dev-projects.json with their 7-day claim window. */
+function readDevDeliveredStudies(userId: string, email?: string | null): ClientDisputeEligibilityDTO[] {
+  type DevProject = {
+    id: string;
+    intakeId: string;
+    researchTitle: string;
+    clientId: string;
+    deliveredAt?: string | null;
+    client?: { email?: string };
+  };
+  let rows: DevProject[] = [];
+  try {
+    const file = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
+    rows = fs.existsSync(file) ? (JSON.parse(fs.readFileSync(file, "utf-8")) as DevProject[]) : [];
+  } catch {
+    return [];
+  }
+  const lowerEmail = email?.toLowerCase();
+  const now = Date.now();
+  return rows
+    .filter((p) => p.deliveredAt && (p.clientId === userId || (!!lowerEmail && p.client?.email?.toLowerCase() === lowerEmail)))
+    .sort((a, b) => new Date(b.deliveredAt!).getTime() - new Date(a.deliveredAt!).getTime())
+    .map((p) => {
+      const windowExpiresAt = new Date(new Date(p.deliveredAt!).getTime() + SEVEN_DAYS_MS);
+      const remainingMs = windowExpiresAt.getTime() - now;
+      const isEligible = remainingMs > 0;
+      return {
+        projectId: p.id,
+        intakeId: p.intakeId,
+        researchTitle: p.researchTitle,
+        deliveredAt: p.deliveredAt!,
+        windowExpiresAt: windowExpiresAt.toISOString(),
+        isEligible,
+        remainingDays: isEligible ? Math.ceil(remainingMs / (24 * 60 * 60 * 1000)) : 0,
+        remainingMs: isEligible ? remainingMs : 0,
+        reason: isEligible ? undefined : "7-day post-delivery dispute window expired",
+        existingDispute: null,
+      };
+    });
 }
 
 export async function submitDisputeAction(rawInput: SubmitDisputeInput): Promise<{

@@ -1,12 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useOptimistic, startTransition, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useOptimistic, startTransition, useRef, useId } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import {
-  LoadingState,
-  Toast,
-} from "@repo/ui";
+import { Toast } from "@repo/ui";
 import {
   getInAppAlertsAction,
   markAlertReadAction,
@@ -15,24 +12,7 @@ import {
   clearAllAlertsAction,
 } from "@/features/notifications/actions";
 import type { InAppAlertDTO } from "@/features/notifications/schemas";
-import {
-  Bell,
-  Check,
-  Clock,
-  FileText,
-  Gavel,
-  ShieldCheck,
-  X,
-  ArrowRight,
-  Warning,
-  Tray,
-  CreditCard,
-  Receipt,
-  UserCheck,
-  Package,
-  ArrowCounterClockwise,
-  Trash,
-} from "@phosphor-icons/react";
+import { ArrowRight, Bell, CaretRight, Check, Checks, Trash, X } from "@phosphor-icons/react";
 
 type NotificationState = {
   alerts: InAppAlertDTO[];
@@ -135,7 +115,7 @@ export function NotificationDrawer({
 
             // Live floating Toast notification
             setToastMessage({
-              message: latestAlert.alertType?.replace(/_/g, " ") || "New Notification",
+              message: alertMeta(latestAlert.alertType).label,
               description: latestAlert.message,
               variant: "info",
             });
@@ -195,7 +175,7 @@ export function NotificationDrawer({
 
             // Live floating Toast notification
             setToastMessage({
-              message: newAlert.title || "New Notification",
+              message: newAlert.title || alertMeta(newAlert.alertType).label,
               description: newAlert.message,
               variant: "info",
             });
@@ -317,8 +297,8 @@ export function NotificationDrawer({
         setAlerts(prevAlerts);
         setUnreadCount(prevUnreadCount);
         setToastMessage({
-          message: "Sync Failed",
-          description: "Could not update notification. Please try again.",
+          message: "Couldn't update",
+          description: "We couldn't mark that as read. Please try again.",
           variant: "danger",
         });
       }
@@ -342,8 +322,8 @@ export function NotificationDrawer({
         setAlerts((prev) => prev.map((a) => ({ ...a, isRead: true })));
         setUnreadCount(0);
         setToastMessage({
-          message: "All Marked as Read",
-          description: "All unread notifications have been marked as read.",
+          message: "All marked as read",
+          description: "You're all caught up.",
           variant: "success",
         });
       } catch (err) {
@@ -352,8 +332,8 @@ export function NotificationDrawer({
         setAlerts(prevAlerts);
         setUnreadCount(prevUnreadCount);
         setToastMessage({
-          message: "Sync Failed",
-          description: "Could not update notifications. Please try again.",
+          message: "Couldn't update",
+          description: "We couldn't mark your notifications as read. Please try again.",
           variant: "danger",
         });
       }
@@ -381,8 +361,8 @@ export function NotificationDrawer({
           setUnreadCount((prev) => Math.max(0, prev - 1));
         }
         setToastMessage({
-          message: "Notification Removed",
-          description: "Alert cleared from your workspace.",
+          message: "Notification removed",
+          description: "It won't show up here again.",
           variant: "info",
         });
       } catch (err) {
@@ -391,8 +371,8 @@ export function NotificationDrawer({
         setAlerts(prevAlerts);
         setUnreadCount(prevUnreadCount);
         setToastMessage({
-          message: "Action Failed",
-          description: "Could not remove notification. Please try again.",
+          message: "Couldn't remove",
+          description: "Please try again in a moment.",
           variant: "danger",
         });
       }
@@ -417,8 +397,8 @@ export function NotificationDrawer({
         setAlerts([]);
         setUnreadCount(0);
         setToastMessage({
-          message: "Notifications Cleared",
-          description: "All alerts have been cleared from your workspace.",
+          message: "Notifications cleared",
+          description: "Your list is empty.",
           variant: "success",
         });
       } catch (err) {
@@ -427,8 +407,8 @@ export function NotificationDrawer({
         setAlerts(prevAlerts);
         setUnreadCount(prevUnreadCount);
         setToastMessage({
-          message: "Action Failed",
-          description: "Could not clear notifications. Please try again.",
+          message: "Couldn't clear",
+          description: "Please try again in a moment.",
           variant: "danger",
         });
       }
@@ -453,148 +433,29 @@ export function NotificationDrawer({
     });
   }, [optimisticState.alerts, filterTab]);
 
-  const formatAlertTimestamp = (dateStr: string): string => {
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return "";
+  const [confirmClear, setConfirmClear] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
 
-      const now = new Date();
-      const isToday =
-        d.getDate() === now.getDate() &&
-        d.getMonth() === now.getMonth() &&
-        d.getFullYear() === now.getFullYear();
-
-      const yesterday = new Date(now);
-      yesterday.setDate(now.getDate() - 1);
-      const isYesterday =
-        d.getDate() === yesterday.getDate() &&
-        d.getMonth() === yesterday.getMonth() &&
-        d.getFullYear() === yesterday.getFullYear();
-
-      const timePart = d.toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit",
-      });
-
-      if (isToday) {
-        return `Today · ${timePart}`;
-      }
-      if (isYesterday) {
-        return `Yesterday · ${timePart}`;
-      }
-
-      const isThisYear = d.getFullYear() === now.getFullYear();
-      const datePart = d.toLocaleDateString("en-PH", {
-        month: "short",
-        day: "numeric",
-        ...(isThisYear ? {} : { year: "numeric" }),
-      });
-
-      return `${datePart} · ${timePart}`;
-    } catch {
-      return "";
+  // Move focus into the panel when it opens; reset the clear-all confirmation when it closes.
+  useEffect(() => {
+    if (isOpen) {
+      const t = setTimeout(() => closeButtonRef.current?.focus(), 50);
+      return () => clearTimeout(t);
     }
-  };
+    setConfirmClear(false);
+  }, [isOpen]);
 
-  const getAlertIcon = (type: string) => {
-    switch (type) {
-      case "NEW_INTAKE":
-        return <Tray size={16} weight="fill" className="text-sky-400" />;
-      case "PAYMENT_UPDATE":
-        return <CreditCard size={16} weight="fill" className="text-emerald-400" />;
-      case "COMMERCIAL_UPDATE":
-        return <Receipt size={16} weight="fill" className="text-amber-400" />;
-      case "ASSIGNMENT":
-        return <UserCheck size={16} weight="fill" className="text-sky-400" />;
-      case "QA_DECISION":
-      case "QA_SUBMISSION":
-        return <ShieldCheck size={16} weight="fill" className="text-emerald-400" />;
-      case "DELIVERABLE_UPDATE":
-        return <Package size={16} weight="fill" className="text-emerald-400" />;
-      case "REVISION_REQUEST":
-        return <ArrowCounterClockwise size={16} weight="bold" className="text-amber-400" />;
-      case "PRE_DEADLINE":
-        return <Clock size={16} weight="fill" className="text-amber-400" />;
-      case "ETHICAL_BREACH":
-        return <Warning size={16} weight="fill" className="text-red-400" />;
-      case "CLAIM_FILED":
-      case "DISPUTE":
-        return <Gavel size={16} weight="fill" className="text-[#CC6600]" />;
-      default:
-        return <FileText size={16} weight="fill" className="text-white/60" />;
+  const groupedAlerts = useMemo(() => {
+    const groups: Array<{ label: string; items: InAppAlertDTO[] }> = [];
+    for (const alert of filteredAlerts) {
+      const label = dayGroup(alert.createdAt);
+      const last = groups[groups.length - 1];
+      if (last && last.label === label) last.items.push(alert);
+      else groups.push({ label, items: [alert] });
     }
-  };
-
-  const getActionLabel = (type: string) => {
-    switch (type) {
-      case "DELIVERABLE_UPDATE":
-        return "View Deliverables";
-      case "REVISION_REQUEST":
-        return "Review Revisions";
-      case "DISPUTE":
-      case "CLAIM_FILED":
-        return "View Dispute";
-      case "PAYMENT_UPDATE":
-        return "View Payment";
-      default:
-        return "Open Workspace";
-    }
-  };
-
-  /**
-   * Renders the notification message while highlighting study IDs (e.g. JAXIS-YYYYMM-XXXX or alert.projectIntakeId)
-   * into an eye-catching, high-contrast Enterprise Orange chip for effortless scannability.
-   * If an alert is linked to a study ID that is not mentioned in the message text, it prepends the badge.
-   */
-  const renderHighlightedMessage = (message: string, projectIntakeId?: string | null) => {
-    if (!message) return null;
-
-    // Study pattern matching canonical JAXIS intake ID: JAXIS-YYYYMM-XXXX
-    const studyRegex = /\b(JAXIS-\d{6}-\d{4})\b/g;
-    const hasStudyIdInText =
-      studyRegex.test(message) ||
-      Boolean(projectIntakeId && message.includes(projectIntakeId));
-
-    // If alert has a projectIntakeId but the message text never mentioned it, prepend it
-    const prependIntakeBadge = Boolean(projectIntakeId && !hasStudyIdInText);
-
-    // Split message by study ID pattern (and projectIntakeId if non-standard)
-    const splitPattern = projectIntakeId
-      ? new RegExp(
-          `(${projectIntakeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}|JAXIS-\\d{6}-\\d{4})`,
-          "g"
-        )
-      : /(JAXIS-\d{6}-\d{4})/g;
-
-    const segments = message.split(splitPattern);
-
-    return (
-      <>
-        {prependIntakeBadge && projectIntakeId && (
-          <span className="font-mono text-[11px] font-bold text-[#FFA040] bg-[#CC6600]/15 border border-[#CC6600]/30 px-1.5 py-0.5 rounded-[2px] inline-flex items-center align-baseline mr-1.5 tracking-wide select-all shadow-xs">
-            {projectIntakeId}
-          </span>
-        )}
-        {segments.map((segment, idx) => {
-          const isStudyId =
-            (projectIntakeId && segment === projectIntakeId) ||
-            /^JAXIS-\d{6}-\d{4}$/.test(segment);
-
-          if (isStudyId) {
-            return (
-              <span
-                key={idx}
-                className="font-mono text-[11px] font-bold text-[#FFA040] bg-[#CC6600]/15 border border-[#CC6600]/30 px-1.5 py-0.5 rounded-[2px] inline-flex items-center align-baseline mx-0.5 tracking-wide select-all shadow-xs"
-              >
-                {segment}
-              </span>
-            );
-          }
-          return <span key={idx}>{segment}</span>;
-        })}
-      </>
-    );
-  };
+    return groups;
+  }, [filteredAlerts]);
 
   return (
     <>
@@ -614,51 +475,35 @@ export function NotificationDrawer({
                 : "Notifications"
               : undefined
           }
-          className={`w-full flex items-center h-9 rounded-[2px] transition-all duration-150 cursor-pointer outline-none group active:scale-[0.98] overflow-hidden ${
-            isOpen
-              ? "bg-white/[0.08] text-white border border-white/20"
-              : "hover:bg-white/[0.05] text-white/70 hover:text-white border border-transparent"
-          } ${className}`}
+          className={`group relative flex items-center h-9 rounded-[2px] transition-[background-color,color] duration-150 ease-out outline-none ${
+            isSidebarCollapsed ? "w-10 mx-auto justify-center" : "w-full gap-3 px-2.5"
+          } ${isOpen ? "bg-white/[0.08] text-white" : "text-white/60 hover:text-white hover:bg-white/[0.04]"} ${className}`}
         >
-          {/* Bell Icon: Anchored at center x = 34px */}
-          <div className="w-10 h-full shrink-0 flex items-center justify-center relative">
-            <Bell
-              size={16}
-              weight="fill"
-              className={`transition-colors duration-150 ${
-                isOpen
-                  ? "text-[#FFA040]"
-                  : optimisticState.unreadCount > 0
-                  ? "text-[#FFA040]"
-                  : "text-white/40 group-hover:text-white/80"
-              } ${isRinging ? "animate-bounce text-[#CC6600]" : ""}`}
-            />
-            {optimisticState.unreadCount > 0 && (
-              <span className="absolute top-1.5 right-2 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC6600]" />
-              </span>
-            )}
-          </div>
-
-          {/* Text Label & Badge: Smoothly fades in/out without layout reflow */}
-          <div
-            className={`flex items-center justify-between flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
-              isSidebarCollapsed
-                ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0"
-                : "max-w-[200px] opacity-100 ml-1.5 pr-2"
-            }`}
-          >
-            <span className="text-xs font-sans font-medium text-white/70 group-hover:text-white truncate">
-              Notifications
-            </span>
-
-            {optimisticState.unreadCount > 0 && (
-              <span className="bg-[#CC6600] text-white font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-[2px] shadow-sm shrink-0">
-                {optimisticState.unreadCount > 9 ? "9+" : optimisticState.unreadCount} NEW
-              </span>
-            )}
-          </div>
+          {/* Matches the sidebar nav rows */}
+          <Bell
+            size={16}
+            weight="fill"
+            className={`shrink-0 transition-colors duration-150 ${
+              isOpen ? "text-white" : "text-white/40 group-hover:text-white/80"
+            } ${isRinging ? "animate-bounce" : ""}`}
+          />
+          {isSidebarCollapsed ? (
+            optimisticState.unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-[#CC6600]" aria-hidden="true" />
+            )
+          ) : (
+            <>
+              <span className="font-sans text-[13px] truncate">Notifications</span>
+              {optimisticState.unreadCount > 0 && (
+                <span
+                  className="ml-auto min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-[2px] bg-[#CC6600] font-mono text-[11px] font-medium text-white shrink-0"
+                  aria-label={`${optimisticState.unreadCount} unread`}
+                >
+                  {optimisticState.unreadCount > 99 ? "99+" : optimisticState.unreadCount}
+                </span>
+              )}
+            </>
+          )}
         </button>
       ) : (
         <button
@@ -673,288 +518,278 @@ export function NotificationDrawer({
               ? `${optimisticState.unreadCount} unread alert${optimisticState.unreadCount > 1 ? "s" : ""}`
               : "Notifications"
           }
-          className={`relative h-8 w-8 rounded-[2px] flex items-center justify-center transition-all duration-150 cursor-pointer outline-none focus:outline-none ring-0 group ${
-            isOpen
-              ? "bg-white/[0.08] border border-white/25 text-[#FFA040]"
-              : "bg-white/[0.03] hover:bg-[#CC6600]/20 border border-white/10 hover:border-[#CC6600]/40 text-white/60 hover:text-[#FFA040]"
+          className={`relative h-10 w-10 rounded-[2px] flex items-center justify-center transition-colors duration-150 cursor-pointer outline-none group ${
+            isOpen ? "bg-white/[0.08] text-white" : "text-white/60 hover:text-white hover:bg-white/[0.06]"
           } ${className}`}
         >
-          <Bell
-            size={16}
-            weight="fill"
-            className={`transition-transform duration-200 group-hover:scale-105 ${
-              isRinging ? "animate-bounce text-[#CC6600]" : ""
-            }`}
-          />
+          <Bell size={18} weight="fill" className={isRinging ? "animate-bounce" : ""} />
           {optimisticState.unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 items-center justify-center">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-80" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#CC6600] ring-1 ring-[#010114]" />
-            </span>
+            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[#CC6600] ring-2 ring-[#010114]" aria-hidden="true" />
           )}
         </button>
       )}
 
-      {/* Full-Screen Dimmed Backdrop & Slide-out Right Drawer via React Portal */}
+      {/* Slide-out panel (portal), styled like the sidebar */}
       {mounted && typeof document !== "undefined" && createPortal(
         <div
-          className={`fixed inset-0 z-[9999] overflow-hidden select-none transition-all duration-300 ease-in-out ${
-            isOpen ? "pointer-events-auto visible" : "pointer-events-none invisible"
+          className={`fixed inset-0 z-[9999] transition-[visibility] duration-300 ${
+            isOpen ? "visible" : "invisible pointer-events-none"
           }`}
           role="dialog"
           aria-modal="true"
+          aria-labelledby={titleId}
         >
-          {/* Dimmed Background Backdrop (Full viewport dimming) */}
           <div
-            className={`fixed inset-0 bg-[#010114]/80 backdrop-blur-[4px] transition-opacity duration-300 ease-in-out cursor-pointer ${
+            className={`absolute inset-0 bg-[#010114]/60 transition-opacity duration-300 ease-out ${
               isOpen ? "opacity-100" : "opacity-0"
             }`}
             onClick={() => setIsOpen(false)}
             aria-hidden="true"
           />
 
-          {/* Drawer Container Sliding in from the Right Edge */}
           <div
-            className={`fixed inset-y-0 right-0 max-w-md w-full bg-[#010114] border-l border-white/[0.08] shadow-2xl flex flex-col justify-between font-sans transition-transform duration-300 ease-in-out will-change-transform z-10 ${
+            className={`absolute inset-y-0 right-0 w-full sm:w-[26rem] bg-[#010114] border-l border-white/[0.08] flex flex-col font-sans transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform ${
               isOpen ? "translate-x-0" : "translate-x-full"
             }`}
           >
-          {/* Header (Matching Sidebar Studio Vibe - h-16, #010114, border-white/[0.08]) */}
-          <div className="h-16 px-5 border-b border-white/[0.08] flex items-center justify-between bg-[#010114] shrink-0">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-white font-sans tracking-wide leading-none">
+            {/* Header */}
+            <div className="h-16 px-5 border-b border-white/[0.08] flex items-center justify-between gap-3 shrink-0">
+              <div className="min-w-0">
+                <h2 id={titleId} className="text-[15px] font-semibold tracking-[-0.01em] text-white">
                   Notifications
                 </h2>
-                {optimisticState.unreadCount > 0 && (
-                  <span className="bg-[#CC6600] text-white font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-[2px] shadow-sm leading-none">
-                    {optimisticState.unreadCount} NEW
-                  </span>
-                )}
+                <p className="font-mono text-[11px] text-white/45">
+                  {optimisticState.unreadCount === 0
+                    ? "You're all caught up"
+                    : `${optimisticState.unreadCount} unread`}
+                </p>
               </div>
-              <span className="text-xs text-white/40 font-sans mt-1">
-                {optimisticState.unreadCount === 0
-                  ? "All caught up"
-                  : `${optimisticState.unreadCount} unread alert${optimisticState.unreadCount > 1 ? "s" : ""}`}
-              </span>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="h-9 w-9 rounded-[2px] flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.06] transition-colors"
+                aria-label="Close notifications"
+                title="Close (Esc)"
+              >
+                <X size={18} weight="bold" />
+              </button>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            {/* Filter + mark all */}
+            <div className="px-5 py-3 border-b border-white/[0.08] flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-1" role="tablist" aria-label="Filter notifications">
+                {(["ALL", "UNREAD"] as const).map((tab) => {
+                  const count = tab === "ALL" ? optimisticState.alerts.length : optimisticState.unreadCount;
+                  const active = filterTab === tab;
+                  return (
+                    <button
+                      key={tab}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setFilterTab(tab)}
+                      className={`inline-flex items-center gap-2 rounded-[2px] px-3 py-1.5 text-[13px] transition-colors ${
+                        active ? "bg-white/[0.08] font-medium text-white" : "text-white/55 hover:text-white"
+                      }`}
+                    >
+                      {tab === "ALL" ? "All" : "Unread"}
+                      <span className={`font-mono text-[11px] ${active ? "text-white/60" : "text-white/35"}`}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
               {optimisticState.unreadCount > 0 && (
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="text-xs text-white/60 hover:text-white transition-colors px-2.5 py-1 rounded-[2px] hover:bg-white/[0.06] border border-transparent hover:border-white/10 cursor-pointer outline-none active:scale-95"
-                  title="Mark all notifications as read"
+                  className="inline-flex items-center gap-1.5 rounded-[2px] px-2 py-1.5 text-[13px] text-white/60 hover:text-white hover:bg-white/[0.04] transition-colors"
                 >
-                  Mark all read
+                  <Checks size={15} weight="bold" />
+                  Mark all as read
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="h-8 w-8 rounded-[2px] border border-transparent hover:border-white/10 text-white/40 hover:text-white hover:bg-white/[0.06] flex items-center justify-center transition-colors cursor-pointer outline-none active:scale-95"
-                aria-label="Close notifications"
-                title="Close (Esc)"
-              >
-                <X size={16} weight="bold" />
-              </button>
             </div>
-          </div>
 
-          {/* Segmented Filter Tabs & Quick Action Strip */}
-          <div className="px-5 py-2.5 bg-[#010114] border-b border-white/[0.08] flex items-center justify-between shrink-0">
-            <div className="flex items-center p-0.5 rounded-[2px] bg-[#010D1F] border border-white/[0.08] text-xs font-sans w-full">
-              {(["ALL", "UNREAD"] as const).map((tab) => {
-                const count = tab === "ALL" ? optimisticState.alerts.length : optimisticState.unreadCount;
-                const isActive = filterTab === tab;
-                return (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setFilterTab(tab)}
-                    className={`flex-1 py-1.5 px-3 text-xs rounded-[2px] transition-all cursor-pointer flex items-center justify-center gap-2 select-none border outline-none active:scale-95 ${
-                      isActive
-                        ? "bg-[#01142B] border-white/15 text-white font-semibold shadow-sm"
-                        : "border-transparent text-white/40 hover:text-white/75 hover:bg-white/[0.03]"
-                    }`}
-                  >
-                    <span>{tab === "ALL" ? "All Alerts" : "Unread"}</span>
-                    <span
-                      className={`text-[10px] font-mono px-1.5 py-0.2 rounded-[2px] leading-none ${
-                        isActive
-                          ? tab === "UNREAD" && count > 0
-                            ? "bg-[#CC6600] text-white font-bold"
-                            : "bg-white/10 text-white"
-                          : "bg-white/[0.04] text-white/30"
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Alerts Feed */}
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5 scrollbar-thin min-h-0 bg-[#010114]">
-            {isLoading ? (
-              <div className="py-20 flex flex-col items-center justify-center">
-                <LoadingState variant="inline" label="Loading alerts..." />
-              </div>
-            ) : filteredAlerts.length === 0 ? (
-              <div className="py-20 flex flex-col items-center justify-center text-center text-xs text-white/40 gap-3">
-                <div className="h-12 w-12 rounded-[2px] bg-[#01142B] border border-white/10 flex items-center justify-center text-white/30">
-                  <Tray size={22} weight="fill" />
-                </div>
-                <span className="font-semibold text-white/70 text-sm font-sans">
-                  {filterTab === "UNREAD" ? "No unread alerts" : "No notifications"}
-                </span>
-                <span className="text-xs text-white/40 font-sans max-w-[260px] leading-relaxed">
-                  {filterTab === "UNREAD"
-                    ? "You are completely caught up with all activity."
-                    : "Study milestones, intake updates, and consultation alerts will appear here."}
-                </span>
-                {filterTab === "UNREAD" && optimisticState.alerts.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setFilterTab("ALL")}
-                    className="mt-1 text-xs text-[#FFA040] hover:text-white transition-colors hover:underline cursor-pointer select-none"
-                  >
-                    View all {optimisticState.alerts.length} notification{optimisticState.alerts.length > 1 ? "s" : ""} →
-                  </button>
-                )}
-              </div>
-            ) : (
-              filteredAlerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className={`p-3.5 rounded-[2px] transition-all duration-150 flex flex-col gap-2 select-none border text-left group ${
-                    alert.isRead
-                      ? "bg-[#010D1F]/70 border-white/[0.06] text-white/70 hover:border-white/15 hover:bg-[#010D1F]"
-                      : "bg-[#01142B] border-l-[3px] border-l-[#CC6600] border-t-white/10 border-r-white/10 border-b-white/10 text-white shadow-sm hover:border-white/20 hover:bg-[#011833]"
-                  }`}
-                >
-                  {/* Card Header Row */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <div className="w-6 h-6 rounded-[2px] bg-white/[0.04] border border-white/10 flex items-center justify-center shrink-0">
-                        {getAlertIcon(alert.alertType)}
-                      </div>
-                      <span className="font-mono text-[10px] uppercase text-white/50 font-semibold tracking-wider truncate">
-                        {alert.alertType.replace(/_/g, " ")}
+            {/* Feed */}
+            <div className="flex-1 min-h-0 overflow-y-auto [scrollbar-width:thin]">
+              {isLoading ? (
+                <ul aria-label="Loading notifications" className="divide-y divide-white/[0.06]">
+                  {[0, 1, 2].map((i) => (
+                    <li key={i} className="flex gap-3 px-5 py-4 animate-pulse">
+                      <span className="h-8 w-8 rounded-[2px] bg-white/[0.05] shrink-0" />
+                      <span className="flex-1 flex flex-col gap-2 pt-1">
+                        <span className="h-3 w-1/3 rounded-[2px] bg-white/[0.06]" />
+                        <span className="h-3 w-5/6 rounded-[2px] bg-white/[0.04]" />
                       </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-                      <span
-                        className="text-[10px] text-white/40 font-mono whitespace-nowrap"
-                        title={new Date(alert.createdAt).toLocaleString("en-PH", {
-                          dateStyle: "full",
-                          timeStyle: "short",
-                        })}
-                      >
-                        {formatAlertTimestamp(alert.createdAt)}
-                      </span>
-
-                      {/* Mark as read button */}
-                      {!alert.isRead && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMarkRead(alert.id);
-                          }}
-                          title="Mark as read"
-                          className="text-white/40 hover:text-emerald-400 hover:bg-emerald-500/10 p-1 rounded-[2px] transition-colors cursor-pointer outline-none border border-transparent hover:border-emerald-500/20 active:scale-95"
-                          aria-label="Mark as read"
-                        >
-                          <Check size={13} weight="bold" />
-                        </button>
-                      )}
-
-                      {/* Clear / Delete this individual notification */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteAlert(alert.id);
-                        }}
-                        title="Clear notification"
-                        className="text-white/25 hover:text-red-400 hover:bg-red-500/10 p-1 rounded-[2px] transition-colors cursor-pointer outline-none border border-transparent hover:border-red-500/20 active:scale-95 opacity-70 group-hover:opacity-100"
-                        aria-label="Clear notification"
-                      >
-                        <Trash size={13} weight="fill" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Message body with highlighted study ID */}
-                  <p className="text-xs leading-relaxed text-white/85 font-sans">
-                    {renderHighlightedMessage(alert.message, alert.projectIntakeId)}
+                    </li>
+                  ))}
+                </ul>
+              ) : filteredAlerts.length === 0 ? (
+                <div className="px-8 py-20 flex flex-col items-center text-center">
+                  <span className="h-10 w-10 rounded-[2px] border border-white/[0.08] bg-white/[0.03] flex items-center justify-center text-white/40">
+                    <Bell size={18} weight="fill" />
+                  </span>
+                  <p className="mt-4 text-sm font-medium text-white">
+                    {filterTab === "UNREAD" || optimisticState.alerts.length > 0 ? "You're all caught up" : "No notifications yet"}
                   </p>
-
-                  {/* Action link */}
-                  {alert.linkUrl && (
-                    <div className="pt-1 flex justify-end">
-                      <Link
-                        href={alert.linkUrl}
-                        onClick={() => {
-                          if (!alert.isRead) handleMarkRead(alert.id);
-                          setIsOpen(false);
-                        }}
-                        className="inline-flex items-center gap-1 text-xs text-[#FFA040] hover:text-white font-medium transition-colors cursor-pointer group/link hover:underline"
-                      >
-                        <span>{getActionLabel(alert.alertType)}</span>
-                        <ArrowRight
-                          size={12}
-                          weight="bold"
-                          className="transition-transform group-hover/link:translate-x-0.5"
-                        />
-                      </Link>
-                    </div>
+                  <p className="mt-1.5 max-w-[17rem] text-[13px] leading-relaxed text-white/50">
+                    {filterTab === "UNREAD"
+                      ? "You've read everything. New updates will show up here."
+                      : "Updates about your studies, like new prices, payments and files, show up here."}
+                  </p>
+                  {filterTab === "UNREAD" && optimisticState.alerts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setFilterTab("ALL")}
+                      className="mt-4 inline-flex items-center gap-1.5 font-mono text-xs text-white/70 hover:text-white transition-colors"
+                    >
+                      Show all {optimisticState.alerts.length}
+                      <ArrowRight size={12} weight="bold" />
+                    </button>
                   )}
                 </div>
-              ))
+              ) : (
+                groupedAlerts.map((group) => (
+                  <section key={group.label} aria-label={group.label}>
+                    <h3 className="px-5 pt-5 pb-2 font-mono text-[11px] uppercase tracking-wider text-white/40">
+                      {group.label}
+                    </h3>
+                    <ul className="divide-y divide-white/[0.06] border-y border-white/[0.06]">
+                      {group.items.map((alert) => {
+                        const { title, action } = describeAlert(alert.alertType, alert.message);
+                        const intakeId = alert.projectIntakeId || alert.message.match(STUDY_ID)?.[0] || null;
+                        const message = dropRepeatedTitle(stripStudyId(alert.message, intakeId), title);
+                        const unread = !alert.isRead;
+                        const body = (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 shrink-0 flex justify-center" aria-hidden="true">
+                                {unread && <span className="h-1.5 w-1.5 rounded-full bg-[#CC6600]" />}
+                              </span>
+                              <span className={`min-w-0 truncate text-sm ${unread ? "font-semibold text-white" : "font-medium text-white/70"}`}>
+                                {unread && <span className="sr-only">Unread: </span>}
+                                {title}
+                              </span>
+                              <time
+                                dateTime={alert.createdAt}
+                                title={new Date(alert.createdAt).toLocaleString("en-PH", { dateStyle: "full", timeStyle: "short" })}
+                                className="ml-auto pl-2 font-mono text-[11px] text-white/40 whitespace-nowrap shrink-0"
+                              >
+                                {shortTime(alert.createdAt)}
+                              </time>
+                            </div>
+                            <p className={`mt-1 pl-4 text-[13px] leading-relaxed line-clamp-2 ${unread ? "text-white/70" : "text-white/45"}`}>
+                              {message}
+                            </p>
+                            {(intakeId || alert.linkUrl) && (
+                              <div className="mt-2 pl-4 pr-16 flex items-center gap-2 font-mono text-[11px] text-white/40">
+                                {intakeId && <span>{intakeId}</span>}
+                                {intakeId && alert.linkUrl && <span aria-hidden="true">·</span>}
+                                {alert.linkUrl && (
+                                  <span className="inline-flex items-center gap-1 text-white/65 transition-colors group-hover:text-white">
+                                    {action}
+                                    <CaretRight size={11} weight="bold" className="transition-transform group-hover:translate-x-0.5" />
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        );
+                        return (
+                          <li key={alert.id} className="group relative">
+                            {alert.linkUrl ? (
+                              <Link
+                                href={alert.linkUrl}
+                                onClick={() => {
+                                  if (unread) handleMarkRead(alert.id);
+                                  setIsOpen(false);
+                                }}
+                                className="block px-5 py-4 transition-colors hover:bg-white/[0.03] focus-visible:bg-white/[0.04] outline-none"
+                              >
+                                {body}
+                              </Link>
+                            ) : (
+                              <div className="px-5 py-4">{body}</div>
+                            )}
+
+                            {/* Row actions: shown on hover/focus (always on touch screens) */}
+                            <span className="absolute right-3 bottom-2.5 flex items-center gap-0.5 transition-opacity [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
+                              {unread && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleMarkRead(alert.id)}
+                                  className="h-7 w-7 rounded-[2px] flex items-center justify-center text-white/45 hover:text-white hover:bg-white/[0.08] transition-colors"
+                                  aria-label="Mark as read"
+                                  title="Mark as read"
+                                >
+                                  <Check size={14} weight="bold" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteAlert(alert.id)}
+                                className="h-7 w-7 rounded-[2px] flex items-center justify-center text-white/45 hover:text-white hover:bg-white/[0.08] transition-colors"
+                                aria-label="Remove notification"
+                                title="Remove"
+                              >
+                                <X size={14} weight="bold" />
+                              </button>
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ))
+              )}
+            </div>
+
+            {/* Footer: clear all (asks first) */}
+            {optimisticState.alerts.length > 0 && (
+              <div className="px-5 py-3 border-t border-white/[0.08] flex items-center justify-between gap-3 shrink-0 min-h-14">
+                {confirmClear ? (
+                  <>
+                    <span className="text-[13px] text-white/70">Clear all notifications?</span>
+                    <span className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmClear(false)}
+                        className="h-8 px-3 rounded-[2px] border border-white/15 text-[13px] text-white hover:border-white/35 hover:bg-white/[0.04] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmClear(false);
+                          handleClearAll();
+                        }}
+                        className="h-8 px-3 rounded-[2px] bg-red-600 text-[13px] font-medium text-white hover:bg-red-500 transition-colors"
+                      >
+                        Clear all
+                      </button>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-mono text-[11px] text-white/40">Updates arrive live</span>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmClear(true)}
+                      className="inline-flex items-center gap-1.5 rounded-[2px] px-2 py-1.5 text-[13px] text-white/55 hover:text-red-300 hover:bg-red-500/[0.08] transition-colors"
+                    >
+                      <Trash size={14} weight="fill" />
+                      Clear all
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </div>
-
-          {/* Footer */}
-          <div className="px-5 py-3 border-t border-white/10 bg-[#010814] flex justify-between items-center text-xs text-white/40 font-sans shrink-0">
-            <span className="flex items-center gap-2 text-white/50 select-none">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
-              </span>
-              <span className="font-sans text-[11px] tracking-tight">Live updates active</span>
-            </span>
-
-            <div className="flex items-center gap-2">
-              {optimisticState.alerts.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleClearAll}
-                  className="px-2.5 py-1 rounded-[2px] bg-red-950/30 hover:bg-red-900/50 border border-red-500/20 hover:border-red-500/40 text-[11px] text-red-300 font-sans transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
-                  title="Clear all notifications"
-                >
-                  <Trash size={11} weight="fill" />
-                  <span>Clear All</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="px-3 py-1 rounded-[2px] bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs text-white/70 hover:text-white font-sans transition-colors cursor-pointer active:scale-95"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>,
-      document.body
-    )}
+        </div>,
+        document.body
+      )}
 
       {toastMessage && (
         <Toast
@@ -966,4 +801,100 @@ export function NotificationDrawer({
       )}
     </>
   );
+}
+
+// ─── Plain-English titles and link labels per alert type ──────────────────────
+
+const ALERT_META: Record<string, { label: string; action: string }> = {
+  NEW_INTAKE: { label: "New study request", action: "Open study" },
+  PAYMENT_UPDATE: { label: "Payment update", action: "View payment" },
+  COMMERCIAL_UPDATE: { label: "Price and agreement", action: "Review" },
+  ASSIGNMENT: { label: "Statistician assigned", action: "Open study" },
+  QA_DECISION: { label: "Quality check", action: "Open study" },
+  QA_SUBMISSION: { label: "Ready for quality check", action: "Open study" },
+  DELIVERABLE_UPDATE: { label: "Your files are ready", action: "Get files" },
+  REVISION_REQUEST: { label: "Changes requested", action: "View changes" },
+  PRE_DEADLINE: { label: "Deadline coming up", action: "Open study" },
+  ETHICAL_BREACH: { label: "Study on hold", action: "Open study" },
+  CLAIM_FILED: { label: "Claim filed", action: "View claim" },
+  DISPUTE: { label: "Claim update", action: "View claim" },
+  NEW_MESSAGE: { label: "New message", action: "Reply" },
+  MESSAGE_ALERT: { label: "New message", action: "Reply" },
+  STATUS_UPDATE: { label: "Study update", action: "Open study" },
+  INPUT_UPDATE: { label: "Study details updated", action: "Open study" },
+  OUTPUT_UPDATE: { label: "Results updated", action: "Open study" },
+  SLA_ALERT: { label: "Delivery timer", action: "Open study" },
+  DEFENSELAB_UPDATE: { label: "DefenseLab update", action: "Open DefenseLab" },
+  PAYROLL_UPDATE: { label: "Payroll update", action: "Open payroll" },
+  ATTENDANCE_UPDATE: { label: "Timesheet update", action: "Open timesheet" },
+  STUDY_DELETION_REQUESTED: { label: "Deletion requested", action: "Review" },
+  SECURITY_ALERT: { label: "Security alert", action: "Review" },
+  SYSTEM_ALERT: { label: "From JAXIS", action: "Open" },
+};
+
+function alertMeta(type: string) {
+  return (
+    ALERT_META[type] ?? {
+      label: type ? type.charAt(0) + type.slice(1).toLowerCase().replace(/_/g, " ") : "Update",
+      action: "Open",
+    }
+  );
+}
+
+/** Title + link label. Price and agreement alerts share one type, so the message decides which. */
+function describeAlert(type: string, message: string): { title: string; action: string } {
+  const meta = alertMeta(type);
+  if (type === "COMMERCIAL_UPDATE") {
+    if (/agreement|statement of work|\bSOW\b/i.test(message)) return { title: "Agreement ready to sign", action: "Review & sign" };
+    if (/price|quot/i.test(message)) return { title: "Your price is ready", action: "Review price" };
+  }
+  return { title: meta.label, action: meta.action };
+}
+
+const STUDY_ID = /JAXIS-\d{6}-\d{4}/;
+
+/** "Your price is ready. Review…" under the title "Your price is ready" → "Review…". */
+function dropRepeatedTitle(message: string, title: string): string {
+  const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const match = message.match(/^(.+?[.!?])\s+(.+)$/s);
+  return match && normalize(match[1]!) === normalize(title) ? match[2]! : message;
+}
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** The study ID has its own line, so drop it (with a leading "for"/"study") from the sentence. */
+function stripStudyId(message: string, intakeId: string | null): string {
+  const ids = [STUDY_ID.source, intakeId ? escapeRegExp(intakeId) : null].filter(Boolean).join("|");
+  return message
+    .replace(new RegExp(`\\s*\\(?(?:(?:for|of|on|in)\\s+)?(?:study\\s+)?(?:${ids})\\)?`, "gi"), "")
+    .replace(/\s+([.,!?)])/g, "$1")
+    .replace(/\(\s*\)/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function startOfDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+function dayGroup(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "Earlier";
+  const days = Math.round((startOfDay(new Date()) - startOfDay(d)) / 86_400_000);
+  return days <= 0 ? "Today" : days === 1 ? "Yesterday" : "Earlier";
+}
+
+/** "Just now", "12m ago", "2:14 PM" (today/yesterday), "Sep 12" (older). */
+function shortTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  const mins = Math.floor((Date.now() - d.getTime()) / 60_000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  if (dayGroup(dateStr) !== "Earlier") return d.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: "numeric" }),
+  });
 }

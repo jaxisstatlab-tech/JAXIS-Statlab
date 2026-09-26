@@ -3,145 +3,76 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import { PageHeader, Card, Button, KpiCard, Toast, LoadingState, CopyButton } from "@repo/ui";
+import { Peso } from "@repo/ui/MoneyDisplay";
 import {
-  PageHeader,
-  Card,
-  Button,
-  KpiCard,
-  Toast,
-  LoadingState,
-  CopyButton,
-  StatusBadge,
-} from "@repo/ui";
-import {
-  Plus,
-  Question,
-  Target,
-  CheckCircle,
-  Clock,
-  ChatCenteredText,
-  GraduationCap,
-  ShieldCheck,
-  Trash,
   ArrowRight,
   CalendarBlank,
+  ChatCenteredText,
+  Check,
   FileText,
+  Flag,
+  GraduationCap,
+  Plus,
+  Question,
+  Trash,
+  Warning,
 } from "@phosphor-icons/react";
 import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { QuickProfileModal } from "@/features/client-profile/components/QuickProfileModal";
 import { HowToUseModal } from "@/features/client-onboarding/components/HowToUseModal";
 import { RequestStudyDeletionModal } from "@/features/projects/components/RequestStudyDeletionModal";
+import { ClientStageTag, ClientStudyStepper } from "@/features/projects/components/ClientStudyStepper";
+import { clientStagePriority, getClientStage } from "@/features/projects/client-stage";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 
-const RESEARCH_STAGES = [
-  { id: "quote", title: "1. Proposal & Quote", desc: "Scope & pricing review" },
-  { id: "sow", title: "2. Contract (SOW)", desc: "Signed agreement" },
-  { id: "deposit", title: "3. Downpayment", desc: "Deposit to start" },
-  { id: "analysis", title: "4. Analysis & QA", desc: "Statistical modeling" },
-  { id: "deliverables", title: "5. Final Outputs", desc: "Reports & data tables" },
+const STUDY_BASE = "/dashboard/client/projects";
+
+// What happens after a study is sent, shown to first-time clients.
+const JOURNEY = [
+  { step: "Price", body: "A fixed written price within 24 hours" },
+  { step: "Agreement", body: "Sign your scope online" },
+  { step: "Deposit", body: "Pay by GCash or bank transfer" },
+  { step: "Analysis", body: "Run, then checked by a second statistician" },
+  { step: "Files", body: "Tables, write-up, and code" },
 ];
 
-export interface StudyStageInfo {
-  stageIndex: number;
-  statusLabel: string;
-  actionText: string;
-  actionPath: string;
-  summary: string;
-  nextStep: string;
+const formatDate = (value: Date | string) =>
+  new Date(value).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
+
+function paymentLabel(study: ProjectDetailItem): string | null {
+  const f = study.financialSummary;
+  if (!f) return null;
+  if (f.isFullyPaid) return "Fully paid";
+  if (f.isDownpaymentCleared) return "Deposit paid";
+  return null;
 }
 
-function getStudyStage(status: string): StudyStageInfo {
-  switch (status) {
-    case "NEW_REQUEST":
-    case "UNDER_EVALUATION":
-      return {
-        stageIndex: 0,
-        statusLabel: "Proposal Under Review",
-        actionText: "Open Study",
-        actionPath: "",
-        summary: "Our methodological triage desk is assessing your research scope and model requirements.",
-        nextStep: "Admin will formulate an itemized package quotation tailored to your statistical objectives.",
-      };
-    case "AWAITING_INFORMATION":
-      return {
-        stageIndex: 0,
-        statusLabel: "Information Needed",
-        actionText: "Upload Files",
-        actionPath: "",
-        summary: "Additional research instruments or documentation required to finalize your quote.",
-        nextStep: "Please upload questionnaire drafts, raw datasets, or institutional guidelines.",
-      };
-    case "QUOTE_SENT":
-      return {
-        stageIndex: 0,
-        statusLabel: "Quotation Ready",
-        actionText: "Review Quote",
-        actionPath: "/quote",
-        summary: "Official quotation and package options have been prepared for your study.",
-        nextStep: "Review the pricing breakdown and approve to generate the formal Scope of Work.",
-      };
-    case "CLIENT_APPROVED":
-    case "SOW_PENDING":
-      return {
-        stageIndex: 1,
-        statusLabel: "Agreement Ready",
-        actionText: "Sign Agreement",
-        actionPath: "/sow",
-        summary: "The formal Scope of Work contract is ready for your electronic signature.",
-        nextStep: "Review the milestone terms, statistical deliverables, and sign to formalize engagement.",
-      };
-    case "SOW_SIGNED":
-    case "AWAITING_PAYMENT":
-      return {
-        stageIndex: 2,
-        statusLabel: "Downpayment Required",
-        actionText: "Pay Deposit",
-        actionPath: "/deposit",
-        summary: "Contract successfully executed. Initial downpayment is required to lock specialist scheduling.",
-        nextStep: "Upload your GCash, Maya, or bank transfer deposit slip to unlock specialist assignment.",
-      };
-    case "ACTIVE":
-    case "EXPERT_ASSIGNED":
-    case "IN_PROGRESS":
-      return {
-        stageIndex: 3,
-        statusLabel: "Analysis in Progress",
-        actionText: "View Progress",
-        actionPath: "",
-        summary: "Your assigned Lead Statistician is cleaning datasets, specifying models, and computing statistical tests.",
-        nextStep: "Outputs will be compiled into draft tables and sent to the QA Lead for reproducibility auditing.",
-      };
-    case "FOR_QA":
-    case "QA_REVISION":
-      return {
-        stageIndex: 3,
-        statusLabel: "Quality Assurance Check",
-        actionText: "View QA Audit",
-        actionPath: "",
-        summary: "Senior QA Lead is running independent verification scripts and auditing APA format compliance.",
-        nextStep: "Once all formulas and interpretations pass statistical peer review, final files will be released.",
-      };
-    case "DELIVERED":
-    case "CLOSED":
-      return {
-        stageIndex: 4,
-        statusLabel: "Defense Ready",
-        actionText: "Get Deliverables",
-        actionPath: "",
-        summary: "All statistical tables, narrative interpretations, and verification certificates are finalized.",
-        nextStep: "Download your complete deliverable package. You have 7 days to request any included revisions.",
-      };
-    default:
-      return {
-        stageIndex: 0,
-        statusLabel: "Under Review",
-        actionText: "View Study",
-        actionPath: "",
-        summary: "Your research submission is being processed by the administration team.",
-        nextStep: "Follow live milestone updates here as your study advances through the research milestones.",
-      };
-  }
+// Card header anatomy shared across the dashboard: inline orange icon, title, subtitle, optional tag, hairline.
+function CardHeader({
+  icon: Icon,
+  title,
+  subtitle,
+  aside,
+}: {
+  icon: React.ElementType;
+  title: string;
+  subtitle: string;
+  aside?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col justify-between gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center">
+      <div>
+        <h2 className="flex items-center gap-2.5 font-sans text-base font-bold text-white">
+          <Icon size={18} weight="fill" className="shrink-0 text-[#CC6600]" />
+          <span>{title}</span>
+        </h2>
+        <p className="mt-1 font-sans text-xs text-white/60">{subtitle}</p>
+      </div>
+      {aside ? <div className="shrink-0 self-start sm:self-auto">{aside}</div> : null}
+    </div>
+  );
 }
 
 interface ClientDashboardClientProps {
@@ -199,41 +130,37 @@ export function ClientDashboardClient({
   const hasHandledCreatedRef = React.useRef(false);
   const isRefreshingRef = React.useRef(false);
 
-  const loadData = React.useCallback(async (showFullPageSpinner = false) => {
-    if (isRefreshingRef.current) return;
-    isRefreshingRef.current = true;
-    if (showFullPageSpinner) {
-      setIsLoading(true);
-    }
-    try {
-      const [projRes, profile] = await Promise.all([
-        getProjects(),
-        getClientProfile(),
-      ]);
-
-      if (projRes.success && Array.isArray(projRes.data)) {
-        setProjects(projRes.data);
-      }
-
-      if (profile && profile.institutionSchool && profile.contactNumber) {
-        setIsProfileComplete(true);
-      } else {
-        setIsProfileComplete(false);
-      }
-    } catch (err) {
-      // In development mode (Turbopack), hot-reloading while a tab is idle in the background
-      // can cause transient action ID mismatches. Fall back to router.refresh() to reload RSC tree.
-      router.refresh();
-      if (process.env.NODE_ENV === "development") {
-        console.warn("[ClientDashboard] Background sync refreshed via router:", err);
-      }
-    } finally {
-      isRefreshingRef.current = false;
+  const loadData = React.useCallback(
+    async (showFullPageSpinner = false) => {
+      if (isRefreshingRef.current) return;
+      isRefreshingRef.current = true;
       if (showFullPageSpinner) {
-        setIsLoading(false);
+        setIsLoading(true);
       }
-    }
-  }, [router]);
+      try {
+        const [projRes, profile] = await Promise.all([getProjects(), getClientProfile()]);
+
+        if (projRes.success && Array.isArray(projRes.data)) {
+          setProjects(projRes.data);
+        }
+
+        setIsProfileComplete(Boolean(profile && profile.institutionSchool && profile.contactNumber));
+      } catch (err) {
+        // In development mode (Turbopack), hot-reloading while a tab is idle in the background
+        // can cause transient action ID mismatches. Fall back to router.refresh() to reload RSC tree.
+        router.refresh();
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[ClientDashboard] Background sync refreshed via router:", err);
+        }
+      } finally {
+        isRefreshingRef.current = false;
+        if (showFullPageSpinner) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [router]
+  );
 
   // Re-fetch immediately when redirected from a newly submitted intake
   useEffect(() => {
@@ -243,10 +170,10 @@ export function ClientDashboardClient({
       hasHandledCreatedRef.current = true;
       setToast({
         variant: "success",
-        message: "Study Request Successfully Submitted",
+        message: "Study Sent",
         description: intakeId
-          ? `Your research study specifications have been queued for triage. Assigned ID: ${intakeId}`
-          : "Your research study specifications have been queued for triage.",
+          ? `We'll send your fixed written price within 24 hours. Your study ID is ${intakeId}.`
+          : "We'll send your fixed written price within 24 hours.",
       });
       loadData(false);
       if (typeof window !== "undefined") {
@@ -276,902 +203,430 @@ export function ClientDashboardClient({
     };
   }, [loadData, router]);
 
-  // Filter out any projects with pending missing info
-  const awaitingInfoProjects = useMemo(() => {
-    return projects.filter((p) => p.masterStatus === "AWAITING_INFORMATION");
+  // Studies ordered by urgency: things the client must do first, then work in progress, then the rest.
+  const sortedStudies = useMemo(
+    () =>
+      [...projects].sort((a, b) => clientStagePriority(a.masterStatus) - clientStagePriority(b.masterStatus)),
+    [projects]
+  );
+
+  const actionStudies = useMemo(
+    () => sortedStudies.filter((p) => getClientStage(p.masterStatus).tone === "action"),
+    [sortedStudies]
+  );
+
+  const counts = useMemo(() => {
+    const tones = projects.map((p) => getClientStage(p.masterStatus).tone);
+    return {
+      total: projects.length,
+      action: tones.filter((t) => t === "action").length,
+      working: tones.filter((t) => t === "wait").length,
+      ready: projects.filter((p) => p.masterStatus === "DELIVERED" || p.masterStatus === "CLOSED").length,
+    };
   }, [projects]);
 
-  // Filter projects with active quotation awaiting client response
-  const pendingQuoteProjects = useMemo(() => {
-    return projects.filter((p) => p.masterStatus === "QUOTE_SENT");
-  }, [projects]);
+  // Spotlight the study we're working on; actions already have their own list above it.
+  // Only when nothing is in progress does the most urgent study take the spotlight.
+  const focusStudy =
+    sortedStudies.find((p) => getClientStage(p.masterStatus).tone === "wait") ?? sortedStudies[0] ?? null;
+  const focusStage = focusStudy ? getClientStage(focusStudy.masterStatus) : null;
+  const attentionStudies = actionStudies.filter((p) => p.id !== focusStudy?.id);
 
-  // KPI Calculations
-  const kpis = useMemo(() => {
-    const total = projects.length;
-    const awaitingInfo = awaitingInfoProjects.length;
-    const pendingQuotes = pendingQuoteProjects.length;
-    const actionRequired = awaitingInfo + pendingQuotes;
-
-    const inProgress = projects.filter(
-      (p) =>
-        p.masterStatus === "ACTIVE" ||
-        p.masterStatus === "IN_PROGRESS" ||
-        p.masterStatus === "EXPERT_ASSIGNED" ||
-        p.masterStatus === "FOR_QA" ||
-        p.masterStatus === "QA_REVISION"
-    ).length;
-
-    const delivered = projects.filter(
-      (p) => p.masterStatus === "DELIVERED" || p.masterStatus === "CLOSED"
-    ).length;
-
-    return { total, awaitingInfo, actionRequired, inProgress, delivered };
-  }, [projects, awaitingInfoProjects.length, pendingQuoteProjects.length]);
-
-  // Live Research Journey: Select primary active study for milestone progress tracker
-  const primaryStudy = useMemo(() => {
-    if (!projects || projects.length === 0) return null;
-
-    // 1. Priority: Action required
-    const actionStudy = projects.find(
-      (p) =>
-        p.masterStatus === "QUOTE_SENT" ||
-        p.masterStatus === "SOW_PENDING" ||
-        p.masterStatus === "AWAITING_PAYMENT" ||
-        p.masterStatus === "AWAITING_INFORMATION"
-    );
-    if (actionStudy) return actionStudy;
-
-    // 2. Secondary: Currently in progress
-    const activeStudy = projects.find(
-      (p) =>
-        p.masterStatus === "ACTIVE" ||
-        p.masterStatus === "EXPERT_ASSIGNED" ||
-        p.masterStatus === "IN_PROGRESS" ||
-        p.masterStatus === "FOR_QA" ||
-        p.masterStatus === "QA_REVISION"
-    );
-    if (activeStudy) return activeStudy;
-
-    // 3. Fallback: Most recent study
-    return projects[0] || null;
-  }, [projects]);
-
-  const stageInfo = useMemo(() => {
-    if (!primaryStudy) return null;
-    return getStudyStage(primaryStudy.masterStatus);
-  }, [primaryStudy]);
-
-  const stagePercentage = useMemo(() => {
-    if (!stageInfo) return 20;
-    return Math.round(((stageInfo.stageIndex + 1) / 5) * 100);
-  }, [stageInfo]);
+  const firstName = userName ? userName.split(" ")[0] : undefined;
+  const hasStudies = projects.length > 0;
 
   const handleProfileSuccess = async () => {
     await loadData();
     setToast({
       variant: "success",
-      message: "Affiliation Saved",
-      description: "Your academic credentials have been verified. Request desk unlocked.",
+      message: "Profile Saved",
+      description: "You can now send your first study.",
     });
   };
 
+  const newStudyButton = isProfileComplete ? (
+    <Button asChild variant="primary" size="sm" className="gap-1.5 active:scale-[0.97]">
+      <Link href={`${STUDY_BASE}/new`}>
+        <Plus size={15} weight="bold" />
+        Send a new study
+      </Link>
+    </Button>
+  ) : (
+    <Button variant="primary" size="sm" onClick={() => setIsProfileModalOpen(true)} className="gap-1.5 active:scale-[0.97]">
+      Set up your profile
+      <ArrowRight size={14} weight="bold" />
+    </Button>
+  );
+
   return (
-    <div
-      data-portal="client"
-      className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade"
-    >
+    <div data-portal="client" className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       <PageHeader
-        title={userName ? `Welcome back, ${userName.split(" ")[0]}` : "Client Research Workspace"}
-        description="Track your research progress, message your assigned statistician, and download defense-ready statistical packages."
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Client Portal" },
-        ]}
+        title={firstName ? `Welcome back, ${firstName}` : "My Studies"}
+        description={
+          hasStudies
+            ? "Here's where your studies stand and what, if anything, needs you."
+            : "Two quick steps and your first study is on its way."
+        }
+        breadcrumbs={[{ label: "WORKSPACE", href: "/dashboard" }, { label: "My Studies" }]}
         actions={
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+          <div className="flex w-full flex-col items-stretch gap-2.5 sm:w-auto sm:flex-row sm:items-center">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsHowToUseModalOpen(true)}
-              className="font-sans text-xs font-semibold flex items-center justify-center gap-1.5 border-white/15 hover:bg-white/[0.06] text-white active:scale-[0.97] transition-all rounded-[2px]"
-              title="How to Use JAXIS Guide"
+              className="gap-1.5 active:scale-[0.97]"
             >
-              <Question size={15} weight="fill" className="text-sky-400" />
-              <span>How It Works</span>
+              <Question size={15} weight="fill" className="text-white/60" />
+              How it works
             </Button>
-
-            {isProfileComplete === null ? (
-              <Button
-                variant="primary"
-                size="sm"
-                disabled
-                className="font-sans text-xs font-semibold opacity-50 cursor-wait pointer-events-none rounded-[2px]"
-              >
-                <LoadingState variant="inline" label="Loading..." />
-              </Button>
-            ) : isProfileComplete === false ? (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setIsProfileModalOpen(true)}
-                className="font-sans text-xs font-semibold animate-content-fade bg-[#CC6600] hover:bg-[#B35500] text-white active:scale-[0.97] transition-all rounded-[2px] gap-1.5"
-              >
-                <span>Setup School First</span>
-                <ArrowRight size={14} weight="fill" />
-              </Button>
-            ) : (
-              <Link href="/dashboard/client/projects/new" className="animate-content-fade w-full sm:w-auto">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="w-full font-sans text-xs font-semibold flex items-center justify-center gap-1.5 bg-[#CC6600] hover:bg-[#B35500] text-white active:scale-[0.97] transition-all rounded-[2px]"
-                >
-                  <Plus size={15} weight="fill" />
-                  <span>Submit New Study Request</span>
-                </Button>
-              </Link>
-            )}
+            {hasStudies ? newStudyButton : null}
           </div>
         }
       />
 
-
-      {/* ── High-Priority Pending Quotation Alert Banner ── */}
-      {pendingQuoteProjects.length > 0 && (
-        <div className="flex flex-col gap-3 animate-card-reveal">
-          {pendingQuoteProjects.map((p) => (
-            <Card
-              key={p.id}
-              className="p-5 border border-amber-500/40 bg-amber-500/[0.08] shadow-xl flex flex-col gap-3 rounded-[2px]"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xs font-mono font-bold text-amber-300 uppercase tracking-wider">
-                    Action Required: Proposal &amp; Quote Ready for Review
-                  </span>
-                  <span className="text-xs font-mono font-bold text-white bg-amber-500/20 px-2 py-0.5 rounded-[2px]">
-                    {p.intakeId}
-                  </span>
-                </div>
-                <Link href={`/dashboard/client/projects/${p.id}/quote`}>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="py-1.5 px-3.5 h-auto font-sans text-xs font-bold tracking-wider bg-[#CC6600] text-white hover:bg-[#E67300]"
-                  >
-                    Review Proposal &amp; Scope →
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold text-white font-sans">
-                  {p.researchTitle}
-                </p>
-                <div className="text-xs text-white/70 font-sans mt-0.5">
-                  Your customized statistical methodology and deliverables breakdown are ready. Review and approve your quote to lock in your assigned statistician.
-                </div>
-              </div>
-            </Card>
-          ))}
+      {isLoading && !hasStudies ? (
+        <div className="flex items-center justify-center py-24">
+          <LoadingState variant="page" label="Loading your studies..." />
         </div>
-      )}
+      ) : !hasStudies ? (
+        /* ── First run: two-step checklist and what happens next ── */
+        <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
+          <Card className="flex flex-col gap-6 rounded-[2px] border border-white/10 bg-[#01142B] p-6 sm:p-8 lg:col-span-8">
+            <CardHeader
+              icon={Flag}
+              title="Get started"
+              subtitle="Two quick steps. It takes about five minutes."
+              aside={
+                <span className="rounded-[2px] border border-white/10 bg-white/[0.06] px-2.5 py-1 font-mono text-xs font-semibold text-white/70">
+                  {isProfileComplete ? "1 of 2 done" : "0 of 2 done"}
+                </span>
+              }
+            />
 
-      {/* ── High-Priority Missing Information Alert Banner ── */}
-      {awaitingInfoProjects.length > 0 && (
-        <div className="flex flex-col gap-3 animate-card-reveal">
-          {awaitingInfoProjects.map((p) => (
-            <Card
-              key={p.id}
-              className="p-5 border border-amber-500/30 bg-amber-500/[0.06] shadow-xl flex flex-col gap-3 rounded-[2px]"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-                    Action Required: Additional Files or Information Needed
-                  </span>
-                  <span className="text-xs font-mono font-bold text-white bg-amber-500/20 px-2 py-0.5 rounded-[2px]">
-                    {p.intakeId}
-                  </span>
-                </div>
-                <Link href={`/dashboard/client/projects/${p.id}`}>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="py-1.5 px-3.5 h-auto font-sans text-xs font-bold tracking-wider"
-                  >
-                    View &amp; Upload Files →
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold text-white font-sans">
-                  {p.researchTitle}
-                </p>
-                <div
-                  className="p-3.5 rounded-[2px] bg-black/40 border border-amber-500/30 text-xs text-amber-100 font-sans leading-relaxed mt-1"
-                  style={{ padding: "0.875rem 1rem" }}
-                >
-                  <strong className="text-amber-300 font-mono text-[0.6875rem] uppercase block mb-1">
-                    Note from Statistical Team:
-                  </strong>
-                  &ldquo;{p.missingInfoReason || "Please attach the requested dataset or questionnaire clarification."}&rdquo;
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* ── Actionable KPI Metric Cards (Typography-First Dashdark X Precision Standard) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-        <KpiCard
-          label="Total Studies"
-          value={kpis.total}
-          variant="default"
-          badge="ALL TIME"
-          badgeColor="gray"
-          description="Commissioned research studies"
-          className="animate-card-reveal stagger-1"
-        />
-
-        <KpiCard
-          label="Action Required"
-          value={kpis.actionRequired}
-          variant={kpis.actionRequired > 0 ? "orange" : "default"}
-          badge={kpis.actionRequired > 0 ? "ACTION NEEDED" : undefined}
-          badgeColor={kpis.actionRequired > 0 ? "orange" : "gray"}
-          description={
-            kpis.actionRequired > 0
-              ? `${kpis.actionRequired} items require your review`
-              : "All clear & up to date"
-          }
-          icon={
-            kpis.actionRequired > 0 ? (
-              <Clock size={16} weight="fill" className="text-[#FFA040]" />
-            ) : undefined
-          }
-          className="animate-card-reveal stagger-2"
-        />
-
-        <KpiCard
-          label="In Progress / QA"
-          value={kpis.inProgress}
-          variant="default"
-          badge="ACTIVE"
-          badgeColor="sky"
-          description="Under active statistical analysis"
-          className="animate-card-reveal stagger-3"
-        />
-
-        <KpiCard
-          label="Defense Ready"
-          value={kpis.delivered}
-          variant="default"
-          badge="DELIVERED"
-          badgeColor="emerald"
-          description="Tables & reports ready to download"
-          className="animate-card-reveal stagger-4"
-        />
-      </div>
-
-
-      {/* ── Asymmetric 2:1 Bento Architecture (Dashdark X Precision Standard) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch animate-card-reveal stagger-5">
-        {/* 8-Col Primary Hero: Live Research Journey & 5-Stage Stepper */}
-        <div className="lg:col-span-8 flex flex-col">
-          <Card className="p-6 sm:p-7 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 sm:gap-5 h-full">
-            {primaryStudy && stageInfo ? (
-              <>
-                {/* 1. Header: Categorical Identity & Stage Readout */}
-                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <Target size={16} weight="fill" className="text-[#CC6600]" />
-                    <h2 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                      Active Research Journey
-                    </h2>
-                  </div>
-                  <span className="text-white/40 font-mono text-[11px]">
-                    Stage {stageInfo.stageIndex + 1} of 5 · {stagePercentage}%
-                  </span>
-                </div>
-
-                {/* 2. Study Focal Subject & Direct Action CTA */}
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div className="flex flex-col min-w-0 flex-1">
-                    {/* Unified Metadata Row (Zero nested container box) */}
-                    <div className="flex items-center gap-2 flex-wrap text-xs">
-                      <CopyButton
-                        variant="badge"
-                        value={primaryStudy.intakeId}
-                        label={primaryStudy.intakeId}
-                      />
-                      {primaryStudy.packageName && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.06] text-white/70 border border-white/10 font-medium">
-                          {primaryStudy.packageName.replace(/_/g, " ")}
-                        </span>
-                      )}
-                      <span className="text-white/30 font-mono">·</span>
-                      <span className="text-xs font-sans text-white/50 inline-flex items-center gap-1">
-                        <CalendarBlank size={12} weight="fill" className="text-white/40 shrink-0" />
-                        <span>Due {new Date(primaryStudy.deadlineRequested).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</span>
-                      </span>
-                      {primaryStudy.files && primaryStudy.files.length > 0 && (
-                        <>
-                          <span className="text-white/30 font-mono">·</span>
-                          <span className="text-xs font-sans text-white/50 inline-flex items-center gap-1">
-                            <FileText size={12} weight="fill" className="text-white/40 shrink-0" />
-                            <span>{primaryStudy.files.length} file{primaryStudy.files.length > 1 ? "s" : ""}</span>
-                          </span>
-                        </>
-                      )}
-                      <span className="text-white/30 font-mono">·</span>
-                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-mono ${
-                        primaryStudy.financialSummary?.isFullyPaid || primaryStudy.financialSummary?.isDownpaymentCleared
-                          ? "text-emerald-400"
-                          : "text-amber-400"
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${
-                          primaryStudy.financialSummary?.isFullyPaid || primaryStudy.financialSummary?.isDownpaymentCleared
-                            ? "bg-emerald-400"
-                            : "bg-amber-400"
-                        }`} />
-                        {primaryStudy.financialSummary?.isFullyPaid
-                          ? "100% Cleared"
-                          : primaryStudy.financialSummary?.isDownpaymentCleared
-                          ? "Deposit Cleared"
-                          : "Deposit Pending"}
-                      </span>
-                    </div>
-
-                    <h3
-                      className="text-base sm:text-lg lg:text-xl font-bold text-white font-sans truncate mt-2 tracking-tight"
-                      title={primaryStudy.researchTitle}
+            <ol className="flex flex-col">
+              {[
+                {
+                  n: 1,
+                  title: "Add your school details",
+                  body: "Your school, program, and contact number. They go on your agreement.",
+                  done: isProfileComplete,
+                  cta: (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setIsProfileModalOpen(true)}
+                      className="gap-1.5 active:scale-[0.97]"
                     >
-                      {primaryStudy.researchTitle}
-                    </h3>
-                    {primaryStudy.researchObjectives && (
-                      <p
-                        className="text-xs text-white/50 font-sans line-clamp-1 mt-1"
-                        title={primaryStudy.researchObjectives}
-                      >
-                        {primaryStudy.researchObjectives}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="shrink-0 self-start sm:self-center">
-                    <Link href={`/dashboard/client/projects/${primaryStudy.id}${stageInfo.actionPath}`}>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md whitespace-nowrap cursor-pointer"
-                      >
-                        <span>{stageInfo.actionText} →</span>
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-
-                {/* 3. Sleek 5-Stage Precision Pipeline */}
-                <div className="flex flex-col gap-2.5 pt-1">
-                  {/* Continuous Segmented Bar */}
-                  <div className="grid grid-cols-5 gap-2 w-full">
-                    {RESEARCH_STAGES.map((_, i) => {
-                      const isCompleted = i < stageInfo.stageIndex;
-                      const isCurrent = i === stageInfo.stageIndex;
-                      return (
-                        <div
-                          key={i}
-                          className={`h-2 rounded-[2px] transition-all duration-300 ${
-                            isCompleted
-                              ? "bg-emerald-500"
-                              : isCurrent
-                              ? "bg-[#CC6600]"
-                              : "bg-white/[0.08]"
-                          }`}
-                        />
-                      );
-                    })}
-                  </div>
-
-                  {/* 5 Stage Node Labels */}
-                  <div className="grid grid-cols-5 gap-2 pt-1">
-                    {RESEARCH_STAGES.map((stg, i) => {
-                      const isCompleted = i < stageInfo.stageIndex;
-                      const isCurrent = i === stageInfo.stageIndex;
-                      const cleanTitle = stg.title.replace(/^\d+\.\s*/, "");
-
-                      return (
-                        <div key={stg.id} className="flex flex-col min-w-0 pr-1">
-                          <div className="flex items-center gap-1.5">
-                            {isCompleted ? (
-                              <CheckCircle size={13} weight="fill" className="text-emerald-400 shrink-0" />
-                            ) : isCurrent ? (
-                              <span className="w-2 h-2 rounded-full bg-[#CC6600] ring-2 ring-[#CC6600]/30 shrink-0" />
-                            ) : (
-                              <span className="text-[10px] font-mono text-white/30 shrink-0">{i + 1}.</span>
-                            )}
-                            <span
-                              className={`text-xs font-sans truncate transition-colors ${
-                                isCurrent
-                                  ? "font-bold text-white"
-                                  : isCompleted
-                                  ? "font-medium text-white/80"
-                                  : "font-normal text-white/40"
-                              }`}
-                              title={cleanTitle}
-                            >
-                              {cleanTitle}
-                            </span>
-                          </div>
-                          <div className="mt-1">
-                            {isCurrent ? (
-                              <span className="inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded-[2px] bg-[#CC6600]/20 text-[#FFA040] border border-[#CC6600]/35 font-semibold">
-                                Active Stage
-                              </span>
-                            ) : isCompleted ? (
-                              <span className="inline-flex items-center text-[10px] font-mono text-emerald-400/90 font-medium">
-                                Completed
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center text-[10px] font-mono text-white/30">
-                                Upcoming
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 4. Active Milestone Mission & Quality Assurance Panel */}
-                <div className="bg-[#010D1F]/90 border border-white/[0.08] rounded-[2px] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-[#FFA040] bg-[#CC6600]/20 border border-[#CC6600]/35 px-1.5 py-0.5 rounded-[2px]">
-                        STAGE {stageInfo.stageIndex + 1} · {stageInfo.statusLabel.toUpperCase()}
-                      </span>
-                      <span className="text-white/30 font-mono text-xs hidden sm:inline">·</span>
-                      <span className="text-[11px] font-mono text-white/50">
-                        Turnaround: 2–5 Business Days
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-white/85 font-sans mt-2 leading-relaxed">
-                      {stageInfo.summary}
-                    </p>
-
-                    <div className="flex items-center gap-2 mt-2 text-xs font-sans text-white/55">
-                      <ArrowRight size={12} weight="bold" className="text-[#CC6600] shrink-0" />
-                      <span className="text-white/40 font-mono text-[10px] uppercase font-semibold">Next Action:</span>
-                      <span className="text-white/70 truncate">{stageInfo.nextStep}</span>
-                    </div>
-                  </div>
-
-                  {/* Quality & Rigor Credentials Strip */}
-                  <div className="flex flex-row md:flex-col gap-3 shrink-0 border-t md:border-t-0 md:border-l border-white/[0.08] pt-3 md:pt-0 md:pl-5">
-                    <div className="flex items-center gap-2 text-xs">
-                      <ShieldCheck size={16} weight="fill" className="text-emerald-400 shrink-0" />
-                      <div className="flex flex-col">
-                        <span className="text-[9px] font-mono uppercase text-white/40 leading-none">Format Protocol</span>
-                        <span className="text-[11px] font-sans font-semibold text-white/90 mt-0.5">APA 7th Edition</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <CheckCircle size={16} weight="fill" className="text-sky-400 shrink-0" />
-                      <div className="flex flex-col">
-                        <span className="text-[9px] font-mono uppercase text-white/40 leading-none">Verification</span>
-                        <span className="text-[11px] font-sans font-semibold text-white/90 mt-0.5">Dual-Audit Review</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 5. Live Activity Status & Footer Actions Strip */}
-                <div className="pt-3 border-t border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs mt-auto">
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <span className="relative flex h-2 w-2 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#CC6600]" />
-                    </span>
-                    <span className="text-white/70 font-sans truncate" title={stageInfo.summary}>
-                      Live Consultation & Verification Desk is active
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-4 shrink-0 self-end sm:self-center font-sans">
-                    <Link
-                      href={`/dashboard/client/messages?projectId=${primaryStudy.id}`}
-                      prefetch={true}
-                      onMouseEnter={() => router.prefetch(`/dashboard/client/messages?projectId=${primaryStudy.id}`)}
-                      className="text-white/60 hover:text-white transition-colors cursor-pointer text-xs flex items-center gap-1.5"
-                    >
-                      <ChatCenteredText size={13} weight="fill" className="text-[#CC6600]" />
-                      <span>Consultation Chat</span>
-                    </Link>
-
-                    {projects.length > 1 && (
-                      <Link
-                        href="/dashboard/client/projects"
-                        prefetch={true}
-                        onMouseEnter={() => router.prefetch("/dashboard/client/projects")}
-                        className="text-white/50 hover:text-white transition-colors cursor-pointer text-xs"
-                      >
-                        All Studies ({projects.length}) →
+                      Add details
+                      <ArrowRight size={14} weight="bold" />
+                    </Button>
+                  ),
+                },
+                {
+                  n: 2,
+                  title: "Send your first study",
+                  body: "Your research questions, method, and data. We reply with a fixed written price within 24 hours.",
+                  done: false,
+                  cta: isProfileComplete ? (
+                    <Button asChild variant="primary" size="sm" className="gap-1.5 active:scale-[0.97]">
+                      <Link href={`${STUDY_BASE}/new`}>
+                        Send a study
+                        <ArrowRight size={14} weight="bold" />
                       </Link>
-                    )}
-                    <Link
-                      href={`/dashboard/client/projects/${primaryStudy.id}`}
-                      prefetch={true}
-                      onMouseEnter={() => router.prefetch(`/dashboard/client/projects/${primaryStudy.id}`)}
-                      className="text-sky-400 hover:text-sky-300 font-semibold transition-colors cursor-pointer text-xs"
+                    </Button>
+                  ) : (
+                    <span className="font-sans text-xs text-white/40">After step 1</span>
+                  ),
+                },
+              ].map((item, i) => (
+                <li
+                  key={item.n}
+                  className={`flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between ${
+                    i > 0 ? "border-t border-white/[0.08]" : ""
+                  }`}
+                >
+                  <div className="flex gap-4">
+                    <span
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[2px] border font-mono text-xs ${
+                        item.done
+                          ? "border-white/20 bg-white/[0.08] text-white"
+                          : "border-[#CC6600]/50 text-[#FFA040]"
+                      }`}
                     >
-                      View Full Details →
-                    </Link>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* 1. Category Micro-Label */}
-                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <Target size={16} weight="fill" className="text-[#CC6600]" />
-                    <h2 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                      Active Research Journey
-                    </h2>
-                  </div>
-                  <span className="text-white/40 font-mono text-[11px]">
-                    Stage 1 of 5
-                  </span>
-                </div>
-
-                {/* 2. Study Metadata & Direct Action Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] shrink-0">
-                      <Target size={20} weight="fill" />
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 font-semibold">
-                          NEW STUDY
-                        </span>
-                        <span className="text-white/30 text-xs font-mono">·</span>
-                        <span className="text-xs font-sans text-white/50">
-                          Standard SLA: 2–5 business days
-                        </span>
-                      </div>
-                      <h3 className="text-base sm:text-lg font-bold text-white font-sans truncate mt-1">
-                        {isProfileComplete === false
-                          ? "Setup Your School Profile to Begin"
-                          : "Commission Your First Research Study"}
-                      </h3>
-                      <p className="text-xs text-white/50 font-sans line-clamp-1 mt-0.5">
-                        Submit your research title, hypotheses, and questionnaire to initiate methodological evaluation.
+                      {item.done ? <Check size={13} weight="bold" /> : item.n}
+                    </span>
+                    <div>
+                      <p className={`font-sans text-sm font-semibold ${item.done ? "text-white/55 line-through decoration-white/30" : "text-white"}`}>
+                        {item.title}
                       </p>
+                      <p className="mt-1 max-w-md font-sans text-sm leading-relaxed text-white/55">{item.body}</p>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
-                    {isProfileComplete === false ? (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => setIsProfileModalOpen(true)}
-                        className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md"
-                      >
-                        <span>1. Setup School First →</span>
-                      </Button>
+                  <div className="shrink-0 pl-11 sm:pl-0">
+                    {item.done ? (
+                      <span className="inline-flex items-center gap-1.5 font-sans text-xs text-white/55">
+                        <Check size={12} weight="bold" /> Done
+                      </span>
                     ) : (
-                      <Link href="/dashboard/client/projects/new">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md"
-                        >
-                          <Plus size={14} weight="fill" />
-                          <span>Start Study Request →</span>
-                        </Button>
-                      </Link>
+                      item.cta
                     )}
                   </div>
-                </div>
+                </li>
+              ))}
+            </ol>
 
-                {/* 3. Sleek 5-Stage Minimalist Pipeline (Zero Nested Boxes) */}
-                <div className="flex flex-col gap-2.5 pt-1">
-                  {/* Continuous Segmented Bar */}
-                  <div className="grid grid-cols-5 gap-2 w-full">
-                    {RESEARCH_STAGES.map((_, i) => (
-                      <div
-                        key={i}
-                        className={`h-1.5 rounded-[1px] transition-all duration-300 ${
-                          i === 0 ? "bg-[#CC6600]" : "bg-white/[0.08]"
-                        }`}
-                      />
-                    ))}
-                  </div>
-
-                  {/* 5 Stage Node Labels */}
-                  <div className="grid grid-cols-5 gap-2 pt-0.5">
-                    {RESEARCH_STAGES.map((stg, i) => {
-                      const isCurrent = i === 0;
-                      const cleanTitle = stg.title.replace(/^\d+\.\s*/, "");
-
-                      return (
-                        <div key={stg.id} className="flex flex-col min-w-0 pr-1">
-                          <div className="flex items-center gap-1">
-                            {isCurrent && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#CC6600] shrink-0" />
-                            )}
-                            <span
-                              className={`text-[11px] sm:text-xs font-sans truncate transition-colors ${
-                                isCurrent
-                                  ? "font-bold text-white"
-                                  : "font-normal text-white/30"
-                              }`}
-                              title={cleanTitle}
-                            >
-                              {cleanTitle}
-                            </span>
-                          </div>
-                          <span
-                            className={`text-[10px] font-sans truncate mt-0.5 hidden sm:block ${
-                              isCurrent ? "text-[#FFA040] font-medium" : "text-white/20"
-                            }`}
-                          >
-                            {isCurrent ? "Step 1" : `Step ${i + 1}`}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 4. Integrity & SLA Guarantee Footer (Clean Single Row) */}
-                <div className="pt-3 border-t border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs mt-auto">
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div className="w-5 h-5 rounded-[2px] bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0">
-                      <ShieldCheck size={13} weight="fill" />
-                    </div>
-                    <span className="text-white/70 font-sans truncate">
-                      Publication-Grade Rigor & Data Confidentiality · Audited by Senior QA Lead
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsHowToUseModalOpen(true)}
-                    className="text-sky-400 hover:text-sky-300 transition-colors font-sans text-xs font-medium cursor-pointer shrink-0 self-end sm:self-center"
-                  >
-                    How It Works Guide →
-                  </button>
-                </div>
-              </>
-            )}
-          </Card>
-        </div>
-
-        {/* 4-Col Double-Stacked Auxiliary Intelligence Cards */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
-          {/* Auxiliary Card 1: Statistical Consultation Desk */}
-          <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
-            <div className="flex items-start justify-between gap-3 border-b border-white/[0.08] pb-3">
-              <div className="flex items-center gap-2.5">
-                <ChatCenteredText size={18} weight="fill" className="text-sky-400 shrink-0" />
-                <div>
-                  <h4 className="text-sm font-bold text-white font-sans leading-snug">
-                    Statistical Consultation
-                  </h4>
-                  <span className="text-xs font-sans text-white/50">
-                    Assigned Statistical Team
-                  </span>
-                </div>
-              </div>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[2px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-semibold shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                ACTIVE
-              </span>
-            </div>
-
-            <p className="text-xs text-white/70 font-sans leading-relaxed">
-              {primaryStudy &&
-              (primaryStudy.masterStatus === "ACTIVE" ||
-                primaryStudy.masterStatus === "EXPERT_ASSIGNED" ||
-                primaryStudy.masterStatus === "IN_PROGRESS" ||
-                primaryStudy.masterStatus === "FOR_QA")
-                ? "Your assigned statistician is actively computing model estimates and QA verification."
-                : "Our triage team reviews your study specifications and methodological requirements."}
-            </p>
-
-            <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
-              <span className="text-xs font-mono text-white/40">
-                Turnaround: 2–4 hrs
-              </span>
-              <Link
-                href={
-                  primaryStudy
-                    ? `/dashboard/client/messages?projectId=${primaryStudy.id}`
-                    : "/dashboard/client/messages"
-                }
-              >
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs font-sans font-semibold py-1.5 px-3 h-auto border-white/15 hover:bg-white/[0.06] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5"
-                >
-                  <span>Message Desk →</span>
-                </Button>
-              </Link>
-            </div>
-          </Card>
-
-          {/* Auxiliary Card 2: DefenseLab Oral Defense Simulator */}
-          <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
-            <div className="flex items-start justify-between gap-3 border-b border-white/[0.08] pb-3">
-              <div className="flex items-center gap-2.5">
-                <GraduationCap size={18} weight="fill" className="text-[#FFA040] shrink-0" />
-                <div>
-                  <h4 className="text-sm font-bold text-white font-sans leading-snug">
-                    DefenseLab Practice
-                  </h4>
-                  <span className="text-xs font-sans text-white/50">
-                    Oral Defense Simulator
-                  </span>
-                </div>
-              </div>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] bg-white/[0.06] border border-white/10 text-white/70 text-[10px] font-mono font-semibold shrink-0">
-                READY
-              </span>
-            </div>
-
-            <p className="text-xs text-white/70 font-sans leading-relaxed">
-              Practice defense questions on methodology, sample formulas, and test interpretation before facing your panel.
-            </p>
-
-            <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
-              <span className="text-xs font-mono text-white/40">
-                5 Mock Questions
-              </span>
-              <Link href="/dashboard/client/defenselab">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="text-xs font-sans font-semibold py-1.5 px-3 h-auto bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px] active:scale-[0.97] transition-all flex items-center gap-1.5 shadow-md"
-                >
-                  <span>Launch Simulator →</span>
-                </Button>
-              </Link>
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* ── Commissioned Research Studies Table ── */}
-      {projects.length > 0 && (
-        <Card className="p-0 overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[2px] shadow-2xl animate-card-reveal stagger-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 p-5 sm:p-6">
-            <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-white tracking-normal font-sans">
-                My Commissioned Studies
-              </h2>
-              <p className="text-sm text-white/60 mt-1 font-sans leading-relaxed">
-                Track research milestones, review contracts, and access statistical deliverables.
+            <div className="border-t border-white/10 pt-6">
+              <p className="font-mono text-[11px] font-medium uppercase tracking-wider text-white/45">
+                What happens after you send it
               </p>
-            </div>
-            <span className="text-xs font-sans font-semibold text-white/70 bg-white/[0.06] px-3.5 py-1.5 rounded-[2px] border border-white/10 self-start sm:self-auto whitespace-nowrap inline-flex items-center">
-              {projects.length} {projects.length === 1 ? "Study" : "Studies"}
-            </span>
-          </div>
-
-          <div className="w-full overflow-x-auto p-4 sm:p-6">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th className="w-[130px] whitespace-nowrap">Study ID</th>
-                  <th>Research Title</th>
-                  <th className="w-[160px] whitespace-nowrap">Package</th>
-                  <th className="w-[140px] whitespace-nowrap">Target Date</th>
-                  <th className="w-[160px] whitespace-nowrap">Status</th>
-                  <th className="w-[110px] text-right whitespace-nowrap">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {projects.map((study) => (
-                  <tr
-                    key={study.id}
-                    className="group virtual-row cursor-pointer"
-                    onClick={() => router.push(`/dashboard/client/projects/${study.id}`)}
-                    onMouseEnter={() => router.prefetch(`/dashboard/client/projects/${study.id}`)}
-                  >
-                    <td className="font-mono text-xs whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                      <CopyButton variant="badge" value={study.intakeId} label={study.intakeId} />
-                    </td>
-                    <td className="text-white font-medium text-sm">
-                      <span className="line-clamp-1 group-hover:text-[#CC6600] transition-colors" title={study.researchTitle}>
-                        {study.researchTitle}
-                      </span>
-                    </td>
-                    <td className="text-slate-300 text-xs font-sans whitespace-nowrap">
-                      {study.packageName?.replace(/_/g, " ") || "Statistical Suite"}
-                    </td>
-                    <td className="text-slate-400 text-xs font-mono whitespace-nowrap">
-                      {new Date(study.deadlineRequested).toLocaleDateString("en-PH", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </td>
-                    <td className="whitespace-nowrap">
-                      <StatusBadge status={study.masterStatus} />
-                    </td>
-                    <td className="text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Link href={`/dashboard/client/projects/${study.id}`}>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="py-1 px-3 h-auto whitespace-nowrap font-mono text-xs tracking-wider"
-                          >
-                            OPEN
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="Request Study Deletion"
-                          onClick={() =>
-                            setStudyToRequestDeletion({
-                              id: study.id,
-                              intakeId: study.intakeId,
-                              title: study.researchTitle,
-                            })
-                          }
-                          className="py-1 px-2 h-auto text-white/40 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
-                        >
-                          <Trash size={14} weight="fill" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+              <ol className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-5 sm:gap-3">
+                {JOURNEY.map((j, i) => (
+                  <li key={j.step} className="flex gap-3 sm:flex-col sm:gap-2">
+                    <span className="font-mono text-[11px] text-white/35">{String(i + 1).padStart(2, "0")}</span>
+                    <div>
+                      <p className="font-sans text-sm font-semibold text-white">{j.step}</p>
+                      <p className="mt-0.5 font-sans text-xs leading-relaxed text-white/50">{j.body}</p>
+                    </div>
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ol>
+            </div>
+          </Card>
+
+          <div className="flex flex-col gap-6 lg:col-span-4">
+            <HelpCard onHowItWorks={() => setIsHowToUseModalOpen(true)} />
+            <DefenseLabCard />
           </div>
-        </Card>
-      )}
-
-      {/* ── Initial Page Loader if Data is Fetching ── */}
-      {isLoading && projects.length === 0 && (
-        <div className="py-24 flex justify-center items-center">
-          <LoadingState variant="page" label="Loading research workspace..." />
         </div>
+      ) : (
+        <>
+          {/* ── Needs your attention ── */}
+          {attentionStudies.length > 0 ? (
+            <Card className="flex flex-col gap-2 rounded-[2px] border border-[#CC6600]/35 bg-[#01142B] p-6 sm:p-8">
+              <CardHeader
+                icon={Warning}
+                title="Needs your attention"
+                subtitle={
+                  attentionStudies.length === 1
+                    ? "One study is waiting on you."
+                    : `${attentionStudies.length} studies are waiting on you.`
+                }
+              />
+              <ul className="flex flex-col">
+                {attentionStudies.map((study, i) => {
+                  const stage = getClientStage(study.masterStatus);
+                  return (
+                    <li
+                      key={study.id}
+                      className={`flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between ${
+                        i > 0 ? "border-t border-white/[0.08]" : ""
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <ClientStageTag stage={stage} />
+                          <CopyButton variant="badge" value={study.intakeId} label={study.intakeId} />
+                        </div>
+                        <p className="mt-2 truncate font-sans text-sm font-semibold text-white" title={study.researchTitle}>
+                          {study.researchTitle}
+                        </p>
+                        <p className="mt-1 font-sans text-sm text-white/60">{stage.now}</p>
+                        {study.masterStatus === "AWAITING_INFORMATION" && study.missingInfoReason ? (
+                          <p className="mt-2 border-l-2 border-[#CC6600]/50 pl-3 font-sans text-sm text-white/75">
+                            &ldquo;{study.missingInfoReason}&rdquo;
+                          </p>
+                        ) : null}
+                      </div>
+                      {stage.action ? (
+                        <Button asChild variant="primary" size="sm" className="shrink-0 gap-1.5 self-start active:scale-[0.97] md:self-center">
+                          <Link href={`${STUDY_BASE}/${study.id}${stage.action.path}`}>
+                            {stage.action.label}
+                            <ArrowRight size={14} weight="bold" />
+                          </Link>
+                        </Button>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          ) : null}
+
+          {/* ── At a glance ── */}
+          <div className="grid grid-cols-2 items-stretch gap-6 lg:grid-cols-4">
+            <KpiCard label="All studies" value={counts.total} description="Sent to us" />
+            <KpiCard
+              label="Needs you"
+              value={counts.action}
+              variant={counts.action > 0 ? "orange" : "default"}
+              description={counts.action > 0 ? "Need your action" : "Nothing needed"}
+            />
+            <KpiCard label="In progress" value={counts.working} description="Being worked on" />
+            <KpiCard label="Ready" value={counts.ready} description="To download" />
+          </div>
+
+          {/* ── Current study + side cards ── */}
+          {focusStudy && focusStage ? (
+            <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
+              <Card className="flex flex-col gap-6 rounded-[2px] border border-white/10 bg-[#01142B] p-6 sm:p-8 lg:col-span-8">
+                <CardHeader
+                  icon={Flag}
+                  title="Current study"
+                  subtitle="Where it is now and what comes next."
+                  aside={<ClientStageTag stage={focusStage} />}
+                />
+
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 font-sans text-xs text-white/50">
+                    <CopyButton variant="badge" value={focusStudy.intakeId} label={focusStudy.intakeId} />
+                    <span className="inline-flex items-center gap-1.5">
+                      <CalendarBlank size={13} weight="fill" className="text-white/35" />
+                      Due {formatDate(focusStudy.deadlineRequested)}
+                    </span>
+                    {focusStudy.files && focusStudy.files.length > 0 ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <FileText size={13} weight="fill" className="text-white/35" />
+                        {focusStudy.files.length} file{focusStudy.files.length > 1 ? "s" : ""}
+                      </span>
+                    ) : null}
+                    {paymentLabel(focusStudy) ? <span>{paymentLabel(focusStudy)}</span> : null}
+                  </div>
+                  <h3
+                    className="mt-3 line-clamp-2 font-sans text-lg font-bold tracking-[-0.01em] text-white sm:text-xl"
+                    title={focusStudy.researchTitle}
+                  >
+                    {focusStudy.researchTitle}
+                  </h3>
+                </div>
+
+                <ClientStudyStepper stage={focusStage} />
+
+                <div className="grid grid-cols-1 gap-4 rounded-[2px] border border-white/[0.08] bg-[#010D1F] p-5 sm:grid-cols-2">
+                  <div>
+                    <p className="font-mono text-[11px] font-medium uppercase tracking-wider text-white/45">Now</p>
+                    <p className="mt-1.5 font-sans text-sm leading-relaxed text-white/80">{focusStage.now}</p>
+                  </div>
+                  <div>
+                    <p className="font-mono text-[11px] font-medium uppercase tracking-wider text-white/45">Next</p>
+                    <p className="mt-1.5 font-sans text-sm leading-relaxed text-white/80">{focusStage.next}</p>
+                  </div>
+                </div>
+
+                <div className="mt-auto flex flex-col gap-3 border-t border-white/[0.08] pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-sans text-sm">
+                    <Link
+                      href={`/dashboard/client/messages?projectId=${focusStudy.id}`}
+                      className="inline-flex items-center gap-1.5 text-white/65 transition-colors hover:text-white"
+                    >
+                      <ChatCenteredText size={15} weight="fill" className="text-white/40" />
+                      Message your team
+                    </Link>
+                    <Link
+                      href={`${STUDY_BASE}/${focusStudy.id}`}
+                      className="text-white/65 underline decoration-white/20 underline-offset-4 transition-colors hover:text-white"
+                    >
+                      Open study
+                    </Link>
+                  </div>
+                  {focusStage.action ? (
+                    <Button asChild variant="primary" size="sm" className="gap-1.5 self-start active:scale-[0.97] sm:self-auto">
+                      <Link href={`${STUDY_BASE}/${focusStudy.id}${focusStage.action.path}`}>
+                        {focusStage.action.label}
+                        <ArrowRight size={14} weight="bold" />
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
+              </Card>
+
+              <div className="flex flex-col gap-6 lg:col-span-4">
+                <HelpCard onHowItWorks={() => setIsHowToUseModalOpen(true)} projectId={focusStudy.id} />
+                <DefenseLabCard />
+              </div>
+            </div>
+          ) : null}
+
+          {/* ── All studies ── */}
+          <Card className="overflow-hidden rounded-[2px] border border-white/10 bg-[#01142B] p-0">
+            <div className="flex flex-col justify-between gap-3 border-b border-white/10 p-6 sm:flex-row sm:items-center sm:px-8">
+              <div>
+                <h2 className="flex items-center gap-2.5 font-sans text-base font-bold text-white">
+                  <FileText size={18} weight="fill" className="shrink-0 text-[#CC6600]" />
+                  Your studies
+                </h2>
+                <p className="mt-1 font-sans text-xs text-white/60">Newest actions first. Open a study to see every detail.</p>
+              </div>
+              <span className="self-start rounded-[2px] border border-white/10 bg-white/[0.06] px-2.5 py-1 font-mono text-xs font-semibold text-white/70 sm:self-auto">
+                {projects.length} {projects.length === 1 ? "study" : "studies"}
+              </span>
+            </div>
+
+            <ul className="divide-y divide-white/[0.06]">
+              {sortedStudies.map((study) => {
+                const stage = getClientStage(study.masterStatus);
+                return (
+                  <li
+                    key={study.id}
+                    className="group grid cursor-pointer grid-cols-1 gap-3 px-6 py-4 transition-colors hover:bg-white/[0.02] sm:px-8 md:grid-cols-[1fr_auto_auto] md:items-center md:gap-6"
+                    onClick={() => router.push(`${STUDY_BASE}/${study.id}`)}
+                    onMouseEnter={() => router.prefetch(`${STUDY_BASE}/${study.id}`)}
+                  >
+                    <div className="min-w-0">
+                      <p
+                        className="truncate font-sans text-sm font-semibold text-white transition-colors group-hover:text-[#FFA040]"
+                        title={study.researchTitle}
+                      >
+                        {study.researchTitle}
+                      </p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-sans text-xs text-white/45" onClick={(e) => e.stopPropagation()}>
+                        <CopyButton variant="badge" value={study.intakeId} label={study.intakeId} />
+                        <span>Due {formatDate(study.deadlineRequested)}</span>
+                      </div>
+                    </div>
+                    <ClientStageTag stage={stage} className="justify-self-start" />
+                    <div className="flex items-center gap-1.5 justify-self-start md:justify-self-end" onClick={(e) => e.stopPropagation()}>
+                      <Button asChild variant="outline" size="sm" className="active:scale-[0.97]">
+                        <Link href={`${STUDY_BASE}/${study.id}${stage.action?.path ?? ""}`}>
+                          {stage.action?.label ?? "Open"}
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Ask to delete ${study.intakeId}`}
+                        title="Ask to delete this study"
+                        onClick={() =>
+                          setStudyToRequestDeletion({ id: study.id, intakeId: study.intakeId, title: study.researchTitle })
+                        }
+                        className="h-9 min-h-[36px] w-9 min-w-[36px] text-white/40 hover:text-white"
+                      >
+                        <Trash size={15} weight="fill" />
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+        </>
       )}
 
-      {/* ── Quick Profile Setup Modal ── */}
       <QuickProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         onSuccess={handleProfileSuccess}
       />
 
-      {/* ── How to Use JAXIS Interactive Guide Modal ── */}
       <HowToUseModal
         isOpen={isHowToUseModalOpen}
         onClose={() => setIsHowToUseModalOpen(false)}
         isProfileComplete={isProfileComplete === true}
         onSetupProfile={() => setIsProfileModalOpen(true)}
         onStartRequest={() => {
-          window.location.href = "/dashboard/client/projects/new";
+          window.location.href = `${STUDY_BASE}/new`;
         }}
       />
 
-      {/* ── Request Study Deletion Modal ── */}
       <RequestStudyDeletionModal
         open={!!studyToRequestDeletion}
         onClose={() => setStudyToRequestDeletion(null)}
@@ -1181,15 +636,55 @@ export function ClientDashboardClient({
         }}
       />
 
-      {/* ── Floating Responsive Toast Notification ── */}
       {toast && (
-        <Toast
-          variant={toast.variant}
-          message={toast.message}
-          description={toast.description}
-          onClose={() => setToast(null)}
-        />
+        <Toast variant={toast.variant} message={toast.message} description={toast.description} onClose={() => setToast(null)} />
       )}
     </div>
+  );
+}
+
+function HelpCard({ onHowItWorks, projectId }: { onHowItWorks: () => void; projectId?: string }) {
+  return (
+    <Card className="flex flex-1 flex-col gap-4 rounded-[2px] border border-white/10 bg-[#01142B] p-6">
+      <CardHeader icon={ChatCenteredText} title="Questions?" subtitle="Message our team anytime. We reply here." />
+      <p className="font-sans text-sm leading-relaxed text-white/60">
+        Ask about your study, your price, or what to send. Your conversation stays inside JAXIS.
+      </p>
+      <div className="mt-auto flex flex-wrap items-center gap-3 pt-1">
+        <Button asChild variant="outline" size="sm" className="active:scale-[0.97]">
+          <Link href={projectId ? `/dashboard/client/messages?projectId=${projectId}` : "/dashboard/client/messages"}>
+            Open messages
+          </Link>
+        </Button>
+        <button
+          type="button"
+          onClick={onHowItWorks}
+          className="font-sans text-sm text-white/60 underline decoration-white/20 underline-offset-4 transition-colors hover:text-white"
+        >
+          How it works
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+function DefenseLabCard() {
+  return (
+    <Card className="flex flex-1 flex-col gap-4 rounded-[2px] border border-white/10 bg-[#01142B] p-6">
+      <CardHeader icon={GraduationCap} title="Practice your defense" subtitle="DefenseLab mock panel" />
+      <p className="font-sans text-sm leading-relaxed text-white/60">
+        A 1-on-1 video session with a senior statistician who asks the questions panels ask. You get the recording.
+      </p>
+      <div className="mt-auto flex items-center justify-between gap-3 pt-1">
+        <span className="font-mono text-sm font-bold text-white">
+          <Peso />
+          250
+          <span className="ml-1 font-sans text-xs font-normal text-white/45">per hour</span>
+        </span>
+        <Button asChild variant="outline" size="sm" className="active:scale-[0.97]">
+          <Link href="/dashboard/client/defenselab">Learn more</Link>
+        </Button>
+      </div>
+    </Card>
   );
 }

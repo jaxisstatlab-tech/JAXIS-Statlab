@@ -127,7 +127,7 @@ export function DashboardShell({
         {/* Dashdark X Collapsible Sidebar Rail */}
         <div
           className={`print:hidden h-full flex-shrink-0 w-0 lg:transition-[width] lg:duration-300 lg:ease-[cubic-bezier(0.2,0,0,1)] ${
-            isSidebarCollapsed ? "lg:w-[4.25rem]" : "lg:w-[18.5rem]"
+            isSidebarCollapsed ? "lg:w-[4.25rem]" : "lg:w-64"
           } overflow-hidden will-change-[width]`}
         >
           <Sidebar

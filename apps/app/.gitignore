@@ -34,3 +34,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local offline dev stores (seeded by `npm run seed:local-dev`, read only when the DB is unreachable)
+/.dev-projects.json
+/.dev-quotations.json
+/.dev-sows.json
+/.dev-alerts.json
+/dev_data/payments.json

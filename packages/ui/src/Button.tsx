@@ -88,14 +88,21 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(buttonVariants({ variant, size, className }))}
         {...props}
       >
-        {loading && (
-          <CircleNotch
-            size={size === "sm" ? 14 : size === "lg" ? 18 : 16}
-            weight="bold"
-            className="animate-spin text-white/90 shrink-0"
-          />
+        {/* asChild: Slot needs exactly one child element, so pass it through untouched (no spinner slot). */}
+        {asChild ? (
+          children
+        ) : (
+          <>
+            {loading && (
+              <CircleNotch
+                size={size === "sm" ? 14 : size === "lg" ? 18 : 16}
+                weight="bold"
+                className="animate-spin text-white/90 shrink-0"
+              />
+            )}
+            {typeof children === "string" ? <span>{children}</span> : children}
+          </>
         )}
-        {typeof children === "string" ? <span>{children}</span> : children}
       </Comp>
     );
   }

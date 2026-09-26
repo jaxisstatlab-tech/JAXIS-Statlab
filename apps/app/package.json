@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "set NODE_OPTIONS=--max-old-space-size=1024&& set NEXT_TURBOPACK_MEMORY_LIMIT=512&& npx next dev --port 3001",
+    "dev:offline": "node -e \"require('fs').rmSync('.next/dev/cache/fetch-cache',{recursive:true,force:true})\"&& set DATABASE_URL=postgresql://offline:offline@offline.invalid:5432/offline&& set DIRECT_URL=postgresql://offline:offline@offline.invalid:5432/offline&& set NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:1&& set NEXT_PUBLIC_SUPABASE_ANON_KEY=offline&& set SUPABASE_SERVICE_ROLE_KEY=offline&& set R2_ACCOUNT_ID=offline-no-storage&& set R2_ACCESS_KEY_ID=offline&& set R2_SECRET_ACCESS_KEY=offline&& set R2_BUCKET_NAME=offline&& set R2_PUBLIC_URL=http://127.0.0.1:1&& set RESEND_API_KEY=re_offline_disabled&& set TRIGGER_API_KEY=offline&& set TRIGGER_API_URL=http://127.0.0.1:1&& set JAXIS_OFFLINE=1&& set NODE_OPTIONS=--max-old-space-size=4096&& npx next dev --port 3001",
+    "seed:local-dev": "npx tsx scripts/seed-local-dev.ts",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint --max-warnings 0",

@@ -27,7 +27,6 @@ import {
 } from "@phosphor-icons/react";
 import { getSOWByProject, signSOW } from "@/features/sow/actions";
 import { getProjectById } from "@/features/projects/actions";
-import { getClientProfile } from "@/features/client-profile/actions";
 import { SowDocument } from "@/features/sow/components/SowDocument";
 import type { SOWDetailItem } from "@/features/sow/schemas";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
@@ -62,10 +61,9 @@ export default function ClientSowPage() {
       setError(null);
 
       try {
-        const [projRes, sowRes, profRes] = await Promise.all([
+        const [projRes, sowRes] = await Promise.all([
           getProjectById(projectId),
           getSOWByProject(projectId),
-          getClientProfile(),
         ]);
 
         if (!projRes.success) {
@@ -80,11 +78,8 @@ export default function ClientSowPage() {
           setSow(sowRes.data);
         }
 
-        if (profRes.success && profRes.data?.profile) {
-          setRegisteredName(profRes.data.profile.fullName || "");
-        } else if (projRes.data.client?.fullName) {
-          setRegisteredName(projRes.data.client.fullName);
-        }
+        // signSOW checks the typed name against the account name on the study, so match that here.
+        setRegisteredName(projRes.data.client?.fullName || "");
       } catch (err) {
         setError((err as Error).message || "An unexpected error occurred.");
       } finally {

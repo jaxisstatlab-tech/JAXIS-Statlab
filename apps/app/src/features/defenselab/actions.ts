@@ -1,5 +1,7 @@
 "use server";
 
+import fs from "fs";
+import path from "path";
 import { revalidatePath } from "next/cache";
 import { auth, requireRole } from "@/lib/auth";
 import { db, getDb, withDbTimeout } from "@/lib/db";
@@ -29,6 +31,103 @@ export interface DefenseLabActionResult<T = unknown> {
     message: string;
     fieldErrors?: Record<string, string[]>;
   };
+}
+
+/** Business-rule errors pass through; database/infrastructure errors never reach the client's screen. */
+function userFacingMessage(err: unknown, fallback: string): string {
+  if (!(err instanceof Error)) return fallback;
+  const isInfra =
+    err.name.startsWith("Prisma") ||
+    err.constructor?.name?.startsWith("Prisma") ||
+    err.message === "DB_TIMEOUT" ||
+    /Can't reach database|invocation in|ECONNREFUSED|ETIMEDOUT/i.test(err.message);
+  return isInfra ? `${fallback} Please try again in a moment.` : err.message || fallback;
+}
+
+interface EntitlementSource {
+  id: string;
+  intakeId: string;
+  researchTitle: string;
+  lineItems: Array<{ itemName: string; description?: string | null; amount: unknown }>;
+  isPaid: boolean;
+  expertName: string | null;
+  expertId: string | null;
+}
+
+/** A study is listed when it bought the DefenseLab add-on or has a verified payment. */
+function buildEntitlement(
+  p: EntitlementSource,
+  sessions: Array<{ projectId: string; status: string; durationHours?: number }>
+): DefenseLabProjectEntitlementDTO | null {
+  const defenseLabLineItems = p.lineItems.filter(
+    (li) => li.itemName === "DEFENSELAB" || (li.description && li.description.toLowerCase().includes("defenselab"))
+  );
+  const hasAddon = defenseLabLineItems.length > 0;
+  let totalHoursPurchased = 0;
+  for (const item of defenseLabLineItems) {
+    totalHoursPurchased += Math.max(1, Math.round(Number(item.amount) / DEFENSELAB_RATE_PER_HOUR));
+  }
+  if (totalHoursPurchased === 0 && hasAddon) {
+    totalHoursPurchased = 2;
+  }
+  if (!hasAddon && !p.isPaid) return null;
+
+  const scheduledHours = sessions
+    .filter((s) => s.projectId === p.id && s.status !== "CANCELLED")
+    .reduce((sum, s) => sum + (s.durationHours || 1), 0);
+
+  return {
+    projectId: p.id,
+    intakeId: p.intakeId,
+    researchTitle: p.researchTitle,
+    hasAddon,
+    isPaid: p.isPaid,
+    totalHoursPurchased,
+    remainingHours: Math.max(0, totalHoursPurchased - scheduledHours),
+    expertAssignedName: p.expertName,
+    expertAssignedId: p.expertId,
+  };
+}
+
+/** Local dev only: entitlements from the offline JSON stores when the DB is unreachable. */
+function readDevDefenseLabEntitlements(userId: string, email?: string | null): DefenseLabProjectEntitlementDTO[] {
+  if (process.env.NODE_ENV === "production") return [];
+  const readJson = <T,>(file: string): T[] => {
+    try {
+      const full = path.join(/*turbopackIgnore: true*/ process.cwd(), file);
+      return fs.existsSync(full) ? (JSON.parse(fs.readFileSync(full, "utf-8")) as T[]) : [];
+    } catch {
+      return [];
+    }
+  };
+  type DevProject = { id: string; intakeId: string; researchTitle: string; clientId: string; createdAt: string; client?: { email?: string } };
+  type DevQuote = { projectId: string; status: string; lineItems?: EntitlementSource["lineItems"] };
+  type DevPayment = { projectId: string; paymentStatus: string };
+
+  const lowerEmail = email?.toLowerCase();
+  const projects = readJson<DevProject>(".dev-projects.json")
+    .filter((p) => p.clientId === userId || (!!lowerEmail && p.client?.email?.toLowerCase() === lowerEmail))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const quotes = readJson<DevQuote>(".dev-quotations.json");
+  const payments = readJson<DevPayment>("dev_data/payments.json");
+
+  return projects.flatMap((p) => {
+    const entitlement = buildEntitlement(
+      {
+        id: p.id,
+        intakeId: p.intakeId,
+        researchTitle: p.researchTitle,
+        lineItems: quotes
+          .filter((q) => q.projectId === p.id && ["CLIENT_APPROVED", "SUPERSEDED"].includes(q.status))
+          .flatMap((q) => q.lineItems ?? []),
+        isPaid: payments.some((pay) => pay.projectId === p.id && ["VERIFIED", "FULLY_PAID"].includes(pay.paymentStatus)),
+        expertName: null,
+        expertId: null,
+      },
+      []
+    );
+    return entitlement ? [entitlement] : [];
+  });
 }
 
 /**
@@ -80,46 +179,21 @@ export async function getClientDefenseLabData(): Promise<
       ),
     ]);
 
-    const entitlements: DefenseLabProjectEntitlementDTO[] = [];
-
-    for (const p of projects) {
-      const defenseLabLineItems = p.quotations.flatMap((q) =>
-        q.lineItems.filter(
-          (li) =>
-            li.itemName === "DEFENSELAB" ||
-            (li.description && li.description.toLowerCase().includes("defenselab"))
-        )
-      );
-
-      const hasAddon = defenseLabLineItems.length > 0;
-      let totalHoursPurchased = 0;
-      for (const item of defenseLabLineItems) {
-        const amt = Number(item.amount);
-        totalHoursPurchased += Math.max(1, Math.round(amt / DEFENSELAB_RATE_PER_HOUR));
-      }
-      if (totalHoursPurchased === 0 && hasAddon) {
-        totalHoursPurchased = 2;
-      }
-
-      const scheduledHours = (rawSessions as any[])
-        .filter((s: any) => s.projectId === p.id && s.status !== "CANCELLED")
-        .reduce((sum: number, s: any) => sum + (s.durationHours || 1), 0);
-      const isPaid = p.payments.length > 0;
-
-      if (hasAddon || isPaid) {
-        entitlements.push({
-          projectId: p.id,
+    const entitlements = projects.flatMap((p) => {
+      const entitlement = buildEntitlement(
+        {
+          id: p.id,
           intakeId: p.intakeId,
           researchTitle: p.researchTitle,
-          hasAddon,
-          isPaid,
-          totalHoursPurchased,
-          remainingHours: Math.max(0, totalHoursPurchased - scheduledHours),
-          expertAssignedName: p.assignment?.statistician?.fullName || null,
-          expertAssignedId: p.assignment?.statisticianId || null,
-        });
-      }
-    }
+          lineItems: p.quotations.flatMap((q) => q.lineItems),
+          isPaid: p.payments.length > 0,
+          expertName: p.assignment?.statistician?.fullName || null,
+          expertId: p.assignment?.statisticianId || null,
+        },
+        rawSessions as Array<{ projectId: string; status: string; durationHours?: number }>
+      );
+      return entitlement ? [entitlement] : [];
+    });
 
     const sessions: DefenseLabSessionDTO[] = (rawSessions as any[]).map((s: any) => ({
       id: s.id,
@@ -156,9 +230,16 @@ export async function getClientDefenseLabData(): Promise<
     };
   } catch (err: any) {
     console.error("[GetClientDefenseLabData] Error:", err);
+    if (process.env.NODE_ENV !== "production") {
+      // Offline dev: show studies from the local stores; no session store exists offline.
+      return {
+        success: true,
+        data: { entitlements: readDevDefenseLabEntitlements(session.user.id, session.user.email), sessions: [] },
+      };
+    }
     return {
       success: false,
-      error: { code: "SERVER_ERROR", message: err.message || "Failed to load DefenseLab data." },
+      error: { code: "SERVER_ERROR", message: userFacingMessage(err, "Failed to load DefenseLab data.") },
     };
   }
 }
@@ -241,7 +322,7 @@ export async function getAdminDefenseLabData(): Promise<
     console.error("[GetAdminDefenseLabData] Error:", err);
     return {
       success: false,
-      error: { code: "SERVER_ERROR", message: err.message || "Failed to load DefenseLab operations queue." },
+      error: { code: "SERVER_ERROR", message: userFacingMessage(err, "Failed to load DefenseLab operations queue.") },
     };
   }
 }
@@ -445,7 +526,7 @@ export async function bookDefenseLabSession(
     console.error("[BookDefenseLabSession] Error:", err);
     return {
       success: false,
-      error: { code: "BOOKING_FAILED", message: err.message || "Failed to book DefenseLab session." },
+      error: { code: "BOOKING_FAILED", message: userFacingMessage(err, "Failed to book DefenseLab session.") },
     };
   }
 }
@@ -658,7 +739,7 @@ export async function rescheduleDefenseLabSession(
     console.error("[RescheduleDefenseLabSession] Error:", err);
     return {
       success: false,
-      error: { code: "RESCHEDULE_FAILED", message: err.message || "Failed to reschedule session." },
+      error: { code: "RESCHEDULE_FAILED", message: userFacingMessage(err, "Failed to reschedule session.") },
     };
   }
 }
@@ -739,7 +820,7 @@ export async function updateDefenseLabMeetingLink(
   } catch (err: any) {
     return {
       success: false,
-      error: { code: "UPDATE_FAILED", message: err.message || "Failed to update meeting link." },
+      error: { code: "UPDATE_FAILED", message: userFacingMessage(err, "Failed to update meeting link.") },
     };
   }
 }
@@ -849,7 +930,7 @@ export async function completeDefenseLabSession(
   } catch (err: any) {
     return {
       success: false,
-      error: { code: "COMPLETE_FAILED", message: err.message || "Failed to complete DefenseLab session." },
+      error: { code: "COMPLETE_FAILED", message: userFacingMessage(err, "Failed to complete DefenseLab session.") },
     };
   }
 }
@@ -911,7 +992,7 @@ export async function uploadDefenseLabRecording(
   } catch (err: any) {
     return {
       success: false,
-      error: { code: "UPLOAD_FAILED", message: err.message || "Failed to attach recording." },
+      error: { code: "UPLOAD_FAILED", message: userFacingMessage(err, "Failed to attach recording.") },
     };
   }
 }
@@ -973,7 +1054,7 @@ export async function applyDefenseLabPenalty(
   } catch (err: any) {
     return {
       success: false,
-      error: { code: "PENALTY_FAILED", message: err.message || "Failed to apply penalty." },
+      error: { code: "PENALTY_FAILED", message: userFacingMessage(err, "Failed to apply penalty.") },
     };
   }
 }

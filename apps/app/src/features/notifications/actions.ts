@@ -17,6 +17,46 @@ import {
 import { revalidatePath } from "next/cache";
 import type { RoleName } from "@prisma/client";
 import type { EmailTemplateName } from "@/lib/email/types";
+import fs from "fs";
+import path from "path";
+import { getDevUserByEmail } from "@/lib/mock-data/users.data";
+
+// ─── Local dev only: offline alert store (.dev-alerts.json), used when the DB is unreachable ───
+
+const DEV_ALERTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-alerts.json");
+
+function readDevAlerts(): InAppAlertDTO[] {
+  try {
+    return fs.existsSync(DEV_ALERTS_FILE) ? (JSON.parse(fs.readFileSync(DEV_ALERTS_FILE, "utf-8")) as InAppAlertDTO[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** The session id can differ from the dev account id, so accept both (matched by email). */
+async function devRecipientIds(): Promise<Set<string>> {
+  const user = (await auth())?.user;
+  const ids = new Set<string>();
+  if (user?.id) ids.add(user.id);
+  const devId = user?.email ? getDevUserByEmail(user.email)?.id : undefined;
+  if (devId) ids.add(devId);
+  return ids;
+}
+
+/** Applies `change` to the signed-in user's offline alerts. Returns false in production or when signed out. */
+async function updateDevAlerts(change: (mine: InAppAlertDTO[]) => InAppAlertDTO[]): Promise<boolean> {
+  if (process.env.NODE_ENV === "production") return false;
+  const ids = await devRecipientIds();
+  if (ids.size === 0) return false;
+  const all = readDevAlerts();
+  const others = all.filter((a) => !ids.has(a.recipientId));
+  try {
+    fs.writeFileSync(DEV_ALERTS_FILE, JSON.stringify([...change(all.filter((a) => ids.has(a.recipientId))), ...others], null, 2));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Seeds role-tailored welcome and onboarding notifications for fresh accounts across all roles.
@@ -497,6 +537,15 @@ export async function getInAppAlertsAction(): Promise<{
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to load alerts.";
     console.error("getInAppAlertsAction error:", err);
+    if (process.env.NODE_ENV !== "production") {
+      const ids = await devRecipientIds();
+      if (ids.size > 0) {
+        const alerts = readDevAlerts()
+          .filter((a) => ids.has(a.recipientId))
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return { success: true, data: { alerts, unreadCount: alerts.filter((a) => !a.isRead).length } };
+      }
+    }
     return { success: false, error: { message: msg } };
   }
 }
@@ -579,6 +628,11 @@ export async function markAlertReadAction(rawInput: MarkAlertReadInput): Promise
     return { success: true };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to mark alert as read.";
+    const alertId = (rawInput as { alertId?: string } | undefined)?.alertId;
+    const now = new Date().toISOString();
+    if (alertId && (await updateDevAlerts((mine) => mine.map((a) => (a.id === alertId ? { ...a, isRead: true, readAt: now } : a))))) {
+      return { success: true };
+    }
     return { success: false, error: { message: msg } };
   }
 }
@@ -613,6 +667,10 @@ export async function markAllAlertsReadAction(): Promise<{
     return { success: true };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to mark all alerts as read.";
+    const now = new Date().toISOString();
+    if (await updateDevAlerts((mine) => mine.map((a) => (a.isRead ? a : { ...a, isRead: true, readAt: now })))) {
+      return { success: true };
+    }
     return { success: false, error: { message: msg } };
   }
 }
@@ -647,6 +705,9 @@ export async function deleteAlertAction(rawInput: { alertId: string }): Promise<
     return { success: true };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to delete alert.";
+    if (rawInput?.alertId && (await updateDevAlerts((mine) => mine.filter((a) => a.id !== rawInput.alertId)))) {
+      return { success: true };
+    }
     return { success: false, error: { message: msg } };
   }
 }
@@ -676,6 +737,9 @@ export async function clearAllAlertsAction(): Promise<{
     return { success: true };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to clear alerts.";
+    if (await updateDevAlerts(() => [])) {
+      return { success: true };
+    }
     return { success: false, error: { message: msg } };
   }
 }

@@ -48,14 +48,17 @@ import {
   ShieldWarning,
   PaperPlaneRight,
   Gavel,
-  CaretLeft,
   CaretDown,
   User,
   GraduationCap,
   SignOut,
   CircleNotch,
   Trash,
+  Plus,
+  SidebarSimple,
+  ArrowSquareOut,
 } from "@phosphor-icons/react";
+import { SITE_URL } from "@/lib/site";
 
 export interface NavItem {
   label: string;
@@ -124,34 +127,30 @@ const Icons = {
 // ─── Role-Specific Navigation Definitions ─────────────────────────────────────
 
 const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
+  // "Send a new study" is the orange button above these groups, not a nav row.
   CLIENT: [
     {
-      groupTitle: "RESEARCH WORKSPACE",
+      groupTitle: "Workspace",
       items: [
         {
-          label: "My Studies",
+          label: "My studies",
           href: "/dashboard/client",
           icon: Icons.Overview,
         },
         {
-          label: "Submit New Request",
-          href: "/dashboard/client/projects/new",
-          icon: Icons.Intake,
-        },
-        {
-          label: "Quotes & Proposals",
+          label: "Quotes",
           href: "/dashboard/client/quotations",
           icon: Icons.Invoice,
         },
         {
-          label: "DefenseLab Practice",
+          label: "DefenseLab practice",
           href: "/dashboard/client/defenselab",
           icon: Icons.Terminal,
         },
       ],
     },
     {
-      groupTitle: "COMMUNICATION & SUPPORT",
+      groupTitle: "Support",
       items: [
         {
           label: "Messages",
@@ -159,7 +158,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.Feedback,
         },
         {
-          label: "Revisions & Help",
+          label: "Revisions & help",
           href: "/dashboard/client/disputes",
           icon: Icons.Claims,
         },
@@ -736,637 +735,413 @@ export const Sidebar: React.FC<SidebarProps> = ({
   );
   const isClient = effectiveRole === "CLIENT";
 
-  let navGroups = ROLE_NAV_GROUPS[effectiveRole] || ROLE_NAV_GROUPS.ADMIN!;
+  const navGroups = ROLE_NAV_GROUPS[effectiveRole] || ROLE_NAV_GROUPS.ADMIN!;
 
-  if (effectiveRole === "CLIENT" && clientProfileIncomplete) {
-    navGroups = navGroups.map((group) => ({
-      ...group,
-      items: group.items.map((item) => {
-        if (item.href === "/dashboard/client/projects/new") {
-          return {
-            ...item,
-            badge: "NEW STUDY",
-            badgeColor: "amber" as const,
-          };
-        }
-        return item;
-      }),
-    }));
-  }
+  // Role home pages only match exactly; deeper pages match their own nav row.
+  const matchesHref = (target: string, href: string) => {
+    if (target === href) return true;
+    if (href === "/dashboard/client") {
+      return target.startsWith("/dashboard/client/projects") && !target.startsWith(NEW_STUDY_HREF);
+    }
+    return !ROLE_HOMES.has(href) && target.startsWith(href + "/");
+  };
 
-  const filteredNavGroups = navGroups;
+  const newStudyActive = pendingHref !== null ? pendingHref === NEW_STUDY_HREF : pathname.startsWith(NEW_STUDY_HREF);
+  const closeAndNavigate = () => {
+    setIsProfileExpanded(false);
+    if (onClose) onClose();
+  };
 
   return (
     <aside
       className={`
         fixed lg:static inset-y-0 left-0 z-50 lg:z-20
-        h-full max-h-full bg-[#010114] border-r border-white/[0.08] flex flex-col justify-between
+        h-full max-h-full bg-[#010114] border-r border-white/[0.08] flex flex-col
         select-none flex-shrink-0 overflow-hidden
-        transition-transform duration-300 ease-in-out lg:transition-none shadow-2xl lg:shadow-none
-        w-[18.5rem] lg:w-full
+        transition-transform duration-300 ease-in-out lg:transition-none
+        w-64 lg:w-full
         ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         ${className}
       `}
     >
-      {/* Top Header & Navigation Container */}
-      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-        {/* ── 1. Header (Logo + Title + Single Caret Collapse Toggle) ── */}
-        <div className="h-16 flex items-center border-b border-white/[0.08] shrink-0 overflow-hidden px-3.5 justify-between">
-          <div className="flex items-center min-w-0">
-            {/* Logo: Anchored at center x = 34px (px-3.5 [14px] + w-10/2 [20px] = 34px) */}
-            {isCollapsed ? (
-              <button
-                type="button"
-                onClick={onToggleCollapse}
-                className="w-10 h-10 flex items-center justify-center rounded-[2px] hover:bg-white/[0.06] transition-colors cursor-pointer group active:scale-95 outline-none shrink-0"
-                aria-label="Expand sidebar"
-                title="Expand sidebar (Ctrl+B)"
-              >
-                <Image
-                  src="/jaxislogo.png"
-                  alt="JAXIS Logo"
-                  width={24}
-                  height={24}
-                  className="h-6 w-auto transition-transform group-hover:scale-110 shrink-0"
-                  priority
-                />
-              </button>
-            ) : (
-              <Link
-                href="/dashboard"
-                className="w-10 h-10 flex items-center justify-center rounded-[2px] hover:bg-white/[0.06] transition-colors cursor-pointer group active:scale-95 outline-none shrink-0"
-                title="JAXIS StatLab Studio"
-              >
-                <Image
-                  src="/jaxislogo.png"
-                  alt="JAXIS Logo"
-                  width={24}
-                  height={24}
-                  className="h-6 w-auto transition-transform group-hover:scale-105 shrink-0"
-                  priority
-                />
-              </Link>
-            )}
-
-            {/* Brand Title: Smoothly fades in/out with no layout jump or text wrapping */}
-            <div
-              className={`flex items-center gap-1 font-sans whitespace-nowrap overflow-hidden transition-all duration-200 ${
-                isCollapsed ? "max-w-0 opacity-0 pointer-events-none ml-0" : "max-w-[200px] opacity-100 ml-1.5"
-              }`}
-            >
-              <span className="font-extrabold text-sm tracking-wider text-white">JAXIS</span>
-              <span className="font-extrabold text-sm tracking-wider text-[#CC6600]">STATLAB</span>
-              <span className="inline-flex items-center text-[0.625rem] font-sans uppercase px-1.5 py-0.2 rounded-[2px] bg-white/[0.08] border border-white/15 text-white/60 font-semibold tracking-wider ml-0.5">
-                Studio
-              </span>
-            </div>
-          </div>
-
-          {/* Desktop Caret & Mobile Close Buttons */}
-          <div
-            className={`flex items-center gap-1 shrink-0 transition-all duration-200 ${
-              isCollapsed ? "w-0 opacity-0 pointer-events-none overflow-hidden" : "w-auto opacity-100"
-            }`}
+      {/* ── Header: logo + wordmark (matches the website nav) and the collapse toggle ── */}
+      <div className="h-16 flex items-center justify-between gap-2 border-b border-white/[0.08] px-3.5 shrink-0 overflow-hidden">
+        {isCollapsed ? (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="w-10 h-10 flex items-center justify-center rounded-[2px] hover:bg-white/[0.06] transition-colors shrink-0"
+            aria-label="Expand sidebar"
+            title="Expand sidebar (Ctrl+B)"
           >
+            <Image src="/jaxislogo.png" alt="JAXIS StatLab" width={22} height={22} className="h-[22px] w-[22px]" priority />
+          </button>
+        ) : (
+          <Link
+            href="/dashboard"
+            onClick={onClose}
+            className="flex items-center gap-2.5 min-w-0 h-10 px-2.5 -ml-0.5 rounded-[2px] hover:bg-white/[0.04] transition-colors"
+            aria-label="JAXIS StatLab workspace home"
+          >
+            <Image src="/jaxislogo.png" alt="" width={22} height={22} className="h-[22px] w-[22px] shrink-0" priority />
+            <span className="font-sans text-[15px] font-semibold tracking-[-0.01em] text-white whitespace-nowrap">
+              JAXIS <span className="font-normal text-white/60">StatLab</span>
+            </span>
+          </Link>
+        )}
+
+        {!isCollapsed && (
+          <>
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="hidden lg:flex items-center justify-center p-1.5 text-white/50 hover:text-[#FFA040] transition-colors duration-150 cursor-pointer group active:scale-90 outline-none"
+              className="hidden lg:flex w-8 h-8 items-center justify-center rounded-[2px] text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors shrink-0"
               aria-label="Collapse sidebar"
               title="Collapse sidebar (Ctrl+B)"
             >
-              <CaretLeft size={18} weight="bold" className="group-hover:-translate-x-0.5 transition-transform" />
+              <SidebarSimple size={18} weight="fill" />
             </button>
-
             <button
               type="button"
               onClick={onClose}
-              className="flex lg:hidden p-1.5 rounded-[2px] text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
-              aria-label="Close navigation drawer"
+              className="flex lg:hidden w-8 h-8 items-center justify-center rounded-[2px] text-white/50 hover:text-white hover:bg-white/[0.06] transition-colors shrink-0"
+              aria-label="Close navigation"
             >
               <X size={18} weight="bold" />
             </button>
-          </div>
-        </div>
+          </>
+        )}
+      </div>
 
-        {/* ── 3. Navigation Links List ── */}
-        <div
-          data-no-scrollbar
-          className={`flex flex-col gap-4 overflow-y-auto flex-1 overflow-x-hidden ${
-            isCollapsed
-              ? "px-0 py-3.5 items-center no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none]"
-              : "p-3.5 scrollbar-thin"
-          }`}
-          style={isCollapsed ? { scrollbarWidth: "none", msOverflowStyle: "none" } : undefined}
-        >
-          <nav
-            aria-label="Sidebar navigation"
-            className={`flex flex-col gap-3 w-full ${isCollapsed ? "items-center" : ""}`}
+      {/* ── Primary action (clients): the same orange button as "Send your study" on the website ── */}
+      {isClient && (
+        <div className={`pt-4 shrink-0 ${isCollapsed ? "flex justify-center" : "px-3.5"}`}>
+          <Link
+            href={NEW_STUDY_HREF}
+            onClick={(e) => handleNavClick(e, NEW_STUDY_HREF)}
+            aria-current={newStudyActive ? "page" : undefined}
+            title={isCollapsed ? "Send a new study" : undefined}
+            className={`flex items-center justify-center gap-2 h-10 rounded-[2px] font-sans text-[13px] font-medium text-white transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] ${
+              newStudyActive ? "bg-[#B35900]" : "bg-[#CC6600] hover:bg-[#E67300]"
+            } ${isCollapsed ? "w-10" : "w-full px-4"}`}
           >
-            {filteredNavGroups.map((group, gIdx) => (
-              <div
-                key={gIdx}
-                className={`flex flex-col gap-0.5 w-full ${isCollapsed ? "items-center" : ""}`}
-              >
-                <div
-                  className={`overflow-hidden transition-all duration-200 ${
-                    isCollapsed ? "h-0 opacity-0 my-0 pointer-events-none hidden" : "h-6 opacity-100 my-1 px-1 flex items-center"
-                  }`}
-                >
-                  <span className="text-[10px] font-mono font-medium tracking-widest text-white/35 uppercase select-none whitespace-nowrap">
-                    {group.groupTitle}
-                  </span>
-                </div>
+            {pendingHref === NEW_STUDY_HREF ? (
+              <CircleNotch size={16} weight="bold" className="animate-spin shrink-0" />
+            ) : (
+              <Plus size={16} weight="bold" className="shrink-0" />
+            )}
+            {!isCollapsed && <span className="whitespace-nowrap">Send a new study</span>}
+          </Link>
+        </div>
+      )}
 
-                {group.items.map((item) => {
-                  const isExact = pathname === item.href;
-                  const isChild =
-                    item.href !== "/dashboard" &&
-                    item.href !== "/dashboard/admin" &&
-                    item.href !== "/dashboard/ceo" &&
-                    item.href !== "/dashboard/client" &&
-                    item.href !== "/dashboard/statistician" &&
-                    item.href !== "/dashboard/qa" &&
-                    item.href !== "/dashboard/finance" &&
-                    pathname.startsWith(item.href + "/");
+      {/* ── Navigation ── */}
+      <div
+        data-no-scrollbar
+        className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden [scrollbar-width:none] ${
+          isCollapsed ? "px-0 py-5" : "px-3.5 py-5"
+        }`}
+      >
+        <nav aria-label="Sidebar navigation" className={`flex flex-col gap-6 ${isCollapsed ? "items-center" : ""}`}>
+          {navGroups.map((group, gIdx) => (
+            <div key={group.groupTitle} className={`flex flex-col gap-0.5 w-full ${isCollapsed ? "items-center" : ""}`}>
+              {isCollapsed ? (
+                gIdx > 0 && <span aria-hidden="true" className="mb-3 h-px w-6 bg-white/[0.1]" />
+              ) : (
+                <span className="mb-2 px-2.5 font-mono text-[11px] uppercase tracking-wider text-white/40 whitespace-nowrap">
+                  {group.groupTitle.toLowerCase()}
+                </span>
+              )}
 
-                  // Special match: /dashboard/client/projects matches My Studies (/dashboard/client)
-                  const isClientProjectsMatch =
-                    item.href === "/dashboard/client" &&
-                    pathname.startsWith("/dashboard/client/projects") &&
-                    !pathname.startsWith("/dashboard/client/projects/new");
+              {group.items.map((item) => {
+                const isActive = matchesHref(pathname, item.href);
+                const isPending = pendingHref !== null && matchesHref(pendingHref, item.href);
+                const active = pendingHref !== null ? isPending : isActive;
 
-                  const isActive = isExact || isChild || isClientProjectsMatch;
-
-                  const isPendingClientProjectsMatch =
-                    item.href === "/dashboard/client" &&
-                    pendingHref !== null &&
-                    pendingHref.startsWith("/dashboard/client/projects") &&
-                    !pendingHref.startsWith("/dashboard/client/projects/new");
-
-                  const isPendingActive =
-                    pendingHref !== null &&
-                    (pendingHref === item.href ||
-                      isPendingClientProjectsMatch ||
-                      (item.href !== "/dashboard" &&
-                        item.href !== "/dashboard/admin" &&
-                        item.href !== "/dashboard/ceo" &&
-                        item.href !== "/dashboard/client" &&
-                        item.href !== "/dashboard/statistician" &&
-                        item.href !== "/dashboard/qa" &&
-                        item.href !== "/dashboard/finance" &&
-                        pendingHref.startsWith(item.href + "/")));
-
-                  const effectivelyActive = pendingHref !== null ? isPendingActive : isActive;
-                  const isDisabled = Boolean(item.disabled);
-
-                  if (isDisabled) {
-                    return (
-                      <div
-                        key={item.href + item.label}
-                        className={`h-10 flex items-center text-xs rounded-[2px] select-none opacity-40 cursor-not-allowed overflow-hidden border border-transparent ${
-                          isCollapsed ? "w-10 shrink-0 justify-center p-0" : "w-full"
-                        }`}
-                        title={`${item.label} (Under Active Development)`}
-                      >
-                        <div className="w-10 h-10 shrink-0 flex items-center justify-center">
-                          <span className="text-white/30 flex-shrink-0 w-5 h-5 flex items-center justify-center">
-                            {item.icon}
-                          </span>
-                        </div>
-                        <div
-                          className={`flex items-center justify-between flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
-                            isCollapsed
-                              ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0 hidden"
-                              : "max-w-[220px] opacity-100 ml-1.5 pr-2"
-                          }`}
-                        >
-                          <span className="font-sans font-normal text-white/40 text-[0.8125rem] truncate">
-                            {item.label}
-                          </span>
-                          <span className="text-[10px] font-sans px-1.5 py-0.5 rounded-[2px] border font-medium bg-white/[0.04] text-white/30 border-white/[0.08] shrink-0 ml-auto">
-                            {item.badge || "SOON"}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  const isMessagesLink =
-                    item.label === "Messages" || item.href.endsWith("/messages");
-                  const hasNewMessages = isMessagesLink && unreadMessagesCount > 0;
-
+                if (item.disabled) {
                   return (
-                    <Link
-                      key={`${item.href}-${item.label}`}
-                      href={item.href}
-                      prefetch={true}
-                      onMouseEnter={() => router.prefetch(item.href)}
-                      onClick={(e) => handleNavClick(e, item.href)}
-                      className={`relative flex items-center h-10 rounded-[2px] transition-all duration-150 ease-out group overflow-hidden active:scale-[0.98] border ${
-                        isCollapsed ? "w-10 shrink-0 justify-center p-0" : "w-full"
-                      } ${
-                        effectivelyActive
-                          ? "bg-[#CC6600]/12 text-white font-medium border-[#CC6600]/30 shadow-sm"
-                          : hasNewMessages
-                          ? "border border-[#CC6600]/30 bg-[#CC6600]/[0.08] text-white hover:bg-[#CC6600]/[0.14]"
-                          : "border border-transparent text-white/65 hover:text-white hover:bg-white/[0.05]"
+                    <div
+                      key={item.href + item.label}
+                      title={`${item.label} (coming soon)`}
+                      className={`flex items-center h-9 rounded-[2px] opacity-40 cursor-not-allowed ${
+                        isCollapsed ? "w-10 justify-center" : "w-full gap-3 px-2.5"
                       }`}
-                      title={
-                        isCollapsed
-                          ? `${item.label}${item.count ? ` (${item.count})` : ""}${hasNewMessages ? ` (${unreadMessagesCount} new)` : ""}`
-                          : undefined
-                      }
                     >
-                      {/* Nav Icon Container: Anchored on x = 34px axis */}
-                      <div className="w-10 h-10 shrink-0 flex items-center justify-center relative">
-                        {isCollapsed && isPendingActive ? (
-                          <CircleNotch
-                            size={16}
-                            className="animate-spin text-[#FFA040] shrink-0"
-                            weight="bold"
-                          />
-                        ) : (
-                          <span
-                            style={{
-                              color: effectivelyActive
-                                ? "#FFA040"
-                                : hasNewMessages
-                                ? "#FFA040"
-                                : undefined,
-                            }}
-                            className={`${
-                              effectivelyActive
-                                ? "text-[#FFA040]"
-                                : hasNewMessages
-                                ? "text-[#FFA040]"
-                                : "text-white/40 group-hover:text-white/80 group-hover:scale-105"
-                            } transition-all duration-150 flex-shrink-0 flex items-center justify-center`}
-                          >
-                            {item.icon}
-                          </span>
-                        )}
+                      <span className="text-white/40 flex items-center">{item.icon}</span>
+                      {!isCollapsed && (
+                        <>
+                          <span className="font-sans text-[13px] text-white/50 truncate">{item.label}</span>
+                          <span className="ml-auto font-mono text-[10px] uppercase text-white/40">{item.badge || "Soon"}</span>
+                        </>
+                      )}
+                    </div>
+                  );
+                }
 
-                        {/* Collapsed mode unread ping beacon */}
-                        {isCollapsed && hasNewMessages && !isPendingActive && (
-                          <span className="absolute top-2 right-2 flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-80" />
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC6600]" />
-                          </span>
-                        )}
-                      </div>
+                const isMessagesLink = item.href.endsWith("/messages");
+                const unread = isMessagesLink ? unreadMessagesCount : 0;
 
-                      {/* Text Label & Badges: Smoothly fades in/out */}
-                      <div
-                        className={`flex items-center justify-between flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
-                          isCollapsed
-                            ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0 hidden"
-                            : "max-w-[220px] opacity-100 ml-1.5 pr-2"
-                        }`}
-                      >
-                        <span
-                          className={`font-sans text-[0.8125rem] truncate transition-colors duration-150 ${
-                            effectivelyActive
-                              ? "font-semibold text-white tracking-wide"
-                              : hasNewMessages
-                              ? "font-semibold text-white"
-                              : "font-normal text-white/70 group-hover:text-white"
-                          }`}
-                          title={item.label}
-                        >
+                return (
+                  <Link
+                    key={`${item.href}-${item.label}`}
+                    href={item.href}
+                    prefetch={true}
+                    onMouseEnter={() => router.prefetch(item.href)}
+                    onClick={(e) => handleNavClick(e, item.href)}
+                    aria-current={isActive ? "page" : undefined}
+                    title={
+                      isCollapsed ? `${item.label}${unread > 0 ? ` (${unread} unread)` : ""}` : undefined
+                    }
+                    className={`group relative flex items-center h-9 rounded-[2px] transition-[background-color,color] duration-150 ease-out ${
+                      isCollapsed ? "w-10 justify-center" : "w-full gap-3 px-2.5"
+                    } ${active ? "bg-white/[0.08] text-white" : "text-white/60 hover:text-white hover:bg-white/[0.04]"}`}
+                  >
+                    <span
+                      className={`flex items-center justify-center shrink-0 transition-colors duration-150 ${
+                        active ? "text-white" : "text-white/40 group-hover:text-white/80"
+                      }`}
+                    >
+                      {isCollapsed && isPending ? (
+                        <CircleNotch size={16} weight="bold" className="animate-spin" />
+                      ) : (
+                        item.icon
+                      )}
+                    </span>
+
+                    {isCollapsed ? (
+                      unread > 0 && (
+                        <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-[#CC6600]" aria-hidden="true" />
+                      )
+                    ) : (
+                      <>
+                        <span className={`font-sans text-[13px] truncate ${active ? "font-medium" : ""}`}>
                           {item.label}
                         </span>
-
-                        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-                          {isPendingActive ? (
-                            <CircleNotch
-                              size={14}
-                              className="animate-spin text-[#FFA040] flex-shrink-0"
-                              weight="bold"
-                            />
-                          ) : hasNewMessages ? (
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                              <span
-                                className="relative flex h-2 w-2 items-center justify-center flex-shrink-0"
-                                aria-label="New unread message activity"
-                              >
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#CC6600] opacity-80" />
-                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#CC6600]" />
-                              </span>
-                              <span
-                                className="text-[10px] font-mono px-1.5 py-0.5 rounded-[2px] bg-[#CC6600] text-white font-bold leading-none shadow-sm transition-transform duration-150 active:scale-90 select-none flex-shrink-0 tracking-tight"
-                                title={`${unreadMessagesCount} unread message${unreadMessagesCount > 1 ? "s" : ""}`}
-                              >
-                                {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount} NEW
-                              </span>
-                            </div>
-                          ) : item.count !== undefined && item.count > 0 ? (
+                        <span className="ml-auto flex items-center shrink-0">
+                          {isPending ? (
+                            <CircleNotch size={14} weight="bold" className="animate-spin text-white/60" />
+                          ) : unread > 0 ? (
                             <span
-                              className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full flex-shrink-0 border leading-none ${
-                                effectivelyActive
-                                  ? "bg-[#CC6600]/25 text-[#FFA040] border-[#CC6600]/40 font-bold"
-                                  : "bg-white/[0.06] text-white/60 border-white/10 group-hover:text-white"
-                              }`}
+                              className="min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-[2px] bg-[#CC6600] font-mono text-[11px] font-medium text-white"
+                              aria-label={`${unread} unread`}
                             >
+                              {unread > 99 ? "99+" : unread}
+                            </span>
+                          ) : item.count !== undefined && item.count > 0 ? (
+                            <span className="min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-[2px] bg-white/[0.06] font-mono text-[11px] text-white/60">
                               {item.count}
                             </span>
                           ) : item.badge ? (
                             <span
-                              className={`text-[10px] font-sans px-1.5 py-0.5 rounded-[2px] border font-semibold flex-shrink-0 tracking-wide uppercase ${
-                                BADGE_STYLES[item.badgeColor || "indigo"]
+                              className={`font-mono text-[10px] uppercase px-1.5 py-0.5 rounded-[2px] border ${
+                                BADGE_STYLES[item.badgeColor || "gray"]
                               }`}
                             >
                               {item.badge}
                             </span>
                           ) : null}
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            ))}
-          </nav>
-        </div>
+                        </span>
+                      </>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
       </div>
 
-      {/* ── 4. Bottom Identity & Operational Footer (Dashdark X Precision Standard) ── */}
-      <div className="flex flex-col shrink-0 border-t border-white/[0.08] bg-[#010D1F]/75 overflow-hidden">
-        {/* Staff Duty Clock (internal staff only) */}
+      {/* ── Footer: duty clock (staff), notifications, account ── */}
+      <div className="flex flex-col gap-1 shrink-0 border-t border-white/[0.08] p-3.5">
         {isInternal && (
-          <div className="p-3.5 border-b border-white/[0.08] overflow-hidden">
-            <DutyClockWidget
-              userRole={role}
-              initialActiveShift={initialActiveShift}
-              isSidebarCollapsed={isCollapsed}
-            />
+          <div className="pb-2.5 mb-1.5 border-b border-white/[0.08]">
+            <DutyClockWidget userRole={role} initialActiveShift={initialActiveShift} isSidebarCollapsed={isCollapsed} />
           </div>
         )}
 
-        {/* Notifications Bar (Alerts & Activity) */}
-        <div className="p-3.5 border-b border-white/[0.08] overflow-hidden">
-          <NotificationDrawer
-            triggerVariant="row"
-            isSidebarCollapsed={isCollapsed}
-            side="right"
-            align="end"
-          />
-        </div>
+        <NotificationDrawer triggerVariant="row" isSidebarCollapsed={isCollapsed} side="right" align="end" />
 
-        {/* User Identity Card: Collapsed Popover (Desktop Rail) vs Expanded Inline Accordion */}
-        <div className="p-3.5 overflow-hidden">
-          {isCollapsed ? (
-            <DropdownMenuRoot>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="w-full flex items-center h-12 rounded-[2px] hover:bg-white/[0.06] border border-transparent hover:border-white/10 transition-all duration-150 cursor-pointer outline-none focus:outline-none group text-left active:scale-[0.98] overflow-hidden"
-                  aria-label="User account menu"
-                  title={`${userFullName} (${getRoleDisplayLabel(role)})`}
-                >
-                  {/* Avatar: Anchored on x = 34px axis (14px padding + 20px = 34px) */}
-                  <div className="w-10 h-10 shrink-0 flex items-center justify-center">
-                    <div className="relative shrink-0 flex items-center justify-center">
-                      <UserAvatar name={userFullName} role={role} size="sm" />
-                      {isClient && clientProfileIncomplete && (
-                        <span
-                          className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#CC6600] ring-2 ring-[#010114]"
-                          title="Profile setup required"
-                        />
-                      )}
-                    </div>
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent
-                side="right"
-                align="end"
-                sideOffset={12}
-                className="w-64 p-2 bg-[#01142B] border border-white/15 shadow-2xl rounded-[2px] backdrop-blur-xl z-50"
-              >
-                {/* Header User Identity */}
-                <div className="px-3 py-2.5 mb-1 flex flex-col gap-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-white truncate font-sans">
-                      {userFullName}
-                    </span>
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 tracking-wider shrink-0">
-                      {getRoleDisplayLabel(role)}
-                    </span>
-                  </div>
-                  <span className="text-xs font-sans font-normal text-white/50 truncate">
-                    {userEmail}
-                  </span>
-                </div>
-
-                <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
-
-                {/* Menu Options */}
-                <DropdownMenuItem asChild>
-                  <Link
-                    href={getProfileHref(role)}
-                    className="flex items-center justify-between cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {isClient ? (
-                        <GraduationCap size={18} weight="fill" className="text-white/60 shrink-0" />
-                      ) : (
-                        <User size={18} weight="fill" className="text-white/60 shrink-0" />
-                      )}
-                      <span className="truncate">
-                        {isClient ? "School & Profile" : "My Profile"}
-                      </span>
-                    </div>
-                    {isClient && clientProfileIncomplete && (
-                      <span className="text-[9px] font-mono font-bold text-[#FFA040] bg-[#CC6600]/20 border border-[#CC6600]/40 px-1.5 py-0.5 rounded-[2px] shrink-0 ml-2">
-                        SETUP
-                      </span>
-                    )}
-                  </Link>
-                </DropdownMenuItem>
-
-                {isInternal && (
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href="/dashboard/staff/hr"
-                      className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-medium text-white/85 px-3 py-2.5 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
-                    >
-                      <CalendarCheck size={18} weight="fill" className="text-white/60 shrink-0" />
-                      <span>My HR & Timeclock</span>
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-
-                <DropdownMenuSeparator className="-mx-2 my-1.5 bg-white/10" />
-
-                {/* Logout Action */}
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="flex items-center gap-3 cursor-pointer w-full text-sm font-sans font-semibold text-red-400 px-3 py-2.5 rounded-[2px] hover:bg-red-500/10 hover:text-red-300 transition-colors outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 border-0 ring-0"
-                >
-                  {isLoggingOut ? (
-                    <span className="h-4 w-4 border-2 border-white/20 border-t-red-400 rounded-full animate-spin mr-1 shrink-0" />
-                  ) : (
-                    <SignOut size={18} weight="fill" className="text-red-400 shrink-0" />
-                  )}
-                  <span>Sign Out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenuRoot>
-          ) : (
-            <div ref={profileContainerRef} className="flex flex-col">
+        {isCollapsed ? (
+          <DropdownMenuRoot>
+            <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                onClick={() => setIsProfileExpanded((prev) => !prev)}
-                className={`w-full flex items-center h-12 rounded-[2px] border transition-all duration-150 cursor-pointer outline-none focus:outline-none group text-left active:scale-[0.98] ${
-                  isProfileExpanded
-                    ? "bg-white/[0.08] border-white/15"
-                    : "hover:bg-white/[0.06] border-transparent hover:border-white/10"
-                }`}
-                aria-label="User account menu"
-                aria-expanded={isProfileExpanded}
+                className="w-10 h-10 mx-auto flex items-center justify-center rounded-[2px] hover:bg-white/[0.06] transition-colors"
+                aria-label="Account menu"
+                title={`${userFullName} (${getRoleDisplayLabel(role)})`}
               >
-                {/* Avatar: Anchored on x = 34px axis (14px padding + 20px = 34px) */}
-                <div className="w-10 h-10 shrink-0 flex items-center justify-center">
-                  <div className="relative shrink-0 flex items-center justify-center">
-                    <UserAvatar name={userFullName} role={role} size="sm" />
-                    {isClient && clientProfileIncomplete && (
-                      <span
-                        className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#CC6600] ring-2 ring-[#010114]"
-                        title="Profile setup required"
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* User Details & CaretDown Arrow */}
-                <div className="flex items-center justify-between flex-1 min-w-0 ml-1.5 pr-2">
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-xs font-semibold text-white truncate font-sans group-hover:text-white transition-colors">
-                      {userFullName}
-                    </span>
-                    <span className="text-[11px] text-white/40 truncate font-sans">
-                      {getRoleDisplayLabel(role)}
-                    </span>
-                  </div>
-                  <CaretDown
-                    size={13}
-                    weight="bold"
-                    className={`shrink-0 ml-2 transition-transform duration-200 ${
-                      isProfileExpanded
-                        ? "rotate-180 text-white"
-                        : "text-white/40 group-hover:text-white/70"
-                    }`}
-                  />
-                </div>
+                <AccountAvatar name={userFullName} role={role} needsSetup={isClient && clientProfileIncomplete} />
               </button>
-
-              {/* Accordion dropdown body that expands height */}
-              <div
-                className={`overflow-hidden transition-all duration-200 ease-in-out flex flex-col ${
-                  isProfileExpanded
-                    ? "max-h-96 opacity-100 mt-2 p-2 bg-[#01142B] border border-white/15 rounded-[2px]"
-                    : "max-h-0 opacity-0 pointer-events-none p-0 border-0 m-0"
-                }`}
-              >
-                {/* Header User Identity */}
-                <div className="px-2.5 py-1.5 mb-1 flex flex-col gap-0.5 border-b border-white/[0.08] pb-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-white truncate font-sans">
-                      {userFullName}
-                    </span>
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono uppercase bg-white/[0.08] text-white/70 border border-white/10 tracking-wider shrink-0">
-                      {getRoleDisplayLabel(role)}
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-sans font-normal text-white/50 truncate">
-                    {userEmail}
-                  </span>
-                </div>
-
-                {/* Profile Link */}
-                <Link
-                  href={getProfileHref(role)}
-                  onClick={() => {
-                    setIsProfileExpanded(false);
-                    if (onClose) onClose();
-                  }}
-                  className="flex items-center justify-between cursor-pointer w-full text-xs font-sans font-medium text-white/85 px-2.5 py-2 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {isClient ? (
-                      <GraduationCap size={16} weight="fill" className="text-white/60 shrink-0" />
-                    ) : (
-                      <User size={16} weight="fill" className="text-white/60 shrink-0" />
-                    )}
-                    <span className="truncate">
-                      {isClient ? "School & Profile" : "My Profile"}
-                    </span>
-                  </div>
-                  {isClient && clientProfileIncomplete && (
-                    <span className="text-[9px] font-mono font-bold text-[#FFA040] bg-[#CC6600]/20 border border-[#CC6600]/40 px-1.5 py-0.5 rounded-[2px] shrink-0 ml-2">
-                      SETUP
-                    </span>
-                  )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side="right"
+              align="end"
+              sideOffset={12}
+              className="w-64 p-1.5 bg-[#07071C] border border-white/[0.1] rounded-[2px] z-50"
+            >
+              <AccountHeader name={userFullName} email={userEmail} role={role} />
+              <DropdownMenuSeparator className="-mx-1.5 my-1.5 bg-white/[0.08]" />
+              <DropdownMenuItem asChild>
+                <Link href={getProfileHref(role)} className={MENU_ITEM}>
+                  <ProfileRowContent isClient={isClient} needsSetup={isClient && clientProfileIncomplete} />
                 </Link>
-
-                {/* Staff HR Link */}
-                {isInternal && (
-                  <Link
-                    href="/dashboard/staff/hr"
+              </DropdownMenuItem>
+              {isInternal && (
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/staff/hr" className={MENU_ITEM}>
+                    <CalendarCheck size={16} weight="fill" className="text-white/50 shrink-0" />
+                    <span>My HR & timeclock</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem asChild>
+                <a href={SITE_URL} className={MENU_ITEM}>
+                  <ArrowSquareOut size={16} weight="fill" className="text-white/50 shrink-0" />
+                  <span>JAXIS website</span>
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="-mx-1.5 my-1.5 bg-white/[0.08]" />
+              <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut} className={MENU_ITEM_DANGER}>
+                <SignOutIcon loading={isLoggingOut} />
+                <span>Sign out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenuRoot>
+        ) : (
+          <div ref={profileContainerRef} className="flex flex-col">
+            {/* Account menu opens upward, above the account row */}
+            <div
+              className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${
+                isProfileExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0 pointer-events-none"
+              }`}
+              inert={!isProfileExpanded}
+            >
+              <div className="min-h-0 overflow-hidden">
+                <div className="mb-1.5 p-1.5 bg-[#07071C] border border-white/[0.1] rounded-[2px] flex flex-col">
+                  <AccountHeader name={userFullName} email={userEmail} role={role} />
+                  <div className="-mx-1.5 my-1.5 h-px bg-white/[0.08]" />
+                  <Link href={getProfileHref(role)} onClick={closeAndNavigate} className={MENU_ITEM}>
+                    <ProfileRowContent isClient={isClient} needsSetup={isClient && clientProfileIncomplete} />
+                  </Link>
+                  {isInternal && (
+                    <Link href="/dashboard/staff/hr" onClick={closeAndNavigate} className={MENU_ITEM}>
+                      <CalendarCheck size={16} weight="fill" className="text-white/50 shrink-0" />
+                      <span>My HR & timeclock</span>
+                    </Link>
+                  )}
+                  <a href={SITE_URL} className={MENU_ITEM}>
+                    <ArrowSquareOut size={16} weight="fill" className="text-white/50 shrink-0" />
+                    <span>JAXIS website</span>
+                  </a>
+                  <div className="-mx-1.5 my-1.5 h-px bg-white/[0.08]" />
+                  <button
+                    type="button"
                     onClick={() => {
                       setIsProfileExpanded(false);
-                      if (onClose) onClose();
+                      handleLogout();
                     }}
-                    className="flex items-center gap-2.5 cursor-pointer w-full text-xs font-sans font-medium text-white/85 px-2.5 py-2 rounded-[2px] hover:bg-white/[0.06] hover:text-white transition-colors"
+                    disabled={isLoggingOut}
+                    className={`${MENU_ITEM_DANGER} text-left`}
                   >
-                    <CalendarCheck size={16} weight="fill" className="text-white/60 shrink-0" />
-                    <span>My HR & Timeclock</span>
-                  </Link>
-                )}
-
-                <div className="my-1 border-t border-white/[0.08]" />
-
-                {/* Logout Action */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsProfileExpanded(false);
-                    handleLogout();
-                  }}
-                  disabled={isLoggingOut}
-                  className="flex items-center gap-2.5 cursor-pointer w-full text-xs font-sans font-semibold text-red-400 px-2.5 py-2 rounded-[2px] hover:bg-red-500/10 hover:text-red-300 transition-colors text-left"
-                >
-                  {isLoggingOut ? (
-                    <span className="h-3.5 w-3.5 border-2 border-white/20 border-t-red-400 rounded-full animate-spin mr-1 shrink-0" />
-                  ) : (
-                    <SignOut size={16} weight="fill" className="text-red-400 shrink-0" />
-                  )}
-                  <span>Sign Out</span>
-                </button>
+                    <SignOutIcon loading={isLoggingOut} />
+                    <span>Sign out</span>
+                  </button>
+                </div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* System Version Footer */}
-        <div
-          className="h-7 px-3.5 border-t border-white/[0.08] flex items-center shrink-0 bg-white/[0.01] overflow-hidden"
-          title="JAXIS StatLab v2.4.0"
-        >
-          <div
-            className={`flex items-center flex-1 min-w-0 ${
-              isCollapsed ? "justify-center" : "justify-end"
-            }`}
-          >
-            <span className="font-mono text-[9px] text-white/30 tracking-wider select-none">
-              v2.4.0
-            </span>
+            <button
+              type="button"
+              onClick={() => setIsProfileExpanded((prev) => !prev)}
+              className={`w-full flex items-center gap-3 h-12 px-1.5 rounded-[2px] text-left transition-colors ${
+                isProfileExpanded ? "bg-white/[0.08]" : "hover:bg-white/[0.04]"
+              }`}
+              aria-label="Account menu"
+              aria-expanded={isProfileExpanded}
+            >
+              <AccountAvatar name={userFullName} role={role} needsSetup={isClient && clientProfileIncomplete} />
+              <span className="flex flex-col min-w-0 flex-1">
+                <span className="font-sans text-[13px] font-medium text-white truncate">{userFullName}</span>
+                <span className="font-mono text-[11px] text-white/45 truncate">{getRoleDisplayLabel(role)}</span>
+              </span>
+              <CaretDown
+                size={12}
+                weight="bold"
+                className={`shrink-0 mr-1 transition-transform duration-200 ${
+                  isProfileExpanded ? "rotate-180 text-white" : "text-white/40"
+                }`}
+              />
+            </button>
           </div>
-        </div>
+        )}
       </div>
     </aside>
   );
 };
+
+const NEW_STUDY_HREF = "/dashboard/client/projects/new";
+
+const ROLE_HOMES = new Set([
+  "/dashboard",
+  "/dashboard/admin",
+  "/dashboard/ceo",
+  "/dashboard/client",
+  "/dashboard/statistician",
+  "/dashboard/qa",
+  "/dashboard/finance",
+]);
+
+const MENU_ITEM =
+  "flex items-center gap-2.5 w-full px-2.5 py-2 rounded-[2px] font-sans text-[13px] text-white/80 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer outline-none focus-visible:bg-white/[0.06]";
+const MENU_ITEM_DANGER =
+  "flex items-center gap-2.5 w-full px-2.5 py-2 rounded-[2px] font-sans text-[13px] font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer outline-none focus-visible:bg-red-500/10";
+
+function AccountAvatar({ name, role, needsSetup }: { name: string; role?: string; needsSetup: boolean }) {
+  return (
+    <span className="relative shrink-0 flex items-center justify-center w-7">
+      <UserAvatar name={name} role={role} size="sm" />
+      {needsSetup && (
+        <span
+          className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#CC6600] ring-2 ring-[#010114]"
+          title="Finish setting up your profile"
+        />
+      )}
+    </span>
+  );
+}
+
+function AccountHeader({ name, email, role }: { name: string; email: string; role?: string }) {
+  return (
+    <div className="px-2.5 py-2 flex flex-col gap-0.5 min-w-0">
+      <span className="font-sans text-[13px] font-medium text-white truncate">{name}</span>
+      <span className="font-mono text-[11px] text-white/45 truncate">{email}</span>
+      <span className="mt-1 font-mono text-[10px] uppercase tracking-wider text-white/40">{getRoleDisplayLabel(role)}</span>
+    </div>
+  );
+}
+
+function ProfileRowContent({ isClient, needsSetup }: { isClient: boolean; needsSetup: boolean }) {
+  return (
+    <>
+      {isClient ? (
+        <GraduationCap size={16} weight="fill" className="text-white/50 shrink-0" />
+      ) : (
+        <User size={16} weight="fill" className="text-white/50 shrink-0" />
+      )}
+      <span className="truncate">{isClient ? "School & profile" : "My profile"}</span>
+      {needsSetup && (
+        <span className="ml-auto font-mono text-[10px] uppercase text-[#FFA040] border border-[#CC6600]/40 px-1.5 py-0.5 rounded-[2px] shrink-0">
+          Set up
+        </span>
+      )}
+    </>
+  );
+}
+
+function SignOutIcon({ loading }: { loading: boolean }) {
+  return loading ? (
+    <CircleNotch size={16} weight="bold" className="animate-spin shrink-0" />
+  ) : (
+    <SignOut size={16} weight="fill" className="shrink-0" />
+  );
+}
