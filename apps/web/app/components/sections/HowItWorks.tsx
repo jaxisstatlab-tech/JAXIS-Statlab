@@ -1,118 +1,90 @@
-"use client";
+import { IsoScene, STEP_DELIVER, STEP_PAY, STEP_PRICE, STEP_RECHECK, STEP_SEND, type IsoShape } from "../ui/Iso";
+import Reveal from "../ui/Reveal";
+import { cardDesc, container, heading, kicker } from "../ui/styles";
 
-import React from "react";
-import Image from "next/image";
-
-interface WorkflowStep {
-  step: string;
-  tag: string;
-  duration: string;
-  title: string;
-  description: string;
-  imageSrc: string;
-  imageAlt: string;
-}
-
-const WORKFLOW_STEPS: WorkflowStep[] = [
+const STEPS: { id: string; tag: string; time: string; title: string; body: string; shapes: IsoShape[] }[] = [
   {
-    step: "01",
-    tag: "SUBMIT",
-    duration: "5 MINUTES",
-    title: "Describe your research study",
-    description:
-      "Tell us your statement of the problem, research design, and upload your raw survey data through our encrypted intake portal.",
-    imageSrc: "/images/how-it-works/step-1-submit.jpg",
-    imageAlt: "3D isometric research study intake portal",
+    id: "send",
+    tag: "Submit",
+    time: "5 minutes",
+    title: "Send your study",
+    body: "Upload your research questions, survey, and data through your free account.",
+    shapes: STEP_SEND,
   },
   {
-    step: "02",
-    tag: "QUOTE",
-    duration: "< 24 HOURS",
-    title: "Receive your custom quote & SOW",
-    description:
-      "Get exact statistical test selections, milestone delivery timeline, and a fixed Scope of Work. Zero scope creep, no commitment required.",
-    imageSrc: "/images/how-it-works/step-2-quote.jpg",
-    imageAlt: "3D isometric quotation and statement of work sheet",
+    id: "scope",
+    tag: "Price",
+    time: "< 24 hours",
+    title: "Get a fixed price",
+    body: "The exact tests, files, and price in writing. No payment needed to ask.",
+    shapes: STEP_PRICE,
   },
   {
-    step: "03",
-    tag: "CALCULATE",
-    duration: "2–5 DAYS",
-    title: "We analyze & double-verify",
-    description:
-      "Our statisticians run your models, followed by an independent Senior QA Lead calculation concordance check to guarantee 100% decimal accuracy.",
-    imageSrc: "/images/how-it-works/step-3-validate.jpg",
-    imageAlt: "3D isometric computational statistical engine",
+    id: "deposit",
+    tag: "Deposit",
+    time: "Same day",
+    title: "Pay by GCash or bank",
+    body: "Work starts as soon as your deposit clears. Larger plans pay the rest on delivery.",
+    shapes: STEP_PAY,
   },
   {
-    step: "04",
-    tag: "DELIVER",
-    duration: "DEFENSE READY",
-    title: "Download tables & defense script",
-    description:
-      "Receive publication-ready APA 7th Edition tables, reproducible computational scripts (.R / SPSS / Python), and word-for-word oral defense scripts.",
-    imageSrc: "/images/how-it-works/step-4-deliver.jpg",
-    imageAlt: "3D isometric database deliverable vault",
+    id: "analysis",
+    tag: "Analysis",
+    time: "3 to 7 days",
+    title: "We run and recheck it",
+    body: "One statistician runs your tests, a second reruns them, and a senior reviewer signs off.",
+    shapes: STEP_RECHECK,
+  },
+  {
+    id: "delivery",
+    tag: "Delivery",
+    time: "Instant",
+    title: "Download and defend",
+    body: "APA tables, a plain-English write-up, cleaned data, code, and your defense script.",
+    shapes: STEP_DELIVER,
   },
 ];
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="section relative py-16 sm:py-20 lg:py-24 bg-[#010114] text-white">
-      <div className="w-full max-w-[90rem] mx-auto px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center mb-14 sm:mb-20">
-          <div className="font-mono text-xs uppercase tracking-[0.15em] text-[#CC6600] mb-2 font-medium">
-            HOW IT WORKS
-          </div>
-          <h2 className="font-sans text-2xl sm:text-3xl lg:text-[2rem] font-medium text-white tracking-[-0.03em] leading-tight">
-            From request to ready
-          </h2>
-        </div>
+    <section id="how-it-works" className="relative scroll-mt-16 py-16 lg:py-24">
+      <div className={container}>
+        <Reveal className="text-center">
+          <div className={kicker}>How it works</div>
+          <h2 className={heading}>From request to defense-ready</h2>
+        </Reveal>
 
-        {/* Step Flow List */}
-        <div className="max-w-2xl lg:max-w-3xl mx-auto flex flex-col gap-12 sm:gap-16">
-          {WORKFLOW_STEPS.map((step) => (
-            <div
-              key={step.step}
-              className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-10 md:gap-12 group"
+        <ol className="mx-auto mt-14 flex max-w-2xl flex-col">
+          {STEPS.map((s, i) => (
+            <Reveal
+              as="li"
+              key={s.id}
+              delay={i * 60}
+              className="group relative grid grid-cols-[6.5rem_1fr] items-center gap-6 py-7 sm:grid-cols-[8rem_1fr] sm:gap-8"
             >
-              {/* Left Column: 3D Isometric Visual Asset */}
-              <div className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 shrink-0 flex items-center justify-center relative">
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <Image
-                    src={step.imageSrc}
-                    alt={step.imageAlt}
-                    width={320}
-                    height={320}
-                    priority={step.step === "01"}
-                    className="w-full h-full object-contain mix-blend-screen transition-transform duration-500 group-hover:scale-105 select-none pointer-events-none"
-                  />
-                </div>
+              {i < STEPS.length - 1 ? (
+                <span className="absolute bottom-0 left-[3.25rem] top-[70%] w-px bg-linear-to-b from-white/10 to-transparent sm:left-16" />
+              ) : null}
+              <div className="flex h-24 items-center justify-center sm:h-28">
+                <IsoScene
+                  id={`how-${s.id}`}
+                  shapes={s.shapes}
+                  pad={14}
+                  label={`${s.title} illustration`}
+                  className="h-full w-auto transition-transform duration-500 ease-out group-hover:-translate-y-1"
+                />
               </div>
-
-              {/* Right Column: Step Telemetry, Title & Description */}
-              <div className="flex-1 flex flex-col justify-center text-center sm:text-left pt-1 sm:pt-2">
-                <div className="flex items-center justify-center sm:justify-start gap-2.5 mb-2 font-mono text-xs">
-                  <span className="font-semibold uppercase tracking-wider text-[#CC6600]">
-                    {step.tag}
-                  </span>
-                  <span className="text-white/40 tracking-wider">
-                    {step.duration}
-                  </span>
+              <div>
+                <div className="font-mono text-[11px] uppercase tracking-[0.14em]">
+                  <span className="text-[#FFA040]">{s.tag}</span>
+                  <span className="text-white/50"> · {s.time}</span>
                 </div>
-
-                <h3 className="font-sans text-lg sm:text-xl md:text-[1.375rem] font-medium text-white mb-2 tracking-[-0.02em] leading-snug">
-                  {step.title}
-                </h3>
-
-                <p className="font-mono text-xs sm:text-sm text-white/60 leading-relaxed max-w-xl">
-                  {step.description}
-                </p>
+                <h3 className="mt-2 font-sans text-base font-medium text-white sm:text-lg">{s.title}</h3>
+                <p className={`${cardDesc} mt-1.5`}>{s.body}</p>
               </div>
-            </div>
+            </Reveal>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );

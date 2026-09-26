@@ -37,10 +37,10 @@ All AI coding assistants and developers MUST inspect and strictly follow [.agent
          - `font-sans`: Authoritative headlines, titles, subtitles, card headers, button labels, navigation links.
          - `font-mono`: Category kickers, technical telemetry, IDs, empirical statistics, parameters, code, and table data. Never set long prose or body paragraphs in monospace.
       2. **Section Kickers / Eyebrows**: `font-mono text-xs uppercase tracking-[0.15em] font-medium text-[#CC6600] mb-2` (zero double slashes `//`).
-      3. **Section Primary Headlines**: `font-sans text-2xl sm:text-3xl lg:text-[1.875rem] font-medium text-white tracking-[-0.03em] leading-tight`.
-      4. **Section Subtitles (Single-Line Desktop Standard)**: `font-mono text-xs sm:text-sm text-white/60 mt-2 max-w-3xl lg:max-w-4xl leading-relaxed` (calibrated to render as a single continuous line on desktop without orphan word wraps).
+      3. **Section Primary Headlines**: `font-sans text-2xl sm:text-3xl lg:text-[2rem] font-medium text-white tracking-[-0.03em] leading-tight`.
+      4. **Section Subtitles**: `font-mono text-xs sm:text-sm text-white/60 mt-3 max-w-3xl leading-relaxed`.
       5. **Bento / Feature Card Titles**: `font-sans text-base sm:text-lg lg:text-xl font-medium text-white mb-1.5 tracking-[-0.02em]`.
-      6. **Bento / Feature Card Descriptions**: `font-mono text-xs text-white/60 leading-relaxed mb-3`.
+      6. **Bento / Feature Card Descriptions**: `font-mono text-xs text-white/60 leading-relaxed`. Keep small text at `text-white/55` or brighter to meet WCAG AA contrast.
       7. **Card Telemetry & Stat Footers**: `font-mono text-[11px] sm:text-xs text-white/70 flex items-center gap-1.5` with bold white metric prefix (`text-white font-bold`) and subtle descriptor (`text-white/40`).
       8. **Table & Deliverable Preview Typography**: Column headers `font-mono text-[9.5px] uppercase tracking-wider text-white/40 pb-1.5 border-b border-white/10`, data cells `font-mono text-[10.5px] text-white/80 py-0.5`, diagnostic footer `font-mono text-[9.5px] text-white/50 pt-1.5`.
       9. **Button Typography**: `font-sans text-xs sm:text-sm font-medium rounded-[2px]` (Title Case or Clean Sentence Case, never aggressive ALL-CAPS).

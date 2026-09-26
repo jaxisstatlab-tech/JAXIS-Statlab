@@ -1,187 +1,235 @@
-"use client";
+import { Bank, Check, DeviceMobile, Star } from "@phosphor-icons/react/ssr";
+import { REGISTER_URL } from "@/lib/config";
+import Reveal from "../ui/Reveal";
+import {
+  btnGhost,
+  btnPrimary,
+  cardDesc,
+  container,
+  heading,
+  kicker,
+  meta,
+  subtitle,
+} from "../ui/styles";
 
-import React from "react";
-import Link from "next/link";
-import { Check } from "@phosphor-icons/react";
-
-interface PricingTier {
-  id: string;
-  name: string;
-  badge?: string;
-  price: string;
-  pricePrefix?: string;
-  priceSuffix?: string;
-  sublabel: string;
-  features: string[];
-  ctaLabel: string;
-  ctaHref: string;
-  highlighted: boolean;
-}
-
-const TIERS: PricingTier[] = [
+const PLANS = [
   {
-    id: "starter",
-    name: "STARTER",
+    plan: "Plan 01 · Survey audit",
+    name: "DataCheck",
     price: "1,000",
-    pricePrefix: "₱",
-    sublabel: "DATASET HEALTH CHECK",
+    bestFor: "Checking your data before you run tests",
+    description:
+      "For students who just need their survey spreadsheet cleaned, checked for errors, and verified before running tests.",
     features: [
-      "Survey formatting & outlier audit",
-      "Normality & distribution tests",
-      "Cronbach's alpha reliability screening",
-      "Adviser-ready data health sheet",
+      "Survey data formatting and outlier cleanup",
+      "Normality and distribution checks",
+      "Survey reliability test (Cronbach's alpha)",
+      "Data health sheet for your adviser",
     ],
-    ctaLabel: "Get started",
-    ctaHref: "/dashboard/client/quotations",
-    highlighted: false,
   },
   {
-    id: "professional",
-    name: "PROFESSIONAL",
-    badge: "MOST POPULAR",
+    plan: "Plan 02 · Demographics & profiles",
+    name: "Start Package",
+    price: "1,500",
+    bestFor: "Describing who answered your survey",
+    description:
+      "Ideal for demographic profiling, respondent frequencies, percentages, and basic cross-tabulation comparisons.",
+    features: [
+      "Demographic frequencies and percentages",
+      "Cross-tabulations and chi-square comparisons",
+      "Ready-to-paste APA 7th edition tables",
+      "Plain-English findings write-up for Chapter 4",
+    ],
+  },
+  {
+    plan: "Plan 03 · Complete hypothesis testing",
+    name: "Core Thesis Package",
     price: "2,400",
-    pricePrefix: "₱",
-    priceSuffix: "/ study",
-    sublabel: "CORE THESIS PACKAGE",
+    featured: true,
+    bestFor: "Most college and master's theses",
+    description:
+      "The standard choice for college, master's, and Ph.D. theses needing hypothesis testing and full narrative write-ups.",
     features: [
-      "All parametric & non-parametric tests",
-      "Full APA 7th Edition Chapter 4 tables",
-      "Double-verified by 2 statisticians",
-      "Complete R / SPSS / Python code included",
-      "Word-for-word defense speaking script",
+      "Hypothesis tests (t-tests, ANOVA, multiple regression)",
+      "Assumption checks and effect sizes",
+      "Full plain-English Chapter 4 write-up",
+      "Double-checked by 2 independent statisticians",
+      "Full analysis scripts (.R, .py, .sps) included",
     ],
-    ctaLabel: "Start generating",
-    ctaHref: "/dashboard/client/quotations",
-    highlighted: true,
   },
   {
-    id: "enterprise",
-    name: "ENTERPRISE",
-    price: "Custom",
-    sublabel: "DOCTORAL & MULTIVARIATE",
+    plan: "Plan 04 · Complex modeling",
+    name: "Advanced Package",
+    price: "3,000+",
+    bestFor: "Dissertations and complex models",
+    description:
+      "For graduate studies and doctoral dissertations requiring advanced multivariate modeling, SEM, or clinical trials.",
     features: [
-      "Everything in Professional",
-      "Structural Equation Modeling (SEM / PLS)",
-      "Senior methodologist lead audit",
-      "1-on-1 DefenseLab™ mock defense session",
+      "SEM, path analysis, HLM, and survival models",
+      "Custom method plan for your defense",
+      "Checked by a senior methodologist",
+      "Full panel defense question guide",
     ],
-    ctaLabel: "Talk to sales",
-    ctaHref: "/dashboard/client/quotations",
-    highlighted: false,
   },
 ];
 
+const ADDONS = [
+  {
+    name: "DefenseLab",
+    detail: "Live mock panel defense",
+    price: "250",
+    unit: "/ hr",
+  },
+  { name: "JAXIS Rush", detail: "3-day delivery", price: "300" },
+  { name: "JAXIS Express", detail: "48-hour delivery", price: "600" },
+  { name: "JAXIS Emergency", detail: "24-hour delivery", price: "1,000" },
+];
+
+function Peso({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`mr-0.5 inline-block select-none font-sans font-normal opacity-85 ${className}`}
+    >
+      ₱
+    </span>
+  );
+}
+
 export default function Pricing() {
   return (
-    <section id="pricing" className="section relative py-16 sm:py-20 lg:py-24 bg-[#010114] text-white">
-      <div className="w-full max-w-[90rem] mx-auto px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 xl:gap-16 items-start">
-          
-          {/* Left Column: Heading, Value Proposition & Philosophy */}
-          <div className="lg:col-span-5 flex flex-col justify-start">
-            <div className="font-mono text-xs uppercase tracking-[0.15em] text-[#CC6600] mb-3 font-medium">
-              PRICING
-            </div>
-            
-            <h2 className="font-sans text-3xl sm:text-4xl lg:text-[2.5rem] font-medium text-white tracking-[-0.03em] leading-tight mb-6">
-              Pay for what you generate.
-              <span className="block text-white/50 font-normal">Nothing else</span>
-            </h2>
+    <section id="pricing" className="relative scroll-mt-16 py-16 lg:py-24">
+      <div className={container}>
+        <Reveal>
+          <div className={kicker}>Pricing</div>
+          <h2 className={heading}>Clear prices, fixed before you pay.</h2>
+          <p className={subtitle}>
+            Every study gets its own written scope and price first. Prices below
+            are starting points. Your written price is final, with no surprise
+            fees later.
+          </p>
+        </Reveal>
 
-            <p className="font-mono text-xs sm:text-sm text-white/60 leading-relaxed mb-4 max-w-lg">
-              Usage based pricing with no platform fees. Review your research objectives and statement of the problem upfront with free statistical test matching, then pay per milestone. Enterprise contracts available for compliance-driven teams.
-            </p>
-
-            <p className="font-mono text-xs sm:text-sm text-white/60 leading-relaxed max-w-lg">
-              All plans include double-verified calculations by two independent statisticians, quality gates, lineage tracking, and full delivery reports.
-            </p>
-          </div>
-
-          {/* Right Column: Stacked Tier Container */}
-          <div className="lg:col-span-7">
-            <div className="border border-white/10 rounded-[2px] bg-[#01142B] overflow-hidden">
-              {TIERS.map((tier, idx) => (
-                <div
-                  key={tier.id}
-                  className={[
-                    "p-6 sm:p-7 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-colors duration-150 relative",
-                    idx < TIERS.length - 1 ? "border-b border-white/10" : "",
-                    tier.highlighted
-                      ? "bg-[#011833] border-l-2 border-l-[#CC6600]"
-                      : "hover:bg-white/[0.02]",
-                  ].join(" ")}
-                >
-                  {/* Left Sub-column: Tier Name, Price & Sublabel */}
-                  <div className="w-full md:w-44 shrink-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span
-                        className={[
-                          "font-mono text-xs uppercase tracking-wider",
-                          tier.highlighted ? "text-[#FFA040] font-semibold" : "text-white/50 font-medium",
-                        ].join(" ")}
-                      >
-                        {tier.name}
-                      </span>
-                    </div>
-
-                    <div className="flex items-baseline gap-1.5 my-0.5">
-                      {tier.pricePrefix && (
-                        <span className="font-sans font-normal opacity-85 select-none inline-block mr-0.5 text-xl sm:text-2xl text-white">
-                          {tier.pricePrefix}
-                        </span>
-                      )}
-                      <span className="font-mono font-bold text-2xl sm:text-3xl text-white tracking-tight">
-                        {tier.price}
-                      </span>
-                      {tier.priceSuffix && (
-                        <span className="font-mono text-xs text-white/40 tracking-wider">
-                          {tier.priceSuffix}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="font-mono text-[10px] text-white/40 tracking-wider uppercase mt-1">
-                      {tier.sublabel}
-                    </div>
-                  </div>
-
-                  {/* Middle Sub-column: Features Checklist */}
-                  <ul className="flex-1 space-y-2.5">
-                    {tier.features.map((feat, fIdx) => (
-                      <li
-                        key={fIdx}
-                        className="flex items-start gap-2.5 font-mono text-xs sm:text-[13px] text-white/80 leading-snug"
-                      >
-                        <Check
-                          size={14}
-                          weight="bold"
-                          className={tier.highlighted ? "text-[#CC6600] shrink-0 mt-0.5" : "text-white/40 shrink-0 mt-0.5"}
-                        />
-                        <span>{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* Right Sub-column: CTA Action Button */}
-                  <div className="shrink-0 flex items-center md:justify-end">
-                    <Link
-                      href={tier.ctaHref}
-                      className={[
-                        "inline-flex items-center justify-center px-5 py-2.5 rounded-[2px] font-sans text-xs font-medium transition-all duration-150 active:scale-[0.97] whitespace-nowrap text-center w-full md:w-auto",
-                        tier.highlighted
-                          ? "bg-[#CC6600] text-white hover:bg-[#b35500] font-semibold shadow-sm"
-                          : "border border-white/20 text-white hover:border-white/40 hover:bg-white/[0.05]",
-                      ].join(" ")}
-                    >
-                      {tier.ctaLabel}
-                    </Link>
-                  </div>
+        <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-[2px] border border-white/10 bg-white/10 md:grid-cols-2 xl:grid-cols-4">
+          {PLANS.map((p, i) => (
+            <div
+              key={p.name}
+              className={`relative flex flex-col ${p.featured ? "star-border bg-[#01142B]" : "bg-[#010114]"}`}
+            >
+              {p.featured ? (
+                <span className="absolute inset-x-0 top-0 h-[2px] bg-[#CC6600]" />
+              ) : null}
+              <Reveal
+                delay={i * 80}
+                className="flex flex-1 flex-col p-6 sm:p-7"
+              >
+                <span className="font-mono text-[10px] uppercase tracking-wider text-white/55">
+                  {p.plan}
+                </span>
+                <h3 className="mt-3 font-sans text-lg font-medium tracking-[-0.02em] text-white">
+                  {p.name}
+                </h3>
+                <div className="mt-3 h-6">
+                  {p.featured ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-[2px] border border-[#CC6600]/40 bg-[#CC6600]/15 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-[#FFA040]">
+                      <Star size={11} weight="fill" />
+                      Recommended for thesis defense
+                    </span>
+                  ) : null}
                 </div>
-              ))}
-            </div>
-          </div>
 
+                <div className="mt-4 flex items-baseline gap-1.5">
+                  <span className="font-mono text-[11px] uppercase text-white/55">
+                    From
+                  </span>
+                  <span className="font-mono text-3xl font-bold text-white">
+                    <Peso className="text-2xl" />
+                    {p.price}
+                  </span>
+                </div>
+
+                <p className="mt-4 font-sans text-[13px] text-white/85">
+                  <span className="text-white/55">Best for: </span>
+                  {p.bestFor}
+                </p>
+                <p className={`${cardDesc} mt-2 text-[13px]`}>
+                  {p.description}
+                </p>
+
+                <ul className="mt-6 flex flex-1 flex-col gap-2.5 border-t border-white/[0.08] pt-6">
+                  {p.features.map((f) => (
+                    <li
+                      key={f}
+                      className="flex items-start gap-2.5 font-sans text-[13px] leading-snug text-white/80"
+                    >
+                      <Check
+                        size={14}
+                        weight="bold"
+                        className={`mt-0.5 shrink-0 ${p.featured ? "text-[#CC6600]" : "text-white/50"}`}
+                      />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <a
+                  href={REGISTER_URL}
+                  data-cta={`pricing-${p.name.toLowerCase().replace(/\s+/g, "-")}`}
+                  className={`${p.featured ? btnPrimary : btnGhost} mt-8 w-full`}
+                >
+                  Send your study
+                </a>
+              </Reveal>
+            </div>
+          ))}
         </div>
+
+        <Reveal className="mt-6 grid grid-cols-1 gap-px overflow-hidden rounded-[2px] border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
+          {ADDONS.map((a) => (
+            <div
+              key={a.name}
+              className="flex items-center justify-between gap-4 bg-[#010114] px-5 py-4"
+            >
+              <div>
+                <div className="font-sans text-sm font-medium text-white">
+                  {a.name}
+                </div>
+                <div className={meta}>{a.detail}</div>
+              </div>
+              <div className="whitespace-nowrap font-mono text-base font-bold text-white">
+                <span className="mr-1 font-normal text-white/55">+</span>
+                <Peso />
+                {a.price}
+                {a.unit ? (
+                  <span className="ml-1 text-[11px] font-normal text-white/55">
+                    {a.unit}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </Reveal>
+
+        <Reveal className="mt-6 flex flex-col gap-4 rounded-[2px] border border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <span className={meta}>Pay with</span>
+            <span className="inline-flex items-center gap-2 font-sans text-sm text-white/85">
+              <DeviceMobile
+                size={16}
+                weight="fill"
+                className="text-[#CC6600]"
+              />
+              GCash
+            </span>
+            <span className="inline-flex items-center gap-2 font-sans text-sm text-white/85">
+              <Bank size={16} weight="fill" className="text-[#CC6600]" />
+              Bank transfer
+            </span>
+          </div>
+          <p className="font-sans text-[13px] text-white/60">
+            DataCheck and Start are paid upfront. Larger plans start with a
+            deposit, and the rest is due on delivery.
+          </p>
+        </Reveal>
       </div>
     </section>
   );

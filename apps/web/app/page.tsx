@@ -1,27 +1,49 @@
 import Navbar from "./components/layout/Navbar";
+import Footer from "./components/layout/Footer";
+import MobileCTA from "./components/layout/MobileCTA";
+import GradualBlur from "./components/ui/GradualBlur";
 import Hero from "./components/sections/Hero";
-import Approach from "./components/sections/Approach";
-import Solutions from "./components/sections/Solutions";
+import Services from "./components/sections/Services";
 import HowItWorks from "./components/sections/HowItWorks";
+import PipelineBand from "./components/sections/PipelineBand";
+import SampleOutput from "./components/sections/SampleOutput";
+import Quality from "./components/sections/Quality";
+import Testimonials from "./components/sections/Testimonials";
 import Pricing from "./components/sections/Pricing";
-import Security from "./components/sections/Security";
 import FAQ from "./components/sections/FAQ";
-import FooterCTA from "./components/sections/FooterCTA";
+import FinalCTA from "./components/sections/FinalCTA";
+import { FAQS } from "./content/site";
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
 
 export default function Home() {
   return (
-    <div className="site-root" style={{ backgroundColor: "#010114", minHeight: "100vh" }}>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <Navbar />
       <main>
         <Hero />
-        <Approach />
+        <Services />
         <HowItWorks />
-        <Solutions />
+        <PipelineBand />
+        <Quality />
+        <SampleOutput />
+        <Testimonials />
         <Pricing />
-        <Security />
         <FAQ />
-        <FooterCTA />
+        <FinalCTA />
       </main>
-    </div>
+      <Footer />
+      <GradualBlur />
+      <MobileCTA />
+    </>
   );
 }

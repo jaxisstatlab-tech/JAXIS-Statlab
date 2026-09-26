@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
-import SmoothScroll from "./components/layout/SmoothScroll";
+import { Analytics } from "@vercel/analytics/next";
+import CtaTracker from "./components/layout/CtaTracker";
 
 const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -112,9 +113,14 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <noscript>
+          <style>{`.reveal,.status-badge{opacity:1!important;transform:none!important}.mark-draw{clip-path:none!important}.count{--num:var(--to)!important}`}</style>
+        </noscript>
       </head>
       <body className="font-sans antialiased" style={{ backgroundColor: "#010114" }}>
-        <SmoothScroll>{children}</SmoothScroll>
+        {children}
+        <CtaTracker />
+        <Analytics />
       </body>
     </html>
   );
