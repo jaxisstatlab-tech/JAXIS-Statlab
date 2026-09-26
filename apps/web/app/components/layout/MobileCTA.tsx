@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowRight } from "@phosphor-icons/react";
-import { REGISTER_URL } from "@/lib/config";
+import { LOGIN_URL } from "@/lib/config";
 import { btnPrimary } from "../ui/styles";
 
 export default function MobileCTA() {
@@ -34,7 +34,7 @@ export default function MobileCTA() {
           <div className="truncate font-sans text-sm font-medium text-white">Fixed price in 24 hours</div>
           <div className="truncate font-mono text-[11px] text-white/55">No payment needed to ask</div>
         </div>
-        <a href={REGISTER_URL} data-cta="mobile-sticky-send" tabIndex={visible ? 0 : -1} className={`${btnPrimary} shrink-0`}>
+        <a href={LOGIN_URL} data-cta="mobile-sticky-send" tabIndex={visible ? 0 : -1} className={`${btnPrimary} shrink-0`}>
           Send your study
           <ArrowRight size={14} weight="bold" />
         </a>

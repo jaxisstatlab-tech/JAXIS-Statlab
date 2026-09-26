@@ -88,10 +88,10 @@ export default function Navbar() {
         </ul>
 
         <div className="hidden items-center gap-2 justify-self-end lg:flex">
-          <a href={LOGIN_URL} className={`${btnGhost} h-9 border-transparent px-4 text-[13px]`}>
-            Log in
+          <a href={REGISTER_URL} data-cta="nav-register" className={`${btnGhost} h-9 border-transparent px-4 text-[13px]`}>
+            Register
           </a>
-          <a href={REGISTER_URL} data-cta="nav-send" className={`${btnPrimary} h-9 px-4 text-[13px]`}>
+          <a href={LOGIN_URL} data-cta="nav-send" className={`${btnPrimary} h-9 px-4 text-[13px]`}>
             Send your study
           </a>
         </div>
@@ -123,10 +123,10 @@ export default function Navbar() {
             ))}
           </ul>
           <div className="mt-8 grid grid-cols-2 gap-3">
-            <a href={LOGIN_URL} className={btnGhost}>
-              Log in
+            <a href={REGISTER_URL} data-cta="menu-register" className={btnGhost}>
+              Register
             </a>
-            <a href={REGISTER_URL} data-cta="menu-send" className={btnPrimary}>
+            <a href={LOGIN_URL} data-cta="menu-send" className={btnPrimary}>
               Send your study
             </a>
           </div>

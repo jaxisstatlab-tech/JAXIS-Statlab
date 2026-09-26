@@ -1,5 +1,5 @@
 import { Bank, Check, DeviceMobile, Star } from "@phosphor-icons/react/ssr";
-import { REGISTER_URL } from "@/lib/config";
+import { LOGIN_URL } from "@/lib/config";
 import Reveal from "../ui/Reveal";
 import {
   btnGhost,
@@ -172,7 +172,7 @@ export default function Pricing() {
                 </ul>
 
                 <a
-                  href={REGISTER_URL}
+                  href={LOGIN_URL}
                   data-cta={`pricing-${p.name.toLowerCase().replace(/\s+/g, "-")}`}
                   className={`${p.featured ? btnPrimary : btnGhost} mt-8 w-full`}
                 >

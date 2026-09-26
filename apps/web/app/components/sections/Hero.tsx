@@ -1,5 +1,5 @@
 import { ArrowRight, ArrowUpRight } from "@phosphor-icons/react/ssr";
-import { REGISTER_URL } from "@/lib/config";
+import { LOGIN_URL } from "@/lib/config";
 import HeroPixels from "../ui/HeroPixels";
 import PixelField from "../ui/PixelField";
 import DecryptedText from "../ui/DecryptedText";
@@ -41,7 +41,7 @@ export default function Hero() {
         </p>
 
         <div className="hero-in mt-9 flex flex-wrap items-center justify-center gap-6" style={{ animationDelay: "240ms" }}>
-          <a href={REGISTER_URL} data-cta="hero-send" className={btnPrimary}>
+          <a href={LOGIN_URL} data-cta="hero-send" className={btnPrimary}>
             Send your study
             <ArrowRight size={15} weight="bold" />
           </a>

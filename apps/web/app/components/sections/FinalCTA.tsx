@@ -22,13 +22,13 @@ export default function FinalCTA() {
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-6">
             <Magnet>
-              <a href={REGISTER_URL} data-cta="final-send" className={`${btnPrimary} h-11 px-6`}>
+              <a href={LOGIN_URL} data-cta="final-send" className={`${btnPrimary} h-11 px-6`}>
                 Send your study
                 <ArrowRight size={15} weight="bold" />
               </a>
             </Magnet>
-            <a href={LOGIN_URL} className={linkArrow}>
-              Log in to your study
+            <a href={REGISTER_URL} data-cta="final-register" className={linkArrow}>
+              Create an account
               <ArrowUpRight size={14} weight="bold" />
             </a>
           </div>

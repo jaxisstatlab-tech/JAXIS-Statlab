@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ArrowRight, Broom, ChartBar, Code, Graph, Microphone, TextAlignLeft, UsersThree } from "@phosphor-icons/react/ssr";
 import type { Icon } from "@phosphor-icons/react";
-import { REGISTER_URL } from "@/lib/config";
+import { LOGIN_URL } from "@/lib/config";
 import { BELL_SHAPES, IsoScene } from "../ui/Iso";
 import Reveal from "../ui/Reveal";
 import SpotlightGrid from "../ui/SpotlightGrid";
@@ -80,7 +80,7 @@ export default function Services() {
             <h2 className={heading}>Every test your study needs</h2>
             <p className={subtitle}>From a quick data check to full structural models. Checked twice, explained simply.</p>
           </div>
-          <a href={REGISTER_URL} data-cta="services-send" className={`${btnPrimary} shrink-0`}>
+          <a href={LOGIN_URL} data-cta="services-send" className={`${btnPrimary} shrink-0`}>
             Send your study
           </a>
         </Reveal>
