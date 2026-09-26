@@ -1,5 +1,5 @@
 // Copy for /about. Everything here restates how JAXIS already works (site copy and apps/app/docs);
-// no made-up milestones. TEAM holds placeholder profiles until real names, bios, and photos are ready.
+// no made-up milestones. CORE_TEAM and EXPERT_TEAM are the real team, in the order they appear.
 
 export const NUMBERS: {
   to: number;
@@ -61,25 +61,84 @@ export const SPECIALTIES = [
   "Time series",
 ];
 
-// `photo` is a path under /public, e.g. "/team/jane-dela-cruz.jpg" (square, at least 160x160).
-// Cards without a photo show a neutral person icon.
+// `photo` is a path under /public (square headshot). Cards without a photo show a neutral person icon.
 export type TeamMember = {
   name: string;
   role: string;
-  bio: string;
+  bio?: string;
   photo?: string;
 };
 
-// PLACEHOLDERS: swap in real names, bios, and photos (with each person's permission) before launch.
-const PLACEHOLDER_BIO =
-  "Short bio goes here: background, degree, and the kinds of analysis they know best.";
-export const TEAM: TeamMember[] = [
-  { name: "Full name", role: "Founder & CEO", bio: PLACEHOLDER_BIO },
-  { name: "Full name", role: "Study coordinator", bio: PLACEHOLDER_BIO },
-  { name: "Full name", role: "Senior reviewer", bio: PLACEHOLDER_BIO },
-  { name: "Full name", role: "Senior statistician", bio: PLACEHOLDER_BIO },
-  { name: "Full name", role: "Statistician", bio: PLACEHOLDER_BIO },
-  { name: "Full name", role: "Finance", bio: PLACEHOLDER_BIO },
+export const CORE_TEAM: TeamMember[] = [
+  {
+    name: "Jerome P. Gallego",
+    role: "Chief Executive Officer & Founder",
+    bio: "BS Mathematics graduate with a minor in Statistics, currently pursuing a Master of Science in Mathematics.",
+    photo: "/team/Jerome.jpg",
+  },
+  {
+    name: "Barth Bryan D. Sercena",
+    role: "Chief Technological Officer & Co-founder",
+    bio: "Leads technology and product at JAXIS StatLab, overseeing platform architecture, data security, and the systems that support every study from request to delivery.",
+    photo: "/team/Barth.jpg",
+  },
+];
+
+export const EXPERT_TEAM: TeamMember[] = [
+  {
+    name: "Jobelle S. Sorino-Simblante",
+    role: "Statistical Review Editor",
+    bio: "BS Statistics and MS Statistics graduate, currently pursuing a doctoral degree in Statistics.",
+    photo: "/team/Jobelle.jpg",
+  },
+  {
+    name: "Kim Lenard Ric T. Claro",
+    role: "Fellow Statistical Analyst",
+    bio: "BS Mathematics graduate with a minor in Statistics.",
+    photo: "/team/Kim.jpg",
+  },
+  {
+    name: "Negie C. Sudario",
+    role: "Fellow Statistical Analyst",
+    bio: "BS Mathematics graduate with a minor in Statistics, currently pursuing a Master of Science in Mathematics.",
+    photo: "/team/Negie.jpg",
+  },
+  {
+    name: "Bienuel Esmeralda",
+    role: "Fellow Statistical Analyst",
+    bio: "BS Mathematics graduate with a minor in Statistics.",
+    photo: "/team/Bienuel.jpg",
+  },
+  {
+    name: "Karla Giselle R. Santos",
+    role: "Associate Statistical Analyst",
+    bio: "BS Mathematics graduate with a minor in Statistics.",
+    photo: "/team/Karla.jpg",
+  },
+  {
+    name: "Aigen Fe Torres",
+    role: "Associate Statistical Analyst",
+    bio: "BS Mathematics graduate with a minor in Statistics.",
+    photo: "/team/Aigen.jpg",
+  },
+  {
+    name: "Akeem V. Eviota",
+    role: "Affiliate Statistical Analyst",
+    bio: "Currently pursuing BS Mathematics with a minor in Statistics.",
+    photo: "/team/Akeem.jpg",
+  },
+  {
+    name: "Axel D. Laurie",
+    role: "Affiliate Statistical Analyst",
+    bio: "Currently pursuing BS Mathematics with a minor in Statistics.",
+    photo: "/team/Axel.jpg",
+  },
+  {
+    name: "Antonia B. Ytang",
+    role: "Affiliate Statistical Analyst",
+    bio: "Currently pursuing BS Mathematics with a minor in Statistics.",
+    photo: "/team/Antonia.jpg",
+  },
 ];
 
 export type Milestone = { year: string; title: string; body: string };

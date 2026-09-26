@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -14,11 +15,13 @@ import {
 import type { Icon } from "@phosphor-icons/react";
 import { LOGIN_URL } from "@/lib/config";
 import {
+  CORE_TEAM,
+  EXPERT_TEAM,
   NUMBERS,
   SPECIALTIES,
   STORY,
-  TEAM,
   VALUES,
+  type TeamMember,
   type Value,
 } from "../../content/about";
 import CountUp from "../ui/CountUp";
@@ -239,6 +242,49 @@ export function AboutValues() {
   );
 }
 
+function TeamGroup({
+  label,
+  count,
+  className = "",
+  children,
+}: {
+  label: string;
+  count: number;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={className}>
+      <h3 className="mb-6 flex items-baseline gap-3 border-t border-white/10 pt-5 font-mono text-[11px] uppercase tracking-wider text-white/55">
+        {label}
+        <span className="text-white/30">{String(count).padStart(2, "0")}</span>
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+// Square headshot: black and white at rest, colour on hover (all photos share one studio backdrop).
+function TeamPhoto({ member, sizes }: { member: TeamMember; sizes: string }) {
+  return (
+    <div className="relative aspect-square overflow-hidden rounded-[2px] bg-[#0B0B1E]">
+      {member.photo ? (
+        <Image
+          src={member.photo}
+          alt={`${member.name}, ${member.role}`}
+          fill
+          sizes={sizes}
+          className="object-cover grayscale transition-[filter,transform] duration-500 ease-out group-hover:scale-[1.03] group-hover:grayscale-0"
+        />
+      ) : (
+        <span aria-hidden="true" className="absolute inset-0 flex items-end justify-center">
+          <User size={120} weight="fill" className="translate-y-[18%] text-white/[0.07]" />
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function AboutTeam() {
   return (
     <section className="py-20 lg:py-28">
@@ -249,50 +295,68 @@ export function AboutTeam() {
             The people behind your study
           </h2>
           <p className={subtitle}>
-            The statisticians, reviewers, and staff who handle your study from
-            request to delivery.
+            Mathematicians and statisticians who run, check, and explain your
+            analysis from request to delivery.
           </p>
         </Reveal>
 
-        <div className="mt-12 grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-          {TEAM.map((m, i) => (
-            <Reveal
-              key={`${m.role}-${i}`}
-              delay={(i % 3) * 80}
-              className="group"
-            >
-              <div className="relative aspect-[4/3] overflow-hidden rounded-[2px] bg-[#0B0B1E]">
-                {m.photo ? (
-                  <Image
-                    src={m.photo}
-                    alt={m.name}
-                    fill
-                    sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
-                    className="object-cover grayscale transition-[filter,transform] duration-500 ease-out group-hover:scale-[1.02] group-hover:grayscale-0"
-                  />
-                ) : (
-                  <span
-                    aria-hidden="true"
-                    className="absolute inset-0 flex items-end justify-center"
-                  >
-                    <User
-                      size={168}
-                      weight="fill"
-                      className="translate-y-[18%] text-white/[0.07]"
-                    />
-                  </span>
-                )}
-              </div>
-              <p className="mt-5 font-sans text-[15px] font-bold leading-snug text-white">
-                {m.name},{" "}
-                <span className="font-bold text-white/85">{m.role}</span>
-              </p>
-              <p className="mt-3 max-w-sm font-sans text-sm leading-relaxed text-white/60">
-                {m.bio}
-              </p>
-            </Reveal>
-          ))}
-        </div>
+        <TeamGroup label="Core team" count={CORE_TEAM.length} className="mt-14">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {CORE_TEAM.map((m, i) => (
+              <Reveal
+                key={m.name}
+                delay={i * 80}
+                className={`${card} group grid grid-cols-[8.5rem_1fr] items-center gap-5 p-4 sm:grid-cols-[13rem_1fr] sm:gap-7 sm:p-5`}
+              >
+                <TeamPhoto
+                  member={m}
+                  sizes="(min-width: 640px) 208px, 136px"
+                />
+                <div className="min-w-0">
+                  <h4 className="font-sans text-lg font-semibold leading-snug tracking-[-0.02em] text-white">
+                    {m.name}
+                  </h4>
+                  <p className="mt-1 font-mono text-[11px] uppercase tracking-wider text-[#FFA040]">
+                    {m.role}
+                  </p>
+                  {m.bio ? (
+                    <p className="mt-3 font-sans text-sm leading-relaxed text-white/60">
+                      {m.bio}
+                    </p>
+                  ) : null}
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </TeamGroup>
+
+        <TeamGroup label="Expert team" count={EXPERT_TEAM.length} className="mt-14">
+          {/* 3 x 3 on desktop: compact cards, photo beside the text */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {EXPERT_TEAM.map((m, i) => (
+              <Reveal
+                key={m.name}
+                delay={(i % 3) * 70}
+                className={`${card} group grid grid-cols-[7rem_1fr] items-start gap-4 p-4 sm:grid-cols-[8.5rem_1fr] sm:gap-5`}
+              >
+                <TeamPhoto member={m} sizes="(min-width: 640px) 136px, 112px" />
+                <div className="min-w-0 pt-0.5">
+                  <h4 className="font-sans text-[15px] font-semibold leading-snug text-white">
+                    {m.name}
+                  </h4>
+                  <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-white/55">
+                    {m.role}
+                  </p>
+                  {m.bio ? (
+                    <p className="mt-2 font-sans text-[13px] leading-relaxed text-white/55">
+                      {m.bio}
+                    </p>
+                  ) : null}
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </TeamGroup>
 
         <Reveal className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-8 lg:flex-row lg:items-center lg:gap-10">
           <span className="shrink-0 font-mono text-[11px] uppercase tracking-wider text-white/55">
