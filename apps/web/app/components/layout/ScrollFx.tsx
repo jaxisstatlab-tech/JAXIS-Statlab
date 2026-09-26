@@ -6,6 +6,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
+// Phones resize the viewport as the address bar shows and hides; recalculating then makes the page jump.
+ScrollTrigger.config({ ignoreMobileResize: true });
 
 // Scroll-driven effects, wired by data attributes so sections stay server-rendered:
 //   [data-split]          heading lines slide up out of a mask when scrolled into view

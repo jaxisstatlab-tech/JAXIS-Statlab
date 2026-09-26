@@ -5,8 +5,8 @@ import { Analytics } from "@vercel/analytics/next";
 import CtaTracker from "./components/layout/CtaTracker";
 import Intro from "./components/layout/Intro";
 import ExitCurtain from "./components/layout/ExitCurtain";
+import AnchorScroll from "./components/layout/AnchorScroll";
 import { APP_URL } from "@/lib/config";
-import SmoothScroll from "./components/layout/SmoothScroll";
 
 const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -67,22 +67,24 @@ export const metadata: Metadata = {
   },
 };
 
-// Runs before paint: a refresh always starts at the top, while fresh visits to a #link still jump to it.
 // Play the intro once per session; skip it on repeat loads or when reduced motion is requested.
 const INTRO_GATE = `(function(){var h=document.documentElement;try{if(sessionStorage.getItem("jx-intro")||matchMedia("(prefers-reduced-motion: reduce)").matches){h.dataset.intro="skip";}else{sessionStorage.setItem("jx-intro","1");window.addEventListener("load",function(){setTimeout(function(){h.dataset.intro="done";},2200);});}}catch(e){h.dataset.intro="skip";}})();`;
 
 // If page scripts are slow or fail, reveal content anyway instead of leaving it invisible.
 const REVEAL_FALLBACK = `window.addEventListener("load",function(){setTimeout(function(){var h=document.documentElement;if(!h.classList.contains("reveal-ready"))h.classList.add("reveal-fallback");},1500);});`;
 
+// Only for a refresh: take over scroll position long enough to start at the top, then hand scroll
+// memory back to the browser so Back and Forward return to where you were.
 const SCROLL_TO_TOP_ON_RELOAD = `(function(){try{
-if("scrollRestoration" in history)history.scrollRestoration="manual";
 var n=performance.getEntriesByType("navigation")[0];
 if(!n||n.type!=="reload")return;
-if(location.hash)history.replaceState(null,"",location.pathname+location.search);
+var hs=history,can="scrollRestoration" in hs;
+if(can)hs.scrollRestoration="manual";
+if(location.hash)hs.replaceState(null,"",location.pathname+location.search);
 var top=function(){var h=document.documentElement,b=h.style.scrollBehavior;h.style.scrollBehavior="auto";window.scrollTo(0,0);h.style.scrollBehavior=b;};
 top();
 document.addEventListener("DOMContentLoaded",top,{once:true});
-window.addEventListener("load",function(){top();requestAnimationFrame(top);},{once:true});
+window.addEventListener("load",function(){top();requestAnimationFrame(function(){top();if(can)hs.scrollRestoration="auto";});},{once:true});
 }catch(e){}})();`;
 
 export default function RootLayout({
@@ -149,7 +151,7 @@ export default function RootLayout({
         <Intro />
         <ExitCurtain />
         {children}
-        <SmoothScroll />
+        <AnchorScroll />
         <CtaTracker />
         <Analytics />
       </body>

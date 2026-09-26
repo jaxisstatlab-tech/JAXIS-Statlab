@@ -1,7 +1,7 @@
 import { ArrowRight, ArrowUpRight } from "@phosphor-icons/react/ssr";
 import { LOGIN_URL, REGISTER_URL } from "@/lib/config";
+import CtaField from "../ui/CtaField";
 import HorizonTracker from "../ui/HorizonTracker";
-import Magnet from "../ui/Magnet";
 import Reveal from "../ui/Reveal";
 import { btnPrimary, container, linkArrow } from "../ui/styles";
 
@@ -10,6 +10,7 @@ const PROMISES = ["Free account", "Written price in 24 hours", "Pay by GCash or 
 export default function FinalCTA() {
   return (
     <section id="final-cta" className="relative overflow-hidden pb-48 pt-24 lg:pb-56 lg:pt-32">
+      <CtaField />
       <HorizonTracker />
       <div className={`${container} relative text-center`}>
         <Reveal>
@@ -21,12 +22,10 @@ export default function FinalCTA() {
             Get a fixed written price within 24 hours. It&apos;s free to ask.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-6">
-            <Magnet>
-              <a href={LOGIN_URL} data-cta="final-send" className={`${btnPrimary} h-11 px-6`}>
-                Send your study
-                <ArrowRight size={15} weight="bold" />
-              </a>
-            </Magnet>
+            <a href={LOGIN_URL} data-cta="final-send" className={`${btnPrimary} h-11 px-6`}>
+              Send your study
+              <ArrowRight size={15} weight="bold" />
+            </a>
             <a href={REGISTER_URL} data-cta="final-register" className={linkArrow}>
               Create an account
               <ArrowUpRight size={14} weight="bold" />

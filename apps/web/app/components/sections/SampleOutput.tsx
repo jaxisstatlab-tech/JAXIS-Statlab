@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SAMPLE_OUTPUT_URL } from "@/lib/config";
 import { FILE_CODE, FILE_DATA, FILE_DEFENSE, FILE_WRITEUP, IsoScene, type IsoShape } from "../ui/Iso";
 import Reveal from "../ui/Reveal";
@@ -96,9 +97,9 @@ export default function SampleOutput() {
               Download a full sample
             </a>
           ) : (
-            <a href="#pricing" className={`${btnGhost} shrink-0`}>
+            <Link href="/pricing" className={`${btnGhost} shrink-0`}>
               See pricing
-            </a>
+            </Link>
           )}
         </Reveal>
 

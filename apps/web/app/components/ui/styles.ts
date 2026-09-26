@@ -11,6 +11,9 @@ export const container = "w-full max-w-[90rem] mx-auto px-6 lg:px-8";
 export const kicker = "font-mono text-xs uppercase tracking-[0.15em] font-medium text-white/55 mb-3";
 export const heading =
   "font-sans text-2xl sm:text-3xl lg:text-[2rem] font-medium text-white tracking-[-0.03em] leading-tight";
+// Page-level h1 on dedicated pages (pricing, services, FAQ)
+export const pageTitle =
+  "font-sans text-3xl sm:text-4xl lg:text-[2.75rem] font-medium text-white tracking-[-0.035em] leading-[1.05]";
 export const subtitle = "font-mono text-xs sm:text-sm text-white/60 mt-3 max-w-3xl leading-relaxed";
 export const cardTitle = "font-sans text-base sm:text-lg font-medium text-white tracking-[-0.02em]";
 export const cardDesc = "font-mono text-xs text-white/60 leading-relaxed";

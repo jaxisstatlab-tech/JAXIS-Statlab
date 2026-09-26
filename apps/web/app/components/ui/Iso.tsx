@@ -366,6 +366,113 @@ function bellShapes(): IsoShape[] {
 
 export const BELL_SHAPES: IsoShape[] = bellShapes();
 
+// A bell curve pulled out into a thick ribbon: the curve runs along x (toward the lower right of the
+// screen), the ribbon's width along y. Quads are shaded by a light from the upper left and drawn back
+// to front, with the ribbon's front edge given a solid wall so it reads as a sheet with thickness.
+function ribbonShapes(): IsoShape[] {
+  const length = 620;
+  const width = 170;
+  const height = 250;
+  const thickness = 14;
+  const nx = 72;
+  const ny = 12;
+  const peak = 0.46;
+  const spread = 0.12;
+  const z = (x: number) => height * Math.exp(-(((x / length - peak) / spread) ** 2) / 2) + 6;
+
+  const L = (() => {
+    const l = [-0.35, 0.55, 0.75];
+    const m = Math.hypot(l[0]!, l[1]!, l[2]!);
+    return l.map((c) => c / m) as [number, number, number];
+  })();
+  const dark = [9, 20, 42];
+  const warm = [240, 120, 10];
+  const color = (t: number, k: number) =>
+    `rgb(${dark.map((c, idx) => Math.round(Math.min(255, (c + (warm[idx]! - c) * t) * k))).join(",")})`;
+  const shade = (p: Point[]) => {
+    const d1 = [p[2]![0] - p[0]![0], p[2]![1] - p[0]![1], p[2]![2] - p[0]![2]];
+    const d2 = [p[3]![0] - p[1]![0], p[3]![1] - p[1]![1], p[3]![2] - p[1]![2]];
+    const n = [d1[1]! * d2[2]! - d1[2]! * d2[1]!, d1[2]! * d2[0]! - d1[0]! * d2[2]!, d1[0]! * d2[1]! - d1[1]! * d2[0]!];
+    const m = Math.hypot(n[0]!, n[1]!, n[2]!) || 1;
+    return Math.abs((n[0]! * L[0] + n[1]! * L[1] + n[2]! * L[2]) / m);
+  };
+  // Ends of the ribbon fade in and out so it has no hard start or stop.
+  const endFade = (x: number) => Math.min(1, x / (length * 0.1), (length - x) / (length * 0.08));
+
+  const parts: { key: number; shape: PolyShape }[] = [];
+  for (let i = 0; i < nx; i++) {
+    const x0 = (length * i) / nx;
+    const x1 = (length * (i + 1)) / nx;
+    const lift = Math.min(1, (z((x0 + x1) / 2) - 6) / height);
+    const fade = endFade((x0 + x1) / 2);
+    if (fade <= 0.02) continue;
+    const t = 0.3 + 0.7 * lift ** 0.8;
+    for (let j = 0; j < ny; j++) {
+      const y0 = (width * j) / ny;
+      const y1 = (width * (j + 1)) / ny;
+      const pts: Point[] = [
+        [x0, y0, z(x0)],
+        [x1, y0, z(x1)],
+        [x1, y1, z(x1)],
+        [x0, y1, z(x0)],
+      ];
+      const k = 0.35 + 0.85 * shade(pts);
+      parts.push({
+        key: i + j * 0.001,
+        shape: {
+          kind: "poly",
+          points: pts,
+          fill: color(t, k),
+          stroke: `rgba(255,205,150,${(0.06 + 0.2 * lift).toFixed(2)})`,
+          width: 0.55,
+          opacity: Number(fade.toFixed(2)),
+        },
+      });
+    }
+    // Front wall along y = width gives the sheet its thickness: a solid band (stroked in its own
+    // fill so neighbouring segments don't show seams) topped by one bright edge line.
+    const wallFill = color(t * 0.9, 0.5);
+    parts.push({
+      key: i + 0.9,
+      shape: {
+        kind: "poly",
+        points: [
+          [x0, width, z(x0)],
+          [x1, width, z(x1)],
+          [x1, width, z(x1) - thickness],
+          [x0, width, z(x0) - thickness],
+        ],
+        fill: wallFill,
+        stroke: wallFill,
+        width: 0.6,
+        opacity: Number(fade.toFixed(2)),
+      },
+    });
+    parts.push({
+      key: i + 0.95,
+      shape: {
+        kind: "poly",
+        open: true,
+        points: [
+          [x0, width, z(x0)],
+          [x1, width, z(x1)],
+        ],
+        stroke: `rgba(255,200,140,${(0.25 + 0.6 * lift).toFixed(2)})`,
+        width: 1,
+        opacity: Number(fade.toFixed(2)),
+      },
+    });
+  }
+  parts.sort((a, b) => a.key - b.key);
+
+  return [
+    { kind: "glow", x: length * peak, y: width / 2, z: height * 0.75, r: 220, opacity: 0.4 },
+    ...parts.map((p) => p.shape),
+  ];
+}
+
+export const SURFACE_SHAPES: IsoShape[] = ribbonShapes();
+
 const INK_LINE = "rgba(58,26,0,0.7)";
 const PAPER_LINE = "rgba(255,255,255,0.16)";
 

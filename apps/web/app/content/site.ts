@@ -1,5 +1,8 @@
-export const FAQS = [
+export type Faq = { q: string; a: string; pricing?: boolean };
+
+export const FAQS: Faq[] = [
   {
+    pricing: true,
     q: "How fast will I get my analysis?",
     a: "Most thesis and survey studies take 3 to 7 working days. Structural models, medical studies, and multi-wave data take 2 to 3 weeks. If you are close to your deadline, you can add 3-day, 48-hour, or 24-hour delivery.",
   },
@@ -8,6 +11,7 @@ export const FAQS = [
     a: "JAXIS is a statistical consulting service, the same kind of help many universities offer through their own statistics centers. Your research questions, data, and conclusions stay yours. We run and explain the analysis so you understand it and can defend it. Check your school's rules, and let your adviser know you worked with a statistician.",
   },
   {
+    pricing: true,
     q: "What if my adviser or panel asks for changes?",
     a: "Changes within your agreed scope are free. If your adviser asks for different tables, clearer explanations, or extra checks on the same analysis, we update your files at no cost. New tests outside the scope get their own price first.",
   },
@@ -28,6 +32,17 @@ export const FAQS = [
     a: "APA 7th edition tables ready for Word, a plain-English write-up of your findings, your cleaned dataset (.sav or .csv), and the full code in R, Python, or SPSS so the results can be rerun.",
   },
   {
+    pricing: true,
+    q: "Is the price I see the price I pay?",
+    a: "The prices on the pricing page are starting points. After you send your study, we reply with a fixed written price for your exact scope. That written price is final, with no surprise fees later.",
+  },
+  {
+    pricing: true,
+    q: "How do I pay?",
+    a: "You can pay by GCash or bank transfer. DataCheck and Start are paid upfront. Larger plans pay a deposit first, then the rest on delivery.",
+  },
+  {
+    pricing: true,
     q: "How do I get started?",
     a: "Create a free account, then send your statement of the problem, method, and data. We reply within 24 hours with a fixed written scope and price. There is no payment or commitment needed to get your price.",
   },

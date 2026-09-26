@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "@phosphor-icons/react/ssr";
 import { LOGIN_URL } from "@/lib/config";
 import HeroPixels from "../ui/HeroPixels";
@@ -14,19 +15,23 @@ export default function Hero() {
       </HeroPixels>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-[#010114] to-transparent" />
 
-      <div className={`${container} relative flex min-h-dvh flex-col items-center justify-center pb-16 pt-28 text-center`}>
+      <div className={`${container} relative flex min-h-svh flex-col items-center justify-center pb-16 pt-28 text-center`}>
         <div className="hero-in inline-flex items-center gap-2 font-mono text-xs text-white/70">
           <span className="h-1.5 w-1.5 rounded-full bg-[#CC6600]" />
           <DecryptedText text="jaxis.analyze(your_study)" delay={350} />
         </div>
 
         <h1
-          className="hero-in mt-6 max-w-4xl font-sans text-[2.6rem] font-medium leading-[1.05] tracking-[-0.04em] text-white sm:text-6xl lg:text-[4rem]"
+          className="hero-in mt-6 max-w-4xl font-sans text-[2.3rem] font-medium leading-[1.05] tracking-[-0.04em] text-white sm:text-6xl lg:text-[4rem]"
           style={{ ["--d" as string]: "80ms" }}
         >
           <span className="sr-only">Thesis, survey, dissertation, and research statistics, checked by experts</span>
           <span aria-hidden="true">
-            <RotatingWord words={["Thesis", "Survey", "Dissertation", "Research"]} className="text-[#FFA040]" /> statistics,
+            {/* Below lg the longest word can't share a line with "statistics,", so the word always gets
+                its own line there; the line count then stays the same whichever word is showing. */}
+            <RotatingWord words={["Thesis", "Survey", "Dissertation", "Research"]} className="text-[#FFA040]" />{" "}
+            <br className="lg:hidden" />
+            statistics,
             <br />
             checked by experts
           </span>
@@ -45,10 +50,10 @@ export default function Hero() {
             Send your study
             <ArrowRight size={15} weight="bold" />
           </a>
-          <a href="#pricing" className={linkArrow}>
+          <Link href="/pricing" className={linkArrow}>
             See pricing
             <ArrowUpRight size={14} weight="bold" />
-          </a>
+          </Link>
         </div>
       </div>
     </section>

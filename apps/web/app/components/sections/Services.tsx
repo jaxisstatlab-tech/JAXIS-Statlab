@@ -244,13 +244,6 @@ export default function Services() {
             </Tile>
           </div>
         </SpotlightGrid>
-
-        <Reveal className="mt-6 flex justify-end">
-          <a href="#how-it-works" className="inline-flex items-center gap-1.5 font-mono text-xs text-white/60 transition-colors hover:text-white">
-            See how a study moves from request to delivery
-            <ArrowRight size={13} weight="bold" />
-          </a>
-        </Reveal>
       </div>
     </section>
   );

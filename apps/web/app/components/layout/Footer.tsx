@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { ChatCircleDots, Envelope, FacebookLogo, MapPin } from "@phosphor-icons/react/ssr";
 import { BUSINESS_REGISTRATION, CONTACT_EMAIL, FACEBOOK_URL, LOGIN_URL, MESSENGER_URL, REGISTER_URL } from "@/lib/config";
 import { container } from "../ui/styles";
@@ -7,19 +8,21 @@ const COLUMNS = [
   {
     title: "Services",
     links: [
-      { label: "Hypothesis testing", href: "#services" },
-      { label: "Data cleaning", href: "#services" },
-      { label: "Advanced models", href: "#services" },
-      { label: "DefenseLab", href: "#defenselab" },
+      { label: "Hypothesis testing", href: "/#services" },
+      { label: "Data cleaning", href: "/#services" },
+      { label: "Advanced models", href: "/#services" },
+      { label: "DefenseLab", href: "/#services" },
     ],
   },
   {
     title: "Company",
     links: [
-      { label: "How it works", href: "#how-it-works" },
-      { label: "Quality checks", href: "#quality" },
-      { label: "Pricing", href: "#pricing" },
-      { label: "FAQ", href: "#faq" },
+      { label: "About", href: "/about" },
+      { label: "How it works", href: "/#how-it-works" },
+      { label: "Quality checks", href: "/about#quality" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "Contact", href: "/contact" },
+      { label: "FAQ", href: "/contact#faq" },
     ],
   },
   {
@@ -29,14 +32,23 @@ const COLUMNS = [
       { label: "Create an account", href: REGISTER_URL },
     ],
   },
+  {
+    title: "Legal",
+    links: [
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Service", href: "/terms" },
+    ],
+  },
 ];
+
+const linkClass = "font-sans text-[13px] text-white/60 transition-colors hover:text-white";
 
 export default function Footer() {
   return (
     <footer className="relative border-t border-white/[0.08] bg-[#010114] pb-10 pt-16">
       <div className={container}>
         <div className="grid grid-cols-2 gap-10 md:grid-cols-12">
-          <div className="col-span-2 md:col-span-5">
+          <div className="col-span-2 md:col-span-4">
             <div className="flex items-center gap-2.5">
               <Image src="/jaxislogo.png" alt="" width={22} height={22} className="h-[22px] w-[22px]" />
               <span className="font-sans text-[15px] font-semibold text-white">
@@ -76,9 +88,16 @@ export default function Footer() {
               <ul className="mt-4 flex flex-col gap-2.5">
                 {c.links.map((l) => (
                   <li key={l.label}>
-                    <a href={l.href} className="font-sans text-[13px] text-white/60 transition-colors hover:text-white">
-                      {l.label}
-                    </a>
+                    {/* Pages on this site navigate in place; account links go to the app. */}
+                    {l.href.startsWith("/") ? (
+                      <Link href={l.href} className={linkClass}>
+                        {l.label}
+                      </Link>
+                    ) : (
+                      <a href={l.href} className={linkClass}>
+                        {l.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
