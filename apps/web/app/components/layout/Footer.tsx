@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChatCircleDots, Envelope, FacebookLogo, MapPin } from "@phosphor-icons/react/ssr";
 import { BUSINESS_REGISTRATION, CONTACT_EMAIL, FACEBOOK_URL, LOGIN_URL, MESSENGER_URL, REGISTER_URL } from "@/lib/config";
 import { container } from "../ui/styles";
+import CookieSettingsButton from "./CookieSettingsButton";
 
 const COLUMNS = [
   {
@@ -106,9 +107,12 @@ export default function Footer() {
         </div>
 
         <div className="mt-14 flex flex-col gap-3 border-t border-white/[0.08] pt-6 font-mono text-[11px] text-white/55 sm:flex-row sm:justify-between">
-          <span>
-            © 2026 JAXIS StatLab. All rights reserved.
-            {BUSINESS_REGISTRATION ? <span className="sm:ml-3">{BUSINESS_REGISTRATION}</span> : null}
+          <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span>
+              © 2026 JAXIS StatLab. All rights reserved.
+              {BUSINESS_REGISTRATION ? <span className="sm:ml-3">{BUSINESS_REGISTRATION}</span> : null}
+            </span>
+            <CookieSettingsButton className="underline decoration-white/20 underline-offset-4 transition-colors hover:text-white" />
           </span>
           <span>Every study is checked by two statisticians.</span>
         </div>

@@ -59,7 +59,7 @@ export function GoogleSignInButton({
       disabled={isLoading || temporarilyUnavailable}
       title={temporarilyUnavailable ? "Google sign-in is coming soon. For now, use your email and password." : undefined}
       aria-describedby={temporarilyUnavailable ? "google-soon" : undefined}
-      className={`relative flex h-12 w-full items-center justify-center gap-3 rounded-[2px] border px-4 font-sans text-sm font-medium outline-none transition-[background-color,border-color,color,transform] duration-150 ease-out ${
+      className={`auth-google relative flex h-12 w-full items-center justify-center gap-3 rounded-[2px] border px-4 font-sans text-sm font-medium outline-none transition-[background-color,border-color,color,transform] duration-150 ease-out ${
         temporarilyUnavailable
           ? "cursor-not-allowed select-none border-white/10 bg-white/[0.02] text-white/45"
           : "cursor-pointer border-white/15 bg-white/[0.03] text-white hover:border-white/30 hover:bg-white/[0.06] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"

@@ -23,13 +23,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <BackToWebsiteButton />
         </header>
 
-        <div className="mx-auto my-auto flex w-full max-w-[400px] flex-col gap-6 py-6">
+        <div className="auth-shell-content mx-auto my-auto flex w-full max-w-[400px] flex-col gap-6 py-6">
           <AuthModeTabs />
 
           {children}
         </div>
 
-        <footer className="flex w-full flex-shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-white/[0.08] pt-5 font-mono text-[11px] text-white/45">
+        <footer className="auth-shell-footer flex w-full flex-shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-white/[0.08] pt-5 font-mono text-[11px] text-white/45">
           <span>© 2026 JAXIS StatLab</span>
           <span className="flex items-center gap-4">
             <a href={SITE_PRIVACY_URL} className="!text-white/45 transition-colors hover:!text-white">

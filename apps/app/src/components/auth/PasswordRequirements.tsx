@@ -48,7 +48,7 @@ export function PasswordRequirements({ password, className = "" }: PasswordRequi
               {LABELS[met]}
             </span>
           </div>
-          <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+          <ul className="pw-rules grid grid-cols-2 gap-x-3 gap-y-1.5">
             {requirements.map((req) => (
               <li
                 key={req.label}

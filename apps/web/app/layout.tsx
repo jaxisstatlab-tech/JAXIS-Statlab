@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
 import CtaTracker from "./components/layout/CtaTracker";
+import ConsentBanner from "./components/layout/ConsentBanner";
+import ConsentedAnalytics from "./components/layout/ConsentedAnalytics";
 import Intro from "./components/layout/Intro";
 import ExitCurtain from "./components/layout/ExitCurtain";
 import AnchorScroll from "./components/layout/AnchorScroll";
@@ -153,7 +154,8 @@ export default function RootLayout({
         {children}
         <AnchorScroll />
         <CtaTracker />
-        <Analytics />
+        <ConsentedAnalytics />
+        <ConsentBanner />
       </body>
     </html>
   );

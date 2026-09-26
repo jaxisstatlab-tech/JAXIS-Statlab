@@ -25,7 +25,7 @@ export default function MobileCTA() {
   return (
     <div
       aria-hidden={!visible}
-      className={`fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#010114]/90 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-md transition-transform duration-300 ease-out lg:hidden ${
+      className={`mobile-cta fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#010114]/90 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-md transition-transform duration-300 ease-out lg:hidden ${
         visible ? "translate-y-0" : "translate-y-full"
       }`}
     >

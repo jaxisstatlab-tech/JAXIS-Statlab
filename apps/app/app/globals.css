@@ -941,3 +941,46 @@ input::-ms-clear {
 .auth-stagger .pointer-events-none {
   transition: color 150ms ease;
 }
+
+/* Short desktop screens (laptops around 768px tall): tighten the sign-in form so it fits without scrolling */
+@media (min-width: 1024px) and (max-height: 820px) {
+  .auth-shell-content {
+    gap: 1rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+  .auth-shell-footer {
+    display: none;
+  }
+  .auth-stagger {
+    gap: 0.875rem;
+  }
+  .auth-stagger form {
+    gap: 0.625rem;
+  }
+  .auth-stagger .auth-sub {
+    display: none;
+  }
+  .auth-stagger form .gap-2\.5 {
+    gap: 0.375rem;
+  }
+  .auth-stagger input:not([type="checkbox"]) {
+    height: 2.625rem !important;
+  }
+  .auth-stagger .auth-google,
+  .auth-stagger button[type="submit"] {
+    height: 2.75rem !important;
+    min-height: 0 !important;
+  }
+  .auth-stagger .pw-rules {
+    grid-template-columns: repeat(4, auto);
+  }
+}
+@media (min-width: 1024px) and (max-height: 700px) {
+  .auth-stagger .pw-rules {
+    display: none;
+  }
+  .auth-stagger form {
+    gap: 0.5rem;
+  }
+}

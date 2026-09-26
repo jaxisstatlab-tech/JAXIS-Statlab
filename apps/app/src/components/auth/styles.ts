@@ -4,7 +4,7 @@
 // that beat Tailwind utilities. So spacing here comes from flex gaps on a wrapper, and link colours use `!`.
 export const authHeading = "flex flex-col gap-2";
 export const authTitle = "font-sans text-[1.75rem] font-medium leading-tight tracking-[-0.03em] text-white";
-export const authSubtitle = "font-sans text-sm leading-relaxed text-white/60";
+export const authSubtitle = "auth-sub font-sans text-sm leading-relaxed text-white/60";
 
 // Passed to FormInput's className: 44px tall fields (comfortable touch targets).
 export const authField =

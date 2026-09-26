@@ -3,7 +3,12 @@
 
 export type LegalBlock = string | { list: string[] };
 export type LegalSection = { id: string; title: string; blocks: LegalBlock[] };
-export type LegalDoc = { title: string; updated: string; intro: string; sections: LegalSection[] };
+export type LegalDoc = {
+  title: string;
+  updated: string;
+  intro: string;
+  sections: LegalSection[];
+};
 
 export const PRIVACY: LegalDoc = {
   title: "Privacy Policy",
@@ -22,7 +27,7 @@ export const PRIVACY: LegalDoc = {
             "Payment records: amounts paid and the GCash or bank transfer receipts you upload. We never ask for your GCash PIN or bank login.",
             "Messages you send to our team inside the platform.",
             "DefenseLab recordings, if you book a mock panel session.",
-            "Website visits: anonymous page-view counts through Vercel Analytics, which does not use cookies or identify you.",
+            "Website visits, only if you accept: anonymous page-view counts and button clicks through Vercel Analytics. It does not use cookies or identify you, and nothing is counted if you reject.",
           ],
         },
       ],
@@ -82,7 +87,8 @@ export const PRIVACY: LegalDoc = {
       id: "cookies",
       title: "Cookies and browser storage",
       blocks: [
-        "This website uses no advertising or tracking cookies. It saves small settings in your browser, like whether you have already seen the opening animation. The study platform uses a sign-in cookie to keep you logged in.",
+        'This website uses no advertising cookies. When you first visit, we ask whether we may count your visit anonymously; analytics only loads if you choose Accept. Your choice is saved in your browser for about 6 months, and you can change it anytime with "Cookie settings" at the bottom of every page.',
+        "We also save small settings in your browser, like whether you have already seen the opening animation. The study platform uses a sign-in cookie to keep you logged in; it is needed for the platform to work, so it is not optional.",
       ],
     },
     {
@@ -95,7 +101,9 @@ export const PRIVACY: LegalDoc = {
     {
       id: "contact",
       title: "Contact us",
-      blocks: ["Questions about your privacy? Email {email} and we will reply."],
+      blocks: [
+        "Questions about your privacy? Email {email} and we will reply.",
+      ],
     },
   ],
 };
