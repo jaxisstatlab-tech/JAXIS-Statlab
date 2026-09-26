@@ -54,6 +54,19 @@ body {
   }
 }
 
+/* No visible scrollbars anywhere on the site; scrolling itself (wheel, touch, keys) still works */
+html,
+body,
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 ::selection {
   background: rgba(204, 102, 0, 0.45);
   color: #fff;

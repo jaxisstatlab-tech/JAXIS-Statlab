@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import { getProviders, signIn } from "next-auth/react";
+import { GOOGLE_SIGN_IN_AVAILABLE } from "./availability";
+import { SoonTag } from "./SoonTag";
 
 interface GoogleSignInButtonProps {
   callbackUrl?: string;
@@ -12,9 +14,8 @@ interface GoogleSignInButtonProps {
   temporarilyUnavailable?: boolean;
 }
 
-// [TEMPORARY DOMAIN MAINTENANCE]: Set to true while custom domain is down.
-// Once app.jaxis-statlab.com is active again, simply flip this flag to false!
-const DOMAIN_MAINTENANCE_ACTIVE = true;
+// Switched off until the jaxis-statlab.com domain is live (see ./availability).
+const DOMAIN_MAINTENANCE_ACTIVE = !GOOGLE_SIGN_IN_AVAILABLE;
 
 export function GoogleSignInButton({
   callbackUrl = "/dashboard",
@@ -56,22 +57,19 @@ export function GoogleSignInButton({
       type="button"
       onClick={handleGoogleSignIn}
       disabled={isLoading || temporarilyUnavailable}
-      title={
+      title={temporarilyUnavailable ? "Google sign-in is coming soon. For now, use your email and password." : undefined}
+      aria-describedby={temporarilyUnavailable ? "google-soon" : undefined}
+      className={`relative flex h-12 w-full items-center justify-center gap-3 rounded-[2px] border px-4 font-sans text-sm font-medium outline-none transition-[background-color,border-color,color,transform] duration-150 ease-out ${
         temporarilyUnavailable
-          ? "Google sign-in is temporarily paused during domain maintenance. Please sign in with email and password."
-          : undefined
-      }
-      className={`w-full h-9 px-4 rounded-[2px] bg-[#01142B] border text-xs sm:text-sm font-sans font-semibold transition-all flex items-center justify-center gap-2.5 shadow-sm outline-none ${
-        temporarilyUnavailable
-          ? "opacity-55 cursor-not-allowed select-none border-white/10 text-white/50 bg-white/[0.02]"
-          : "hover:bg-white/[0.05] text-white/90 hover:text-white border-white/12 hover:border-white/25 cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+          ? "cursor-not-allowed select-none border-white/10 bg-white/[0.02] text-white/45"
+          : "cursor-pointer border-white/15 bg-white/[0.03] text-white hover:border-white/30 hover:bg-white/[0.06] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
       } ${className}`}
     >
       {isLoading ? (
-        <span className="h-4 w-4 border-2 border-white/20 border-t-[#CC6600] rounded-full animate-spin" />
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-[#CC6600]" />
       ) : (
         <svg
-          className={`w-4 h-4 flex-shrink-0 ${temporarilyUnavailable ? "opacity-60" : ""}`}
+          className={`h-[18px] w-[18px] flex-shrink-0 ${temporarilyUnavailable ? "opacity-40 grayscale" : ""}`}
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
@@ -93,14 +91,13 @@ export function GoogleSignInButton({
           />
         </svg>
       )}
-      <span>
-        {isRegister ? "Sign up with Google" : "Continue with Google"}
-        {temporarilyUnavailable && (
-          <span className="ml-1.5 text-[11px] font-normal text-white/40">
-            (Unavailable)
-          </span>
-        )}
-      </span>
+      <span>{isRegister ? "Sign up with Google" : "Continue with Google"}</span>
+      {temporarilyUnavailable && (
+        <span id="google-soon" className="absolute right-3 top-1/2 -translate-y-1/2">
+          <SoonTag />
+          <span className="sr-only">Google sign-in is coming soon.</span>
+        </span>
+      )}
     </button>
   );
 }

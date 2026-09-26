@@ -3,58 +3,47 @@ import Image from "next/image";
 import { AuthVisualShowcase } from "@/components/auth/AuthVisualShowcase";
 import { BackToWebsiteButton } from "@/components/auth/BackToWebsiteButton";
 import { AuthCurtain } from "@/components/auth/AuthCurtain";
+import { AuthModeTabs } from "@/components/auth/AuthModeTabs";
+import { SITE_PRIVACY_URL, SITE_TERMS_URL } from "@/lib/site";
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen w-full bg-[#010114] text-white flex flex-col lg:flex-row font-sans selection:bg-[#CC6600]/30 selection:text-white">
+    <div className="flex min-h-screen w-full flex-col bg-[#010114] font-sans text-white selection:bg-[#CC6600]/30 selection:text-white lg:flex-row">
       <AuthCurtain />
-      {/* ── Left Side: Focused Auth Form Desk ─────────── */}
-      <aside className="w-full lg:w-1/2 min-h-screen lg:h-screen lg:max-h-screen flex-shrink-0 bg-[#010B18] border-b lg:border-b-0 lg:border-r border-white/[0.08] flex flex-col justify-between overflow-y-auto p-5 sm:p-7 lg:p-8 xl:p-10 z-10 shadow-2xl">
-        {/* Top Header: Borderless Back to Website Link on Top-Left */}
-        <header className="flex items-center justify-start w-full flex-shrink-0 mb-4 lg:mb-0">
+
+      {/* Left: the form */}
+      <aside className="relative z-10 flex min-h-screen w-full flex-shrink-0 flex-col justify-between overflow-y-auto border-white/[0.08] bg-[#010114] bg-[radial-gradient(70%_45%_at_30%_0%,rgba(204,102,0,0.07),transparent_70%)] p-5 sm:p-7 lg:h-screen lg:max-h-screen lg:w-1/2 lg:border-r lg:p-8 xl:p-10">
+        <header className="flex w-full flex-shrink-0 items-center justify-between gap-4">
+          <div className="inline-flex select-none items-center gap-2.5">
+            <Image src="/jaxislogo.png" alt="" width={24} height={24} className="h-6 w-6" priority />
+            <span className="font-sans text-[15px] font-semibold tracking-[-0.01em] text-white">
+              JAXIS <span className="font-normal text-white/60">StatLab</span>
+            </span>
+          </div>
           <BackToWebsiteButton />
         </header>
 
-        {/* Dynamic Form Content: Centered with comfortable breathing room */}
-        <div className="w-full max-w-[420px] mx-auto my-auto py-3 flex flex-col gap-6">
-          <div className="inline-flex items-center gap-2.5 w-fit select-none pointer-events-none">
-            <Image
-              src="/jaxislogo.png"
-              alt="JAXIS Logo"
-              width={26}
-              height={26}
-              className="h-6.5 w-auto"
-              priority
-            />
-            <div className="flex items-baseline gap-1.5 font-sans">
-              <span className="font-bold text-sm tracking-wider text-white">
-                JAXIS
-              </span>
-              <span className="font-bold text-sm tracking-wider text-[#CC6600]">
-                STATLAB
-              </span>
-              <span className="text-[0.625rem] font-mono uppercase text-white/50 tracking-wider ml-1">
-                Studio
-              </span>
-            </div>
-          </div>
+        <div className="mx-auto my-auto flex w-full max-w-[400px] flex-col gap-6 py-6">
+          <AuthModeTabs />
 
           {children}
         </div>
 
-        {/* Bottom Compliance & Security Footer */}
-        <footer className="border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-2 text-[0.688rem] text-slate-400 font-mono w-full flex-shrink-0 pt-4 sm:pt-5 mt-6 lg:mt-0">
-          <span>© 2026 JAXIS StatLab Inc.</span>
-          <span className="text-slate-500">v2.4.0</span>
+        <footer className="flex w-full flex-shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-white/[0.08] pt-5 font-mono text-[11px] text-white/45">
+          <span>© 2026 JAXIS StatLab</span>
+          <span className="flex items-center gap-4">
+            <a href={SITE_PRIVACY_URL} className="!text-white/45 transition-colors hover:!text-white">
+              Privacy
+            </a>
+            <a href={SITE_TERMS_URL} className="!text-white/45 transition-colors hover:!text-white">
+              Terms
+            </a>
+          </span>
         </footer>
       </aside>
 
-      {/* ── Right Side: Atmospheric Visual Showcase with 3D Globe & Steps ─────────── */}
-      <div className="hidden lg:flex lg:w-1/2 min-h-screen h-screen max-h-screen sticky top-0 overflow-hidden">
+      {/* Right: brand panel (desktop only) */}
+      <div className="sticky top-0 hidden h-screen max-h-screen min-h-screen overflow-hidden lg:flex lg:w-1/2">
         <AuthVisualShowcase />
       </div>
     </div>

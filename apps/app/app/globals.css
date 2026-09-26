@@ -747,7 +747,7 @@ main,
   background: #010114;
   pointer-events: none;
 }
-.auth-curtain[data-play] {
+html[data-auth-curtain] .auth-curtain {
   display: flex;
   animation: auth-curtain-lift 520ms cubic-bezier(0.77, 0, 0.175, 1) 120ms forwards;
 }
@@ -758,3 +758,186 @@ main,
   }
 }
 
+
+/* Auth showcase: the marketing site's dot grid and horizon glow */
+/* A huge circle parked off the right edge: only its left rim shows, as a tall glowing arc.
+   Idle motion: the glow breathes (opacity) and a glint drifts along the rim (rotation). */
+.auth-horizon {
+  top: 50%;
+  right: calc(-2200px + 7rem);
+  width: 2200px;
+  height: 2200px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: #010114;
+  box-shadow: -1px 0 0 0 rgba(255, 176, 102, 0.9);
+  --pulse: 0;
+}
+.auth-horizon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow:
+    -8px 0 40px 0 rgba(230, 115, 0, 0.55),
+    -60px 0 180px 20px rgba(204, 102, 0, 0.32);
+  /* --pulse (0..1) is set every frame by AuthField: the glow flares as each pulse leaves the arc */
+  opacity: calc(0.6 + 0.4 * var(--pulse, 0));
+}
+.auth-horizon::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  padding: 2px;
+  background: conic-gradient(from 261deg, transparent 0deg, #ffd2a1 9deg, transparent 18deg, transparent 360deg);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  filter: blur(1px);
+  animation: auth-glint 7s ease-in-out infinite alternate;
+}
+/* Step rows: the current step's number turns orange and its title white; a hairline fills along its
+   top edge until the next step. Done and upcoming rows stay quiet. */
+.step-num,
+.step-title,
+.step-body {
+  transition: color 600ms ease;
+}
+.step-num {
+  color: rgba(255, 255, 255, 0.35);
+}
+.step-title {
+  color: rgba(255, 255, 255, 0.5);
+}
+.step-body {
+  color: rgba(255, 255, 255, 0.3);
+}
+.step[data-state="done"] .step-num {
+  color: rgba(255, 160, 64, 0.55);
+}
+.step[data-state="active"] .step-num {
+  color: #ffa040;
+}
+.step[data-state="active"] .step-title {
+  color: #fff;
+}
+.step[data-state="active"] .step-body {
+  color: rgba(255, 255, 255, 0.6);
+}
+.step-bar {
+  background: #cc6600;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.step[data-state="active"] .step-bar {
+  animation: step-bar var(--step-ms, 5000ms) linear forwards;
+}
+.step-track[data-paused] .step-bar {
+  animation-play-state: paused;
+}
+@keyframes step-bar {
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes auth-glint {
+  from {
+    transform: rotate(-15deg);
+  }
+  to {
+    transform: rotate(15deg);
+  }
+}
+@media (min-width: 1280px) {
+  .auth-horizon {
+    right: calc(-2200px + 11rem);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-horizon::before,
+  .auth-horizon::after {
+    animation: none;
+  }
+  .step-num,
+  .step-title,
+  .step-body {
+    transition: none;
+  }
+  .step-bar {
+    display: none;
+  }
+}
+.auth-copy {
+  animation: auth-copy-in 600ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@keyframes auth-copy-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-copy {
+    animation: none;
+  }
+}
+
+/* Auth form: mode switch highlight slides; form rows rise in one after another */
+.auth-tab-indicator {
+  transition: transform 380ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.auth-stagger > *,
+.auth-stagger form > * {
+  animation: auth-rise 520ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.auth-stagger > :nth-child(2) { animation-delay: 60ms; }
+.auth-stagger > :nth-child(3) { animation-delay: 120ms; }
+.auth-stagger > :nth-child(4) { animation-delay: 180ms; }
+.auth-stagger form > :nth-child(1) { animation-delay: 90ms; }
+.auth-stagger form > :nth-child(2) { animation-delay: 140ms; }
+.auth-stagger form > :nth-child(3) { animation-delay: 190ms; }
+.auth-stagger form > :nth-child(4) { animation-delay: 240ms; }
+.auth-stagger form > :nth-child(5) { animation-delay: 290ms; }
+.auth-stagger form > :nth-child(6) { animation-delay: 340ms; }
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-tab-indicator,
+  .auth-stagger > *,
+  .auth-stagger form > * {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Sign-in form labels: the site's small monospace caps (the shared "mono" label is bold sans) */
+.auth-stagger label[for] {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Edge/IE draw their own reveal and clear buttons inside inputs; our password fields have their own eye toggle */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+/* auth-field-icon: field icons warm to orange while that field is focused */
+.auth-stagger div:focus-within > .pointer-events-none {
+  color: #ffa040;
+}
+.auth-stagger .pointer-events-none {
+  transition: color 150ms ease;
+}

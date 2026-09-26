@@ -4,6 +4,7 @@ import "./globals.css";
 import { Suspense } from "react";
 import { RouteProgressBar } from "./components/layout/RouteProgressBar";
 import { MobileTouchLock } from "./components/layout/MobileTouchLock";
+import { AUTH_CURTAIN_GATE } from "@/components/auth/AuthCurtain";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -60,9 +61,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${inter.variable} ${jetbrainsMono.variable} ${signatureFont.variable}`}
       style={{ backgroundColor: "#010114" }}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: AUTH_CURTAIN_GATE }} />
+      </head>
       <body className="font-sans antialiased" style={{ backgroundColor: "#010114" }}>
         <Suspense fallback={null}>
           <RouteProgressBar />

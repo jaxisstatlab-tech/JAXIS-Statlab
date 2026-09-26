@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Alert, Button, FormInput, LoadingState } from "@repo/ui";
 import { ArrowLeft, XCircle, Eye, EyeSlash } from "@phosphor-icons/react";
 import { verifyResetTokenAction, resetPasswordAction } from "@/features/auth/actions";
+import { authHeading, authBackLink, authField, authLinkButton, authSubmit, authSubtitle, authTextLink, authTitle } from "@/components/auth/styles";
 import { PasswordRequirements } from "@/components/auth/PasswordRequirements";
 
 function ResetPasswordForm() {
@@ -27,7 +28,7 @@ function ResetPasswordForm() {
   useEffect(() => {
     if (!token) {
       setIsVerifying(false);
-      setTokenError("No recovery token found. Please request a new recovery link.");
+      setTokenError("This link is missing its code. Ask for a new reset link.");
       return;
     }
 
@@ -38,13 +39,13 @@ function ResetPasswordForm() {
         if (res.success) {
           setEmail(res.data.email);
         } else {
-          setTokenError(res.error.message || "This recovery link is invalid or has expired.");
+          setTokenError(res.error.message || "This link has expired or was already used. Ask for a new one.");
         }
       })
       .catch((err) => {
         console.error("Token verification error:", err);
         if (isMounted) {
-          setTokenError("Unable to verify recovery link. Please try again.");
+          setTokenError("We couldn't check your link. Please try again.");
         }
       })
       .finally(() => {
@@ -117,8 +118,7 @@ function ResetPasswordForm() {
       <div className="flex flex-col items-center justify-center py-12">
         <LoadingState
           variant="page"
-          label="Validating recovery link..."
-          description="Verifying security credentials with JAXIS."
+          label="Checking your link..."
         />
       </div>
     );
@@ -126,27 +126,18 @@ function ResetPasswordForm() {
 
   if (tokenError) {
     return (
-      <div className="w-full flex flex-col gap-6 animate-content-fade">
-        <div className="flex flex-col gap-3">
-          <div className="w-12 h-12 rounded-[2px] bg-red-950/40 border border-red-500/30 flex items-center justify-center text-red-400">
-            <XCircle weight="fill" size={24} />
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight font-sans">
-            Invalid Recovery Link
-          </h1>
-          <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
-            {tokenError}
-          </p>
+      <div className="flex w-full flex-col gap-7 animate-content-fade">
+        <div className={authHeading}>
+          <XCircle weight="fill" size={28} className="mb-2 text-red-400" />
+          <h1 className={authTitle}>This link doesn&apos;t work</h1>
+          <p className={authSubtitle}>{tokenError}</p>
         </div>
-
-        <div className="flex flex-col gap-3 pt-2">
-          <Link href="/forgot-password" className="w-full">
-            <Button variant="primary" size="lg" className="w-full py-3.5 font-bold tracking-wide rounded-[2px]">
-              Request New Link →
-            </Button>
+        <div className="flex flex-col gap-3">
+          <Link href="/forgot-password" className={authLinkButton}>
+            Get a new link
           </Link>
-          <Link href="/login" className="text-xs font-sans text-slate-400 hover:text-white transition-colors text-center py-1">
-            Back to Sign In
+          <Link href="/login" className={`${authTextLink} self-center py-1 font-sans text-[13px]`}>
+            Back to log in
           </Link>
         </div>
       </div>
@@ -154,28 +145,16 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="w-full flex flex-col gap-6 animate-content-fade">
-      {/* Top Breadcrumb */}
-      <div>
-        <Link href="/login" className="inline-block">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2.5 -ml-2.5 text-xs font-sans text-slate-400 hover:text-white rounded-[2px] gap-1.5 font-semibold"
-          >
-            <ArrowLeft weight="bold" size={14} />
-            <span>Back to Sign In</span>
-          </Button>
-        </Link>
-      </div>
+    <div className="flex w-full flex-col gap-7 animate-content-fade">
+      <Link href="/login" className={authBackLink}>
+        <ArrowLeft weight="bold" size={13} className="transition-transform group-hover:-translate-x-0.5" />
+        Back to log in
+      </Link>
 
-      {/* Title & Subtitle */}
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-2xl sm:text-[1.65rem] font-bold text-white tracking-tight font-sans">
-          Set New Password
-        </h1>
-        <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
-          Choose a new password for <strong className="text-white font-medium">{email}</strong>.
+      <div className={authHeading}>
+        <h1 className={authTitle}>Set a new password</h1>
+        <p className={authSubtitle}>
+          For <strong className="font-medium text-white">{email}</strong>. You&apos;ll use it the next time you log in.
         </p>
       </div>
 
@@ -187,22 +166,22 @@ function ResetPasswordForm() {
             formError.toLowerCase().includes("same") ||
             formError.toLowerCase().includes("current") ||
             formError.toLowerCase().includes("old")
-              ? "Password Already Used"
+              ? "Pick a different password"
               : formError.toLowerCase().includes("recovery link") ||
                 formError.toLowerCase().includes("expired") ||
                 formError.toLowerCase().includes("invalid")
-              ? "Invalid Recovery Link"
-              : "Validation Error"
+              ? "This link doesn't work"
+              : "Check your password"
           }
         >
           {formError}
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div className="flex flex-col">
           <FormInput
-            label="New Password"
+            label="New password"
             name="password"
             type={showPassword ? "text" : "password"}
             value={password}
@@ -220,13 +199,12 @@ function ResetPasswordForm() {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
-                title={showPassword ? "Hide password" : "Show password"}
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeSlash weight="fill" size={16} /> : <Eye weight="fill" size={16} />}
               </button>
             }
-            className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
+            className={authField}
           />
 
           {/* Dynamic Real-time Password Requirements Checklist matching register */}
@@ -234,7 +212,7 @@ function ResetPasswordForm() {
         </div>
 
         <FormInput
-          label="Confirm New Password"
+          label="Confirm new password"
           name="confirmPassword"
           type={showConfirmPassword ? "text" : "password"}
           value={confirmPassword}
@@ -242,36 +220,35 @@ function ResetPasswordForm() {
             setConfirmPassword(e.target.value);
             if (formError) setFormError(null);
           }}
-          placeholder="Repeat new password"
+          placeholder="Type it again"
           disabled={isPending}
           autoComplete="new-password"
           required
           variant="auth"
-          error={confirmPassword && password !== confirmPassword ? "Passwords do not match" : undefined}
+          error={confirmPassword && password !== confirmPassword ? "The passwords don't match yet." : undefined}
           errorVariant="banner"
           rightIcon={
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
-              title={showConfirmPassword ? "Hide password" : "Show password"}
               aria-label={showConfirmPassword ? "Hide password" : "Show password"}
             >
               {showConfirmPassword ? <EyeSlash weight="fill" size={16} /> : <Eye weight="fill" size={16} />}
             </button>
           }
-          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
+          className={authField}
         />
 
         <Button
           type="submit"
           variant="primary"
           size="sm"
-          className="w-full h-9 min-h-[36px] text-xs sm:text-sm font-semibold rounded-[2px] shadow-sm tracking-normal mt-2"
+          className={authSubmit}
           loading={isPending}
           disabled={isPending || !isValid}
         >
-          {isPending ? "Updating Password..." : "Update Password & Sign In →"}
+          {isPending ? "Saving..." : "Save new password"}
         </Button>
       </form>
     </div>
@@ -285,8 +262,7 @@ export default function ResetPasswordPage() {
         <div className="flex flex-col items-center justify-center py-12">
           <LoadingState
             variant="page"
-            label="Loading password reset..."
-            description="Preparing secure connection."
+            label="Loading..."
           />
         </div>
       }

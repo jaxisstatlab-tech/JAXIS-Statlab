@@ -2,14 +2,22 @@
 
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
-import { Button, FormInput } from "@repo/ui";
-import {
-  ArrowLeft,
-  CheckCircle,
-  WarningCircle,
-  ArrowRight,
-} from "@phosphor-icons/react";
+import { Alert, Button, FormInput } from "@repo/ui";
+import { ArrowLeft, ArrowRight, CheckCircle, Info } from "@phosphor-icons/react";
 import { requestPasswordResetAction } from "@/features/auth/actions";
+import { PASSWORD_RESET_EMAIL_AVAILABLE } from "@/components/auth/availability";
+import { SITE_URL } from "@/lib/site";
+import {
+  authAccentLink,
+  authHeading,
+  authBackLink,
+  authField,
+  authLinkButton,
+  authSubmit,
+  authSubtitle,
+  authTextLink,
+  authTitle,
+} from "@/components/auth/styles";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -26,7 +34,7 @@ export default function ForgotPasswordPage() {
     setDevRecoveryUrl(null);
 
     if (!email.trim()) {
-      setErrorMessage("Please enter your email address.");
+      setErrorMessage("Enter the email you signed up with.");
       return;
     }
 
@@ -35,95 +43,82 @@ export default function ForgotPasswordPage() {
         const res = await requestPasswordResetAction({ email });
         if (res.success) {
           setIsSubmitted(true);
-          if (res.data?.sandboxNotice) {
-            setSandboxNotice(res.data.sandboxNotice);
-          }
-          if (res.data?.devRecoveryUrl) {
-            setDevRecoveryUrl(res.data.devRecoveryUrl);
-          }
+          if (res.data?.sandboxNotice) setSandboxNotice(res.data.sandboxNotice);
+          if (res.data?.devRecoveryUrl) setDevRecoveryUrl(res.data.devRecoveryUrl);
         } else {
-          setErrorMessage(res.error?.message || "Unable to send recovery email. Please try again.");
+          setErrorMessage(res.error?.message || "We couldn't send the email. Please try again.");
         }
       } catch (err) {
         console.error("Forgot password submission error:", err);
-        setErrorMessage("An unexpected error occurred. Please try again.");
+        setErrorMessage("Something went wrong on our side. Please try again.");
       }
     });
   };
 
-  return (
-    <div className="w-full flex flex-col gap-6 animate-content-fade">
-      {/* Back to Sign In Link */}
-      <div>
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-1.5 text-xs font-sans text-white/50 hover:text-white transition-colors group select-none"
-        >
-          <ArrowLeft
-            weight="bold"
-            size={13}
-            className="transition-transform group-hover:-translate-x-0.5 text-white/40 group-hover:text-white"
-          />
-          <span>Back to Sign In</span>
-        </Link>
-      </div>
+  const noAccount = errorMessage?.toLowerCase().includes("no account");
 
-      {isSubmitted ? (
-        /* Confirmation State */
-        <div className="flex flex-col gap-6 py-2">
-          <div className="flex flex-col gap-1.5">
-            <h1 className="text-2xl font-bold text-white tracking-tight font-sans">
-              Check your inbox
-            </h1>
-            <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans">
-              We have sent a single-use recovery link to{" "}
-              <strong className="text-white font-semibold">{email}</strong>.
+  return (
+    <div className="flex w-full flex-col gap-7 animate-content-fade">
+      <Link href="/login" className={authBackLink}>
+        <ArrowLeft weight="bold" size={13} className="transition-transform group-hover:-translate-x-0.5" />
+        Back to log in
+      </Link>
+
+      {!PASSWORD_RESET_EMAIL_AVAILABLE ? (
+        <div className="flex flex-col gap-6">
+          <div className={authHeading}>
+            <h1 className={authTitle}>Reset your password</h1>
+            <p className={authSubtitle}>
+              Password reset emails are paused for a short while as we move to our new email address.
+            </p>
+          </div>
+          <div className="flex items-start gap-3 rounded-[2px] border border-white/10 bg-[#010D1F] p-4">
+            <Info weight="fill" size={18} className="mt-0.5 shrink-0 text-[#CC6600]" />
+            <p className="font-sans text-[13px] leading-relaxed text-white/65">
+              Need to get back in now? Send us a message from our contact page with the email you signed up with, and
+              we&apos;ll reset your password for you.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <a href={`${SITE_URL}/contact`} className={authLinkButton}>
+              Contact us
+              <ArrowRight size={15} weight="bold" />
+            </a>
+          </div>
+        </div>
+      ) : isSubmitted ? (
+        <div className="flex flex-col gap-6">
+          <div className={authHeading}>
+            <h1 className={authTitle}>Check your email</h1>
+            <p className={authSubtitle}>
+              We sent a link to <strong className="font-medium text-white">{email}</strong>. Open it to set a new
+              password.
             </p>
           </div>
 
-          <div className="p-4 rounded-[2px] bg-[#01142B] border border-white/10 flex items-start gap-3">
-            <CheckCircle weight="fill" size={18} className="text-emerald-400 shrink-0 mt-0.5" />
-            <div className="flex flex-col gap-1 text-xs font-sans">
-              <span className="font-semibold text-emerald-400">Recovery Link Active</span>
-              <p className="text-white/60 leading-relaxed">
-                The link expires in <span className="font-mono text-white/80 font-medium">60 minutes</span>. If you do not see it shortly, please check your spam folder.
-              </p>
-            </div>
+          <div className="flex items-start gap-3 rounded-[2px] border border-white/10 bg-[#010D1F] p-4">
+            <CheckCircle weight="fill" size={18} className="mt-0.5 shrink-0 text-[#CC6600]" />
+            <p className="font-sans text-[13px] leading-relaxed text-white/65">
+              The link works once and expires in <span className="font-mono text-white/85">60 minutes</span>. Don&apos;t
+              see it? Check your spam folder.
+            </p>
           </div>
 
           {sandboxNotice && (
-            <div className="p-4 rounded-[2px] bg-amber-500/10 border border-amber-500/30 flex flex-col gap-2.5 animate-content-fade">
-              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-                <span>⚠️ Resend Sandbox Notice</span>
-              </div>
-              <p className="text-xs font-sans text-white/80 leading-relaxed">
-                {sandboxNotice}
-              </p>
+            <Alert variant="warning" title="Test mode">
+              <p>{sandboxNotice}</p>
               {devRecoveryUrl && (
-                <div className="pt-2 border-t border-amber-500/20 flex flex-col gap-1.5">
-                  <span className="text-[11px] font-sans text-white/50">
-                    Testing sandbox bypass link:
-                  </span>
-                  <Link
-                    href={devRecoveryUrl}
-                    className="inline-flex items-center gap-1.5 text-xs font-sans font-semibold text-[#FFA040] hover:text-[#FFB366] underline transition-colors"
-                  >
-                    Open Password Reset Desk Directly →
-                  </Link>
-                </div>
+                <Link href={devRecoveryUrl} className={`${authAccentLink} mt-2 inline-flex items-center gap-1`}>
+                  Open the reset page
+                  <ArrowRight size={12} weight="bold" />
+                </Link>
               )}
-            </div>
+            </Alert>
           )}
 
-          <div className="flex flex-col gap-3 pt-2">
-            <Link href="/login" className="w-full">
-              <Button
-                variant="primary"
-                size="sm"
-                className="w-full h-9 min-h-[36px] text-xs sm:text-sm font-semibold rounded-[2px] shadow-sm tracking-normal"
-              >
-                Return to Sign In →
-              </Button>
+          <div className="flex flex-col gap-3">
+            <Link href="/login" className={authLinkButton}>
+              Back to log in
             </Link>
             <button
               type="button"
@@ -131,66 +126,41 @@ export default function ForgotPasswordPage() {
                 setIsSubmitted(false);
                 setEmail("");
               }}
-              className="text-xs font-sans text-white/50 hover:text-white transition-colors text-center py-1 cursor-pointer"
+              className="py-1 text-center font-sans text-[13px] text-white/55 transition-colors hover:text-white"
             >
-              Try a different email address
+              Use a different email
             </button>
           </div>
         </div>
       ) : (
-        /* Email Input State */
-        <div className="flex flex-col gap-6">
-          {/* Title & Subtitle */}
-          <div className="flex flex-col gap-1.5">
-            <h1 className="text-2xl font-bold text-white tracking-tight font-sans">
-              Reset Password
-            </h1>
-            <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
-              Enter your registered email address to receive a secure recovery link.
+        <div className="flex flex-col gap-7">
+          <div className={authHeading}>
+            <h1 className={authTitle}>Reset your password</h1>
+            <p className={authSubtitle}>
+              Enter the email you signed up with. We&apos;ll send you a link to set a new password.
             </p>
           </div>
 
           {errorMessage && (
-            <div
-              role="alert"
-              className="p-3.5 rounded-[2px] bg-red-500/[0.08] border border-red-500/30 flex items-start gap-3 animate-content-fade"
-            >
-              <WarningCircle
-                weight="fill"
-                size={18}
-                className="text-red-400 shrink-0 mt-0.5"
-              />
-              <div className="flex-1 flex flex-col gap-1 text-xs font-sans">
-                <span className="font-semibold text-red-200">
-                  {errorMessage.toLowerCase().includes("no account")
-                    ? "Account Not Found"
-                    : "Unable to Process"}
-                </span>
-                <p className="text-white/70 leading-relaxed">{errorMessage}</p>
-                {errorMessage.toLowerCase().includes("no account") && (
-                  <div className="pt-1">
-                    <Link
-                      href="/register"
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#FFA040] hover:text-[#FFB366] transition-colors"
-                    >
-                      <span>Create a new account</span>
-                      <ArrowRight size={12} weight="bold" />
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
+            <Alert variant="danger" title={noAccount ? "No account with that email" : "Couldn't send the email"}>
+              <p>{errorMessage}</p>
+              {noAccount && (
+                <Link href="/register" className={`${authAccentLink} mt-2 inline-flex items-center gap-1`}>
+                  Create a free account
+                  <ArrowRight size={12} weight="bold" />
+                </Link>
+              )}
+            </Alert>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <FormInput
-              label="Account Email"
+              label="Email"
               name="email"
               type="email"
               required
-              monoLabel
               variant="auth"
-              placeholder="name@university.edu.ph"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -198,37 +168,20 @@ export default function ForgotPasswordPage() {
               }}
               disabled={isPending}
               autoComplete="email"
-              className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
+              className={authField}
             />
 
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              className="w-full h-9 min-h-[36px] text-xs sm:text-sm font-semibold rounded-[2px] shadow-sm tracking-normal mt-1"
-              loading={isPending}
-              disabled={isPending}
-            >
-              {isPending ? "Sending Recovery Link..." : "Send Recovery Link →"}
+            <Button type="submit" variant="primary" size="sm" className={authSubmit} loading={isPending} disabled={isPending}>
+              {isPending ? "Sending..." : "Send reset link"}
             </Button>
           </form>
 
-          <div className="flex items-center justify-center gap-2 text-xs text-white/50 font-sans pt-1">
-            <span>Remember your password?</span>
-            <Link
-              href="/login"
-              className="text-white hover:text-[#FFA040] font-medium transition-colors underline"
-            >
-              Sign in
+          <p className="text-center font-sans text-[13px] text-white/60">
+            Remember it?{" "}
+            <Link href="/login" className={authTextLink}>
+              Log in
             </Link>
-            <span className="text-white/20">·</span>
-            <Link
-              href="/register"
-              className="text-white hover:text-[#FFA040] font-medium transition-colors underline"
-            >
-              Create account
-            </Link>
-          </div>
+          </p>
         </div>
       )}
     </div>

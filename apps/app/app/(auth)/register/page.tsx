@@ -1,15 +1,26 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button, FormInput, DividerWithText } from "@repo/ui";
+import { Alert, Button, FormInput } from "@repo/ui";
 import {
+  ArrowRight,
+  Envelope,
   Eye,
   EyeSlash,
-  WarningCircle,
+  LockKey,
 } from "@phosphor-icons/react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { AuthDivider } from "@/components/auth/AuthDivider";
+import {
+  authHeading,
+  authField,
+  authSubmit,
+  authSubtitle,
+  authTextLink,
+  authTitle,
+} from "@/components/auth/styles";
+import { SITE_PRIVACY_URL, SITE_TERMS_URL } from "@/lib/site";
 import { PasswordRequirements } from "@/components/auth/PasswordRequirements";
 import { registerClient } from "@/features/auth/actions";
 
@@ -61,198 +72,204 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="w-full flex flex-col gap-6 animate-content-fade">
-      {/* Title & Subtitle */}
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-2xl sm:text-[1.65rem] font-bold text-white tracking-tight font-sans">
-          Sign Up Account
-        </h1>
-        <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
-          Enter your personal details to create your research account.
+    <div className="auth-stagger flex w-full flex-col gap-5">
+      <div className={authHeading}>
+        <h1 className={authTitle}>Create your free account</h1>
+        <p className={authSubtitle}>
+          Send your study and get a fixed price, all in one place.
         </p>
       </div>
 
-      {/* Error Alert */}
       {errorMessage && (
-        <div
-          role="alert"
-          className="p-3.5 rounded-[2px] bg-red-500/[0.08] border border-red-500/30 flex items-start gap-3 animate-content-fade"
-        >
-          <WarningCircle weight="fill" size={18} className="text-red-400 shrink-0 mt-0.5" />
-          <div className="flex-1 flex flex-col gap-1 text-xs font-sans">
-            <span className="font-semibold text-red-200">Registration Error</span>
-            <p className="text-white/70 leading-relaxed">{errorMessage}</p>
-          </div>
-        </div>
+        <Alert variant="danger" title="Couldn't create your account">
+          {errorMessage}
+        </Alert>
       )}
 
-      {/* Google Single Sign-On Button */}
-      <GoogleSignInButton callbackUrl="/dashboard/client" isRegister />
+      <GoogleSignInButton
+        callbackUrl="/dashboard/client"
+        isRegister
+        onError={(err) => setErrorMessage(err)}
+      />
+      <AuthDivider>or with email</AuthDivider>
 
-      {/* Clean Centered Divider */}
-      <DividerWithText className="-my-1">Or</DividerWithText>
-
-      {/* Registration Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Name Fields: First & Last Name */}
         <div className="grid grid-cols-2 gap-3">
           <FormInput
-            label="First Name"
+            label="First name"
             name="firstName"
             type="text"
             required
+            monoLabel
             variant="auth"
-            placeholder="e.g. Eleanor"
+            placeholder="Juan"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             error={fieldErrors.firstName?.[0]}
             disabled={isPending}
             autoComplete="given-name"
-            className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
+            className={authField}
           />
 
           <FormInput
-            label="Last Name"
+            label="Last name"
             name="lastName"
             type="text"
             required
+            monoLabel
             variant="auth"
-            placeholder="e.g. Vance"
+            placeholder="Dela Cruz"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             error={fieldErrors.lastName?.[0]}
             disabled={isPending}
             autoComplete="family-name"
-            className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
+            className={authField}
           />
         </div>
 
         <FormInput
-          label="University or Work Email"
+          label="Email"
           name="email"
           type="email"
           required
+          monoLabel
           variant="auth"
-          placeholder="e.g. e.vance@university.edu"
+          leftIcon={<Envelope size={16} weight="fill" />}
+          placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={fieldErrors.email?.[0]}
           disabled={isPending}
           autoComplete="email"
-          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
+          className={authField}
         />
 
         <div className="flex flex-col">
-          <FormInput
-            label="Password"
-            name="password"
-            type={showPassword ? "text" : "password"}
-            required
-            variant="auth"
-            placeholder="At least 8 characters"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              if (fieldErrors.password) {
-                setFieldErrors((prev) => {
-                  const next = { ...prev };
-                  delete next.password;
-                  return next;
-                });
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
+            <FormInput
+              label="Password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              monoLabel
+              variant="auth"
+              leftIcon={<LockKey size={16} weight="fill" />}
+              placeholder="8+ characters"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (fieldErrors.password) {
+                  setFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.password;
+                    return next;
+                  });
+                }
+              }}
+              error={fieldErrors.password?.[0]}
+              errorVariant="banner"
+              disabled={isPending}
+              autoComplete="new-password"
+              rightIcon={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeSlash weight="fill" size={16} />
+                  ) : (
+                    <Eye weight="fill" size={16} />
+                  )}
+                </button>
               }
-            }}
-            error={fieldErrors.password?.[0]}
-            errorVariant="banner"
-            disabled={isPending}
-            autoComplete="new-password"
-            rightIcon={
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
-                title={showPassword ? "Hide password" : "Show password"}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <EyeSlash weight="fill" size={16} />
-                ) : (
-                  <Eye weight="fill" size={16} />
-                )}
-              </button>
-            }
-            className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
-          />
+              className={authField}
+            />
 
-          {/* Dynamic Real-time Password Requirements Checklist */}
+            <FormInput
+              label="Confirm password"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              required
+              monoLabel
+              variant="auth"
+              leftIcon={<LockKey size={16} weight="fill" />}
+              placeholder="Type it again"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (fieldErrors.confirmPassword) {
+                  setFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.confirmPassword;
+                    return next;
+                  });
+                }
+              }}
+              error={fieldErrors.confirmPassword?.[0]}
+              errorVariant="banner"
+              disabled={isPending}
+              autoComplete="new-password"
+              rightIcon={
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
+                  aria-label={
+                    showConfirmPassword ? "Hide password" : "Show password"
+                  }
+                >
+                  {showConfirmPassword ? (
+                    <EyeSlash weight="fill" size={16} />
+                  ) : (
+                    <Eye weight="fill" size={16} />
+                  )}
+                </button>
+              }
+              className={authField}
+            />
+          </div>
+
+          {/* Strength meter spans both password fields */}
           <PasswordRequirements password={password} />
         </div>
-
-        <FormInput
-          label="Confirm Password"
-          name="confirmPassword"
-          type={showConfirmPassword ? "text" : "password"}
-          required
-          variant="auth"
-          placeholder="Re-enter your password"
-          value={confirmPassword}
-          onChange={(e) => {
-            setConfirmPassword(e.target.value);
-            if (fieldErrors.confirmPassword) {
-              setFieldErrors((prev) => {
-                const next = { ...prev };
-                delete next.confirmPassword;
-                return next;
-              });
-            }
-          }}
-          error={fieldErrors.confirmPassword?.[0]}
-          errorVariant="banner"
-          disabled={isPending}
-          autoComplete="new-password"
-          rightIcon={
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
-              title={showConfirmPassword ? "Hide password" : "Show password"}
-              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-            >
-              {showConfirmPassword ? (
-                <EyeSlash weight="fill" size={16} />
-              ) : (
-                <Eye weight="fill" size={16} />
-              )}
-            </button>
-          }
-          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
-        />
 
         <Button
           type="submit"
           variant="primary"
           size="sm"
-          className="w-full h-9 min-h-[36px] text-xs sm:text-sm font-semibold rounded-[2px] shadow-sm tracking-normal mt-1"
+          className={authSubmit}
           loading={isPending}
           disabled={isPending}
         >
-          {isPending ? "Creating Account..." : "Sign Up →"}
+          {isPending ? (
+            "Creating your account..."
+          ) : (
+            <>
+              Create account
+              <ArrowRight
+                size={15}
+                weight="bold"
+                className="transition-transform duration-200 ease-out group-hover:translate-x-0.5"
+              />
+            </>
+          )}
         </Button>
 
-        <p className="text-[11px] text-white/40 text-center font-sans leading-relaxed">
-          By creating an account, you agree to our Terms of Service and Privacy Policy.
+        <p className="text-center font-sans text-xs leading-relaxed text-white/50">
+          By signing up, you agree to our{" "}
+          <a href={SITE_TERMS_URL} className={authTextLink}>
+            Terms
+          </a>{" "}
+          and{" "}
+          <a href={SITE_PRIVACY_URL} className={authTextLink}>
+            Privacy Policy
+          </a>
+          .
         </p>
       </form>
-
-      {/* Footer Login Link */}
-      <div className="text-center text-xs text-white/60 font-sans">
-        <span>Already have an account?</span>{" "}
-        <Link
-          href="/login"
-          className="text-[#FFA040] hover:text-[#FFB366] font-semibold transition-colors underline ml-1"
-        >
-          Log in →
-        </Link>
-      </div>
     </div>
   );
 }

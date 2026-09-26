@@ -4,28 +4,31 @@ import React, { useState, useTransition, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Alert, Button, LoadingState, FormInput, DividerWithText } from "@repo/ui";
-import {
-  Eye,
-  EyeSlash,
-} from "@phosphor-icons/react";
+import { Alert, Button, LoadingState, FormInput } from "@repo/ui";
+import { ArrowRight, Check, Envelope, Eye, EyeSlash, LockKey } from "@phosphor-icons/react";
+import { AuthTrust } from "@/components/auth/AuthTrust";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { AuthDivider } from "@/components/auth/AuthDivider";
+import { PASSWORD_RESET_EMAIL_AVAILABLE } from "@/components/auth/availability";
+import { SoonTag } from "@/components/auth/SoonTag";
+import { authHeading, authField, authSubmit, authSubtitle, authTextLink, authTitle } from "@/components/auth/styles";
+import { safeCallbackPath } from "@/lib/site";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  // Only same-site paths are honoured, so a crafted ?callbackUrl= can't send people to another website.
+  const callbackUrl = safeCallbackPath(searchParams.get("callbackUrl"));
   // Capture initial URL error/status parameters so they persist on screen even after the URL bar is cleaned
   const [authError] = useState(() => searchParams.get("error"));
   const [reason] = useState(() => searchParams.get("reason"));
   const [isRegistered] = useState(() => searchParams.get("registered") === "true");
-  const [isResetSuccess] = useState(() => searchParams.get("reset") === "true");
+  const [isResetSuccess] = useState(() => ["true", "success"].includes(searchParams.get("reset") ?? ""));
 
   const isIdleTimeout = reason === "idle_timeout";
   const isAccountSuspended = authError === "AccountSuspended";
   const isAccountTerminated = authError === "AccountTerminated";
   const isSessionRevoked = authError === "SessionRevoked";
-  const isConfigurationError = authError === "Configuration";
-  const isOAuthError = authError === "OAuthSignin" || authError === "OAuthCallback";
+  const isGoogleError = ["Configuration", "OAuthSignin", "OAuthCallback"].includes(authError ?? "");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,11 +63,10 @@ function LoginForm() {
     setErrorMessage(null);
 
     if (!email || !password) {
-      setErrorMessage("Please provide both email and password.");
+      setErrorMessage("Enter your email and password.");
       return;
     }
 
-    // Persist or clear remembered email
     try {
       if (rememberMe && email) {
         localStorage.setItem("jaxis_remember_email", email.trim());
@@ -87,122 +89,85 @@ function LoginForm() {
 
         if (res?.error) {
           if (res.error.includes("ACCOUNT_SUSPENDED")) {
-            setErrorMessage(
-              "Your account has been suspended. Please contact JAXIS administration."
-            );
+            setErrorMessage("Your account is suspended. Email us and we'll help you sort it out.");
           } else if (res.error.includes("ACCOUNT_TERMINATED")) {
-            setErrorMessage(
-              "This account has been permanently deactivated."
-            );
+            setErrorMessage("This account has been closed.");
           } else {
-            setErrorMessage("Incorrect email or password. All passwords must be at least 8 characters.");
+            setErrorMessage("That email and password don't match. Try again, or reset your password.");
           }
           return;
         }
 
-        const targetDestination = callbackUrl || "/dashboard";
-        window.location.href = targetDestination;
+        window.location.href = callbackUrl;
       } catch (err) {
         console.error("Login submission error:", err);
-        setErrorMessage("An unexpected error occurred. Please try again.");
+        setErrorMessage("Something went wrong on our side. Please try again.");
       }
     });
   };
 
   return (
-    <div className="w-full flex flex-col gap-6 animate-content-fade">
-      {/* Title & Subtitle */}
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-2xl sm:text-[1.65rem] font-bold text-white tracking-tight font-sans">
-          Sign In Account
-        </h1>
-        <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
-          Enter your credentials to access your research workspace.
-        </p>
+    <div className="auth-stagger flex w-full flex-col gap-6">
+      <div className={authHeading}>
+        <h1 className={authTitle}>Welcome back</h1>
+        <p className={authSubtitle}>Log in to see your studies, messages from your statistician, and files.</p>
       </div>
 
-      {/* Status Alerts */}
       {isIdleTimeout && (
-        <Alert variant="warning" title="Session Timed Out">
-          You were signed out after 30 minutes of inactivity to protect client data.
+        <Alert variant="warning" title="You were logged out">
+          We log you out after 30 minutes of no activity to keep your data safe.
         </Alert>
       )}
       {isAccountSuspended && (
-        <Alert variant="danger" title="Account Suspended">
-          Your account has been suspended. Please contact JAXIS administration.
+        <Alert variant="danger" title="Account suspended">
+          Your account is suspended. Email us and we&apos;ll help you sort it out.
         </Alert>
       )}
       {isAccountTerminated && (
-        <Alert variant="danger" title="Account Deactivated">
-          This account has been permanently deactivated.
+        <Alert variant="danger" title="Account closed">
+          This account has been closed.
         </Alert>
       )}
       {isSessionRevoked && (
-        <Alert variant="warning" title="Session Expired">
-          Your password was recently changed. Please sign in with your new password.
+        <Alert variant="warning" title="Please log in again">
+          Your password was changed recently. Log in with your new password.
         </Alert>
       )}
       {isRegistered && (
-        <Alert variant="success" title="Account Created">
-          Your account is ready. Sign in with your credentials.
+        <Alert variant="success" title="Account created">
+          Your account is ready. Log in to send your first study.
         </Alert>
       )}
       {isResetSuccess && (
-        <Alert variant="success" title="Password Updated">
-          Your password has been reset successfully. Please sign in with your new credentials.
+        <Alert variant="success" title="Password updated">
+          Log in with your new password.
         </Alert>
       )}
-      {isConfigurationError && (
-        <Alert variant="danger" title="Google Sign-In Error">
-          Unable to complete Google sign-in. Please verify that your Vercel deployment has finished building, or sign in using your email and password below.
-        </Alert>
-      )}
-      {isOAuthError && (
-        <Alert variant="danger" title="Google Sign-In Failed">
-          Unable to complete Google sign-in. Please verify your Google Cloud OAuth credentials and authorized redirect URIs.
+      {isGoogleError && (
+        <Alert variant="danger" title="Google sign-in didn't work">
+          Please log in with your email and password instead.
         </Alert>
       )}
 
+      <GoogleSignInButton callbackUrl={callbackUrl} onError={(err) => setErrorMessage(err)} />
+      <AuthDivider>or with email</AuthDivider>
 
-      {/* Google Single Sign-On */}
-      <GoogleSignInButton
-        callbackUrl={callbackUrl}
-        onError={(err) => setErrorMessage(err)}
-      />
-
-      {/* Clean Centered Divider */}
-      <DividerWithText className="-my-1">Or</DividerWithText>
-
-      {/* Main Login Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-4"
-      >
-        {/* Error Alert Banner */}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
         {errorMessage && (
-          <Alert
-            variant="danger"
-            title={
-              errorMessage.toLowerCase().includes("google")
-                ? "Google OAuth Required"
-                : errorMessage.toLowerCase().includes("suspended")
-                ? "Account Suspended"
-                : errorMessage.toLowerCase().includes("deactivated")
-                ? "Account Deactivated"
-                : "Invalid Credentials"
-            }
-          >
+          <Alert variant="danger" title="Couldn't log you in">
             {errorMessage}
           </Alert>
         )}
 
         <FormInput
-          label="Email Address"
+          label="Email"
           name="email"
           type="email"
           required
+          monoLabel
           variant="auth"
-          placeholder="name@institution.edu"
+          leftIcon={<Envelope size={16} weight="fill" />}
+          placeholder="you@example.com"
           value={email}
           isInvalid={Boolean(errorMessage)}
           onChange={(e) => {
@@ -211,7 +176,7 @@ function LoginForm() {
           }}
           disabled={isPending}
           autoComplete="email"
-          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
+          className={authField}
         />
 
         <FormInput
@@ -219,8 +184,10 @@ function LoginForm() {
           name="password"
           type={showPassword ? "text" : "password"}
           required
+          monoLabel
           variant="auth"
-          placeholder="Enter your password"
+          leftIcon={<LockKey size={16} weight="fill" />}
+          placeholder="Your password"
           value={password}
           isInvalid={Boolean(errorMessage)}
           onChange={(e) => {
@@ -233,61 +200,51 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5"
-              title={showPassword ? "Hide password" : "Show password"}
+              className="cursor-pointer p-0.5 text-white/40 transition-colors hover:text-white"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? (
-                <EyeSlash weight="fill" size={16} />
-              ) : (
-                <Eye weight="fill" size={16} />
-              )}
+              {showPassword ? <EyeSlash weight="fill" size={16} /> : <Eye weight="fill" size={16} />}
             </button>
           }
-          className="!h-9 sm:!h-9 text-xs sm:text-sm rounded-[2px]"
+          className={authField}
         />
 
-        {/* Remember Session & Forgot Password Row */}
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-sans pt-0.5">
-          <label className="flex items-center gap-2 cursor-pointer select-none text-white/70 hover:text-white transition-colors">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 rounded-[2px] bg-[#01142B] border border-white/20 text-[#CC6600] focus:ring-0 focus:ring-offset-0 accent-[#CC6600] cursor-pointer"
-            />
-            <span>Remember me</span>
+        <div className="-mt-1 flex flex-wrap items-center justify-between gap-2 font-sans text-[13px]">
+          <label className="flex cursor-pointer select-none items-center gap-2 text-white/70 transition-colors hover:text-white">
+            <span className="relative flex h-4 w-4 shrink-0">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="peer h-4 w-4 cursor-pointer appearance-none rounded-[2px] border border-white/25 bg-[#010D1F] transition-colors duration-150 checked:border-[#CC6600] checked:bg-[#CC6600] focus-visible:shadow-[0_0_0_3px_rgba(204,102,0,0.25)]"
+              />
+              <Check
+                size={10}
+                weight="bold"
+                className="pointer-events-none absolute left-[3px] top-[3px] scale-50 text-white opacity-0 transition-[opacity,transform] duration-150 ease-out peer-checked:scale-100 peer-checked:opacity-100"
+              />
+            </span>
+            Remember me
           </label>
-          <Link
-            href="/forgot-password"
-            className="text-[#38BDF8] hover:text-[#7DD3FC] hover:underline font-sans text-xs transition-colors cursor-pointer select-none"
-          >
+          <Link href="/forgot-password" className={`${authTextLink} inline-flex items-center gap-2`}>
             Forgot password?
+            {!PASSWORD_RESET_EMAIL_AVAILABLE && <SoonTag className="!no-underline" />}
           </Link>
         </div>
 
-        <Button
-          type="submit"
-          variant="primary"
-          size="sm"
-          className="w-full h-9 min-h-[36px] text-xs sm:text-sm font-semibold rounded-[2px] shadow-sm tracking-normal mt-1"
-          loading={isPending}
-          disabled={isPending}
-        >
-          {isPending ? "Signing in..." : "Sign In to Workspace →"}
+        <Button type="submit" variant="primary" size="sm" className={authSubmit} loading={isPending} disabled={isPending}>
+          {isPending ? (
+            "Logging in..."
+          ) : (
+            <>
+              Log in
+              <ArrowRight size={15} weight="bold" className="transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
+            </>
+          )}
         </Button>
       </form>
 
-      {/* Footer Registration Link */}
-      <div className="pt-1 text-center text-xs text-white/60 font-sans">
-        <span>New to JAXIS StatLab?</span>{" "}
-        <Link
-          href="/register"
-          className="text-[#FFA040] hover:text-[#FFB366] font-semibold transition-colors underline ml-1"
-        >
-          Create an account →
-        </Link>
-      </div>
+      <AuthTrust />
     </div>
   );
 }
@@ -296,8 +253,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="w-full min-h-[300px] flex items-center justify-center">
-          <LoadingState variant="card" label="Loading Sign In..." />
+        <div className="flex min-h-[300px] w-full items-center justify-center">
+          <LoadingState variant="card" label="Loading..." />
         </div>
       }
     >
