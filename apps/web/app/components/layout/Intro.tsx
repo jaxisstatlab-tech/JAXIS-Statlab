@@ -4,11 +4,8 @@
 export default function Intro() {
   return (
     <div aria-hidden="true" className="intro">
-      <div className="intro-mark">
-        <span className="intro-bar" style={{ height: "38%", background: "#D9D9D9" }} />
-        <span className="intro-bar" style={{ height: "68%", background: "#CC6600" }} />
-        <span className="intro-bar" style={{ height: "100%", background: "#E67300" }} />
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/jaxislogo.png" alt="" width={48} height={48} className="intro-logo" />
       <div className="intro-word font-sans text-lg font-semibold tracking-[-0.01em] text-white">
         JAXIS <span className="font-normal text-white/60">StatLab</span>
       </div>

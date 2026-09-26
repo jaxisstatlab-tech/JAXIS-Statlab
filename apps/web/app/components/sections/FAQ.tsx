@@ -155,7 +155,7 @@ export default function FAQ() {
                       onClick={() => setOpen(isOpen ? null : f.i)}
                       aria-expanded={isOpen}
                       aria-controls={`faq-panel-${f.i}`}
-                      className="group flex w-full items-center justify-between gap-6 px-3 py-5 text-left sm:px-4 sm:py-6"
+                      className="group flex w-full items-center justify-between gap-6 px-3 py-5 text-left transition-colors duration-150 active:bg-white/[0.03] sm:px-4 sm:py-6"
                     >
                       <span className="flex items-baseline gap-4">
                         <span className="font-mono text-[11px] text-white/55">{String(f.i + 1).padStart(2, "0")}</span>
@@ -170,7 +170,7 @@ export default function FAQ() {
                       <Plus
                         size={16}
                         weight="bold"
-                        className={`shrink-0 transition-transform duration-300 ease-out ${
+                        className={`shrink-0 transition-transform duration-200 ease-out ${
                           isOpen ? "rotate-45 text-[#CC6600]" : "text-white/55 group-hover:text-white/80"
                         }`}
                       />

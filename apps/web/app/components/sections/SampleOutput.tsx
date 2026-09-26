@@ -192,7 +192,7 @@ export default function SampleOutput() {
                       shapes={f.shapes}
                       pad={16}
                       label={`${f.tag} file illustration`}
-                      className="h-[78%] w-auto transition-transform duration-500 ease-out group-hover:-translate-y-1"
+                      className="h-[78%] w-auto transition-transform duration-250 ease-out group-hover:-translate-y-1"
                     />
                   </div>
                   <div className="min-w-0 flex-1">

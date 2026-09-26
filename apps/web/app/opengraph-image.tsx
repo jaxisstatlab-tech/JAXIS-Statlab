@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 export const alt = "JAXIS StatLab: Thesis statistics you can defend";
@@ -6,7 +8,10 @@ export const contentType = "image/png";
 
 const BARS = [0.18, 0.3, 0.48, 0.7, 0.9, 1, 0.9, 0.7, 0.48, 0.3, 0.18];
 
-export default function OpengraphImage() {
+export default async function OpengraphImage() {
+  const logo = await readFile(join(process.cwd(), "public/jaxislogo.png"));
+  const logoSrc = `data:image/png;base64,${logo.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -24,11 +29,8 @@ export default function OpengraphImage() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 30, fontWeight: 700 }}>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 30 }}>
-            <div style={{ width: 9, height: 12, background: "#E5E5E5" }} />
-            <div style={{ width: 9, height: 20, background: "#CC6600" }} />
-            <div style={{ width: 9, height: 30, background: "#E67300" }} />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoSrc} alt="" width={40} height={40} />
           <span>JAXIS</span>
           <span style={{ fontWeight: 400, opacity: 0.6 }}>StatLab</span>
         </div>

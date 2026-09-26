@@ -7,10 +7,11 @@
   --surface: #01142b;
   --accent: #cc6600;
   --accent-hover: #e67300;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --font-sans: var(--font-sans-custom), "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-mono-custom), "IBM Plex Mono", ui-monospace, monospace;
   --font-apa: "Times New Roman", Times, "Liberation Serif", serif;
@@ -111,11 +112,6 @@ html[data-leaving] .exit-curtain {
     transform 300ms cubic-bezier(0.77, 0, 0.175, 1),
     visibility 0s;
 }
-.exit-bar {
-  width: 12px;
-  border-radius: 2px;
-  transform: skewX(-10deg);
-}
 
 /* First-visit intro: bars rise, wordmark fades in, then the screen wipes up */
 .intro {
@@ -141,31 +137,17 @@ html[data-intro="done"] .intro {
     visibility: hidden;
   }
 }
-.intro-mark {
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  height: 44px;
+.intro-logo {
+  width: 48px;
+  height: 48px;
+  opacity: 0;
+  transform: translateY(12px) scale(0.92);
+  animation: intro-logo 620ms cubic-bezier(0.23, 1, 0.32, 1) 100ms forwards;
 }
-.intro-bar {
-  width: 12px;
-  border-radius: 2px;
-  transform: skewX(-10deg) scaleY(0);
-  transform-origin: bottom;
-  animation: intro-bar 520ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
-}
-.intro-bar:nth-child(1) {
-  animation-delay: 100ms;
-}
-.intro-bar:nth-child(2) {
-  animation-delay: 190ms;
-}
-.intro-bar:nth-child(3) {
-  animation-delay: 280ms;
-}
-@keyframes intro-bar {
+@keyframes intro-logo {
   to {
-    transform: skewX(-10deg) scaleY(1);
+    opacity: 1;
+    transform: none;
   }
 }
 .intro-word,
@@ -258,20 +240,25 @@ html[data-intro="done"] .intro {
   display: inline-block;
   transform: translateY(140%);
   opacity: 0;
+  filter: blur(3px);
 }
 .rot-word[data-state="in"] .rot-char {
   transform: none;
   opacity: 1;
+  filter: none;
   transition:
     transform 650ms cubic-bezier(0.23, 1, 0.32, 1),
-    opacity 400ms ease;
+    opacity 400ms ease,
+    filter 400ms ease;
 }
 .rot-word[data-state="out"] .rot-char {
   transform: translateY(-140%);
   opacity: 0;
+  filter: blur(3px);
   transition:
-    transform 480ms cubic-bezier(0.77, 0, 0.175, 1),
-    opacity 300ms ease;
+    transform 420ms cubic-bezier(0.77, 0, 0.175, 1),
+    opacity 260ms ease,
+    filter 260ms ease;
 }
 .rot-measure {
   position: absolute;
@@ -449,24 +436,26 @@ html[data-intro="done"] .intro {
 /* FAQ answers: height opens while the text clears from a soft blur */
 .faq-panel {
   grid-template-rows: 0fr;
-  transition: grid-template-rows 360ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: grid-template-rows 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .faq-panel[data-open] {
   grid-template-rows: 1fr;
+  transition-duration: 300ms;
 }
 .faq-answer {
   opacity: 0;
   filter: blur(4px);
   transform: translateY(-4px);
   transition:
-    opacity 260ms ease,
-    filter 360ms cubic-bezier(0.23, 1, 0.32, 1),
-    transform 360ms cubic-bezier(0.23, 1, 0.32, 1);
+    opacity 150ms ease,
+    filter 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .faq-panel[data-open] .faq-answer {
   opacity: 1;
   filter: none;
   transform: none;
+  transition-duration: 250ms, 300ms, 300ms;
 }
 
 /* Magnet: eases toward the cursor, springs back when released */
@@ -499,6 +488,19 @@ html[data-intro="done"] .intro {
   transform: scale(1.1);
 }
 
+/* Pricing: numbers re-blur in when delivery speed changes */
+@keyframes price-in {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(3px);
+  }
+}
+.price-swap {
+  display: inline-block;
+  animation: price-in 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
 /* Isometric columns rising on load */
 @keyframes iso-rise {
   from {
@@ -518,6 +520,16 @@ html[data-intro="done"] .intro {
 }
 
 /* Cursor spotlight on bento grid lines */
+@property --spot-x {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --spot-y {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
 @property --spot-o {
   syntax: "<number>";
   inherits: false;
@@ -532,7 +544,10 @@ html[data-intro="done"] .intro {
       transparent 70%
     ),
     rgba(255, 255, 255, 0.1);
-  transition: --spot-o 240ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition:
+    --spot-o 240ms cubic-bezier(0.23, 1, 0.32, 1),
+    --spot-x 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    --spot-y 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .spotlight-frame[data-spot] {
   --spot-o: 1;
@@ -615,6 +630,9 @@ html[data-intro="done"] .intro {
     animation: none;
     display: none;
   }
+  .price-swap {
+    animation: none;
+  }
   .faq-panel,
   .faq-answer {
     transition: none;
@@ -632,3 +650,24 @@ html[data-intro="done"] .intro {
     transition: none;
   }
 }
+
+/* Mobile menu enters instead of popping in */
+.mobile-menu {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 200ms ease,
+    transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@starting-style {
+  .mobile-menu {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-menu {
+    transition: none;
+  }
+}
+

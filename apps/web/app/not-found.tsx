@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { NotFoundPage } from "@repo/ui/NotFoundPage";
+import { LOGIN_URL } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Page not found · JAXIS StatLab",
@@ -8,10 +9,8 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <NotFoundPage
-      brandHref="/dashboard"
-      registry="jaxis-statlab-app"
-      primary={{ href: "/dashboard", label: "Go to your workspace" }}
-      secondary={{ href: "/login", label: "Log in" }}
+      primary={{ href: "/", label: "Go to homepage" }}
+      secondary={{ href: LOGIN_URL, label: "Send your study" }}
     />
   );
 }

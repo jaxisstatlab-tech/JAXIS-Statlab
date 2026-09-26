@@ -18,7 +18,14 @@ export default function SpotlightGrid({ children, className = "" }: { children: 
       el.style.setProperty("--spot-x", `${e.clientX - r.left}px`);
       el.style.setProperty("--spot-y", `${e.clientY - r.top}px`);
     };
-    const enter = () => el.setAttribute("data-spot", "");
+    // Jump to the cursor on entry so only subsequent movement eases.
+    const enter = (e: PointerEvent) => {
+      el.style.transition = "none";
+      move(e);
+      void el.offsetWidth;
+      el.style.transition = "";
+      el.setAttribute("data-spot", "");
+    };
     const leave = () => el.removeAttribute("data-spot");
 
     el.addEventListener("pointermove", move);

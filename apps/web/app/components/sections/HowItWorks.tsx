@@ -76,7 +76,7 @@ export default function HowItWorks() {
                       shapes={s.shapes}
                       pad={14}
                       label={`${s.title} illustration`}
-                      className="h-full w-auto transition-transform duration-500 ease-out group-hover:-translate-y-1"
+                      className="h-full w-auto transition-transform duration-250 ease-out group-hover:-translate-y-1"
                     />
                   </div>
                   <div>

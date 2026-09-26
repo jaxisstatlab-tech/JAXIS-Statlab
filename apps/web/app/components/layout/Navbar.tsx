@@ -61,7 +61,7 @@ export default function Navbar() {
         className="mx-auto grid h-16 w-full max-w-[90rem] grid-cols-[1fr_auto] items-center gap-6 px-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-8"
       >
         <Link href="/" aria-label="JAXIS StatLab home" className="flex shrink-0 items-center gap-2.5 justify-self-start">
-          <Image src="/favicon-96x96.png" alt="" width={22} height={22} priority className="h-[22px] w-[22px]" />
+          <Image src="/jaxislogo.png" alt="" width={22} height={22} priority className="h-[22px] w-[22px]" />
           <span className="font-sans text-[15px] font-semibold tracking-[-0.01em] text-white">
             JAXIS <span className="font-normal text-white/60">StatLab</span>
           </span>
@@ -103,14 +103,14 @@ export default function Navbar() {
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-label={open ? "Close menu" : "Open menu"}
-          className="flex h-10 w-10 items-center justify-center justify-self-end rounded-[2px] text-white lg:hidden"
+          className="flex h-10 w-10 items-center justify-center justify-self-end rounded-[2px] text-white transition-transform duration-150 ease-out active:scale-[0.97] lg:hidden"
         >
           {open ? <X size={20} weight="bold" /> : <List size={20} weight="bold" />}
         </button>
       </nav>
 
       {open ? (
-        <div className="h-[calc(100dvh-4rem)] border-t border-white/[0.08] bg-[#010114] px-6 pb-8 pt-4 lg:hidden">
+        <div className="mobile-menu h-[calc(100dvh-4rem)] border-t border-white/[0.08] bg-[#010114] px-6 pb-8 pt-4 lg:hidden">
           <ul className="flex flex-col">
             {LINKS.map((l) => (
               <li key={l.href}>

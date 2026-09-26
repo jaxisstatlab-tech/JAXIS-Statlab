@@ -38,7 +38,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 gap-10 md:grid-cols-12">
           <div className="col-span-2 md:col-span-5">
             <div className="flex items-center gap-2.5">
-              <Image src="/favicon-96x96.png" alt="" width={22} height={22} className="h-[22px] w-[22px]" />
+              <Image src="/jaxislogo.png" alt="" width={22} height={22} className="h-[22px] w-[22px]" />
               <span className="font-sans text-[15px] font-semibold text-white">
                 JAXIS <span className="font-normal text-white/60">StatLab</span>
               </span>

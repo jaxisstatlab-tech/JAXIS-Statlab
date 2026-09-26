@@ -6,11 +6,8 @@ export function AuthCurtain() {
   return (
     <>
       <div id="auth-curtain" aria-hidden="true" className="auth-curtain" suppressHydrationWarning>
-        <div className="auth-curtain-mark">
-          <span style={{ height: "38%", background: "#D9D9D9" }} />
-          <span style={{ height: "68%", background: "#CC6600" }} />
-          <span style={{ height: "100%", background: "#E67300" }} />
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/jaxislogo.png" alt="" width={48} height={48} className="h-12 w-12" />
       </div>
       <script dangerouslySetInnerHTML={{ __html: GATE }} />
     </>
