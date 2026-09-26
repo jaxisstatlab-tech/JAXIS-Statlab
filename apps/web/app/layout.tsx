@@ -3,6 +3,7 @@ import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import CtaTracker from "./components/layout/CtaTracker";
+import SmoothScroll from "./components/layout/SmoothScroll";
 
 const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -63,6 +64,18 @@ export const metadata: Metadata = {
   },
 };
 
+// Runs before paint: a refresh always starts at the top, while fresh visits to a #link still jump to it.
+const SCROLL_TO_TOP_ON_RELOAD = `(function(){try{
+if("scrollRestoration" in history)history.scrollRestoration="manual";
+var n=performance.getEntriesByType("navigation")[0];
+if(!n||n.type!=="reload")return;
+if(location.hash)history.replaceState(null,"",location.pathname+location.search);
+var top=function(){var h=document.documentElement,b=h.style.scrollBehavior;h.style.scrollBehavior="auto";window.scrollTo(0,0);h.style.scrollBehavior=b;};
+top();
+document.addEventListener("DOMContentLoaded",top,{once:true});
+window.addEventListener("load",function(){top();requestAnimationFrame(top);},{once:true});
+}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -113,12 +126,14 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <script dangerouslySetInnerHTML={{ __html: SCROLL_TO_TOP_ON_RELOAD }} />
         <noscript>
           <style>{`.reveal,.status-badge{opacity:1!important;transform:none!important}.mark-draw{clip-path:none!important}.count{--num:var(--to)!important}`}</style>
         </noscript>
       </head>
       <body className="font-sans antialiased" style={{ backgroundColor: "#010114" }}>
         {children}
+        <SmoothScroll />
         <CtaTracker />
         <Analytics />
       </body>

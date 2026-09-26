@@ -88,7 +88,7 @@ export default function TrackerFeed() {
             <li
               key={item.id}
               className={`feed-row absolute inset-x-0 flex items-center gap-4 border-b border-white/[0.06] px-5 ${
-                top ? "bg-white/[0.03]" : ""
+                top ? "bg-[#06061D]" : "bg-[#010114]"
               } ${top && item.id > VISIBLE ? "feed-new" : ""}`}
               style={{
                 height: ROW,

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { List, X } from "@phosphor-icons/react";
 import { LOGIN_URL, REGISTER_URL } from "@/lib/config";
 import { btnGhost, btnPrimary } from "../ui/styles";
+import { SCROLL_LOCK_EVENT } from "./SmoothScroll";
 
 const LINKS = [
   { label: "How it works", href: "#how-it-works" },
@@ -43,6 +44,7 @@ export default function Navbar() {
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
+    window.dispatchEvent(new CustomEvent(SCROLL_LOCK_EVENT, { detail: open }));
     return () => {
       document.body.style.overflow = "";
     };

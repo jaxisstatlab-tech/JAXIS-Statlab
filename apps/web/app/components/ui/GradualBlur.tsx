@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const LAYERS = 6;
+const LAYERS = 4;
 
 // Progressive blur pinned to the bottom of the viewport. Hides once the footer is in view.
 export default function GradualBlur() {
