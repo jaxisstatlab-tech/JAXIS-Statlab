@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const GLYPHS = "abcdefghijklmnopqrstuvwxyz0123456789_";
+const INTRO_MS = 1250;
 
 export default function DecryptedText({
   text,
@@ -35,7 +36,8 @@ export default function DecryptedText({
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const start = window.setTimeout(run, delay);
+    const introLeft = document.documentElement.dataset.intro === "skip" ? 0 : Math.max(0, INTRO_MS - performance.now());
+    const start = window.setTimeout(run, delay + introLeft);
     return () => {
       window.clearTimeout(start);
       window.clearInterval(timer.current);

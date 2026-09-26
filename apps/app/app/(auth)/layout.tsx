@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import { AuthVisualShowcase } from "@/components/auth/AuthVisualShowcase";
 import { BackToWebsiteButton } from "@/components/auth/BackToWebsiteButton";
+import { AuthCurtain } from "@/components/auth/AuthCurtain";
 
 export default function AuthLayout({
   children,
@@ -10,6 +11,7 @@ export default function AuthLayout({
 }) {
   return (
     <div className="min-h-screen w-full bg-[#010114] text-white flex flex-col lg:flex-row font-sans selection:bg-[#CC6600]/30 selection:text-white">
+      <AuthCurtain />
       {/* ── Left Side: Focused Auth Form Desk ─────────── */}
       <aside className="w-full lg:w-1/2 min-h-screen lg:h-screen lg:max-h-screen flex-shrink-0 bg-[#010B18] border-b lg:border-b-0 lg:border-r border-white/[0.08] flex flex-col justify-between overflow-y-auto p-5 sm:p-7 lg:p-8 xl:p-10 z-10 shadow-2xl">
         {/* Top Header: Borderless Back to Website Link on Top-Left */}

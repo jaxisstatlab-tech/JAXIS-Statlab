@@ -77,7 +77,7 @@ export default function Services() {
         <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className={kicker}>Services</div>
-            <h2 className={heading}>Every test your study needs</h2>
+            <h2 data-split className={heading}>Every test your study needs</h2>
             <p className={subtitle}>From a quick data check to full structural models. Checked twice, explained simply.</p>
           </div>
           <a href={LOGIN_URL} data-cta="services-send" className={`${btnPrimary} shrink-0`}>
@@ -115,7 +115,7 @@ export default function Services() {
                   <span className="absolute left-5 top-4 font-mono text-[10px] uppercase tracking-wider text-white/45">
                     Frequency
                   </span>
-                  <div className="relative flex justify-center">
+                  <div data-parallax="0.25" className="relative flex justify-center">
                     <IsoScene
                       id="bell"
                       shapes={BELL_SHAPES}

@@ -51,9 +51,20 @@ body {
     opacity 0.8s var(--ease-out),
     transform 0.8s var(--ease-out);
 }
-.reveal[data-shown] {
+.reveal[data-shown],
+.reveal-fallback .reveal {
   opacity: 1;
   transform: none;
+}
+.reveal-fallback .count {
+  --num: var(--to);
+}
+.reveal-fallback .status-badge {
+  opacity: 1;
+  transform: none;
+}
+.reveal-fallback .mark-draw {
+  clip-path: none;
 }
 
 /* Hero */
@@ -71,6 +82,128 @@ body {
 }
 .hero-in {
   animation: hero-in 0.9s var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+html:not([data-intro="skip"]) .hero-in {
+  animation-delay: calc(var(--d, 0ms) + 1250ms);
+}
+
+/* Exit curtain: drops over the page when clicking through to the app */
+.exit-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #010114;
+  pointer-events: none;
+  transform: translateY(100%);
+  visibility: hidden;
+  transition:
+    transform 300ms cubic-bezier(0.77, 0, 0.175, 1),
+    visibility 0s linear 300ms;
+}
+html[data-leaving] .exit-curtain {
+  transform: none;
+  visibility: visible;
+  transition:
+    transform 300ms cubic-bezier(0.77, 0, 0.175, 1),
+    visibility 0s;
+}
+.exit-bar {
+  width: 12px;
+  border-radius: 2px;
+  transform: skewX(-10deg);
+}
+
+/* First-visit intro: bars rise, wordmark fades in, then the screen wipes up */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: #010114;
+  pointer-events: none;
+  animation: intro-out 650ms cubic-bezier(0.77, 0, 0.175, 1) 1050ms forwards;
+}
+html[data-intro="skip"] .intro,
+html[data-intro="done"] .intro {
+  display: none;
+}
+@keyframes intro-out {
+  to {
+    transform: translateY(-100%);
+    visibility: hidden;
+  }
+}
+.intro-mark {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 44px;
+}
+.intro-bar {
+  width: 12px;
+  border-radius: 2px;
+  transform: skewX(-10deg) scaleY(0);
+  transform-origin: bottom;
+  animation: intro-bar 520ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+.intro-bar:nth-child(1) {
+  animation-delay: 100ms;
+}
+.intro-bar:nth-child(2) {
+  animation-delay: 190ms;
+}
+.intro-bar:nth-child(3) {
+  animation-delay: 280ms;
+}
+@keyframes intro-bar {
+  to {
+    transform: skewX(-10deg) scaleY(1);
+  }
+}
+.intro-word,
+.intro-meta {
+  opacity: 0;
+  animation: intro-fade 500ms cubic-bezier(0.23, 1, 0.32, 1) 420ms forwards;
+}
+.intro-meta {
+  position: absolute;
+  bottom: 28px;
+  left: 32px;
+  animation-delay: 250ms;
+}
+@keyframes intro-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.intro-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  background: #cc6600;
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: intro-line 950ms cubic-bezier(0.65, 0, 0.35, 1) 100ms forwards;
+}
+@keyframes intro-line {
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .pixel-field {
@@ -340,6 +473,30 @@ body {
 .magnet {
   transition: transform 450ms cubic-bezier(0.23, 1, 0.32, 1);
   will-change: transform;
+}
+
+/* Pinned How it works: current step lit, finished half-lit, upcoming dim */
+.step-rail {
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+[data-pinned] .step-rail {
+  opacity: 1;
+}
+[data-pinned] [data-step] {
+  transition: opacity 450ms ease;
+}
+[data-pinned] [data-step][data-state="next"] {
+  opacity: 0.28;
+}
+[data-pinned] [data-step][data-state="done"] {
+  opacity: 0.55;
+}
+[data-pinned] .step-art {
+  transition: transform 500ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+[data-pinned] [data-step][data-state="active"] .step-art {
+  transform: scale(1.1);
 }
 
 /* Isometric columns rising on load */

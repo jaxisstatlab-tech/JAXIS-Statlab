@@ -101,7 +101,7 @@ export default function Pricing() {
       <div className={container}>
         <Reveal>
           <div className={kicker}>Pricing</div>
-          <h2 className={heading}>Clear prices, fixed before you pay.</h2>
+          <h2 data-split className={heading}>Clear prices, fixed before you pay.</h2>
           <p className={subtitle}>
             Every study gets its own written scope and price first. Prices below
             are starting points. Your written price is final, with no surprise

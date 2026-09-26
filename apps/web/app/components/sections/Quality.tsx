@@ -52,7 +52,7 @@ export default function Quality() {
         <Reveal className="flex items-end justify-between gap-6">
           <div>
             <div className={kicker}>Quality checks</div>
-            <h2 className={heading}>Quality you can check at a glance</h2>
+            <h2 data-split className={heading}>Quality you can check at a glance</h2>
           </div>
           <div className="hidden gap-2 sm:flex">
             {[

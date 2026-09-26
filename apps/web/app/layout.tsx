@@ -3,6 +3,9 @@ import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import CtaTracker from "./components/layout/CtaTracker";
+import Intro from "./components/layout/Intro";
+import ExitCurtain from "./components/layout/ExitCurtain";
+import { APP_URL } from "@/lib/config";
 import SmoothScroll from "./components/layout/SmoothScroll";
 
 const ibmPlexSans = IBM_Plex_Sans({
@@ -65,6 +68,12 @@ export const metadata: Metadata = {
 };
 
 // Runs before paint: a refresh always starts at the top, while fresh visits to a #link still jump to it.
+// Play the intro once per session; skip it on repeat loads or when reduced motion is requested.
+const INTRO_GATE = `(function(){var h=document.documentElement;try{if(sessionStorage.getItem("jx-intro")||matchMedia("(prefers-reduced-motion: reduce)").matches){h.dataset.intro="skip";}else{sessionStorage.setItem("jx-intro","1");window.addEventListener("load",function(){setTimeout(function(){h.dataset.intro="done";},2200);});}}catch(e){h.dataset.intro="skip";}})();`;
+
+// If page scripts are slow or fail, reveal content anyway instead of leaving it invisible.
+const REVEAL_FALLBACK = `window.addEventListener("load",function(){setTimeout(function(){var h=document.documentElement;if(!h.classList.contains("reveal-ready"))h.classList.add("reveal-fallback");},1500);});`;
+
 const SCROLL_TO_TOP_ON_RELOAD = `(function(){try{
 if("scrollRestoration" in history)history.scrollRestoration="manual";
 var n=performance.getEntriesByType("navigation")[0];
@@ -118,6 +127,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
       style={{ backgroundColor: "#010114" }}
     >
@@ -126,12 +136,18 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <link rel="preconnect" href={new URL(APP_URL).origin} />
+        <link rel="dns-prefetch" href={new URL(APP_URL).origin} />
+        <script dangerouslySetInnerHTML={{ __html: INTRO_GATE }} />
         <script dangerouslySetInnerHTML={{ __html: SCROLL_TO_TOP_ON_RELOAD }} />
+        <script dangerouslySetInnerHTML={{ __html: REVEAL_FALLBACK }} />
         <noscript>
           <style>{`.reveal,.status-badge{opacity:1!important;transform:none!important}.mark-draw{clip-path:none!important}.count{--num:var(--to)!important}`}</style>
         </noscript>
       </head>
       <body className="font-sans antialiased" style={{ backgroundColor: "#010114" }}>
+        <Intro />
+        <ExitCurtain />
         {children}
         <SmoothScroll />
         <CtaTracker />

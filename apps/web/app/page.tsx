@@ -2,6 +2,7 @@ import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import MobileCTA from "./components/layout/MobileCTA";
 import GradualBlur from "./components/ui/GradualBlur";
+import ScrollFx from "./components/layout/ScrollFx";
 import Hero from "./components/sections/Hero";
 import Services from "./components/sections/Services";
 import HowItWorks from "./components/sections/HowItWorks";
@@ -42,6 +43,7 @@ export default function Home() {
         <FinalCTA />
       </main>
       <Footer />
+      <ScrollFx />
       <GradualBlur />
       <MobileCTA />
     </>

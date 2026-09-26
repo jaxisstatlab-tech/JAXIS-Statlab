@@ -21,7 +21,7 @@ export default function PipelineBand() {
       />
       <div className={`${container} relative grid grid-cols-1 items-center gap-12 lg:grid-cols-12`}>
         <Reveal className="lg:col-span-5">
-          <h2 className="max-w-md font-sans text-2xl font-medium leading-tight tracking-[-0.03em] text-[#010114] sm:text-3xl lg:text-[2rem]">
+          <h2 data-split className="max-w-md font-sans text-2xl font-medium leading-tight tracking-[-0.03em] text-[#010114] sm:text-3xl lg:text-[2rem]">
             From raw data to defense-ready in one place
           </h2>
           <p className="mt-4 max-w-sm font-sans text-sm leading-relaxed text-[#010114]/80 sm:text-[15px]">
@@ -48,7 +48,9 @@ export default function PipelineBand() {
         </Reveal>
 
         <Reveal delay={120} className="lg:col-span-6 lg:col-start-7">
-          <TrackerFeed />
+          <div data-parallax="0.2">
+            <TrackerFeed />
+          </div>
         </Reveal>
       </div>
     </section>

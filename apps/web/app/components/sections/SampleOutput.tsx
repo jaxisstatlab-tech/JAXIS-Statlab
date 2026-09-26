@@ -85,7 +85,7 @@ export default function SampleOutput() {
         <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className={kicker}>What you get</div>
-            <h2 className={heading}>Files your adviser can open and check</h2>
+            <h2 data-split className={heading}>Files your adviser can open and check</h2>
           </div>
           {SAMPLE_OUTPUT_URL ? (
             <a
@@ -107,7 +107,7 @@ export default function SampleOutput() {
             <Reveal className="flex flex-1 flex-col">
               <div className="relative flex flex-1 items-center justify-center overflow-hidden px-6 pb-0 pt-10 sm:px-12">
                 <div className="absolute inset-x-10 bottom-0 h-24 rounded-[50%] bg-[#CC6600]/15 blur-3xl" />
-                <div className="glare glare-paper relative w-full max-w-xl translate-y-2 -rotate-1 overflow-hidden rounded-t-[2px] bg-[#F7F5F0] px-6 pb-8 pt-6 text-[#0B0B1A] shadow-[0_-10px_60px_-20px_rgba(204,102,0,0.35)]">
+                <div data-parallax="0.2" className="glare glare-paper relative w-full max-w-xl translate-y-2 -rotate-1 overflow-hidden rounded-t-[2px] bg-[#F7F5F0] px-6 pb-8 pt-6 text-[#0B0B1A] shadow-[0_-10px_60px_-20px_rgba(204,102,0,0.35)]">
                   <p className="font-apa text-[13px] font-bold">Table 4</p>
                   <p className="font-apa text-[13px] italic">
                     Multiple Regression Results Predicting GWA

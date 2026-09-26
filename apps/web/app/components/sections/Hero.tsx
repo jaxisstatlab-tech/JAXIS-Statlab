@@ -22,7 +22,7 @@ export default function Hero() {
 
         <h1
           className="hero-in mt-6 max-w-4xl font-sans text-[2.6rem] font-medium leading-[1.05] tracking-[-0.04em] text-white sm:text-6xl lg:text-[4rem]"
-          style={{ animationDelay: "80ms" }}
+          style={{ ["--d" as string]: "80ms" }}
         >
           <span className="sr-only">Thesis, survey, dissertation, and research statistics, checked by experts</span>
           <span aria-hidden="true">
@@ -34,13 +34,13 @@ export default function Hero() {
 
         <p
           className="hero-in mt-6 max-w-2xl font-mono text-xs leading-relaxed text-white/60 sm:text-sm"
-          style={{ animationDelay: "160ms" }}
+          style={{ ["--d" as string]: "160ms" }}
         >
           Generic templates won&apos;t pass your panel. We run your analysis for your exact study, checked by two
           statisticians before delivery. Real numbers, plain explanations, zero shortcuts.
         </p>
 
-        <div className="hero-in mt-9 flex flex-wrap items-center justify-center gap-6" style={{ animationDelay: "240ms" }}>
+        <div className="hero-in mt-9 flex flex-wrap items-center justify-center gap-6" style={{ ["--d" as string]: "240ms" }}>
           <a href={LOGIN_URL} data-cta="hero-send" className={btnPrimary}>
             Send your study
             <ArrowRight size={15} weight="bold" />

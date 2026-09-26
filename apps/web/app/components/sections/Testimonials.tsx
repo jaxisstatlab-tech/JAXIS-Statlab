@@ -10,7 +10,7 @@ export default function Testimonials() {
       <div className={container}>
         <Reveal>
           <div className={kicker}>From students</div>
-          <h2 className={heading}>What students say after their defense</h2>
+          <h2 data-split className={heading}>What students say after their defense</h2>
         </Reveal>
         <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-[2px] border border-white/10 bg-white/10 md:grid-cols-3">
           {TESTIMONIALS.map((t, i) => (

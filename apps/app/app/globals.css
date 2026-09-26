@@ -736,5 +736,36 @@ main,
 [data-role="CLIENT"] .stagger-7, [data-portal="client"] .stagger-7, [data-portal="client"].stagger-7 { animation-delay: 630ms; }
 [data-role="CLIENT"] .stagger-8, [data-portal="client"] .stagger-8, [data-portal="client"].stagger-8 { animation-delay: 720ms; }
 
-
+/* Auth entrance curtain: lifts away when arriving from the marketing site (?via=web) */
+.auth-curtain {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  background: #010114;
+  pointer-events: none;
+}
+.auth-curtain[data-play] {
+  display: flex;
+  animation: auth-curtain-lift 520ms cubic-bezier(0.77, 0, 0.175, 1) 120ms forwards;
+}
+.auth-curtain-mark {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 44px;
+}
+.auth-curtain-mark > span {
+  width: 12px;
+  border-radius: 2px;
+  transform: skewX(-10deg);
+}
+@keyframes auth-curtain-lift {
+  to {
+    transform: translateY(-100%);
+    visibility: hidden;
+  }
+}
 

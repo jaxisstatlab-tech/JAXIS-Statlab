@@ -68,7 +68,7 @@ export default function FAQ() {
       <div className={`${container} grid grid-cols-1 items-start gap-12 lg:grid-cols-12 lg:gap-16`}>
         <div className="lg:sticky lg:top-28 lg:col-span-5">
           <div className={kicker}>FAQ</div>
-          <h2 className={heading}>Questions students ask first</h2>
+          <h2 data-split className={heading}>Questions students ask first</h2>
           <p className="mt-4 max-w-sm font-sans text-sm leading-relaxed text-white/65">
             Something else on your mind? Email{" "}
             <a

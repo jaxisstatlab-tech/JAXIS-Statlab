@@ -14,7 +14,7 @@ export default function FinalCTA() {
       <div className={`${container} relative text-center`}>
         <Reveal>
           <div className="mb-3 font-mono text-xs font-medium uppercase tracking-[0.15em] text-white/55">Get started</div>
-          <h2 className="mx-auto font-sans text-3xl font-medium tracking-[-0.035em] text-white sm:text-4xl lg:text-[2.75rem]">
+          <h2 data-split className="mx-auto font-sans text-3xl font-medium tracking-[-0.035em] text-white sm:text-4xl lg:text-[2.75rem]">
             Ready to send your study?
           </h2>
           <p className="mx-auto mt-4 max-w-xl font-sans text-base leading-relaxed text-white/65">
