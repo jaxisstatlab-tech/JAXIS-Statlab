@@ -41,7 +41,7 @@ export const Stepper: React.FC<StepperProps> = ({
       style={{
         borderRadius: "2px",
         border: "1px solid rgba(255, 255, 255, 0.09)",
-        backgroundColor: "rgba(1, 22, 46, 0.75)",
+        backgroundColor: "rgba(11, 11, 25, 0.75)",
       }}
     >
       {steps.map((step, idx) => {

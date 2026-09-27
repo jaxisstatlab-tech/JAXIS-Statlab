@@ -202,7 +202,7 @@ export function AdminFirewallMessagesClient({
       </div>
 
       {/* Filter Toolbar */}
-      <Card className="p-4 sm:p-5 bg-[#01142B] border-white/10 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <Card className="p-4 sm:p-5 bg-[#0A0A18] border-white/10 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="flex-1 min-w-[240px]">
           <FormInput
             placeholder="Search by matched snippet, sender name, email, or intake ID..."
@@ -246,7 +246,7 @@ export function AdminFirewallMessagesClient({
       </Card>
 
       {/* Blocked Messages Table */}
-      <Card className="p-0 bg-[#01142B] border-white/10 overflow-hidden shadow-2xl">
+      <Card className="p-0 bg-[#0A0A18] border-white/10 overflow-hidden shadow-2xl">
         <div className="p-4 sm:p-5 border-b border-white/10 bg-[#010114]/50 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <IconShieldLock size={18} stroke={1.5} className="text-[#CC6600]" />

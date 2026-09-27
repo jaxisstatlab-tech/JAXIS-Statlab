@@ -7,7 +7,6 @@ import { submitClientRevision } from "../actions";
 import {
   Button,
   Card,
-  PageHeader,
   Badge,
   Toast,
 } from "@repo/ui";
@@ -19,6 +18,7 @@ import {
   PaperPlaneRight,
   CircleNotch,
 } from "@phosphor-icons/react";
+import { StudySection } from "@/features/projects/components/StudySection";
 
 interface ClientRevisionFormProps {
   data: ClientDeliverablesDTO;
@@ -90,19 +90,12 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
   if (!isReleased || !revisionWindow.isActive) {
     return (
       <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-24 w-full animate-content-fade">
-        <PageHeader
-          breadcrumbs={[
-            { label: "WORKSPACE", href: "/dashboard" },
-            { label: "MY STUDIES", href: "/dashboard/client/projects" },
-            { label: project.intakeId, href: `/dashboard/client/projects/${project.id}` },
-            { label: "DELIVERABLES", href: `/dashboard/client/projects/${project.id}/deliverables` },
-            { label: "REVISION REQUEST" },
-          ]}
-          title="Revision Window Closed"
-          description="The 3-day post-delivery revision window for this research study has concluded."
+        <StudySection
+          title="Request changes"
+          description="The 3-day window for free changes has ended."
         />
 
-        <Card className="p-8 text-center bg-[#01142B] border border-amber-500/20 rounded-[2px]">
+        <Card className="p-8 text-center bg-[#0A0A18] border border-amber-500/20 rounded-[2px]">
           <div className="mx-auto w-14 h-14 rounded-[2px] bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-4">
             <Clock size={32} weight="fill" />
           </div>
@@ -138,19 +131,12 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
   if (hasPendingRevision) {
     return (
       <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-24 w-full animate-content-fade">
-        <PageHeader
-          breadcrumbs={[
-            { label: "WORKSPACE", href: "/dashboard" },
-            { label: "MY STUDIES", href: "/dashboard/client/projects" },
-            { label: project.intakeId, href: `/dashboard/client/projects/${project.id}` },
-            { label: "DELIVERABLES", href: `/dashboard/client/projects/${project.id}/deliverables` },
-            { label: "REVISION REQUEST" },
-          ]}
-          title="Revision Request Pending"
-          description="You already have an active revision request undergoing review."
+        <StudySection
+          title="Request changes"
+          description="You already sent a change request. We're reviewing it."
         />
 
-        <Card className="p-8 text-center bg-[#01142B] border border-sky-500/20 rounded-[2px]">
+        <Card className="p-8 text-center bg-[#0A0A18] border border-sky-500/20 rounded-[2px]">
           <div className="mx-auto w-14 h-14 rounded-[2px] bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mb-4">
             <ShieldCheck size={32} weight="fill" />
           </div>
@@ -178,18 +164,10 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
   return (
     <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-24 w-full animate-content-fade font-sans">
       {/* Header */}
-      <PageHeader
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "MY STUDIES", href: "/dashboard/client/projects" },
-          { label: project.intakeId, href: `/dashboard/client/projects/${project.id}` },
-          { label: "DELIVERABLES", href: `/dashboard/client/projects/${project.id}/deliverables` },
-          { label: "REVISION REQUEST" },
-        ]}
-        title="Submit Study Revision Request"
-        description={`Request specific adjustments or table refinements for ${project.researchTitle}.`}
-        actions={
-          <Button
+      <StudySection
+          title="Request changes"
+          description="Tell us what to fix. Changes within your agreed scope are free."
+          actions={<Button
             variant="secondary"
             size="sm"
             onClick={() => router.push(`/dashboard/client/projects/${project.id}/deliverables`)}
@@ -197,12 +175,11 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
           >
             <ArrowLeft size={15} weight="fill" />
             <span>Back to Deliverables</span>
-          </Button>
-        }
-      />
+          </Button>}
+        />
 
       {/* Countdown Card */}
-      <Card className="p-5 bg-[#01142B] border border-sky-500/30 rounded-[2px]">
+      <Card className="p-5 bg-[#0A0A18] border border-sky-500/30 rounded-[2px]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-[2px] bg-sky-500/10 text-sky-400 border border-sky-500/20">
@@ -224,7 +201,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
       </Card>
 
       {/* Guidelines Card */}
-      <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px]">
+      <Card className="p-6 bg-[#0A0A18] border border-white/10 rounded-[2px]">
         <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-white/80 mb-3">
           Revision Policy & Guidelines
         </h4>
@@ -256,7 +233,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
       </Card>
 
       {/* Form */}
-      <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px]">
+      <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px]">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-xs font-mono text-white/70 mb-1.5 uppercase font-semibold">
@@ -267,7 +244,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
               placeholder="e.g. Chapter 4 - Section 4.2, Table 3 (Regression Output), Appendix B"
               value={requestedSections}
               onChange={(e) => setRequestedSections(e.target.value)}
-              className="w-full bg-[#010D1F] border border-white/15 focus:border-[#CC6600] rounded-[2px] px-3.5 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:ring-0 transition-colors"
+              className="w-full bg-[#050513] border border-white/15 focus:border-[#CC6600] rounded-[2px] px-3.5 py-2.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:ring-0 transition-colors"
             />
             <p className="text-[11px] font-sans text-white/40 mt-1">
               List the specific chapters, tables, or figures you would like our research team to review.
@@ -290,7 +267,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
               placeholder="Please provide specific, clear instructions on what needs to be adjusted, clarified, or corrected..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-[#010D1F] border border-white/15 focus:border-[#CC6600] rounded-[2px] p-3.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:ring-0 leading-relaxed font-sans transition-colors resize-none"
+              className="w-full bg-[#050513] border border-white/15 focus:border-[#CC6600] rounded-[2px] p-3.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:ring-0 leading-relaxed font-sans transition-colors resize-none"
             />
           </div>
 
@@ -300,7 +277,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
                 type="checkbox"
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 rounded-[2px] bg-[#010D1F] border-white/20 text-[#CC6600] focus:ring-0 cursor-pointer"
+                className="mt-0.5 rounded-[2px] bg-[#050513] border-white/20 text-[#CC6600] focus:ring-0 cursor-pointer"
               />
               <span className="text-xs font-sans text-white/70 leading-relaxed select-none">
                 I confirm that the revision details provided above are within the original research objectives and agreed Scope of Work.

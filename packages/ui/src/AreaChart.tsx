@@ -205,7 +205,7 @@ export function AreaChart({
               content={({ active, payload, label }) => {
                 if (!active || !payload || !payload.length) return null;
                 return (
-                  <div className="rounded-[2px] border border-white/15 bg-[#01142B] p-3 shadow-xl backdrop-blur-md">
+                  <div className="rounded-[2px] border border-white/15 bg-[#0A0A18] p-3 shadow-xl backdrop-blur-md">
                     {label && (
                       <p className="text-xs font-mono font-bold text-white/70 mb-1.5">
                         {label}

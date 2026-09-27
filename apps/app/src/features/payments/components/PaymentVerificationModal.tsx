@@ -121,7 +121,7 @@ export function PaymentVerificationModal({
     >
       <div className="flex flex-col gap-6 w-full">
         {/* ── Transaction Dossier ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-[2px] bg-[#01142B] border border-white/10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-[2px] bg-[#0A0A18] border border-white/10">
           <div className="flex flex-col gap-1">
             <span className="font-mono text-xs text-white/50 uppercase tracking-wider">
               Research Study
@@ -236,7 +236,7 @@ export function PaymentVerificationModal({
           </div>
 
           {proof ? (
-            <div className="p-4 rounded-[2px] bg-[#010915] border border-white/10 flex flex-col items-center justify-center min-h-[220px] max-h-[420px] overflow-auto">
+            <div className="p-4 rounded-[2px] bg-[#030311] border border-white/10 flex flex-col items-center justify-center min-h-[220px] max-h-[420px] overflow-auto">
               {isImage && !imageError ? (
                 <div className="relative flex items-center justify-center w-full min-h-[200px]">
                   {imageLoading && (

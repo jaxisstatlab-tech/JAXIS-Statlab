@@ -477,7 +477,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
           ]}
         />
         <Card
-          className="p-8 border-l-4 border-l-[#CC6600]/60 min-h-[220px] bg-[#011B38]/40 border-white/[0.08]"
+          className="p-8 border-l-4 border-l-[#CC6600]/60 min-h-[220px] bg-[#0F0F1D]/40 border-white/[0.08]"
           contentClassName="items-center justify-center h-full"
         >
           <LoadingState
@@ -513,7 +513,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
           ]}
         />
 
-        <Card className="p-8 border-l-4 border-l-[#CC6600] flex flex-col justify-between min-h-[220px] gap-5 bg-[#011B38]/40 border-white/[0.08] animate-card-reveal stagger-1">
+        <Card className="p-8 border-l-4 border-l-[#CC6600] flex flex-col justify-between min-h-[220px] gap-5 bg-[#0F0F1D]/40 border-white/[0.08] animate-card-reveal stagger-1">
           <div className="flex flex-col gap-3">
             <h2 className="text-base font-bold text-white uppercase tracking-wider font-sans">
               School Profile Verification Required
@@ -719,7 +719,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               onDragOver={(e) => handleDragOver(e, "RESEARCH_DOCUMENT")}
               onDragLeave={(e) => handleDragLeave(e, "RESEARCH_DOCUMENT")}
               onDrop={(e) => handleDrop(e, "RESEARCH_DOCUMENT")}
-              className={`p-6 rounded-[2px] border bg-[#01142B]/85 flex flex-col justify-between gap-5 transition-all min-h-[300px] ${
+              className={`p-6 rounded-[2px] border bg-[#0A0A18]/85 flex flex-col justify-between gap-5 transition-all min-h-[300px] ${
                 dragActiveCategory === "RESEARCH_DOCUMENT"
                   ? "border-[#CC6600] bg-[#CC6600]/5 ring-1 ring-[#CC6600]/40"
                   : "border-white/[0.09]"
@@ -764,7 +764,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
               {/* Upload Zone / State */}
               {uploadingState.RESEARCH_DOCUMENT ? (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#01142B] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden">
+                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0 animate-pulse">
@@ -786,7 +786,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
                   {/* Bottom Group: Progress Bar + Status Footer */}
                   <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#000D1A] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
+                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
                       <div
                         className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-150"
                         style={{ width: `${uploadingState.RESEARCH_DOCUMENT.progress}%` }}
@@ -803,7 +803,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   </div>
                 </div>
               ) : filesList.some((f) => f.category === "RESEARCH_DOCUMENT") ? (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#01142B] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
+                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0">
@@ -825,7 +825,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
                   {/* Bottom Group: Progress Bar + Status Footer */}
                   <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#000D1A] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
+                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
                       <div className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-300 w-full" />
                     </div>
 
@@ -879,7 +879,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               onDragOver={(e) => handleDragOver(e, "DATASET")}
               onDragLeave={(e) => handleDragLeave(e, "DATASET")}
               onDrop={(e) => handleDrop(e, "DATASET")}
-              className={`p-6 rounded-[2px] border bg-[#01142B]/85 flex flex-col justify-between gap-5 transition-all min-h-[300px] ${
+              className={`p-6 rounded-[2px] border bg-[#0A0A18]/85 flex flex-col justify-between gap-5 transition-all min-h-[300px] ${
                 dragActiveCategory === "DATASET"
                   ? "border-[#CC6600] bg-[#CC6600]/5 ring-1 ring-[#CC6600]/40"
                   : "border-white/[0.09]"
@@ -924,7 +924,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
               {/* Upload Zone / State */}
               {uploadingState.DATASET ? (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#01142B] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden">
+                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0 animate-pulse">
@@ -946,7 +946,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
                   {/* Bottom Group: Progress Bar + Status Footer */}
                   <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#000D1A] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
+                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
                       <div
                         className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-150"
                         style={{ width: `${uploadingState.DATASET.progress}%` }}
@@ -963,7 +963,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   </div>
                 </div>
               ) : filesList.some((f) => f.category === "DATASET") ? (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#01142B] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
+                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0">
@@ -985,7 +985,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
                   {/* Bottom Group: Progress Bar + Status Footer */}
                   <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#000D1A] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
+                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
                       <div className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-300 w-full" />
                     </div>
 
@@ -1039,7 +1039,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               onDragOver={(e) => handleDragOver(e, "QUESTIONNAIRE")}
               onDragLeave={(e) => handleDragLeave(e, "QUESTIONNAIRE")}
               onDrop={(e) => handleDrop(e, "QUESTIONNAIRE")}
-              className={`p-6 rounded-[2px] border bg-[#01142B]/85 flex flex-col justify-between gap-5 transition-all min-h-[300px] ${
+              className={`p-6 rounded-[2px] border bg-[#0A0A18]/85 flex flex-col justify-between gap-5 transition-all min-h-[300px] ${
                 dragActiveCategory === "QUESTIONNAIRE"
                   ? "border-[#CC6600] bg-[#CC6600]/5 ring-1 ring-[#CC6600]/40"
                   : "border-white/[0.09]"
@@ -1084,7 +1084,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
               {/* Upload Zone / State */}
               {uploadingState.QUESTIONNAIRE ? (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#01142B] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden">
+                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0 animate-pulse">
@@ -1106,7 +1106,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
                   {/* Bottom Group: Progress Bar + Status Footer */}
                   <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#000D1A] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
+                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
                       <div
                         className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-150"
                         style={{ width: `${uploadingState.QUESTIONNAIRE.progress}%` }}
@@ -1123,7 +1123,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   </div>
                 </div>
               ) : filesList.some((f) => f.category === "QUESTIONNAIRE") ? (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#01142B] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
+                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0">
@@ -1145,7 +1145,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
                   {/* Bottom Group: Progress Bar + Status Footer */}
                   <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#000D1A] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
+                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
                       <div className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-300 w-full" />
                     </div>
 
@@ -1232,7 +1232,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
           {/* School Affiliation Verification */}
           {profile && (
             <div
-              className="p-5 md:p-6 rounded-[2px] bg-[#011C38] border border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5"
+              className="p-5 md:p-6 rounded-[2px] bg-[#10101E] border border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5"
               style={{ marginTop: "1.5rem", padding: "1.25rem 1.5rem", borderRadius: "2px", boxSizing: "border-box" }}
             >
               <div className="flex flex-col gap-1.5">
@@ -1323,7 +1323,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
             className={`rounded-[2px] transition-all cursor-pointer select-none border ${
               integrityAgreed
                 ? "bg-[#CC6600]/10 border-[#CC6600]/50 ring-1 ring-[#CC6600]/30"
-                : "bg-[#01142B]/85 border-white/[0.12] hover:border-white/25"
+                : "bg-[#0A0A18]/85 border-white/[0.12] hover:border-white/25"
             }`}
             style={{
               marginTop: "1.5rem",
@@ -1341,13 +1341,13 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               className={`w-5 h-5 rounded-[2px] border flex items-center justify-center transition-all mt-0.5 flex-shrink-0 ${
                 integrityAgreed
                   ? "bg-[#CC6600] border-[#CC6600] text-white"
-                  : "bg-[#011C38] border-white/30 text-transparent hover:border-[#CC6600]/70"
+                  : "bg-[#10101E] border-white/30 text-transparent hover:border-[#CC6600]/70"
               }`}
               style={{
                 width: "1.375rem",
                 height: "1.375rem",
                 borderRadius: "2px",
-                backgroundColor: integrityAgreed ? "#CC6600" : "#011C38",
+                backgroundColor: integrityAgreed ? "#CC6600" : "#10101E",
                 borderColor: integrityAgreed ? "#CC6600" : "rgba(255, 255, 255, 0.3)",
                 display: "flex",
                 alignItems: "center",

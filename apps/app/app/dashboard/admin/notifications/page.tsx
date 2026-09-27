@@ -200,7 +200,7 @@ export default function AdminNotificationsPage() {
       </div>
 
       {/* Main Table Card */}
-      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[4px]">
+      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#0A0A18] border border-white/10 rounded-[4px]">
         {/* Filter and Search Bar */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center border-b border-white/10 pb-5">
           {/* Status Tabs */}
@@ -362,7 +362,7 @@ export default function AdminNotificationsPage() {
       {/* Log Details Modal */}
       {selectedLog && (
         <div className="fixed inset-0 z-50 bg-[#010114]/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#01142B] border border-white/15 rounded-[4px] max-w-xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 font-sans">
+          <div className="bg-[#0A0A18] border border-white/15 rounded-[4px] max-w-xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 font-sans">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
                 <IconFileText size={22} className="text-sky-400" />

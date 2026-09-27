@@ -177,11 +177,11 @@ export function DeletedStudiesClient({ initialData }: DeletedStudiesClientProps)
       </div>
 
       {/* ── Main Data Desk Card ── */}
-      <Card className="p-0 overflow-hidden bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl">
+      <Card className="p-0 overflow-hidden bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl">
         {/* Command Ribbon */}
         <div className="p-4 sm:p-5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           {/* Role Filter Tabs */}
-          <div className="flex items-center gap-1.5 bg-[#010D1F] p-1 rounded-[2px] border border-white/10 self-start sm:self-auto">
+          <div className="flex items-center gap-1.5 bg-[#050513] p-1 rounded-[2px] border border-white/10 self-start sm:self-auto">
             {(["ALL", "ADMIN", "CEO"] as const).map((role) => (
               <button
                 key={role}
@@ -210,7 +210,7 @@ export function DeletedStudiesClient({ initialData }: DeletedStudiesClientProps)
               placeholder="Search by ID, title, client, or reason..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] pl-9 pr-14 py-1.5 text-xs text-white placeholder:text-white/30 outline-none focus:border-[#CC6600] font-sans"
+              className="w-full bg-[#050513] border border-white/10 rounded-[2px] pl-9 pr-14 py-1.5 text-xs text-white placeholder:text-white/30 outline-none focus:border-[#CC6600] font-sans"
             />
             {searchQuery ? (
               <button
@@ -422,7 +422,7 @@ export function DeletedStudiesClient({ initialData }: DeletedStudiesClientProps)
         >
           <div className="flex flex-col gap-5 text-sm font-sans">
             {/* Audit Metadata Card */}
-            <div className="rounded-[2px] bg-[#01142B] border border-white/10 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="rounded-[2px] bg-[#0A0A18] border border-white/10 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <span className="text-white/40 uppercase tracking-wider font-semibold">
                   Deleted By
@@ -472,12 +472,12 @@ export function DeletedStudiesClient({ initialData }: DeletedStudiesClientProps)
                     label="Copy JSON"
                   />
                 </div>
-                <pre className="rounded-[2px] bg-[#010D1F] border border-white/10 p-4 font-mono text-xs text-sky-300 max-h-96 overflow-y-auto overflow-x-auto leading-relaxed whitespace-pre-wrap">
+                <pre className="rounded-[2px] bg-[#050513] border border-white/10 p-4 font-mono text-xs text-sky-300 max-h-96 overflow-y-auto overflow-x-auto leading-relaxed whitespace-pre-wrap">
                   {JSON.stringify(selectedItem.snapshot, null, 2)}
                 </pre>
               </div>
             ) : (
-              <div className="rounded-[2px] bg-[#01142B] border border-white/10 p-4 flex flex-col gap-3 text-xs">
+              <div className="rounded-[2px] bg-[#0A0A18] border border-white/10 p-4 flex flex-col gap-3 text-xs">
                 <span className="text-xs font-semibold text-white/60 uppercase tracking-wider border-b border-white/10 pb-2">
                   Original Study Profile
                 </span>

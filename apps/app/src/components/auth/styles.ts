@@ -8,7 +8,7 @@ export const authSubtitle = "auth-sub font-sans text-sm leading-relaxed text-whi
 
 // Passed to FormInput's className: 44px tall fields (comfortable touch targets).
 export const authField =
-  "!h-12 text-sm rounded-[2px] !bg-[#010D1F] transition-[border-color,box-shadow] duration-150 focus:!shadow-[0_0_0_3px_rgba(204,102,0,0.16)]";
+  "!h-12 text-sm rounded-[2px] !bg-[#050513] transition-[border-color,box-shadow] duration-150 focus:!shadow-[0_0_0_3px_rgba(204,102,0,0.16)]";
 
 // Passed to Button's className for the main action.
 export const authSubmit =

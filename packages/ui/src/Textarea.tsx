@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "./utils";
 
 export const textareaVariants = cva(
-  "flex min-h-[96px] w-full rounded-[4px] border bg-[#01142B] px-4 py-3.5 text-sm text-white placeholder:text-white/35 focus:outline-none focus:ring-1 focus:ring-[#CC6600]/60 focus:border-[#CC6600] disabled:cursor-not-allowed disabled:opacity-50 transition-colors font-sans resize-y box-border leading-relaxed",
+  "flex min-h-[96px] w-full rounded-[4px] border bg-[#0A0A18] px-4 py-3.5 text-sm text-white placeholder:text-white/35 focus:outline-none focus:ring-1 focus:ring-[#CC6600]/60 focus:border-[#CC6600] disabled:cursor-not-allowed disabled:opacity-50 transition-colors font-sans resize-y box-border leading-relaxed",
   {
     variants: {
       hasError: {

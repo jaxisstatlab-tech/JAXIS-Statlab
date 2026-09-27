@@ -9,9 +9,9 @@ export const inputVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-[#01142B] border-white/15 hover:border-white/25 focus:border-[#CC6600]",
-        terminal: "bg-[#010E21] border-white/15 hover:border-white/25 focus:border-[#CC6600] font-mono",
-        auth: "bg-[#01142B] border-white/15 hover:border-white/25 focus:border-[#CC6600]",
+        default: "bg-[#0A0A18] border-white/15 hover:border-white/25 focus:border-[#CC6600]",
+        terminal: "bg-[#060614] border-white/15 hover:border-white/25 focus:border-[#CC6600] font-mono",
+        auth: "bg-[#0A0A18] border-white/15 hover:border-white/25 focus:border-[#CC6600]",
       },
       hasError: {
         true: "!border-[#EF4444] focus:!border-[#EF4444] focus:!ring-[#EF4444]",

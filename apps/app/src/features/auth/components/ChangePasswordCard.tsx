@@ -89,7 +89,7 @@ export function ChangePasswordCard({ className = "" }: ChangePasswordCardProps) 
       )}
 
       <Card
-        className={`p-6 md:p-8 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl animate-card-reveal ${className}`}
+        className={`p-6 md:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl animate-card-reveal ${className}`}
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           {/* Canonical Section Card Header Anatomy (Rule 21) */}

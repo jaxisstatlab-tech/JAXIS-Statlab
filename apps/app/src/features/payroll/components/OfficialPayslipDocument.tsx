@@ -116,7 +116,7 @@ export function OfficialPayslipDocument({
     <div className={`flex flex-col gap-6 w-full max-w-4xl mx-auto print:max-w-none print:w-full print:m-0 print:p-0 ${className}`}>
       {/* ── Document Actions Toolbar (Hidden in Print) ── */}
       {showPrintToolbar && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2 print:hidden bg-[#01142B] border border-white/10 rounded-[4px] p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2 print:hidden bg-[#0A0A18] border border-white/10 rounded-[4px] p-4">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs font-mono text-white/50 uppercase tracking-wider">
               Voucher Reference:
@@ -487,7 +487,7 @@ export function OfficialPayslipDocument({
           {/* Prepared By */}
           <div className="flex flex-col items-center">
             <div className="h-10 sm:h-14 w-full flex items-end justify-center overflow-visible pb-1">
-              <p className="font-signature text-3xl sm:text-4xl text-[#0c2340] print:text-black leading-none select-none tracking-normal transform -rotate-2 scale-105 pointer-events-none whitespace-nowrap">
+              <p className="font-signature text-3xl sm:text-4xl text-[#151523] print:text-black leading-none select-none tracking-normal transform -rotate-2 scale-105 pointer-events-none whitespace-nowrap">
                 {preparerSignature}
               </p>
             </div>
@@ -507,7 +507,7 @@ export function OfficialPayslipDocument({
           {/* Approved By (Employer) */}
           <div className="flex flex-col items-center">
             <div className="h-10 sm:h-14 w-full flex items-end justify-center overflow-visible pb-1">
-              <p className="font-signature text-3xl sm:text-4xl text-[#0c2340] print:text-black leading-none select-none tracking-normal transform -rotate-1 scale-105 pointer-events-none whitespace-nowrap">
+              <p className="font-signature text-3xl sm:text-4xl text-[#151523] print:text-black leading-none select-none tracking-normal transform -rotate-1 scale-105 pointer-events-none whitespace-nowrap">
                 {employerSignature}
               </p>
             </div>
@@ -527,7 +527,7 @@ export function OfficialPayslipDocument({
           {/* Acknowledged By (Employee) */}
           <div className="flex flex-col items-center">
             <div className="h-10 sm:h-14 w-full flex items-end justify-center overflow-visible pb-1">
-              <p className="font-signature text-3xl sm:text-4xl text-[#0c2340] print:text-black leading-none select-none tracking-normal transform -rotate-2 scale-105 pointer-events-none whitespace-nowrap">
+              <p className="font-signature text-3xl sm:text-4xl text-[#151523] print:text-black leading-none select-none tracking-normal transform -rotate-2 scale-105 pointer-events-none whitespace-nowrap">
                 {employeeSignature}
               </p>
             </div>

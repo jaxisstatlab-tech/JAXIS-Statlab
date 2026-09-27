@@ -95,7 +95,7 @@ export function FileDropzone({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 rounded-[3px] border border-white/10 bg-[#01142B]/70 p-4 sm:p-5 transition-colors",
+        "flex flex-col gap-3 rounded-[3px] border border-white/10 bg-[#0A0A18]/70 p-4 sm:p-5 transition-colors",
         isDragOver && "border-[#CC6600] bg-[#CC6600]/5",
         error && "border-[#EF4444]/60 bg-[#EF4444]/5",
         className
@@ -136,7 +136,7 @@ export function FileDropzone({
 
       {/* ── State 1: Upload in Progress ── */}
       {isUploading ? (
-        <div className="p-4 rounded-[2px] bg-[#010D1F] border border-[#CC6600]/60 flex flex-col justify-between min-h-[110px] shadow-lg">
+        <div className="p-4 rounded-[2px] bg-[#050513] border border-[#CC6600]/60 flex flex-col justify-between min-h-[110px] shadow-lg">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#CC6600] shrink-0 animate-pulse">
@@ -157,7 +157,7 @@ export function FileDropzone({
           </div>
 
           <div className="flex flex-col gap-2 mt-auto pt-3">
-            <div className="w-full bg-[#000D1A] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px]">
+            <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px]">
               <div
                 className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-150"
                 style={{ width: `${uploadProgress}%` }}
@@ -174,7 +174,7 @@ export function FileDropzone({
         </div>
       ) : uploadedFile ? (
         /* ── State 2: Uploaded File Active ── */
-        <div className="p-4 rounded-[2px] bg-[#010D1F] border border-[#10B981]/40 flex flex-col gap-3 min-h-[110px] shadow-lg">
+        <div className="p-4 rounded-[2px] bg-[#050513] border border-[#10B981]/40 flex flex-col gap-3 min-h-[110px] shadow-lg">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <div className="w-8 h-8 rounded-[2px] bg-white/[0.04] border border-white/15 flex items-center justify-center shrink-0">

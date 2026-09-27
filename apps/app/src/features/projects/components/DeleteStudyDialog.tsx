@@ -170,7 +170,7 @@ export function DeleteStudyDialog({
           </div>
 
           {/* Study Summary pill */}
-          <div className="rounded-[2px] bg-[#01142B] border border-white/10 p-3 flex flex-col gap-1.5 text-xs">
+          <div className="rounded-[2px] bg-[#0A0A18] border border-white/10 p-3 flex flex-col gap-1.5 text-xs">
             <div className="flex items-center justify-between text-white/50">
               <span>Study Identifier</span>
               <span className="font-mono text-white font-semibold">{studyCode}</span>
@@ -199,10 +199,10 @@ export function DeleteStudyDialog({
               value={selectedReason}
               onChange={(e) => setSelectedReason(e.target.value)}
               disabled={isDeleting}
-              className="bg-[#01142B] border border-white/15 text-white text-xs rounded-[2px] px-3 py-2 outline-none focus:border-[#CC6600]"
+              className="bg-[#0A0A18] border border-white/15 text-white text-xs rounded-[2px] px-3 py-2 outline-none focus:border-[#CC6600]"
             >
               {COMMON_REASONS.map((r) => (
-                <option key={r} value={r} className="bg-[#01142B] text-white">
+                <option key={r} value={r} className="bg-[#0A0A18] text-white">
                   {r}
                 </option>
               ))}
@@ -220,12 +220,12 @@ export function DeleteStudyDialog({
               placeholder="Provide background context or compliance reference (optional)..."
               disabled={isDeleting}
               rows={2}
-              className="bg-[#01142B] border-white/15 text-white text-xs rounded-[2px] resize-none"
+              className="bg-[#0A0A18] border-white/15 text-white text-xs rounded-[2px] resize-none"
             />
           </div>
 
           {/* Storage Purge Option */}
-          <div className="flex items-start gap-3 p-3 rounded-[2px] bg-[#01142B] border border-white/10">
+          <div className="flex items-start gap-3 p-3 rounded-[2px] bg-[#0A0A18] border border-white/10">
             <Checkbox
               id="purgeFilesCheckbox"
               checked={purgeFiles}
@@ -257,7 +257,7 @@ export function DeleteStudyDialog({
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder="DELETE"
               disabled={isDeleting}
-              className="bg-[#01142B] border-white/15 font-mono text-xs text-white rounded-[2px] placeholder:text-white/20"
+              className="bg-[#0A0A18] border-white/15 font-mono text-xs text-white rounded-[2px] placeholder:text-white/20"
             />
           </div>
         </div>

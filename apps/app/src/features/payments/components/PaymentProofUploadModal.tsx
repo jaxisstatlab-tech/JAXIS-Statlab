@@ -216,7 +216,7 @@ export function PaymentProofUploadModal({
               {channels.filter((c) => c.id === "GCASH").map((channel, i) => (
                 <div
                   key={i}
-                  className="p-4 rounded-[2px] border border-white/10 bg-[#01142B] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="p-4 rounded-[2px] border border-white/10 bg-[#0A0A18] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
                   <div className="flex flex-col flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -273,44 +273,44 @@ export function PaymentProofUploadModal({
                         aria-label="GCash QR Code"
                       >
                         {/* Top-left position pattern */}
-                        <rect x="8" y="8" width="28" height="28" rx="2" fill="#0f172a" />
+                        <rect x="8" y="8" width="28" height="28" rx="2" fill="#0D0D1B" />
                         <rect x="14" y="14" width="16" height="16" fill="#ffffff" />
-                        <rect x="18" y="18" width="8" height="8" rx="1" fill="#0f172a" />
+                        <rect x="18" y="18" width="8" height="8" rx="1" fill="#0D0D1B" />
 
                         {/* Top-right position pattern */}
-                        <rect x="64" y="8" width="28" height="28" rx="2" fill="#0f172a" />
+                        <rect x="64" y="8" width="28" height="28" rx="2" fill="#0D0D1B" />
                         <rect x="70" y="14" width="16" height="16" fill="#ffffff" />
-                        <rect x="74" y="18" width="8" height="8" rx="1" fill="#0f172a" />
+                        <rect x="74" y="18" width="8" height="8" rx="1" fill="#0D0D1B" />
 
                         {/* Bottom-left position pattern */}
-                        <rect x="8" y="64" width="28" height="28" rx="2" fill="#0f172a" />
+                        <rect x="8" y="64" width="28" height="28" rx="2" fill="#0D0D1B" />
                         <rect x="14" y="70" width="16" height="16" fill="#ffffff" />
-                        <rect x="18" y="74" width="8" height="8" rx="1" fill="#0f172a" />
+                        <rect x="18" y="74" width="8" height="8" rx="1" fill="#0D0D1B" />
 
                         {/* Alignment block */}
-                        <rect x="70" y="70" width="16" height="16" rx="2" fill="#0f172a" />
+                        <rect x="70" y="70" width="16" height="16" rx="2" fill="#0D0D1B" />
                         <rect x="74" y="74" width="8" height="8" fill="#ffffff" />
-                        <rect x="76" y="76" width="4" height="4" fill="#0f172a" />
+                        <rect x="76" y="76" width="4" height="4" fill="#0D0D1B" />
 
                         {/* Timing Patterns */}
-                        <rect x="40" y="12" width="4" height="4" fill="#0f172a" />
-                        <rect x="48" y="12" width="4" height="4" fill="#0f172a" />
-                        <rect x="56" y="12" width="4" height="4" fill="#0f172a" />
-                        <rect x="12" y="40" width="4" height="4" fill="#0f172a" />
-                        <rect x="12" y="48" width="4" height="4" fill="#0f172a" />
-                        <rect x="12" y="56" width="4" height="4" fill="#0f172a" />
+                        <rect x="40" y="12" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="48" y="12" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="56" y="12" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="12" y="40" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="12" y="48" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="12" y="56" width="4" height="4" fill="#0D0D1B" />
 
                         {/* Matrix data cells */}
-                        <rect x="40" y="20" width="4" height="4" fill="#0f172a" />
-                        <rect x="48" y="24" width="4" height="4" fill="#0f172a" />
-                        <rect x="56" y="20" width="4" height="4" fill="#0f172a" />
-                        <rect x="44" y="28" width="4" height="4" fill="#0f172a" />
-                        <rect x="52" y="32" width="4" height="4" fill="#0f172a" />
+                        <rect x="40" y="20" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="48" y="24" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="56" y="20" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="44" y="28" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="52" y="32" width="4" height="4" fill="#0D0D1B" />
 
-                        <rect x="20" y="40" width="4" height="4" fill="#0f172a" />
-                        <rect x="28" y="44" width="4" height="4" fill="#0f172a" />
-                        <rect x="24" y="52" width="4" height="4" fill="#0f172a" />
-                        <rect x="32" y="56" width="4" height="4" fill="#0f172a" />
+                        <rect x="20" y="40" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="28" y="44" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="24" y="52" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="32" y="56" width="4" height="4" fill="#0D0D1B" />
 
                         {/* Center branded badge node */}
                         <rect x="40" y="40" width="20" height="20" rx="3" fill="#005CEE" />
@@ -327,22 +327,22 @@ export function PaymentProofUploadModal({
                         </text>
 
                         {/* Lower matrix data cells */}
-                        <rect x="64" y="40" width="4" height="4" fill="#0f172a" />
-                        <rect x="72" y="44" width="4" height="4" fill="#0f172a" />
-                        <rect x="80" y="40" width="4" height="4" fill="#0f172a" />
-                        <rect x="88" y="44" width="4" height="4" fill="#0f172a" />
-                        <rect x="68" y="52" width="4" height="4" fill="#0f172a" />
-                        <rect x="76" y="56" width="4" height="4" fill="#0f172a" />
-                        <rect x="84" y="52" width="4" height="4" fill="#0f172a" />
+                        <rect x="64" y="40" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="72" y="44" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="80" y="40" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="88" y="44" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="68" y="52" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="76" y="56" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="84" y="52" width="4" height="4" fill="#0D0D1B" />
 
-                        <rect x="40" y="64" width="4" height="4" fill="#0f172a" />
-                        <rect x="48" y="68" width="4" height="4" fill="#0f172a" />
-                        <rect x="56" y="64" width="4" height="4" fill="#0f172a" />
-                        <rect x="44" y="76" width="4" height="4" fill="#0f172a" />
-                        <rect x="52" y="80" width="4" height="4" fill="#0f172a" />
-                        <rect x="40" y="84" width="4" height="4" fill="#0f172a" />
-                        <rect x="48" y="88" width="4" height="4" fill="#0f172a" />
-                        <rect x="56" y="84" width="4" height="4" fill="#0f172a" />
+                        <rect x="40" y="64" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="48" y="68" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="56" y="64" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="44" y="76" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="52" y="80" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="40" y="84" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="48" y="88" width="4" height="4" fill="#0D0D1B" />
+                        <rect x="56" y="84" width="4" height="4" fill="#0D0D1B" />
                       </svg>
                     )}
 
@@ -358,7 +358,7 @@ export function PaymentProofUploadModal({
               {channels.filter((c) => c.id === "BANK_TRANSFER").map((channel, i) => (
                 <div
                   key={i}
-                  className="p-4 rounded-[2px] border border-white/10 bg-[#01142B] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  className="p-4 rounded-[2px] border border-white/10 bg-[#0A0A18] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
                   <div className="flex flex-col">
                     <span className="font-sans text-xs font-semibold text-white">

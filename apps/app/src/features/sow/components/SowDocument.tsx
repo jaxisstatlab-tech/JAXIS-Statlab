@@ -73,7 +73,7 @@ export function SowDocument({
       )}
 
       {/* ── Pure Document Sheet ── */}
-      <div className="sow-print-container bg-[#011126] border border-white/[0.12] rounded-[2px] p-8 sm:p-12 lg:p-16 text-white shadow-2xl relative print:bg-white print:text-black print:border-none print:p-0 print:shadow-none font-sans">
+      <div className="sow-print-container bg-[#080816] border border-white/[0.12] rounded-[2px] p-8 sm:p-12 lg:p-16 text-white shadow-2xl relative print:bg-white print:text-black print:border-none print:p-0 print:shadow-none font-sans">
         
         {/* ── Document Header ── */}
         <div className="border-b-2 border-white/20 print:border-black/30 pb-6 mb-8">

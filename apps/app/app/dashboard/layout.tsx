@@ -2,6 +2,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { auth, getLiveAccountState, computePasswordFingerprint } from "@/lib/auth";
+import { getDevUserByEmail } from "@/lib/mock-data/users.data";
 import type { RoleName } from "@prisma/client";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { getActiveShift } from "@/features/attendance/actions";
@@ -50,6 +51,11 @@ export default async function DashboardLayout({
   const userRole = (user?.role as RoleName) || "ADMIN";
   const userFullName = user?.fullName || user?.name || "Research Staff";
   const userEmail = user?.email || "";
+  // Offline dev sessions can carry a different id than the offline study files use.
+  const presenceId =
+    (process.env.JAXIS_OFFLINE === "1" && process.env.NODE_ENV !== "production" && userEmail
+      ? getDevUserByEmail(userEmail)?.id
+      : undefined) || user.id;
 
   let clientProfileIncomplete = false;
   if (userRole === "CLIENT" && user?.id) {
@@ -87,6 +93,7 @@ export default async function DashboardLayout({
       userFullName={userFullName}
       userRole={userRole}
       userEmail={userEmail}
+      presenceId={presenceId}
       clientProfileIncomplete={clientProfileIncomplete}
       initialActiveShift={initialActiveShift}
       initialUnreadMessagesCount={initialUnreadMessagesCount}

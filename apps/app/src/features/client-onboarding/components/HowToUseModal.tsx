@@ -192,7 +192,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
           onValueChange={(val) => setActiveTab(val as "steps" | "faqs")}
           className="w-full"
         >
-          <TabsList className="bg-[#01142B] border border-white/10 p-1 rounded-[2px] w-full sm:w-auto">
+          <TabsList className="bg-[#0A0A18] border border-white/10 p-1 rounded-[2px] w-full sm:w-auto">
             <TabsTrigger value="steps" className="flex items-center gap-2">
               <ListChecks size={14} weight="fill" />
               <span>4 Simple Steps</span>
@@ -206,7 +206,7 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
           {/* ── Tab 1: 4 Simple Steps (Connected Vertical Timeline) ── */}
           <TabsContent value="steps" className="mt-4 focus-visible:outline-none">
             {/* 4-Stage Horizontal Pipeline Header */}
-            <div className="hidden sm:grid grid-cols-4 gap-2 mb-5 p-3 rounded-[2px] bg-[#01142B]/60 border border-white/[0.08]">
+            <div className="hidden sm:grid grid-cols-4 gap-2 mb-5 p-3 rounded-[2px] bg-[#0A0A18]/60 border border-white/[0.08]">
               {STEPS.map((s, idx) => (
                 <div key={s.number} className="flex items-center gap-2 min-w-0">
                   <span className="w-5 h-5 rounded-full bg-white/[0.06] border border-white/15 text-[10px] font-mono font-bold text-white/70 flex items-center justify-center shrink-0">
@@ -227,14 +227,14 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
                   className={`relative group animate-card-reveal stagger-${idx + 1}`}
                 >
                   {/* Timeline Node Marker */}
-                  <div className="absolute -left-[24px] sm:-left-[32px] top-3.5 w-6 h-6 sm:w-7 sm:h-7 rounded-[2px] bg-[#011B38] border border-white/20 group-hover:border-[#CC6600] flex items-center justify-center shadow-md transition-colors z-10">
+                  <div className="absolute -left-[24px] sm:-left-[32px] top-3.5 w-6 h-6 sm:w-7 sm:h-7 rounded-[2px] bg-[#0F0F1D] border border-white/20 group-hover:border-[#CC6600] flex items-center justify-center shadow-md transition-colors z-10">
                     <span className="font-mono text-[10px] sm:text-[11px] font-bold text-[#FFA040]">
                       {step.number}
                     </span>
                   </div>
 
                   {/* Step Card */}
-                  <div className="p-4 sm:p-5 rounded-[2px] bg-[#01142B]/90 border border-white/10 hover:border-white/20 transition-all flex flex-col sm:flex-row items-start gap-4 shadow-sm">
+                  <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18]/90 border border-white/10 hover:border-white/20 transition-all flex flex-col sm:flex-row items-start gap-4 shadow-sm">
                     <div className="w-10 h-10 rounded-[2px] bg-white/[0.04] border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-white/[0.06] transition-colors">
                       {step.icon}
                     </div>
@@ -274,8 +274,8 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
                     key={faq.question}
                     className={`rounded-[2px] border transition-colors shadow-sm overflow-hidden animate-card-reveal stagger-${idx + 1} ${
                       isExpanded
-                        ? "bg-[#011B38]/90 border-white/20"
-                        : "bg-[#01142B]/85 border-white/10 hover:border-white/15"
+                        ? "bg-[#0F0F1D]/90 border-white/20"
+                        : "bg-[#0A0A18]/85 border-white/10 hover:border-white/15"
                     }`}
                   >
                     <button

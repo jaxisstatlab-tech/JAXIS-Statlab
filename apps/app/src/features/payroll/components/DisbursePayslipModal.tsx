@@ -114,7 +114,7 @@ export function DisbursePayslipModal({
         )}
 
         {/* Payout Summary Box */}
-        <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-center justify-between">
+        <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex items-center justify-between">
           <div>
             <span className="text-xs uppercase font-mono text-white/50 block font-semibold">Net Payable Amount</span>
             <span className="text-2xl font-mono font-bold text-emerald-400">
@@ -127,7 +127,7 @@ export function DisbursePayslipModal({
         </div>
 
         {/* Registered Payout Destination Callout */}
-        <div className="p-3.5 bg-[#01142B] border border-[#CC6600]/30 rounded-[2px] flex flex-col gap-2">
+        <div className="p-3.5 bg-[#0A0A18] border border-[#CC6600]/30 rounded-[2px] flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#FFA040] flex items-center gap-1.5">
               {payout?.payoutChannel === "BANK_TRANSFER" ? (
@@ -145,7 +145,7 @@ export function DisbursePayslipModal({
           </div>
 
           {payout ? (
-            <div className="flex items-center justify-between bg-[#010D1F] p-2.5 rounded-[2px] border border-white/10">
+            <div className="flex items-center justify-between bg-[#050513] p-2.5 rounded-[2px] border border-white/10">
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-sm font-bold text-white tracking-wide">
@@ -202,7 +202,7 @@ export function DisbursePayslipModal({
                 className={`py-2.5 px-2 rounded-[2px] border text-center font-mono text-xs cursor-pointer transition-colors ${
                   method === m
                     ? "bg-[#CC6600]/15 border-[#CC6600] text-white font-bold"
-                    : "bg-[#010D1F] border-white/10 text-white/60 hover:text-white"
+                    : "bg-[#050513] border-white/10 text-white/60 hover:text-white"
                 }`}
               >
                 {m.replace(/_/g, " ")}
@@ -222,7 +222,7 @@ export function DisbursePayslipModal({
             value={reference}
             onChange={(e) => setReference(e.target.value)}
             placeholder="e.g. GCASH-202608-99214 or BDO-REF-441029"
-            className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] p-2.5 text-xs text-white font-mono placeholder-white/30 outline-none focus:border-[#CC6600]"
+            className="w-full bg-[#050513] border border-white/10 rounded-[2px] p-2.5 text-xs text-white font-mono placeholder-white/30 outline-none focus:border-[#CC6600]"
           />
           <span className="text-xs text-white/40">
             Official proof reference entered into the JAXIS Treasury ledger.
@@ -239,7 +239,7 @@ export function DisbursePayslipModal({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="e.g. Released via GCash merchant payout API"
-            className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none focus:border-[#CC6600]"
+            className="w-full bg-[#050513] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none focus:border-[#CC6600]"
           />
         </div>
       </form>

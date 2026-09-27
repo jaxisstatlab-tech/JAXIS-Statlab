@@ -331,7 +331,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   const courier = await pdfDoc.embedFont(StandardFonts.Courier);
 
   // Calibrated Palette
-  const navy = rgb(0.04, 0.12, 0.24); // #0A1F3D - authoritative deep academic navy
+  const navy = rgb(0.04, 0.12, 0.24); // #131321 - authoritative deep academic navy
   const borderBlue = rgb(0.08, 0.22, 0.44); // #143870 - crisp academic blue inner border
   const black = rgb(0.08, 0.08, 0.08);
   const charcoal = rgb(0.18, 0.20, 0.24);

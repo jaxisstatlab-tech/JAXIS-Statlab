@@ -50,7 +50,7 @@ export interface FilterToolbarProps {
 
 const BAND_STYLE: React.CSSProperties = {
   padding: "1rem 1.75rem",
-  backgroundColor: "rgba(1, 14, 30, 0.6)",
+  backgroundColor: "rgba(6, 6, 20, 0.6)",
   borderTop: "1px solid rgba(255, 255, 255, 0.06)",
   borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
 };
@@ -58,7 +58,7 @@ const BAND_STYLE: React.CSSProperties = {
 const INPUT_CONTAINER_STYLE: React.CSSProperties = {
   height: "2.25rem",
   padding: "0 0.875rem",
-  backgroundColor: "rgba(1, 27, 56, 0.7)",
+  backgroundColor: "rgba(15, 15, 29, 0.7)",
   border: "1px solid rgba(255, 255, 255, 0.10)",
   borderRadius: "2px",
 };
@@ -67,7 +67,7 @@ const SELECT_STYLE: React.CSSProperties = {
   height: "2.25rem",
   paddingLeft: "0.625rem",
   paddingRight: "1.75rem",
-  backgroundColor: "rgba(1, 27, 56, 0.7)",
+  backgroundColor: "rgba(15, 15, 29, 0.7)",
   border: "1px solid rgba(255, 255, 255, 0.10)",
   borderRadius: "2px",
   fontSize: "0.75rem",
@@ -192,10 +192,10 @@ export const FilterToolbar = React.forwardRef<HTMLDivElement, FilterToolbarProps
 
     return (
       <div ref={ref} className={className} style={BAND_STYLE}>
-        <div className="flex flex-col md:flex-row md:items-center gap-3">
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-3">
           {/* ── Search Input ── */}
           <div
-            className="relative flex-1 min-w-[220px] flex items-center gap-3 rounded-[3px] transition-colors"
+            className="relative w-full md:w-auto md:flex-1 md:min-w-[220px] flex items-center gap-3 rounded-[3px] transition-colors"
             style={INPUT_CONTAINER_STYLE}
           >
             <SearchIcon />
@@ -273,7 +273,7 @@ export const FilterToolbar = React.forwardRef<HTMLDivElement, FilterToolbarProps
             disabled={!hasActiveFilters}
             title={hasActiveFilters ? "Reset search and filters to default" : "Filters are at default values"}
             aria-label="Reset filters"
-            className={`w-9 h-9 flex items-center justify-center rounded-[3px] transition-all duration-150 group flex-shrink-0 border ${
+            className={`ml-auto md:ml-0 w-9 h-9 flex items-center justify-center rounded-[3px] transition-all duration-150 group flex-shrink-0 border ${
               hasActiveFilters
                 ? "border-[#CC6600]/40 bg-[#CC6600]/10 text-[#CC6600] hover:bg-[#CC6600]/20 hover:border-[#CC6600] cursor-pointer shadow-sm shadow-[#CC6600]/10"
                 : "border-white/[0.06] bg-white/[0.02] text-white/20 cursor-not-allowed opacity-50"

@@ -638,7 +638,7 @@ export default function CeoStorageRetentionPage() {
       {/* ── Storage Configuration: 2-Column Bento Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* Left Column: Retention Schedule */}
-        <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col justify-between gap-6">
+        <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col justify-between gap-6">
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-2.5 border-b border-white/10 pb-4">
               <div className="p-2 rounded-[2px] bg-sky-500/15 text-sky-400">
@@ -759,7 +759,7 @@ export default function CeoStorageRetentionPage() {
         </Card>
 
         {/* Right Column: Protected File Categories */}
-        <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col justify-between gap-6">
+        <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col justify-between gap-6">
           <div className="flex flex-col gap-4">
             {/* Header + Bulk Toolbar */}
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -809,7 +809,7 @@ export default function CeoStorageRetentionPage() {
                     key={item.key}
                     className={`p-2.5 rounded-[2px] border flex items-center gap-3 cursor-pointer transition-all ${
                       isChecked
-                        ? "bg-[#011B38] border-white/20 text-white"
+                        ? "bg-[#0F0F1D] border-white/20 text-white"
                         : "bg-black/20 border-white/5 text-white/40 hover:bg-white/[0.02]"
                     }`}
                   >
@@ -846,7 +846,7 @@ export default function CeoStorageRetentionPage() {
           </div>
 
           {/* Legal Compliance Notice */}
-          <div className="p-3 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-center gap-2 text-xs text-white/60">
+          <div className="p-3 bg-[#050513] border border-white/10 rounded-[2px] flex items-center gap-2 text-xs text-white/60">
             <Lock size={14} weight="fill" className="text-sky-400 shrink-0" />
             <span>
               Signed SOWs, formal invoices, and tax receipts are permanently preserved by law.
@@ -856,7 +856,7 @@ export default function CeoStorageRetentionPage() {
       </div>
 
       {/* ── Danger Zone: Selective Database Reset ── */}
-      <Card className="p-6 sm:p-8 bg-[#01142B] border border-red-500/20 rounded-[2px] flex flex-col gap-5">
+      <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-red-500/20 rounded-[2px] flex flex-col gap-5">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-red-500/15">
           <div className="flex items-center gap-3">
@@ -998,7 +998,7 @@ export default function CeoStorageRetentionPage() {
       {purgeStage === "staged" && (
         <div className="fixed bottom-0 left-0 right-0 z-50 animate-content-fade">
           <div className="max-w-3xl mx-auto px-4 pb-4">
-            <div className="p-4 bg-[#01142B] border border-amber-500/40 rounded-[2px] flex flex-col gap-3 shadow-2xl">
+            <div className="p-4 bg-[#0A0A18] border border-amber-500/40 rounded-[2px] flex flex-col gap-3 shadow-2xl">
               <div className="w-full bg-white/10 h-1 rounded-[1px] overflow-hidden">
                 <div
                   className="h-full bg-amber-500 transition-all duration-1000 ease-linear"
@@ -1075,7 +1075,7 @@ export default function CeoStorageRetentionPage() {
                   className={`p-3 rounded-[2px] border text-left flex flex-col gap-1 transition-all cursor-pointer ${
                     purgeScope === "FINISHED_ONLY"
                       ? "bg-[#CC6600]/20 border-[#CC6600] text-white"
-                      : "bg-[#010D1F] border-white/10 text-white/60 hover:border-white/20"
+                      : "bg-[#050513] border-white/10 text-white/60 hover:border-white/20"
                   }`}
                 >
                   <span className="font-bold text-xs text-white flex items-center gap-1.5">
@@ -1093,7 +1093,7 @@ export default function CeoStorageRetentionPage() {
                   className={`p-3 rounded-[2px] border text-left flex flex-col gap-1 transition-all cursor-pointer ${
                     purgeScope === "ALL_PROJECTS"
                       ? "bg-amber-500/20 border-amber-500 text-white"
-                      : "bg-[#010D1F] border-white/10 text-white/60 hover:border-white/20"
+                      : "bg-[#050513] border-white/10 text-white/60 hover:border-white/20"
                   }`}
                 >
                   <span className="font-bold text-xs text-white flex items-center gap-1.5">
@@ -1107,7 +1107,7 @@ export default function CeoStorageRetentionPage() {
               </div>
 
               {purgeScope === "ALL_PROJECTS" && (
-                <label className="p-2.5 bg-[#01142B] border border-white/10 rounded-[2px] flex items-center gap-2.5 cursor-pointer select-none">
+                <label className="p-2.5 bg-[#0A0A18] border border-white/10 rounded-[2px] flex items-center gap-2.5 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={deleteTestProjects}
@@ -1121,7 +1121,7 @@ export default function CeoStorageRetentionPage() {
               )}
 
               {/* Grace Period Reassurance */}
-              <div className="p-2.5 bg-[#011E38]/80 border border-emerald-500/30 rounded-[2px] flex items-center gap-2 text-[11px] text-emerald-300">
+              <div className="p-2.5 bg-[#11111F]/80 border border-emerald-500/30 rounded-[2px] flex items-center gap-2 text-[11px] text-emerald-300">
                 <ShieldCheck size={15} weight="fill" className="shrink-0" />
                 <span>Includes a 30-second grace period with instant Undo.</span>
               </div>

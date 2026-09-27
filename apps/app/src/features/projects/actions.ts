@@ -33,6 +33,7 @@ import {
   buildProjectRoleWhereClause,
   sanitizeProjectForSpecialist,
 } from "@/lib/access-control";
+import { getDevUserByEmail } from "@/lib/mock-data/users.data";
 
 const DEV_PROJECTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
 const DEV_PAYMENTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), "dev_data", "payments.json");
@@ -853,6 +854,11 @@ export async function getProjectById(
       };
     }
 
+    // Offline sessions can carry a different id than the dev account in the offline files.
+    const myIds = new Set([session.user.id]);
+    const devId = session.user.email ? getDevUserByEmail(session.user.email)?.id : undefined;
+    if (devId) myIds.add(devId);
+
     if (session.user.role === "CLIENT") {
       const isOwner =
         project.clientId === session.user.id ||
@@ -864,9 +870,10 @@ export async function getProjectById(
         };
       }
     } else if (session.user.role === "STATISTICIAN") {
-      const isAssigned = (
+      const assignedId = (
         project as ProjectDetailItem & { assignment?: { statisticianId?: string; qaLeadId?: string } }
-      ).assignment?.statisticianId === session.user.id;
+      ).assignment?.statisticianId;
+      const isAssigned = !!assignedId && myIds.has(assignedId);
       if (!isAssigned) {
         return {
           success: false,
@@ -874,9 +881,10 @@ export async function getProjectById(
         };
       }
     } else if (session.user.role === "SENIOR_QA_LEAD") {
-      const isAssigned = (
+      const assignedId = (
         project as ProjectDetailItem & { assignment?: { statisticianId?: string; qaLeadId?: string } }
-      ).assignment?.qaLeadId === session.user.id;
+      ).assignment?.qaLeadId;
+      const isAssigned = !!assignedId && myIds.has(assignedId);
       if (!isAssigned) {
         return {
           success: false,

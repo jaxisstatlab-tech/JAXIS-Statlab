@@ -2,7 +2,7 @@
 
 **Workspace:** `apps/app` & `@repo/ui`  
 **Role & Mandate:** Senior Product Designer, Design Systems Architect, UX Engineer, and UI Quality Director  
-**Aesthetic Foundation:** Dark Precision Terminal / Enterprise Scientific (`#010114` Midnight Navy, `#01142B` Substrate, `#CC6600` Enterprise Orange)  
+**Aesthetic Foundation:** Dark Precision Terminal / Enterprise Scientific (`#010114` Midnight Navy, `#0A0A18` Substrate, `#CC6600` Enterprise Orange)  
 **Boundary:** **STRICTLY FRONTEND ONLY** (Zero Backend / Database / API / Auth / Logic Modifications)
 
 ---
@@ -54,8 +54,8 @@ We do not replace the existing aesthetic with generic SaaS tropes or purple AI g
 | Token | Hex / Value | Semantic Role | Usage Rule |
 |---|---|---|---|
 | **Master Canvas** | `#010114` | Midnight Deep Space Navy | 95% foundation substrate for viewport, topbar, and main container. |
-| **Surface Card** | `rgba(1, 22, 46, 0.75)` / `#01142B` | Elevated panels, cards, tables | Flat substrate with 1px border. Never add multi-stop vertical gradients. |
-| **Surface Elevation** | `#011B38` / `#01162E` | Hovered rows, active dialogs | Subtle contrast step for interactive elements. |
+| **Surface Card** | `rgba(11, 11, 25, 0.75)` / `#0A0A18` | Elevated panels, cards, tables | Flat substrate with 1px border. Never add multi-stop vertical gradients. |
+| **Surface Elevation** | `#0F0F1D` / `#0B0B19` | Hovered rows, active dialogs | Subtle contrast step for interactive elements. |
 | **Enterprise Orange** | `#CC6600` | Primary accent | **5%–10% max rule**. CTAs, active stepper tabs, focus accents, primary highlights. |
 | **Analytical Sky** | `#38BDF8` / `#0284C7` | Telemetry metrics, research data | Secondary badges, methodology tags, dataset indicators. |
 | **Verification Emerald**| `#10B981` | Verification seals, success states | Completed milestones, active shift indicator, approved QA seals. |
@@ -82,7 +82,7 @@ Color is a **scarce cognitive resource**. When every number, badge, pill, and la
 3. **Badge & Status Restraint**:
    - Only the primary `<StatusBadge />` carries semantic status color. Do not surround it with 5 other colored chips. Keep ID chips muted (`bg-white/[0.04] text-white/80 border-white/10` or subtle `#CC6600/15 text-[#FF9433]`).
 4. **The 80 / 15 / 5 Color Budget**:
-   - **80% Substrate**: Dark precision canvas (`#010114`) and solid surfaces (`#01142B`).
+   - **80% Substrate**: Dark precision canvas (`#010114`) and solid surfaces (`#0A0A18`).
    - **15% Typographic Contrast**: High-contrast white and calibrated opacity tints (`text-white`, `text-white/70`, `text-white/40`).
    - **5% Maximum Accent**: Enterprise Orange (`#CC6600`) for primary interactive CTAs, with semantic colors (`emerald`, `amber`, `crimson`) used strictly for purposeful state feedback.
 
@@ -97,7 +97,7 @@ Color is a **scarce cognitive resource**. When every number, badge, pill, and la
 - **Library**: Powered by `recharts`, encapsulated cleanly in `@repo/ui`'s `<AreaChart />`.
 - **SSR Hydration Safety**: Includes built-in `isMounted` state and a pulse skeleton matching the chart's exact height to prevent Next.js 16 SSR mismatches.
 - **Color Budget**: Strict 2-color maximum — Enterprise Orange (`#CC6600`) and Analytical Sky (`#38BDF8`).
-- **Substrate**: Must be encapsulated inside a solid `#01142B` Card with `rounded-[2px]`, `border-white/10`, and a telemetry header with an icon and time range label.
+- **Substrate**: Must be encapsulated inside a solid `#0A0A18` Card with `rounded-[2px]`, `border-white/10`, and a telemetry header with an icon and time range label.
 
 ---
 
@@ -106,8 +106,8 @@ Color is a **scarce cognitive resource**. When every number, badge, pill, and la
 AI-generated interfaces suffer from predictable clichés that destroy professional credibility. Every page upgrade must actively identify and eliminate these anti-patterns:
 
 ### 3.1. Cliché: Awkward Multi-Stop Gradients
-- **AI Slop**: Heavy 3-stop vertical gradients on cards and tables (`bg-gradient-to-b from-[#01142B] via-[#010E20] to-[#010A17]`), or gaudy action bar gradients (`bg-gradient-to-r from-orange-500/20 to-transparent`).
-- **Human Upgrade**: Crisp, solid substrates (`bg-[#01142B]/85` or `bg-[#01142B]`) with calibrated 1px perimeter borders (`border-white/10`).
+- **AI Slop**: Heavy 3-stop vertical gradients on cards and tables (`bg-gradient-to-b from-[#0A0A18] via-[#060614] to-[#040412]`), or gaudy action bar gradients (`bg-gradient-to-r from-orange-500/20 to-transparent`).
+- **Human Upgrade**: Crisp, solid substrates (`bg-[#0A0A18]/85` or `bg-[#0A0A18]`) with calibrated 1px perimeter borders (`border-white/10`).
 
 ### 3.2. Cliché: Blurry Box-Shadow Glows
 - **AI Slop**: Diffuse glowing shadows (`shadow-[0_0_25px_rgba(204,102,0,0.35)]`) that look like a 2018 neon gaming HUD.
@@ -361,7 +361,7 @@ Before approving any UI refactor, verify against these physical touch criteria:
 A visually striking interface that cannot be navigated by keyboard, read by a screen reader, or seen in high contrast is an engineering failure. All page upgrades must comply with **WCAG 2.2 Level AA**:
 
 ### 6.1. Contrast Ratios & Optical Hierarchy (WCAG 1.4.3 / 1.4.11)
-- **Primary Body & Titles**: Text on Master Canvas (`#010114`) and Surface Cards (`#01142B`) must use `text-white` or `text-white/90` (14:1+ contrast, vastly exceeding the required 4.5:1).
+- **Primary Body & Titles**: Text on Master Canvas (`#010114`) and Surface Cards (`#0A0A18`) must use `text-white` or `text-white/90` (14:1+ contrast, vastly exceeding the required 4.5:1).
 - **Secondary & Helper Text**: Must use `text-white/60` or `text-white/70` (minimum 4.5:1 contrast).
 - **Strictly Banned**: Microscopic, low-contrast gray text (`text-white/20` or `text-white/30` for readable labels).
 - **UI Borders & Focus States**: Hairline borders (`border-white/10` to `border-white/20`) and focus indicators must maintain at least 3:1 contrast against adjacent background colors.
@@ -542,7 +542,7 @@ The top telemetry row consists of exactly 4 balanced, equal-width cards (`grid-c
      - **Action Needed / Warning**: `bg-amber-500/15 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono font-bold inline-flex items-center gap-1`.
      - **Critical / Disputed**: `bg-rose-500/15 text-rose-400 border border-rose-500/20 px-1.5 py-0.5 rounded-[2px] text-[10px] font-mono font-bold inline-flex items-center gap-1`.
   3. **Context Subtext**: Clean explanation without clutter (`text-xs font-sans text-white/50 select-none truncate mt-1`).
-  4. **Substrate & Division**: Solid elevated substrate `bg-[#01142B] border border-white/10 hover:border-white/20 rounded-[2px] p-5 sm:p-6 shadow-xl`.
+  4. **Substrate & Division**: Solid elevated substrate `bg-[#0A0A18] border border-white/10 hover:border-white/20 rounded-[2px] p-5 sm:p-6 shadow-xl`.
 
 ### 10.3. Tier 3: The 2:1 Asymmetric Focal Bento Grid (Hero Section)
 The visual anchor of the dashboard uses a 12-column asymmetric split (`grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6`):
@@ -582,7 +582,7 @@ Dividing the hero analytics from the operational records:
 2. **Hairline Division Over Blurry Glows**:
    - Zero diffuse box-shadow glows. Crisp, 1px flat perimeter borders (`border-white/10` to `border-white/15`).
 3. **The 80 / 15 / 5 Color Restraint Rule**:
-   - 80% Dark Substrate (`#010114` canvas, `#01142B` flat card substrate).
+   - 80% Dark Substrate (`#010114` canvas, `#0A0A18` flat card substrate).
    - 15% Typographic Contrast (pure white headers, bold white metrics, muted white/50 descriptions).
    - 5% Maximum Accent (Enterprise Orange `#CC6600` for primary interactive CTAs, Verification Emerald for completed milestones, Escrow Amber for review items).
 4. **Phosphor Fill Icons Exclusively (`weight="fill"`)**:
@@ -596,7 +596,7 @@ Dividing the hero analytics from the operational records:
 
 ```text
 [ ] Is this strictly a frontend presentation/UX change? (No backend/database/API changes)
-[ ] Does it use the current theme palette (#010114, #01142B, #CC6600)?
+[ ] Does it use the current theme palette (#010114, #0A0A18, #CC6600)?
 [ ] Are all cards strictly using precision rounded-[2px] (no bubbly rounded-xl/2xl)?
 [ ] Does the layout follow the Asymmetric Bento Grid (2:1 hero split: 8-col hero + 4-col stacked cards)?
 [ ] Are KPI cards using the micro-anatomy (icon + label, bold metric, inline micro-pill indicator)?
@@ -629,7 +629,7 @@ The Client Portal (`/dashboard/client` and related sub-desks) serves as the cano
 |---|---|
 | **Authoritative Top Greeting & Action** | `<PageHeader>` with personalized greeting (`Welcome back, [First Name]`), plain-English subtitle, subtle secondary outline button (`How It Works`), and primary Enterprise Orange CTA (`+ Submit New Study Request`). |
 | **4-Column Balanced KPI Row** | 4 balanced `<KpiCard />` elements: `TOTAL STUDIES` (ALL TIME), `ACTION REQUIRED` (ACTION NEEDED in amber when > 0), `IN PROGRESS / QA` (ACTIVE in sky blue), and `DEFENSE READY` (DELIVERED in emerald). Numerals default to crisp bold white (`variant="default"`). |
-| **2:1 Asymmetric Focal Bento Grid** | **8-Col Hero Card**: Active Research Journey with category micro-label, 1-click study ID copy badge, 5-stage precision milestone stepper (`Proposal` $\rightarrow$ `Contract` $\rightarrow$ `Deposit` $\rightarrow$ `Analysis` $\rightarrow$ `Deliverables`), integrated **Active Milestone Mission Panel** (`bg-[#010D1F]/90 border-white/[0.08] rounded-[2px]`) presenting current milestone narrative, next milestone action, APA 7th edition format standard, and dual-audit credentials (eliminating barren voids and balancing height against 4-col auxiliary cards), target date, status ribbon, direct action button, and consultation chat shortcut.<br/>**4-Col Auxiliary Stack**: (1) Statistical Consultation Desk with active pulse beacon + turnaround subtext, (2) DefenseLab Oral Defense Simulator with mock question counter. |
+| **2:1 Asymmetric Focal Bento Grid** | **8-Col Hero Card**: Active Research Journey with category micro-label, 1-click study ID copy badge, 5-stage precision milestone stepper (`Proposal` $\rightarrow$ `Contract` $\rightarrow$ `Deposit` $\rightarrow$ `Analysis` $\rightarrow$ `Deliverables`), integrated **Active Milestone Mission Panel** (`bg-[#050513]/90 border-white/[0.08] rounded-[2px]`) presenting current milestone narrative, next milestone action, APA 7th edition format standard, and dual-audit credentials (eliminating barren voids and balancing height against 4-col auxiliary cards), target date, status ribbon, direct action button, and consultation chat shortcut.<br/>**4-Col Auxiliary Stack**: (1) Statistical Consultation Desk with active pulse beacon + turnaround subtext, (2) DefenseLab Oral Defense Simulator with mock question counter. |
 | **Dedicated Archive Desk** | For multi-study searching, filter tabs, and full pagination, clients navigate seamlessly to **My Studies** (`/dashboard/client/projects`), keeping the main dashboard an ultra-clean, focused 3-tier cockpit without administrative table clutter. |
 
 ### 12.2. Semi-Circular SVG Arc Gauge Specification (Dashdark X Lower Bento)
@@ -649,20 +649,20 @@ Modeled directly after Dashdark X Reference Photo 2 (`media_1788807475559.png`) 
 1. **Research Studies Desk (`/dashboard/client/projects`)**:
    - 4-column balanced KPI row with Dashdark micro-pills (`ALL TIME`, `ACTION NEEDED`, `UNDER REVIEW`, `ACTIVE`).
    - Integrated `FilterToolbar` with status tabs and `/` search keyboard shortcut.
-   - High-precision data table with recessed well header (`bg-[#010D1F] border-b border-white/10`), two-line primary cell hierarchy (Line 1: study title; Line 2: school affiliation / doc count), 1-click copy badges on Study IDs, and `rounded-[2px]` action buttons.
+   - High-precision data table with recessed well header (`bg-[#050513] border-b border-white/10`), two-line primary cell hierarchy (Line 1: study title; Line 2: school affiliation / doc count), 1-click copy badges on Study IDs, and `rounded-[2px]` action buttons.
 2. **Quotations & Pricing Desk (`/dashboard/client/quotations`)**:
    - Modeled on Dashdark X Reference Photo 6 and 7 (Commercial revenue & pricing matrices).
    - 4-column commercial KPI row (`PENDING REVIEW`, `APPROVED`, `BEING PRICED`, `TOTAL VALUE` with `<MoneyDisplay />`).
    - Commercial proposals table with recessed header, two-line cell hierarchy, package tier badges (`Undergraduate`, `Masteral`, `Doctoral`, `Corporate`), bold white investment figures with `<Peso />`, and direct review action buttons.
 3. **Study Card Anatomy (`ClientStudyCard.tsx`)**:
-   - Sharp `rounded-[2px]` card substrate with `bg-[#01142B] border-white/10`.
+   - Sharp `rounded-[2px]` card substrate with `bg-[#0A0A18] border-white/10`.
    - 5-stage visual pipeline with emerald checkmarks for completed stages, orange pulse for active stage, and muted numbers for upcoming stages.
    - 1-Click copy badges on Study IDs and direct action toolbar.
 
 ### 12.4. Preserved Theme Identity Tokens
 - **Master Canvas**: `#010114` (Deep Space Midnight Navy)
-- **Surface Cards**: `#01142B` (Solid Flat Substrate with hairline `border-white/10`)
-- **Control Insets & Headers**: `#010D1F` (Recessed L2 Wells)
+- **Surface Cards**: `#0A0A18` (Solid Flat Substrate with hairline `border-white/10`)
+- **Control Insets & Headers**: `#050513` (Recessed L2 Wells)
 - **Accent**: `#CC6600` (Enterprise Orange, strictly budgeted to 5–10% visual presence)
 - **Border Radius**: Precision `rounded-[2px]` across all components (zero bubbly Webflow rounded-xl/2xl curves).
 - **Typography**: Clean Sans-Serif first (`font-sans`), monospace reserved strictly for numerals, IDs, and uppercase micro-labels.

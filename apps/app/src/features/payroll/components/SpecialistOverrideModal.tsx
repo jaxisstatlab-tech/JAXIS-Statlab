@@ -166,7 +166,7 @@ export function SpecialistOverrideModal({
         )}
 
         {/* Staff Payout Account Badge */}
-        <div className="p-3 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-center justify-between">
+        <div className="p-3 bg-[#050513] border border-white/10 rounded-[2px] flex items-center justify-between">
           <div className="flex items-center gap-2">
             {staff.payoutDetails?.payoutChannel === "BANK_TRANSFER" ? (
               <IconBuildingBank size={16} stroke={1.5} className="text-[#FFA040]" />
@@ -224,7 +224,7 @@ export function SpecialistOverrideModal({
                   className={`p-2.5 rounded-[2px] border text-left font-sans cursor-pointer transition-colors ${
                     isSelected
                       ? "bg-[#CC6600]/20 border-[#CC6600] text-white ring-1 ring-[#CC6600]"
-                      : "bg-[#010D1F] border-white/10 text-white/70 hover:text-white"
+                      : "bg-[#050513] border-white/10 text-white/70 hover:text-white"
                   }`}
                 >
                   <div className="font-semibold text-xs text-white">{item.title}</div>
@@ -236,7 +236,7 @@ export function SpecialistOverrideModal({
         </div>
 
         {/* Model-Specific Inputs */}
-        <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-3.5">
+        <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col gap-3.5">
           {(compensationType === "TIER_DELIVERABLE" || compensationType === "PERCENTAGE_PER_STUDY") && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
@@ -250,7 +250,7 @@ export function SpecialistOverrideModal({
                     max={100}
                     value={commissionPct}
                     onChange={(e) => setCommissionPct(Number(e.target.value))}
-                    className="w-full bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                    className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
                     placeholder="0"
                   />
                   <span className="absolute right-3 text-xs font-mono text-white/50">% of study</span>
@@ -272,7 +272,7 @@ export function SpecialistOverrideModal({
                     min={0}
                     value={fixedBonus}
                     onChange={(e) => setFixedBonus(Number(e.target.value))}
-                    className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-7 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                    className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-7 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
                     placeholder="0"
                   />
                 </div>
@@ -293,7 +293,7 @@ export function SpecialistOverrideModal({
                   min={0}
                   value={baseSalary}
                   onChange={(e) => setBaseSalary(Number(e.target.value))}
-                  className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-8 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-8 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
                 />
               </div>
               <span className="text-[0.688rem] text-white/40 font-sans mt-1 block">
@@ -315,7 +315,7 @@ export function SpecialistOverrideModal({
                   min={0}
                   value={hourlyRate}
                   onChange={(e) => setHourlyRate(Number(e.target.value))}
-                  className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-8 pr-14 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-8 pr-14 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
                 />
                 <span className="absolute right-3 text-xs font-mono text-white/50">/ hr</span>
               </div>
@@ -336,7 +336,7 @@ export function SpecialistOverrideModal({
                     min={0}
                     value={baseSalary}
                     onChange={(e) => setBaseSalary(Number(e.target.value))}
-                    className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-8 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                    className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-8 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
                   />
                 </div>
               </div>
@@ -352,7 +352,7 @@ export function SpecialistOverrideModal({
                     max={100}
                     value={commissionPct}
                     onChange={(e) => setCommissionPct(Number(e.target.value))}
-                    className="w-full bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                    className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
                   />
                   <span className="absolute right-3 text-xs font-mono text-white/50">% of study</span>
                 </div>
@@ -371,7 +371,7 @@ export function SpecialistOverrideModal({
                 min={0}
                 value={allowances}
                 onChange={(e) => setAllowances(Number(e.target.value))}
-                className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-7 pr-3 py-1.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
+                className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-7 pr-3 py-1.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
                 placeholder="0"
               />
             </div>
@@ -379,7 +379,7 @@ export function SpecialistOverrideModal({
         </div>
 
         {/* Human Summary */}
-        <div className="p-3 bg-[#010D1F] border border-emerald-500/20 rounded-[2px] text-xs font-sans text-white/90">
+        <div className="p-3 bg-[#050513] border border-emerald-500/20 rounded-[2px] text-xs font-sans text-white/90">
           <strong className="text-emerald-400">Effective Pay Agreement: </strong>
           {compensationType === "TIER_DELIVERABLE" && (
             <span>
@@ -415,7 +415,7 @@ export function SpecialistOverrideModal({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="e.g. Senior PhD retention tier; elevated commission due to high-stakes biostatistical trial design."
-            className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none focus:border-[#CC6600]"
+            className="w-full bg-[#050513] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none focus:border-[#CC6600]"
           />
         </div>
       </form>

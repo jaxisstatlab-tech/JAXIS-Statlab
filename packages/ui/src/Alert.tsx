@@ -16,7 +16,7 @@ export const alertVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[#01142B]/90 border-white/15 text-white/90 [&>div>div>svg]:text-white/60",
+          "bg-[#0A0A18]/90 border-white/15 text-white/90 [&>div>div>svg]:text-white/60",
         info: "bg-sky-500/[0.08] border-sky-500/30 text-white/90 [&>div>div>svg]:text-sky-400",
         success:
           "bg-emerald-500/[0.08] border-emerald-500/30 text-white/90 [&>div>div>svg]:text-emerald-400",

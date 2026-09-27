@@ -92,7 +92,7 @@ export const Drawer: React.FC<DrawerProps> = ({
       {/* Drawer Panel */}
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10" style={{ position: "fixed", top: 0, bottom: 0, right: 0, zIndex: 10 }}>
         <div
-          className={`w-screen max-w-xl bg-gradient-to-b from-[#011C38] via-[#01162E] to-[#010D1F] border-l border-white/[0.12] shadow-2xl shadow-black/80 flex flex-col justify-between overflow-hidden animate-in slide-in-from-right duration-200 ${className}`}
+          className={`w-screen max-w-xl bg-gradient-to-b from-[#10101E] via-[#0B0B19] to-[#050513] border-l border-white/[0.12] shadow-2xl shadow-black/80 flex flex-col justify-between overflow-hidden animate-in slide-in-from-right duration-200 ${className}`}
         >
           {/* Header */}
           <div className="p-6 border-b border-white/[0.08] flex items-start justify-between gap-4 bg-white/[0.02]">
@@ -119,7 +119,7 @@ export const Drawer: React.FC<DrawerProps> = ({
 
           {/* Footer Actions */}
           {footer && (
-            <div className="p-5 border-t border-white/[0.08] bg-[#011124]/90 flex items-center justify-end gap-3">
+            <div className="p-5 border-t border-white/[0.08] bg-[#080816]/90 flex items-center justify-end gap-3">
               {footer}
             </div>
           )}

@@ -24,7 +24,7 @@ function renderBaseEmailLayout(params: {
   const metaHtml =
     metaRows.length > 0
       ? `
-    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #001428; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px;">
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #0A0A18; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px;">
       ${metaRows
         .map(
           (r) => `
@@ -67,11 +67,11 @@ function renderBaseEmailLayout(params: {
     <tr>
       <td align="center">
         <!-- Main Container -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 580px; background-color: #01162E; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 6px; overflow: hidden;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 580px; background-color: #0B0B19; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 6px; overflow: hidden;">
           
           <!-- Top Header Bar -->
           <tr>
-            <td style="padding: 24px 32px; background-color: #000E1F; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+            <td style="padding: 24px 32px; background-color: #060614; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
@@ -113,7 +113,7 @@ function renderBaseEmailLayout(params: {
 
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 32px; background-color: #000B18; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center;">
+            <td style="padding: 20px 32px; background-color: #040412; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center;">
               <p style="margin: 0 0 6px 0; font-size: 11px; color: rgba(255, 255, 255, 0.4); line-height: 1.5;">
                 This is an automated operational notification from JAXIS StatLab.<br>
                 Please do not reply directly to this email.
@@ -182,7 +182,7 @@ function renderPasswordResetEmail(params: {
     <tr>
       <td align="center">
         <!-- Floating Dark Precision Card (JAXIS StatLab Studio Theme) -->
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 480px; background-color: #01142B; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5); overflow: hidden; margin: 0 auto;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 480px; background-color: #0A0A18; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5); overflow: hidden; margin: 0 auto;">
           <tr>
             <td style="padding: 40px 40px 44px 40px;">
               
@@ -439,7 +439,7 @@ export function renderEmailTemplate(
       badgeColor = "#38BDF8";
       bodyHtml = `
         <p>You have received a new message from your assigned research team regarding <strong>${intakeId}</strong>.</p>
-        <blockquote style="margin: 16px 0; padding: 12px 16px; background-color: #000E1F; border-left: 3px solid #CC6600; font-size: 13px; color: rgba(255, 255, 255, 0.9);">
+        <blockquote style="margin: 16px 0; padding: 12px 16px; background-color: #060614; border-left: 3px solid #CC6600; font-size: 13px; color: rgba(255, 255, 255, 0.9);">
           "${data.messagePreview || "New communication update..."}"
         </blockquote>
       `;

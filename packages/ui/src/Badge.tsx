@@ -10,7 +10,7 @@ export const badgeVariants = cva(
     variants: {
       variant: {
         default: "bg-white/10 text-white border-white/20",
-        secondary: "bg-[#02254B] text-[#38BDF8] border-[#38BDF8]/30",
+        secondary: "bg-[#171725] text-[#38BDF8] border-[#38BDF8]/30",
         destructive: "bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30",
         outline: "text-white/90 border-white/30 bg-transparent",
         accent: "bg-[#CC6600]/20 text-[#CC6600] border-[#CC6600]/40",

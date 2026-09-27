@@ -112,7 +112,7 @@ export function PendingLeaveQueue({
       return null;
     }
     return (
-      <Card className="p-6 border-white/10 bg-[#01142B]/90 rounded-[2px]">
+      <Card className="p-6 border-white/10 bg-[#0A0A18]/90 rounded-[2px]">
         <LoadingState
           variant="card"
           label="Loading pending leave queue..."
@@ -128,7 +128,7 @@ export function PendingLeaveQueue({
 
   return (
     <>
-      <Card className="p-0 overflow-hidden border border-amber-500/30 bg-[#01142B] rounded-[2px] shadow-sm">
+      <Card className="p-0 overflow-hidden border border-amber-500/30 bg-[#0A0A18] rounded-[2px] shadow-sm">
         {/* Card Header */}
         <div className="p-5 border-b border-white/10 bg-amber-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">

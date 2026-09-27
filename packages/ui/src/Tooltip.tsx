@@ -17,7 +17,7 @@ export const TooltipContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 overflow-hidden rounded-[2px] border border-white/20 bg-[#01142B] px-3 py-2 text-xs text-white shadow-2xl backdrop-blur-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 max-w-sm",
+        "z-50 overflow-hidden rounded-[2px] border border-white/20 bg-[#0A0A18] px-3 py-2 text-xs text-white shadow-2xl backdrop-blur-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 max-w-sm",
         className
       )}
       {...props}
@@ -50,7 +50,7 @@ export function Tooltip({
         </TooltipPrimitive.Trigger>
         <TooltipContent side={position} className={className}>
           {content}
-          <TooltipPrimitive.Arrow className="fill-[#01142B]" />
+          <TooltipPrimitive.Arrow className="fill-[#0A0A18]" />
         </TooltipContent>
       </TooltipPrimitive.Root>
     </TooltipPrimitive.Provider>
@@ -117,7 +117,7 @@ export function TagsOverflow({
             </div>
           }
         >
-          <span className="text-[0.6875rem] font-mono px-1.5 py-0.5 rounded-[2px] bg-[#012E57]/80 text-[#38BDF8] border border-[#38BDF8]/30 whitespace-nowrap cursor-help hover:bg-[#012E57] hover:border-[#38BDF8] transition-colors select-none">
+          <span className="text-[0.6875rem] font-mono px-1.5 py-0.5 rounded-[2px] bg-[#1E1E2C]/80 text-[#38BDF8] border border-[#38BDF8]/30 whitespace-nowrap cursor-help hover:bg-[#1E1E2C] hover:border-[#38BDF8] transition-colors select-none">
             +{remainingTags.length}
           </span>
         </Tooltip>

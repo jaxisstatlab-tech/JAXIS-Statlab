@@ -341,7 +341,7 @@ export function ServiceCatalogModal({
         {/* Segmented Tab Switcher + Action Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
           {/* Segmented Tabs */}
-          <div className="flex items-center p-1 rounded-[4px] bg-[#010D1F] border border-white/10">
+          <div className="flex items-center p-1 rounded-[4px] bg-[#050513] border border-white/10">
             <button
               type="button"
               onClick={() => {
@@ -410,7 +410,7 @@ export function ServiceCatalogModal({
             {/* Add New Package Drawer */}
             {isAddingPackage && (
               <div
-                className="rounded-[4px] bg-[#01142B] border border-[#38BDF8]/40 space-y-4 animate-fadeIn"
+                className="rounded-[4px] bg-[#0A0A18] border border-[#38BDF8]/40 space-y-4 animate-fadeIn"
                 style={{ padding: "1.5rem", boxSizing: "border-box" }}
               >
                 <div className="flex items-center justify-between pb-3 border-b border-white/10">
@@ -434,7 +434,7 @@ export function ServiceCatalogModal({
                       placeholder="JX_05_META"
                       value={newPkgCode}
                       onChange={(e) => setNewPkgCode(e.target.value)}
-                      className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-mono text-white uppercase focus:border-[#CC6600] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-mono text-white uppercase focus:border-[#CC6600] focus:outline-none"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -444,7 +444,7 @@ export function ServiceCatalogModal({
                       placeholder="JX-05 Meta-Analysis Suite"
                       value={newPkgName}
                       onChange={(e) => setNewPkgName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-sans text-white focus:border-[#CC6600] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-sans text-white focus:border-[#CC6600] focus:outline-none"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -454,7 +454,7 @@ export function ServiceCatalogModal({
                       placeholder="SYNTHESIS"
                       value={newPkgBadge}
                       onChange={(e) => setNewPkgBadge(e.target.value)}
-                      className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-mono text-white uppercase focus:border-[#CC6600] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-mono text-white uppercase focus:border-[#CC6600] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -466,7 +466,7 @@ export function ServiceCatalogModal({
                       type="number"
                       value={newPkgMinPrice}
                       onChange={(e) => setNewPkgMinPrice(Number(e.target.value))}
-                      className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-mono text-white [appearance:textfield] focus:border-[#CC6600] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-mono text-white [appearance:textfield] focus:border-[#CC6600] focus:outline-none"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -476,7 +476,7 @@ export function ServiceCatalogModal({
                       placeholder="None"
                       value={newPkgMaxPrice || ""}
                       onChange={(e) => setNewPkgMaxPrice(e.target.value ? Number(e.target.value) : null)}
-                      className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-mono text-white [appearance:textfield] focus:border-[#CC6600] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-mono text-white [appearance:textfield] focus:border-[#CC6600] focus:outline-none"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -485,7 +485,7 @@ export function ServiceCatalogModal({
                       type="number"
                       value={newPkgDefaultPrice}
                       onChange={(e) => setNewPkgDefaultPrice(Number(e.target.value))}
-                      className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-mono text-white [appearance:textfield] focus:border-[#CC6600] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-mono text-white [appearance:textfield] focus:border-[#CC6600] focus:outline-none"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -493,7 +493,7 @@ export function ServiceCatalogModal({
                     <select
                       value={newPkgIsUpfront ? "upfront" : "milestone"}
                       onChange={(e) => setNewPkgIsUpfront(e.target.value === "upfront")}
-                      className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-sans text-white focus:border-[#CC6600] focus:outline-none cursor-pointer"
+                      className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-sans text-white focus:border-[#CC6600] focus:outline-none cursor-pointer"
                     >
                       <option value="milestone">50% Milestone</option>
                       <option value="upfront">100% Upfront</option>
@@ -508,7 +508,7 @@ export function ServiceCatalogModal({
                     placeholder="Brief methodology summary..."
                     value={newPkgTagline}
                     onChange={(e) => setNewPkgTagline(e.target.value)}
-                    className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-sans text-white focus:border-[#CC6600] focus:outline-none"
+                    className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-sans text-white focus:border-[#CC6600] focus:outline-none"
                   />
                 </div>
 
@@ -519,7 +519,7 @@ export function ServiceCatalogModal({
                     placeholder="Effect size forest plots&#10;Publication-grade APA 7th write-up"
                     value={newPkgDeliverables}
                     onChange={(e) => setNewPkgDeliverables(e.target.value)}
-                    className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-sans text-white focus:border-[#CC6600] focus:outline-none leading-relaxed"
+                    className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-sans text-white focus:border-[#CC6600] focus:outline-none leading-relaxed"
                   />
                 </div>
 
@@ -556,8 +556,8 @@ export function ServiceCatalogModal({
                     key={key}
                     className={`rounded-[4px] border transition-all flex flex-col justify-between ${
                       isActive
-                        ? "bg-[#01142B] border-white/10 hover:border-white/20"
-                        : "bg-[#01142B]/50 border-white/5 opacity-60"
+                        ? "bg-[#0A0A18] border-white/10 hover:border-white/20"
+                        : "bg-[#0A0A18]/50 border-white/5 opacity-60"
                     }`}
                     style={{ padding: "1.25rem 1.5rem", boxSizing: "border-box" }}
                   >
@@ -622,7 +622,7 @@ export function ServiceCatalogModal({
                       <div className="grid grid-cols-3 gap-2.5 font-sans">
                         <div className="flex flex-col gap-2">
                           <span className="text-[11px] font-sans text-white/50 font-medium">Min (₱)</span>
-                          <div className="flex items-center rounded-[4px] bg-[#010D1F] border border-white/15 px-2.5 py-1.5 focus-within:border-[#CC6600]">
+                          <div className="flex items-center rounded-[4px] bg-[#050513] border border-white/15 px-2.5 py-1.5 focus-within:border-[#CC6600]">
                             <Peso className="text-white/40 text-xs" />
                             <input
                               type="number"
@@ -638,7 +638,7 @@ export function ServiceCatalogModal({
 
                         <div className="flex flex-col gap-2">
                           <span className="text-[11px] font-sans text-white/50 font-medium">Max (₱)</span>
-                          <div className="flex items-center rounded-[4px] bg-[#010D1F] border border-white/15 px-2.5 py-1.5 focus-within:border-[#CC6600]">
+                          <div className="flex items-center rounded-[4px] bg-[#050513] border border-white/15 px-2.5 py-1.5 focus-within:border-[#CC6600]">
                             <Peso className="text-white/40 text-xs" />
                             <input
                               type="number"
@@ -659,7 +659,7 @@ export function ServiceCatalogModal({
 
                         <div className="flex flex-col gap-2">
                           <span className="text-[11px] font-sans text-[#FFA040] font-semibold">Default (₱)</span>
-                          <div className="flex items-center rounded-[4px] bg-[#010D1F] border border-[#CC6600]/50 px-2.5 py-1.5 focus-within:border-[#CC6600]">
+                          <div className="flex items-center rounded-[4px] bg-[#050513] border border-[#CC6600]/50 px-2.5 py-1.5 focus-within:border-[#CC6600]">
                             <Peso className="text-[#FFA040] text-xs" />
                             <input
                               type="number"
@@ -687,7 +687,7 @@ export function ServiceCatalogModal({
             {/* Add New Add-on Drawer */}
             {isAddingAddon && (
               <div
-                className="rounded-[4px] bg-[#01142B] border border-[#38BDF8]/40 space-y-4 animate-fadeIn"
+                className="rounded-[4px] bg-[#0A0A18] border border-[#38BDF8]/40 space-y-4 animate-fadeIn"
                 style={{ padding: "1.5rem", boxSizing: "border-box" }}
               >
                 <div className="flex items-center justify-between pb-3 border-b border-white/10">
@@ -711,7 +711,7 @@ export function ServiceCatalogModal({
                       placeholder="PLAGIARISM"
                       value={newAddonCode}
                       onChange={(e) => setNewAddonCode(e.target.value)}
-                      className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-mono text-white uppercase focus:border-[#CC6600] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-mono text-white uppercase focus:border-[#CC6600] focus:outline-none"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -721,7 +721,7 @@ export function ServiceCatalogModal({
                       placeholder="Plagiarism & AI Similarity Scrub"
                       value={newAddonName}
                       onChange={(e) => setNewAddonName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-sans text-white focus:border-[#CC6600] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-sans text-white focus:border-[#CC6600] focus:outline-none"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -731,7 +731,7 @@ export function ServiceCatalogModal({
                       placeholder="AI AUDIT"
                       value={newAddonBadge}
                       onChange={(e) => setNewAddonBadge(e.target.value)}
-                      className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-mono text-white uppercase focus:border-[#CC6600] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-mono text-white uppercase focus:border-[#CC6600] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -743,7 +743,7 @@ export function ServiceCatalogModal({
                       type="number"
                       value={newAddonPrice}
                       onChange={(e) => setNewAddonPrice(Number(e.target.value))}
-                      className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-mono text-white [appearance:textfield] focus:border-[#CC6600] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-mono text-white [appearance:textfield] focus:border-[#CC6600] focus:outline-none"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -753,7 +753,7 @@ export function ServiceCatalogModal({
                       placeholder="Comprehensive similarity report..."
                       value={newAddonTagline}
                       onChange={(e) => setNewAddonTagline(e.target.value)}
-                      className="w-full px-3 py-2 rounded-[4px] bg-[#010D1F] border border-white/15 text-xs font-sans text-white focus:border-[#CC6600] focus:outline-none"
+                      className="w-full px-3 py-2 rounded-[4px] bg-[#050513] border border-white/15 text-xs font-sans text-white focus:border-[#CC6600] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -791,8 +791,8 @@ export function ServiceCatalogModal({
                     key={key}
                     className={`rounded-[4px] border transition-all flex flex-col justify-between min-h-[130px] ${
                       isActive
-                        ? "bg-[#01142B] border-white/10 hover:border-white/20"
-                        : "bg-[#01142B]/50 border-white/5 opacity-60"
+                        ? "bg-[#0A0A18] border-white/10 hover:border-white/20"
+                        : "bg-[#0A0A18]/50 border-white/5 opacity-60"
                     }`}
                     style={{ padding: "1.25rem 1.5rem", boxSizing: "border-box" }}
                   >
@@ -842,7 +842,7 @@ export function ServiceCatalogModal({
                       <span className="text-xs font-sans font-medium text-white/60">
                         Default Fee Rate
                       </span>
-                      <div className="flex items-center rounded-[4px] bg-[#010D1F] border border-[#CC6600]/40 px-3 py-1.5 focus-within:border-[#CC6600]">
+                      <div className="flex items-center rounded-[4px] bg-[#050513] border border-[#CC6600]/40 px-3 py-1.5 focus-within:border-[#CC6600]">
                         <Peso className="text-[#FFA040] text-xs" />
                         <input
                           type="number"

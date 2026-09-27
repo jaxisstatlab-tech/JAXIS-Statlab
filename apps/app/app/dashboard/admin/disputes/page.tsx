@@ -279,7 +279,7 @@ export default function AdminDisputesPage() {
       </div>
 
       {/* Main Table Card */}
-      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[4px]">
+      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#0A0A18] border border-white/10 rounded-[4px]">
         {/* Filter and Search Bar */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center border-b border-white/10 pb-5">
           {/* Status Tabs */}
@@ -448,7 +448,7 @@ export default function AdminDisputesPage() {
       {/* Chargeback Halt Modal */}
       {isChargebackModalOpen && (
         <div className="fixed inset-0 z-50 bg-[#010114]/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#01142B] border border-red-500/30 rounded-[4px] max-w-lg w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95">
+          <div className="bg-[#0A0A18] border border-red-500/30 rounded-[4px] max-w-lg w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2 text-red-400">
                 <IconBan size={22} />
@@ -510,7 +510,7 @@ export default function AdminDisputesPage() {
       {/* Dispute Dossier Modal */}
       {selectedDispute && (
         <div className="fixed inset-0 z-50 bg-[#010114]/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#01142B] border border-white/15 rounded-[4px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto font-sans">
+          <div className="bg-[#0A0A18] border border-white/15 rounded-[4px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto font-sans">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
                 <IconFileText size={22} className="text-sky-400" />
@@ -577,7 +577,7 @@ export default function AdminDisputesPage() {
 
               {/* CEO Ruling info */}
               {selectedDispute.resolutionType && (
-                <div className="bg-[#011B38] border border-emerald-500/20 rounded-[2px] p-4 flex flex-col gap-2">
+                <div className="bg-[#0F0F1D] border border-emerald-500/20 rounded-[2px] p-4 flex flex-col gap-2">
                   <div className="flex items-center gap-2 text-emerald-400 font-bold">
                     <IconGavel size={16} />
                     <span>CEO Decision</span>

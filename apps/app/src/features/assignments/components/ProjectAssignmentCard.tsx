@@ -60,7 +60,7 @@ export function ProjectAssignmentCard({
   };
 
   return (
-    <Card className="p-6 border border-white/10 bg-[#01142B]/90 rounded-[2px] flex flex-col gap-5">
+    <Card className="p-6 border border-white/10 bg-[#0A0A18]/90 rounded-[2px] flex flex-col gap-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
         <div>
@@ -148,7 +148,7 @@ export function ProjectAssignmentCard({
       {/* Directory & SLA Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Statistician */}
-        <div className="p-4 bg-[#011B38] border border-white/10 rounded-[2px] flex flex-col gap-1.5">
+        <div className="p-4 bg-[#0F0F1D] border border-white/10 rounded-[2px] flex flex-col gap-1.5">
           <span className="text-[0.688rem] font-sans font-semibold uppercase tracking-wider text-white/40 flex items-center gap-1.5">
             <IconUserCheck size={14} stroke={2} className="text-[#38BDF8]" />
             <span>Lead Statistician</span>
@@ -162,7 +162,7 @@ export function ProjectAssignmentCard({
         </div>
 
         {/* QA Lead */}
-        <div className="p-4 bg-[#011B38] border border-white/10 rounded-[2px] flex flex-col gap-1.5">
+        <div className="p-4 bg-[#0F0F1D] border border-white/10 rounded-[2px] flex flex-col gap-1.5">
           <span className="text-[0.688rem] font-sans font-semibold uppercase tracking-wider text-white/40 flex items-center gap-1.5">
             <IconShieldCheck size={14} stroke={2} className="text-[#10B981]" />
             <span>Senior QA Lead</span>
@@ -176,7 +176,7 @@ export function ProjectAssignmentCard({
         </div>
 
         {/* SLA Due Date */}
-        <div className="p-4 bg-[#011B38] border border-white/10 rounded-[2px] flex flex-col gap-1.5">
+        <div className="p-4 bg-[#0F0F1D] border border-white/10 rounded-[2px] flex flex-col gap-1.5">
           <span className="text-[0.688rem] font-sans font-semibold uppercase tracking-wider text-white/40 flex items-center gap-1.5">
             <IconClock size={14} stroke={2} className="text-[#CC6600]" />
             <span>Contractual Deadline</span>

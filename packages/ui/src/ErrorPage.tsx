@@ -93,7 +93,7 @@ export function ErrorPage({
       </div>
 
       <div
-        className="jxerr-in overflow-hidden rounded-[2px] border border-white/10 bg-[#010D1F]"
+        className="jxerr-in overflow-hidden rounded-[2px] border border-white/10 bg-[#050513]"
         style={{ animationDelay: "340ms" }}
       >
         <div className="flex items-center justify-between gap-4 border-b border-white/10 bg-white/[0.02] px-4 py-2.5">

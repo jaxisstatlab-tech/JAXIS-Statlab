@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
-import { getProjectById } from "@/features/projects/actions";
+import { getStudyOnce } from "@/features/projects/study-cache";
 import { ClientProjectDetailClient } from "./ClientProjectDetailClient";
 import { LoadingState } from "@repo/ui";
 
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const resolvedParams = await params;
-  const res = await getProjectById(resolvedParams.id);
+  const res = await getStudyOnce(resolvedParams.id);
   if (res.success && res.data) {
     return {
       title: `${res.data.intakeId} – ${res.data.researchTitle} | JAXIS StatLab`,
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ClientProjectDetailPage({ params }: PageProps) {
   const resolvedParams = await params;
   const projectId = resolvedParams.id;
-  const res = await getProjectById(projectId);
+  const res = await getStudyOnce(projectId);
 
   const initialProject = res.success ? res.data : null;
   const initialError = !res.success ? res.error.message : null;

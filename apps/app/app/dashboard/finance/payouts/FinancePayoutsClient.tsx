@@ -273,7 +273,7 @@ export function FinancePayoutsClient({
       </div>
 
       {/* Payout Queue Management Card */}
-      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[4px]">
+      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#0A0A18] border border-white/10 rounded-[4px]">
         {/* Filter Toolbar */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-white/10 pb-6">
           {/* Status Tabs */}

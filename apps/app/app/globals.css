@@ -5,8 +5,8 @@
 :root {
   /* Backgrounds */
   --bg-base:          #010114;   /* Midnight Navy — page canvas (95% coverage)   */
-  --bg-surface:       #011B38;   /* Deep Ocean Blue Glass — card / panel surface  */
-  --bg-surface-hover: #01244A;   /* Surface hover lift                            */
+  --bg-surface:       #0F0F1D;   /* Deep Ocean Blue Glass — card / panel surface  */
+  --bg-surface-hover: #161624;   /* Surface hover lift                            */
   --bg-overlay:       rgba(1, 1, 20, 0.60);  /* Modal / drawer backdrop           */
 
   /* Glass / Border */
@@ -157,6 +157,36 @@
     text-decoration: none;
   }
 
+  /* Everything clickable shows the pointer hand (Tailwind v4 resets buttons to the default arrow).
+     Same rule as apps/web. Utilities like cursor-default / cursor-wait still override it. */
+  a[href],
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  [role="button"],
+  [role="tab"],
+  [role="radio"],
+  [role="checkbox"],
+  [role="switch"],
+  [role="option"],
+  [role="menuitem"],
+  [role="menuitemcheckbox"],
+  [role="menuitemradio"],
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  input[type="file"]:not(:disabled),
+  label[for],
+  label:has(> input[type="checkbox"], > input[type="radio"]) {
+    cursor: pointer;
+  }
+  :disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
   /* Keyboard users need to see where they are. Components that opt out (outline-none) still can. */
   :focus-visible {
     outline: 2px solid rgba(255, 160, 64, 0.7);
@@ -182,8 +212,8 @@ input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-text-fill-color: #ffffff !important;
-  -webkit-box-shadow: 0 0 0px 1000px #01142B inset !important;
-  box-shadow: 0 0 0px 1000px #01142B inset !important;
+  -webkit-box-shadow: 0 0 0px 1000px #0A0A18 inset !important;
+  box-shadow: 0 0 0px 1000px #0A0A18 inset !important;
   transition: background-color 5000s ease-in-out 0s;
   caret-color: #ffffff !important;
 }
@@ -454,7 +484,7 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
   body {
     background-color: #ffffff !important;
     background: #ffffff !important;
-    color: #0f172a !important;
+    color: #0D0D1B !important;
     height: auto !important;
     min-height: 100% !important;
     max-height: none !important;
@@ -536,7 +566,7 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
   .official-payslip-sheet,
   .sow-print-container {
     background: #ffffff !important;
-    color: #0f172a !important;
+    color: #0D0D1B !important;
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
@@ -700,6 +730,20 @@ main,
 
 .animate-message-highlight {
   animation: messageHighlightPulse 2s ease-out forwards;
+}
+
+/* "… is typing" dots in the chat */
+@keyframes typingDot {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30% { opacity: 0.9; transform: translateY(-2px); }
+}
+.typing-dot {
+  animation: typingDot 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+@media (prefers-reduced-motion: reduce) {
+  .typing-dot { animation: none; opacity: 0.6; }
 }
 
 /* ==========================================================================

@@ -824,7 +824,7 @@ export function StaffRosterClient({
 
       {/* ── Staff Directory Card ── */}
       <Card
-        className="p-0 overflow-hidden border border-white/[0.08] bg-[#010D1F]"
+        className="p-0 overflow-hidden border border-white/[0.08] bg-[#050513]"
         style={{ padding: 0 }}
       >
         {/* ─ Header ─ */}
@@ -1112,7 +1112,7 @@ export function StaffRosterClient({
           <div className="flex flex-col gap-6 font-sans">
             {/* Staff Identity Card */}
             <div
-              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[4px] bg-[#01142B] border border-white/10"
+              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[4px] bg-[#0A0A18] border border-white/10"
               style={{ padding: "1.5rem", boxSizing: "border-box" }}
             >
               <div className="flex flex-col gap-1">
@@ -1135,7 +1135,7 @@ export function StaffRosterClient({
                 Professional Bio &amp; Focus
               </span>
               <p
-                className="text-sm text-slate-200 bg-[#01142B] rounded-[4px] border border-white/10 leading-relaxed font-sans"
+                className="text-sm text-slate-200 bg-[#0A0A18] rounded-[4px] border border-white/10 leading-relaxed font-sans"
                 style={{ padding: "1.25rem 1.5rem", boxSizing: "border-box" }}
               >
                 {detailData?.bio ||
@@ -1155,7 +1155,7 @@ export function StaffRosterClient({
                 ).map((spec, i) => (
                   <span
                     key={i}
-                    className="text-xs font-sans font-medium rounded-[3px] bg-[#01142B] text-sky-300 border border-sky-400/30"
+                    className="text-xs font-sans font-medium rounded-[3px] bg-[#0A0A18] text-sky-300 border border-sky-400/30"
                     style={{ padding: "0.375rem 0.75rem", display: "inline-flex", alignItems: "center" }}
                   >
                     {spec}
@@ -1216,7 +1216,7 @@ export function StaffRosterClient({
                 </div>
               ) : (
                 <div
-                  className="text-xs text-white/50 italic bg-[#01142B] border border-white/10 rounded-[4px] font-sans"
+                  className="text-xs text-white/50 italic bg-[#0A0A18] border border-white/10 rounded-[4px] font-sans"
                   style={{ padding: "1.25rem 1.5rem", boxSizing: "border-box" }}
                 >
                   Clean record — zero disciplinary actions or suspensions logged.
@@ -1354,7 +1354,7 @@ export function StaffRosterClient({
                         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[3px] text-xs font-sans transition-all duration-150 cursor-pointer select-none border ${
                           isSelected
                             ? "bg-[#CC6600]/15 text-[#FF9433] border-[#CC6600] font-medium shadow-sm shadow-[#CC6600]/10"
-                            : "bg-[#01142B] text-slate-300 border-white/10 hover:border-white/25 hover:text-white hover:bg-white/[0.04]"
+                            : "bg-[#0A0A18] text-slate-300 border-white/10 hover:border-white/25 hover:text-white hover:bg-white/[0.04]"
                         }`}
                       >
                         {isSelected ? (
@@ -1390,7 +1390,7 @@ export function StaffRosterClient({
                       e.key === "Enter" &&
                       (e.preventDefault(), handleAddProvCustomTag(e))
                     }
-                    className="flex-1 bg-[#011227] border border-white/10 rounded-[2px] text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#CC6600] transition-colors font-sans"
+                    className="flex-1 bg-[#080816] border border-white/10 rounded-[2px] text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#CC6600] transition-colors font-sans"
                     style={{
                       height: "2.25rem",
                       paddingLeft: "1rem",
@@ -1457,7 +1457,7 @@ export function StaffRosterClient({
               for secure distribution.
             </Alert>
 
-            <div className="p-5 sm:px-7 rounded-[3px] bg-[#011B38] border border-white/10 flex flex-col gap-3.5 font-mono text-xs">
+            <div className="p-5 sm:px-7 rounded-[3px] bg-[#0F0F1D] border border-white/10 flex flex-col gap-3.5 font-mono text-xs">
               <div className="flex justify-between border-b border-white/5 pb-2.5">
                 <span className="text-white/50 uppercase tracking-wider">Full Name</span>
                 <span className="font-bold text-white">
@@ -1698,16 +1698,16 @@ export function StaffRosterClient({
                       setAdminLeaveReason(e.target.value);
                     }
                   }}
-                  className="w-full bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white/90 focus:border-[#CC6600] focus:ring-0 outline-none cursor-pointer appearance-none pr-8 transition-colors font-sans hover:border-white/30"
+                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white/90 focus:border-[#CC6600] focus:ring-0 outline-none cursor-pointer appearance-none pr-8 transition-colors font-sans hover:border-white/30"
                 >
-                  <option value="" className="bg-[#01142B] text-white/50">
+                  <option value="" className="bg-[#0A0A18] text-white/50">
                     Select standard reason template...
                   </option>
                   {LEAVE_REASON_TEMPLATES.map((tmpl) => (
                     <option
                       key={tmpl.label}
                       value={tmpl.text}
-                      className="bg-[#01142B] text-white py-1"
+                      className="bg-[#0A0A18] text-white py-1"
                     >
                       {tmpl.label}
                     </option>
@@ -1724,7 +1724,7 @@ export function StaffRosterClient({
                 value={adminLeaveReason}
                 onChange={(e) => setAdminLeaveReason(e.target.value)}
                 placeholder="e.g. Approved medical leave, sabbatical, conference attendance..."
-                className="w-full bg-[#01142B] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-16 font-sans leading-relaxed"
+                className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-16 font-sans leading-relaxed"
               />
             </div>
 
@@ -1760,7 +1760,7 @@ export function StaffRosterClient({
                     min={todayStr}
                     value={adminLeaveFrom}
                     onChange={(e) => handleAdminLeaveFromChange(e.target.value)}
-                    className={`w-full bg-[#01142B] border rounded-[2px] p-2 text-xs text-white focus:border-[#CC6600] outline-none font-mono cursor-pointer transition-colors ${
+                    className={`w-full bg-[#0A0A18] border rounded-[2px] p-2 text-xs text-white focus:border-[#CC6600] outline-none font-mono cursor-pointer transition-colors ${
                       isAdminStartInPast ? "border-rose-500/60 bg-rose-950/10" : "border-white/10 hover:border-white/20"
                     }`}
                   />
@@ -1779,7 +1779,7 @@ export function StaffRosterClient({
                     min={adminLeaveFrom || todayStr}
                     value={adminLeaveUntil}
                     onChange={(e) => handleAdminLeaveUntilChange(e.target.value)}
-                    className={`w-full bg-[#01142B] border rounded-[2px] p-2 text-xs text-white focus:border-[#CC6600] outline-none font-mono cursor-pointer transition-colors ${
+                    className={`w-full bg-[#0A0A18] border rounded-[2px] p-2 text-xs text-white focus:border-[#CC6600] outline-none font-mono cursor-pointer transition-colors ${
                       isAdminReturnBeforeStart ? "border-rose-500/60 bg-rose-950/10" : "border-white/10 hover:border-white/20"
                     }`}
                   />

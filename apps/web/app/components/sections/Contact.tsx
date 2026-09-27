@@ -9,7 +9,7 @@ import { btnPrimary, container, kicker } from "../ui/styles";
 
 const SUBJECTS = ["A question about my study", "Pricing and payment", "DefenseLab", "Privacy request", "Something else"];
 
-const card = "rounded-[2px] border border-white/10 bg-[#010D1F]";
+const card = "rounded-[2px] border border-white/10 bg-[#050513]";
 const label = "mb-2 block font-mono text-[11px] uppercase tracking-wider text-white/60";
 const field =
   "w-full rounded-[2px] border border-white/15 bg-[#010114] px-3.5 font-mono text-[13px] text-white placeholder:text-white/35 transition-colors duration-150 focus:border-[#CC6600]/60 focus:outline-none";

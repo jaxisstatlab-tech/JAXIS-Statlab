@@ -2,43 +2,66 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import {
-  PageHeader,
-  Card,
-  KpiCard,
-  FilterToolbar,
-  StatusBadge,
-  Button,
-  Toast,
-  LoadingState,
-  EmptyState,
-  Pagination,
-  Peso,
-  CopyButton,
-  MoneyDisplay,
-} from "@repo/ui";
-import {
-  Sparkle,
-  ArrowRight,
-  Receipt,
-  Clock,
-} from "@phosphor-icons/react";
+import { PageHeader, Button, Toast, LoadingState, Pagination, Peso, CopyButton } from "@repo/ui";
+import { ArrowRight, MagnifyingGlass, Receipt, X } from "@phosphor-icons/react";
 import { getProjects } from "@/features/projects/actions";
 import { getQuotationByProject } from "@/features/quotations/actions";
-import { PACKAGES_CATALOG } from "@/lib/pricing-rules";
-import type { PackageName } from "@prisma/client";
+import { clientPackageName } from "@/features/projects/client-packages";
 import type { ClientQuoteEntry } from "@/features/quotations/schemas";
+import { Panel, PanelBody } from "@/components/dashboard/Panel";
+
+// Client "Quotes": every price we've sent, in plain words. Prices waiting for an answer come first.
 
 interface ClientQuotationsClientProps {
   initialEntries?: ClientQuoteEntry[];
 }
 
-export function ClientQuotationsClient({
-  initialEntries = [],
-}: ClientQuotationsClientProps) {
+type QuoteState = "waiting" | "accepted" | "pricing" | "closed";
+
+const STATE_COPY: Record<QuoteState, { tag: string }> = {
+  waiting: { tag: "Waiting for your answer" },
+  accepted: { tag: "Accepted" },
+  pricing: { tag: "Being priced" },
+  closed: { tag: "Closed" },
+};
+
+const TABS: Array<{ value: QuoteState | "ALL"; label: string }> = [
+  { value: "waiting", label: "Waiting for you" },
+  { value: "accepted", label: "Accepted" },
+  { value: "pricing", label: "Being priced" },
+  { value: "closed", label: "Closed" },
+  { value: "ALL", label: "All" },
+];
+
+const money = (n: number) => Math.round(n).toLocaleString("en-PH");
+const shortDate = (value: string | Date) =>
+  new Date(value).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
+
+function quoteState({ quotation }: ClientQuoteEntry): QuoteState {
+  if (!quotation || quotation.status === "DRAFT") return "pricing";
+  if (quotation.status === "QUOTE_SENT" && !quotation.isExpired) return "waiting";
+  if (quotation.status === "CLIENT_APPROVED") return "accepted";
+  return "closed";
+}
+
+/** Why a closed price is closed, in plain words. */
+function closedReason(entry: ClientQuoteEntry): string {
+  const q = entry.quotation;
+  if (!q) return "";
+  if (q.status === "QUOTE_DECLINED") return "You asked for changes";
+  if (q.status === "SUPERSEDED") return "Replaced by a newer price";
+  return `Expired ${shortDate(q.expiresAt)}`;
+}
+
+// Same package names as the website ("Core Thesis Package").
+const packageName = (pkg?: string) => clientPackageName(pkg);
+
+export function ClientQuotationsClient({ initialEntries = [] }: ClientQuotationsClientProps) {
   const [entries, setEntries] = useState<ClientQuoteEntry[]>(initialEntries);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [tab, setTab] = useState<QuoteState | "ALL">(() =>
+    initialEntries.some((e) => quoteState(e) === "waiting") ? "waiting" : "ALL"
+  );
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -53,411 +76,201 @@ export function ClientQuotationsClient({
     try {
       const res = await getProjects();
       if (res.success && res.data) {
-        const quotePromises = res.data.map(async (project) => {
-          const quote = await getQuotationByProject(project.id);
-          return { project, quotation: quote };
-        });
-        const results = await Promise.all(quotePromises);
-        const activeProposals = results.filter(
-          (r) =>
-            r.quotation !== null ||
-            r.project.masterStatus === "QUOTE_SENT" ||
-            r.project.masterStatus === "UNDER_EVALUATION" ||
-            r.project.masterStatus === "CLIENT_APPROVED"
+        const results = await Promise.all(
+          res.data.map(async (project) => ({ project, quotation: await getQuotationByProject(project.id) }))
         );
-        setEntries(activeProposals);
+        setEntries(
+          results.filter(
+            (r) =>
+              r.quotation !== null ||
+              ["NEW_REQUEST", "QUOTE_SENT", "UNDER_EVALUATION", "CLIENT_APPROVED"].includes(r.project.masterStatus)
+          )
+        );
       }
     } catch {
-      // Fallback
+      // Keep whatever we already have on screen.
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Background refresh if initial data was empty
+  // Background refresh if the server sent nothing (e.g. a slow first load).
   useEffect(() => {
     if (initialEntries.length === 0) {
       loadClientQuotes();
     }
   }, [initialEntries.length, loadClientQuotes]);
 
-  // Client telemetry
-  const stats = useMemo(() => {
-    const total = entries.length;
-    const pendingAction = entries.filter((e) => e.quotation?.status === "QUOTE_SENT").length;
-    const approved = entries.filter((e) => e.quotation?.status === "CLIENT_APPROVED").length;
-    const inPrep = entries.filter((e) => !e.quotation || e.quotation.status === "DRAFT").length;
-    const totalCommitted = entries
-      .filter((e) => e.quotation?.status === "CLIENT_APPROVED")
-      .reduce((sum, e) => sum + (e.quotation?.totalAmount || 0), 0);
-
-    return { total, pendingAction, approved, inPrep, totalCommitted };
+  const counts = useMemo(() => {
+    const c: Record<QuoteState | "ALL", number> = { ALL: entries.length, waiting: 0, accepted: 0, pricing: 0, closed: 0 };
+    for (const e of entries) c[quoteState(e)] += 1;
+    return c;
   }, [entries]);
 
-  // Filter entries
-  const filteredEntries = useMemo(() => {
-    return entries.filter(({ project, quotation }) => {
-      // 1. Status Filter
-      if (selectedStatus === "PENDING") {
-        if (quotation?.status !== "QUOTE_SENT") return false;
-      } else if (selectedStatus === "APPROVED") {
-        if (quotation?.status !== "CLIENT_APPROVED") return false;
-      } else if (selectedStatus === "IN_PREP") {
-        if (quotation && quotation.status !== "DRAFT") return false;
-      }
+  const visible = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const order: Record<QuoteState, number> = { waiting: 0, pricing: 1, accepted: 2, closed: 3 };
+    return entries
+      .filter((e) => tab === "ALL" || quoteState(e) === tab)
+      .filter(({ project, quotation }) => {
+        if (!q) return true;
+        return [project.researchTitle, project.intakeId, packageName(quotation?.packageName) ?? ""].some((f) =>
+          f.toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => {
+        const d = order[quoteState(a)] - order[quoteState(b)];
+        if (d !== 0) return d;
+        return new Date(b.project.createdAt).getTime() - new Date(a.project.createdAt).getTime();
+      });
+  }, [entries, tab, searchQuery]);
 
-      // 2. Search Filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesTitle = project.researchTitle.toLowerCase().includes(q);
-        const matchesId = project.intakeId.toLowerCase().includes(q);
-        const matchesPkg = quotation ? quotation.packageName.toLowerCase().includes(q) : false;
+  const paginated = useMemo(
+    () => visible.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [visible, currentPage, pageSize]
+  );
 
-        if (!matchesTitle && !matchesId && !matchesPkg) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [entries, selectedStatus, searchQuery]);
-
-  const paginatedEntries = useMemo(() => {
-    return filteredEntries.slice(
-      (currentPage - 1) * pageSize,
-      currentPage * pageSize
-    );
-  }, [filteredEntries, currentPage, pageSize]);
-
-  const getPackageBadgeInfo = (pkgName?: string) => {
-    if (!pkgName) return null;
-    const pkg = PACKAGES_CATALOG[pkgName as PackageName];
-    if (pkg) {
-      return { id: pkg.id, name: pkg.name, badge: pkg.badge };
-    }
-    return { id: "JX", name: pkgName.replace(/_/g, " "), badge: "STANDARD" };
-  };
+  const copyId = (id: string) =>
+    setToastMessage({ message: "Study ID copied", description: `${id} is on your clipboard.`, variant: "info" });
 
   if (isLoading && entries.length === 0) {
     return (
       <div className="flex-1 w-full min-h-full flex items-center justify-center animate-content-fade my-auto font-sans">
-        <LoadingState
-          variant="page"
-          label="Loading quotes..."
-          description="Getting your study quotes and pricing."
-        />
+        <LoadingState variant="page" label="Loading your quotes..." />
       </div>
     );
   }
 
   return (
-    <div
-      data-portal="client"
-      className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade"
-    >
-      {/* ── Page Header ── */}
+    <div data-portal="client" className="flex flex-col gap-6 max-w-5xl mx-auto pb-24 w-full animate-content-fade">
       <PageHeader
-        title="Study Quotes & Proposals"
-        description="Review pricing, package options, and payment terms for your research studies."
+        title="Quotes"
+        description={
+          counts.waiting > 0
+            ? `${counts.waiting} ${counts.waiting === 1 ? "price is" : "prices are"} waiting for your answer.`
+            : "Every price we've sent you, and the ones we're still preparing."
+        }
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Client Portal", href: "/dashboard/client" },
-          { label: "Quotes & Proposals" },
+          { label: "My Studies", href: "/dashboard/client" },
+          { label: "Quotes" },
         ]}
       />
 
-      {/* ── KPI Metrics Ribbon (Dashdark X Precision Standard) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 items-stretch">
-        <KpiCard
-          label="PENDING REVIEW"
-          value={stats.pendingAction}
-          variant={stats.pendingAction > 0 ? "orange" : "default"}
-          badge={stats.pendingAction > 0 ? "ACTION NEEDED" : "ALL CLEAR"}
-          badgeColor={stats.pendingAction > 0 ? "orange" : "gray"}
-          description="Quotes ready for your review"
-          icon={
-            stats.pendingAction > 0 ? (
-              <Clock size={16} weight="fill" className="text-[#FFA040]" />
-            ) : undefined
-          }
-          className="animate-card-reveal stagger-1"
-        />
-
-        <KpiCard
-          label="APPROVED"
-          value={stats.approved}
-          variant="default"
-          badge="ACCEPTED"
-          badgeColor="emerald"
-          description="Scope and milestones accepted"
-          className="animate-card-reveal stagger-2"
-        />
-
-        <KpiCard
-          label="BEING PRICED"
-          value={stats.inPrep}
-          variant="default"
-          badge="IN PIPELINE"
-          badgeColor="sky"
-          description="Quotes being prepared by statisticians"
-          className="animate-card-reveal stagger-3"
-        />
-
-        <KpiCard
-          label="TOTAL VALUE"
-          value={<MoneyDisplay amount={stats.totalCommitted} />}
-          variant="default"
-          badge="COMMITTED"
-          badgeColor="orange"
-          description="Total value of accepted studies"
-          className="animate-card-reveal stagger-4"
-        />
-      </div>
-
-      {/* ── Main Proposals Table Substrate Card ── */}
-      <Card
-        className="p-0 border border-white/10 overflow-hidden bg-[#01142B]/85 rounded-[2px] shadow-xl backdrop-blur-sm animate-card-reveal stagger-5"
-        style={{ padding: 0 }}
-      >
-        {/* Filter Toolbar */}
-        <FilterToolbar
-          searchQuery={searchQuery}
-          onSearchChange={(q) => { setSearchQuery(q); setCurrentPage(1); }}
-          searchPlaceholder="Search study title or JAXIS ID..."
-          filters={[
-            {
-              key: "status",
-              label: "Status",
-              value: selectedStatus,
-              defaultValue: "ALL",
-              options: [
-                { value: "ALL", label: `All Quotes (${stats.total})` },
-                { value: "PENDING", label: `Needs Review (${stats.pendingAction})` },
-                { value: "APPROVED", label: `Approved (${stats.approved})` },
-                { value: "IN_PREP", label: `Being Priced (${stats.inPrep})` },
-              ],
-            },
-          ]}
-          onFilterChange={(key, value) => {
-            if (key === "status") { setSelectedStatus(value); setCurrentPage(1); }
-          }}
-          onClear={() => {
-            setSelectedStatus("ALL");
-            setSearchQuery("");
-            setCurrentPage(1);
-          }}
-        />
-
-        {/* ── Table Container (Dashdark X Precision Standard) ── */}
-        <div className="p-0">
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-[#010D1F] border-b border-white/10">
-                <tr>
-                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[140px] whitespace-nowrap">Study ID</th>
-                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold">Research Study</th>
-                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[190px] whitespace-nowrap">Package Tier</th>
-                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[180px] whitespace-nowrap">Investment</th>
-                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[140px] whitespace-nowrap">Status</th>
-                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[150px] text-right whitespace-nowrap">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.06]">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="py-16 text-center">
-                      <LoadingState variant="table" label="Loading quotes..." />
-                    </td>
-                  </tr>
-                ) : filteredEntries.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-16 text-center">
-                      <EmptyState
-                        icon={Receipt}
-                        title="No Quotes Found"
-                        description="No quotes match the active filter criteria."
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedEntries.map(({ project, quotation }) => {
-                    const isPending = quotation?.status === "QUOTE_SENT";
-                    const isApproved = quotation?.status === "CLIENT_APPROVED";
-                    const pkgInfo = quotation ? getPackageBadgeInfo(quotation.packageName) : null;
-                    const hasAddOns = quotation?.lineItems.some((li) => li.itemType === "ADDON");
-
-                    return (
-                      <tr key={project.id} className="group hover:bg-white/[0.02] transition-colors">
-                        {/* 1. Study ID */}
-                        <td className="py-3.5 px-4 font-mono text-xs whitespace-nowrap align-middle">
-                          <CopyButton
-                            variant="badge"
-                            value={project.intakeId}
-                            label={project.intakeId}
-                            onCopy={() =>
-                              setToastMessage({
-                                message: "Study ID Copied",
-                                description: `"${project.intakeId}" has been copied to your clipboard.`,
-                                variant: "info",
-                              })
-                            }
-                          />
-                        </td>
-
-                        {/* 2. Research Study & Intake */}
-                        <td className="py-3.5 px-4 max-w-[380px] min-w-0 align-middle">
-                          <div className="flex flex-col gap-0.5 pr-2 min-w-0">
-                            <Link
-                              href={
-                                quotation
-                                  ? `/dashboard/client/projects/${project.id}/quote`
-                                  : `/dashboard/client/projects/${project.id}`
-                              }
-                              className="text-sm font-semibold text-white group-hover:text-[#FFA040] transition-colors line-clamp-1 leading-snug font-sans"
-                              title={project.researchTitle}
-                            >
-                              {project.researchTitle}
-                            </Link>
-                            <span className="text-xs text-white/40 font-sans">
-                              Target Date: {new Date(project.deadlineRequested).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* 3. Package & Scope */}
-                        <td className="py-3.5 px-4 whitespace-nowrap align-middle">
-                          {pkgInfo ? (
-                            <div className="flex flex-col gap-0.5">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-mono font-bold text-[#FFA040]">
-                                  {pkgInfo.id}
-                                </span>
-                                <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-[2px] bg-white/[0.04] text-white/70 border border-white/[0.08]">
-                                  {pkgInfo.badge}
-                                </span>
-                              </div>
-                              <span className="text-xs text-white/90 font-sans">
-                                {pkgInfo.name.replace(/^JX-\d+\s*/, "")}
-                              </span>
-                              {hasAddOns && (
-                                <span className="text-[11px] font-sans text-white/50 flex items-center gap-1">
-                                  <Sparkle size={11} weight="fill" className="text-[#CC6600]" />
-                                  <span>{quotation?.lineItems.filter((li) => li.itemType === "ADDON").length} Add-on(s)</span>
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-white/40 font-mono italic">
-                              In Evaluation
-                            </span>
-                          )}
-                        </td>
-
-                        {/* 4. Investment & Downpayment */}
-                        <td className="py-3.5 px-4 whitespace-nowrap align-middle">
-                          {quotation ? (
-                            <div className="flex flex-col gap-0.5">
-                              <div className="flex items-baseline gap-1.5">
-                                <span className="text-sm font-mono text-white font-bold inline-flex items-baseline">
-                                  <Peso className="text-white/80 text-sm" />
-                                  {quotation.totalAmount.toLocaleString()}
-                                </span>
-                                <span className="text-xs font-sans text-white/40 inline-flex items-baseline">
-                                  (Base: <Peso className="text-white/40 text-xs" />{quotation.basePrice.toLocaleString()})
-                                </span>
-                              </div>
-                              <span className="text-[11px] font-mono text-white/70 font-medium inline-flex items-baseline">
-                                <Peso className="text-white/50 text-[11px]" />
-                                {quotation.downpaymentRequired.toLocaleString()} Due ({quotation.isUpfrontEnforced ? "100%" : `${quotation.downpaymentPercentage}%`})
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-xs font-mono text-white/30">—</span>
-                          )}
-                        </td>
-
-                        {/* 5. Status */}
-                        <td className="py-3.5 px-4 whitespace-nowrap align-middle">
-                          {quotation ? (
-                            <StatusBadge
-                              status={quotation.status}
-                              label={
-                                isPending
-                                  ? "Needs Review"
-                                  : isApproved
-                                  ? "Approved"
-                                  : quotation.status.replace(/_/g, " ")
-                              }
-                            />
-                          ) : (
-                            <StatusBadge
-                              status="UNDER_EVALUATION"
-                              label="In Evaluation"
-                            />
-                          )}
-                        </td>
-
-                        {/* 6. Actions */}
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap align-middle">
-                          {isPending ? (
-                            <Link href={`/dashboard/client/projects/${project.id}/quote`}>
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                className="whitespace-nowrap font-sans font-semibold text-xs bg-[#CC6600] text-white hover:bg-[#B35500] inline-flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-all px-3 py-1.5"
-                              >
-                                <span>Review Quote</span>
-                                <ArrowRight size={13} weight="fill" />
-                              </Button>
-                            </Link>
-                          ) : isApproved ? (
-                            <Link href={`/dashboard/client/projects/${project.id}/quote`}>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="whitespace-nowrap font-sans font-medium text-xs rounded-[2px] active:scale-[0.97] transition-all px-3 py-1.5"
-                              >
-                                View Details
-                              </Button>
-                            </Link>
-                          ) : (
-                            <Link href={`/dashboard/client/projects/${project.id}`}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="whitespace-nowrap font-sans font-medium text-xs text-white/60 hover:text-white rounded-[2px] active:scale-[0.97] transition-all px-3 py-1.5"
-                              >
-                                Study Tracker →
-                              </Button>
-                            </Link>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+      {entries.length === 0 ? (
+        <Panel>
+          <PanelBody className="flex flex-col items-center gap-4 py-14 text-center">
+            <Receipt size={28} weight="fill" className="text-white/35" />
+            <div className="max-w-sm">
+              <p className="text-base font-semibold text-white">No quotes yet</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-white/55">
+                Send a study and we&apos;ll reply with a fixed written price within 24 hours.
+              </p>
+            </div>
+            <Button asChild variant="primary" size="sm">
+              <Link href="/dashboard/client/projects/new">Send a New Study</Link>
+            </Button>
+          </PanelBody>
+        </Panel>
+      ) : (
+        <>
+          {/* Tabs + search */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="-mx-1 flex items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none]" role="tablist" aria-label="Show quotes">
+              {TABS.filter((t) => t.value !== "closed" || counts.closed > 0).map((t) => {
+                const active = tab === t.value;
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => {
+                      setTab(t.value);
+                      setCurrentPage(1);
+                    }}
+                    className={`inline-flex shrink-0 items-center gap-2 rounded-[2px] px-3 py-1.5 text-[13px] transition-colors ${
+                      active ? "bg-white/[0.08] font-medium text-white" : "text-white/55 hover:text-white"
+                    }`}
+                  >
+                    {t.value === "waiting" && counts.waiting > 0 ? (
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#CC6600]" aria-hidden="true" />
+                    ) : null}
+                    {t.label}
+                    <span className={`font-mono text-[11px] ${active ? "text-white/60" : "text-white/35"}`}>{counts[t.value]}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <label className="relative flex h-9 w-full items-center sm:w-64">
+              <MagnifyingGlass size={15} className="pointer-events-none absolute left-3 text-white/35" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Search by title or study ID"
+                aria-label="Search quotes"
+                className="h-full w-full rounded-[2px] border border-white/[0.08] bg-[#050513] pl-9 pr-8 text-base text-white placeholder:text-white/30 focus:border-white/25 focus:outline-none sm:text-[13px]"
+              />
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  aria-label="Clear search"
+                  className="absolute right-2 flex h-6 w-6 items-center justify-center text-white/40 hover:text-white"
+                >
+                  <X size={13} weight="bold" />
+                </button>
+              ) : null}
+            </label>
           </div>
-        </div>
 
-        {filteredEntries.length > 0 && (
-          <Pagination
-            currentPage={currentPage}
-            totalItems={filteredEntries.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
-            itemLabel="proposals"
-          />
-        )}
-      </Card>
+          {visible.length === 0 ? (
+            <Panel>
+              <PanelBody className="py-12 text-center">
+                <p className="text-sm text-white/55">
+                  {searchQuery ? "No quotes match your search." : "Nothing here right now."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab("ALL");
+                    setSearchQuery("");
+                  }}
+                  className="mt-2 text-[13px] text-white/75 underline decoration-white/25 underline-offset-4 hover:text-white"
+                >
+                  Show all quotes
+                </button>
+              </PanelBody>
+            </Panel>
+          ) : (
+            <ul className="flex flex-col gap-4">
+              {paginated.map((entry) => (
+                <li key={entry.project.id}>
+                  <QuoteCard entry={entry} onCopy={copyId} />
+                </li>
+              ))}
+            </ul>
+          )}
 
-      {/* ── Global Portaled Toast ── */}
+          {visible.length > pageSize ? (
+            <Panel>
+              <Pagination
+                currentPage={currentPage}
+                totalItems={visible.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                itemLabel="quotes"
+              />
+            </Panel>
+          ) : null}
+        </>
+      )}
+
       {toastMessage && (
         <Toast
           message={toastMessage.message}
@@ -467,5 +280,101 @@ export function ClientQuotationsClient({
         />
       )}
     </div>
+  );
+}
+
+/** One quote: what it's for, the price and how it's paid, where it stands, one button. */
+function QuoteCard({ entry, onCopy }: { entry: ClientQuoteEntry; onCopy: (id: string) => void }) {
+  const { project, quotation } = entry;
+  const state = quoteState(entry);
+  const pkg = packageName(quotation?.packageName);
+  const extras = quotation?.lineItems.filter((li) => li.itemType === "ADDON").length ?? 0;
+  const quoteHref = `/dashboard/client/projects/${project.id}/quote`;
+  const studyHref = `/dashboard/client/projects/${project.id}`;
+  const waiting = state === "waiting";
+
+  const when =
+    state === "waiting" && quotation
+      ? `Good until ${shortDate(quotation.expiresAt)}`
+      : state === "accepted" && quotation?.respondedAt
+        ? `Accepted ${shortDate(quotation.respondedAt)}`
+        : state === "closed"
+          ? closedReason(entry)
+          : state === "pricing"
+            ? "You'll get a fixed price within 24 hours"
+            : "";
+
+  return (
+    <Panel as="article" aria-label={project.researchTitle} className={waiting ? "border-[#CC6600]/35" : ""}>
+      <div className="grid grid-cols-1 gap-5 px-5 py-5 sm:px-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-8">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+            <span
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[2px] border px-2 py-0.5 text-xs font-medium ${
+                waiting
+                  ? "border-[#CC6600]/50 bg-[#CC6600]/10 text-[#FFA040]"
+                  : state === "accepted"
+                    ? "border-white/20 bg-white/[0.06] text-white"
+                    : "border-white/10 bg-white/[0.03] text-white/65"
+              }`}
+            >
+              {waiting ? <span className="h-1.5 w-1.5 rounded-full bg-[#CC6600]" /> : null}
+              {STATE_COPY[state].tag}
+            </span>
+            {when ? <span className="font-mono text-[11px] text-white/45">{when}</span> : null}
+          </div>
+          <Link
+            href={quotation ? quoteHref : studyHref}
+            className="mt-2.5 block text-base font-semibold leading-snug text-white decoration-white/30 underline-offset-4 hover:underline"
+          >
+            {project.researchTitle}
+          </Link>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/45">
+            <CopyButton variant="ghost" value={project.intakeId} label={project.intakeId} onCopy={() => onCopy(project.intakeId)} className="-ml-2 text-[11px]" />
+            {pkg ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{pkg}</span>
+              </>
+            ) : null}
+            {extras > 0 ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>
+                  {extras} {extras === 1 ? "extra" : "extras"}
+                </span>
+              </>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 md:items-end">
+          {quotation ? (
+            <div className="md:text-right">
+              <p className={`font-mono text-2xl font-bold tracking-tight ${state === "closed" ? "text-white/45" : "text-white"}`}>
+                <Peso />
+                {money(quotation.totalAmount)}
+              </p>
+              <p className="mt-0.5 text-xs text-white/50">
+                {quotation.isUpfrontEnforced ? (
+                  "Paid in full before we start"
+                ) : (
+                  <>
+                    <Peso />
+                    {money(quotation.downpaymentRequired)} deposit, rest when files are ready
+                  </>
+                )}
+              </p>
+            </div>
+          ) : null}
+          <Button asChild variant={waiting ? "primary" : "outline"} size="sm" className="gap-1.5 self-start whitespace-nowrap md:self-end">
+            <Link href={quotation ? quoteHref : studyHref}>
+              {waiting ? "Review Price" : quotation ? "View Price" : "View Study"}
+              <ArrowRight size={14} weight="bold" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </Panel>
   );
 }

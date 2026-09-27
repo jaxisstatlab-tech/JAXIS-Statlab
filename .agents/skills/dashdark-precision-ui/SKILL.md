@@ -1,6 +1,6 @@
 ---
 name: dashdark-precision-ui
-description: Master Enterprise Dark Precision Bento Design System for JAXIS StatLab. Creates responsive, SaaS-grade dark interfaces modeled after the Dashdark X reference photos. Enforces deep navy substrates (#010114, #01142B), enterprise orange accents (#CC6600), Phosphor fill icons exclusively, strict rounded-[2px] corners, 2:1 asymmetric bento grid architecture, and full mobile-to-desktop responsiveness across all roles (Client, Statistician, QA Lead, CEO/Admin).
+description: Master Enterprise Dark Precision Bento Design System for JAXIS StatLab. Creates responsive, SaaS-grade dark interfaces modeled after the Dashdark X reference photos. Enforces charcoal substrates (#010114, #0A0A18), enterprise orange accents (#CC6600), Phosphor fill icons exclusively, strict rounded-[2px] corners, 2:1 asymmetric bento grid architecture, and full mobile-to-desktop responsiveness across all roles (Client, Statistician, QA Lead, CEO/Admin).
 ---
 
 # Dashdark Precision UI Skill — Master Enterprise Design System
@@ -24,7 +24,7 @@ Every page you create or upgrade must embody the reference's:
 - **Precision Border Radius**: Strictly **`rounded-[2px]`** across all cards, containers, buttons, and badges. Zero bubbly `rounded-xl` or `rounded-2xl` corners.
 - **Phosphor Fill Icons**: Solid filled glyphs (`weight="fill"`) across cards, navigation, and badges.
 - **Responsive Architecture**: Flawless optical scaling from mobile (375px) through widescreen (1920px).
-- **Current Theme Grounding**: Built directly on JAXIS StatLab's current deep navy substrates (`#010114`, `#01142B`) and enterprise orange accent (`#CC6600`) without breaking existing design principles or backend code.
+- **Current Theme Grounding**: Built directly on JAXIS StatLab's current charcoal substrates (`#010114`, `#0A0A18`) and enterprise orange accent (`#CC6600`) without breaking existing design principles or backend code.
 
 ---
 
@@ -58,9 +58,9 @@ Never introduce foreign palettes or pastel gradients. Strictly anchor to the cur
 | Substrate Layer | Hex / Value | Semantic Role & Visual Function |
 |---|---|---|
 | **Master Canvas (L0)** | `#010114` | 95% Viewport foundation. Midnight Deep Space Navy. Absorbs visual noise. |
-| **Surface Card (L1)** | `rgba(1, 20, 43, 0.85)` / `#01142B` | Standard card and sheet substrates. Deep ocean navy with crisp borders. |
-| **Elevated Surface** | `#011B38` / `#01162E` | Hovered rows, selected items, active dialogs, and popovers. |
-| **Well / Inset Surface (L2)** | `#010D1F` / `rgba(0, 0, 0, 0.30)` | Recessed controls, date dropdowns, search inputs, nested tables, and code blocks. |
+| **Surface Card (L1)** | `rgba(10, 10, 24, 0.85)` / `#0A0A18` | Standard card and sheet substrates. Deep ocean navy with crisp borders. |
+| **Elevated Surface** | `#0F0F1D` / `#0B0B19` | Hovered rows, selected items, active dialogs, and popovers. |
+| **Well / Inset Surface (L2)** | `#050513` / `rgba(0, 0, 0, 0.30)` | Recessed controls, date dropdowns, search inputs, nested tables, and code blocks. |
 | **Enterprise Orange** | `#CC6600` | Primary accent (**5–10% max rule**). Primary CTAs, active indicators, live counts. |
 | **Hover Orange** | `#E67300` / `#FFA040` | Interactive hover state and illuminated active text. |
 | **Analytical Sky** | `#38BDF8` | Research data points, secondary badges, telemetry metrics. |
@@ -72,8 +72,8 @@ Never introduce foreign palettes or pastel gradients. Strictly anchor to the cur
 ### 1.1. The 3-Level Substrate Elevation Hierarchy
 Depth is established purely through flat substrate contrast and 1px borders—zero blurry drop shadows:
 1. **L0 Master Canvas (`#010114`)**: Recedes completely; absorbs viewport margins and gutters.
-2. **L1 Surface Card (`#01142B`)**: Crisp 1px flat border (`border-white/10`); elevated above the canvas.
-3. **L2 Control Insets & Wells (`#010D1F`)**: Date filters, search inputs, and table headers are pressed *into* the card using a darker inset tint with subtle `border-white/10`.
+2. **L1 Surface Card (`#0A0A18`)**: Crisp 1px flat border (`border-white/10`); elevated above the canvas.
+3. **L2 Control Insets & Wells (`#050513`)**: Date filters, search inputs, and table headers are pressed *into* the card using a darker inset tint with subtle `border-white/10`.
 
 ### 1.2. Color Restraint & Anti-Rainbow Mandate
 Color is a **scarce cognitive resource**. The Dashdark X reference achieves high-end authority by using **monochrome-first restraint**:
@@ -91,7 +91,7 @@ Color is a **scarce cognitive resource**. The Dashdark X reference achieves high
      - Secondary breakdown: `text-white/70 font-mono`
      - Base price / subtext: `text-white/40 font-sans`
 3. **The 80 / 15 / 5 Color Budget**:
-   - **80% Substrate**: Dark precision canvas (`#010114`) and solid surfaces (`#01142B`).
+   - **80% Substrate**: Dark precision canvas (`#010114`) and solid surfaces (`#0A0A18`).
    - **15% Typographic Contrast**: High-contrast white and calibrated opacity tints (`text-white`, `text-white/70`, `text-white/40`).
    - **5% Maximum Accent**: Enterprise Orange (`#CC6600`) for primary interactive CTAs, with semantic colors (`emerald`, `amber`, `crimson`) used strictly for purposeful state feedback.
 
@@ -103,7 +103,7 @@ In comparison tables and quotation breakdowns (e.g. Service packages, SLA tiers)
 ### Absolute Aesthetic Bans:
 - **Zero Rainbow Metric Rows**: Default to crisp bold white numerals.
 - **Zero Box-Shadow Glows**: Never use blurry glowing box-shadows (`shadow-[0_0_...px]`). Use crisp, flat borders.
-- **Zero Awkward Gradients**: Never use multi-stop gradients on action bars, banners, or cards. Use solid substrates (`bg-[#01142B]/85`).
+- **Zero Awkward Gradients**: Never use multi-stop gradients on action bars, banners, or cards. Use solid substrates (`bg-[#0A0A18]/85`).
 - **Zero Shouting All-Caps Buttons**: All buttons must use Title Case or Sentence Case (`"Review Quote →"`, `"View Details"`, `"Save Changes"`).
 
 ---
@@ -266,7 +266,7 @@ When presenting quantitative charts or visual gauges across roles:
 1. **Spline Area Charts**:
    - Primary data series curve with a subtle vertical gradient wash (fading from 20% opacity at peak to 0% at baseline).
    - Ultra-faint horizontal gridlines (`border-white/[0.04]` or `rgba(255, 255, 255, 0.04)`).
-   - Interactive Tooltip Pin: Floating pill (`bg-[#010D1F] border border-white/15 rounded-[2px] px-2 py-1 text-xs font-mono`) anchored to active data nodes with a hairline vertical guide.
+   - Interactive Tooltip Pin: Floating pill (`bg-[#050513] border border-white/15 rounded-[2px] px-2 py-1 text-xs font-mono`) anchored to active data nodes with a hairline vertical guide.
 2. **High-Density Micro-Bar Charts**:
    - Thin vertical bars (4px–6px) with tight 2px gutters.
    - Inactive bars use subtle translucent white (`rgba(255, 255, 255, 0.12)`); active or highlighted bars use `#CC6600` or `#38BDF8`.
@@ -286,7 +286,7 @@ This design system must be applied consistently across all 4 primary roles. Use 
 ### Role A: Client Portal (`/dashboard/client`)
 - **Tier 1 (Greeting)**: `Welcome back, [First Name]` · Plain English research tracker subtitle · Actions: `How It Works` (outline) + `+ Submit New Study Request` (primary Enterprise Orange `#CC6600`).
 - **Tier 2 (KPIs)**: `TOTAL STUDIES` (ALL TIME), `ACTION REQUIRED` (ACTION NEEDED in amber when > 0), `IN PROGRESS / QA` (ACTIVE in sky blue), `DEFENSE READY` (DELIVERED in emerald). Numerals default to bold white.
-- **Tier 3 (Hero 8-col)**: Canonical 5-Stage Study Pipeline Stepper (`Proposal & Quote` $\rightarrow$ `Contract (SOW)` $\rightarrow$ `Downpayment` $\rightarrow$ `Analysis & QA` $\rightarrow$ `Final Outputs`) in recessed L2 well (`bg-[#010D1F] border-white/10`) with 1-click copy badge on Study ID, target date, and direct action CTA.
+- **Tier 3 (Hero 8-col)**: Canonical 5-Stage Study Pipeline Stepper (`Proposal & Quote` $\rightarrow$ `Contract (SOW)` $\rightarrow$ `Downpayment` $\rightarrow$ `Analysis & QA` $\rightarrow$ `Final Outputs`) in recessed L2 well (`bg-[#050513] border-white/10`) with 1-click copy badge on Study ID, target date, and direct action CTA.
 - **Tier 3 (Auxiliary 4-col)**:
   - Top: `Statistical Consultation Desk` (`ChatCenteredText weight="fill"`, `● ACTIVE` green beacon, 2–4 hr SLA, `Message Desk →` button).
   - Bottom: `DefenseLab Practice` (`GraduationCap weight="fill"`, mock question counter, `Launch Simulator →` button).
@@ -477,7 +477,7 @@ All UI text must read like a normal person talking. Never use robotic enterprise
 
 Before considering any page or role upgrade complete, verify each criterion:
 
-- [ ] **Substrate**: Master canvas `#010114`, card `#01142B`, crisp 1px borders `border-white/10` (no blurry glows, no multi-stop gradients).
+- [ ] **Substrate**: Master canvas `#010114`, card `#0A0A18`, crisp 1px borders `border-white/10` (no blurry glows, no multi-stop gradients).
 - [ ] **Border Radius**: Strictly `rounded-[2px]` across all cards, containers, buttons, badges, keycaps, and modals.
 - [ ] **Iconography**: Phosphor fill icons (`@phosphor-icons/react` with `weight="fill"`) across cards, navigation, and badges; `weight="bold"` for directional arrows, chevrons, close, and checkmarks. Zero emojis. Zero raw SVGs.
 - [ ] **Typography**: `font-sans` for all reading content; `font-mono` strictly for numeric metrics, IDs, and uppercase micro-labels. `<Peso />` for currency.

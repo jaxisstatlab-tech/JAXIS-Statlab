@@ -200,22 +200,22 @@ export function runFirewall(rawContent: string): FirewallResult {
 export function getFirewallWarningMessage(ruleName: string): string {
   switch (ruleName) {
     case "EMAIL_ADDRESS":
-      return "Sharing personal email addresses is prohibited under JAXIS terms of service. All communication must remain within the secure study thread.";
+      return "Please don't share email addresses here. Keep all talk about your study in this chat.";
     case "PH_MOBILE":
-      return "Sharing phone or mobile numbers is prohibited under JAXIS terms of service. All consultations must occur within this escrow-protected portal.";
+      return "Please don't share phone numbers here. Keep all talk about your study in this chat.";
     case "E_WALLET_PAYMENT":
-      return "Direct payments (GCash, Maya, Bank Transfer) outside JAXIS escrow are strictly prohibited. Payments must be verified through the JAXIS Finance desk.";
+      return "Please don't send or ask for payments in chat (GCash, Maya, bank transfer). Pay only through your study's payment page.";
     case "MESSAGING_APP":
-      return "External messaging channels (WhatsApp, Viber, Telegram, Messenger) are not permitted. Keep all consultation history in this verified thread.";
+      return "Please don't move the chat to other apps like WhatsApp, Viber, Telegram, or Messenger. Keep it here so everything stays on record.";
     case "SOCIAL_PLATFORM":
     case "SOCIAL_HANDLE":
-      return "Sharing social media links, handles, or profiles is prohibited under JAXIS terms of service.";
+      return "Please don't share social media links or usernames here.";
     case "OFF_PLATFORM_INTENT":
-      return "Requests to communicate outside the JAXIS consultation portal are not permitted under escrow protection policies.";
+      return "Please keep the conversation in this chat so everything stays on record.";
     case "EXTERNAL_URL":
     case "WWW_URL":
-      return "External links are not permitted. Please upload study files through the project document vault.";
+      return "Links can't be sent in chat. Upload files on your study page instead.";
     default:
-      return "Your message was blocked by the communication firewall for containing prohibited external contact information.";
+      return "This message wasn't sent because it looks like it has contact details. Please keep the conversation in this chat.";
   }
 }

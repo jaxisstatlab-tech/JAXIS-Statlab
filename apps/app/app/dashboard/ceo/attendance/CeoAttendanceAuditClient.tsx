@@ -244,7 +244,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
         onValueChange={(val) => setActiveTab(val as "LEDGER" | "POLICIES")}
         className="w-full"
       >
-        <TabsList className="bg-[#01142B] border border-white/10 p-1 rounded-[2px] w-fit flex flex-wrap gap-1">
+        <TabsList className="bg-[#0A0A18] border border-white/10 p-1 rounded-[2px] w-fit flex flex-wrap gap-1">
           <TabsTrigger
             value="LEDGER"
             className="flex items-center gap-2 px-4 py-2 text-xs font-sans font-semibold rounded-[2px] transition-colors data-[state=active]:bg-[#CC6600] data-[state=active]:text-white text-white/70 hover:text-white"
@@ -264,7 +264,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
         {/* TAB 1: Institutional Audit Ledger */}
         <TabsContent value="LEDGER" className="mt-6 flex flex-col gap-6">
           {/* Raw Punch & Attendance Audit Ledger */}
-          <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+          <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
               <div>
                 <h2 className="text-base font-bold text-white font-sans">
@@ -282,7 +282,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search staff name or role..."
-                  className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] pl-9 pr-3 py-2 text-xs text-white placeholder-white/30 outline-none focus:border-[#CC6600] font-sans"
+                  className="w-full bg-[#050513] border border-white/10 rounded-[2px] pl-9 pr-3 py-2 text-xs text-white placeholder-white/30 outline-none focus:border-[#CC6600] font-sans"
                 />
               </div>
             </div>
@@ -417,7 +417,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
           </Card>
 
           {/* Adjustments & SoD Audit Trail */}
-          <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+          <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
             <div className="border-b border-white/10 pb-4">
               <h2 className="text-base font-bold text-white font-sans">
                 Missed Punch Adjustments &amp; Approver Audit Signatures
@@ -521,7 +521,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
             </div>
 
             {/* Section 1: Weekend & Holiday Policies */}
-            <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+            <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
               <div className="border-b border-white/10 pb-3">
                 <h3 className="text-sm font-bold text-white font-sans uppercase tracking-wider flex items-center gap-2">
                   <IconCalendarEvent size={18} stroke={1.5} className="text-[#CC6600]" />
@@ -534,7 +534,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Weekend Work Toggle */}
-                <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-start justify-between gap-4">
+                <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex items-start justify-between gap-4">
                   <div className="flex flex-col gap-1">
                     <span className="text-sm font-semibold text-white font-sans">
                       Allow Weekend Duty (Saturdays &amp; Sundays)
@@ -550,7 +550,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                 </div>
 
                 {/* Holiday Work Toggle */}
-                <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-start justify-between gap-4">
+                <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex items-start justify-between gap-4">
                   <div className="flex flex-col gap-1">
                     <span className="text-sm font-semibold text-white font-sans">
                       Allow Philippine National Holiday Duty
@@ -568,7 +568,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
             </Card>
 
             {/* Section 2: Operating Shift Hours Window */}
-            <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+            <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
               <div className="border-b border-white/10 pb-3">
                 <h3 className="text-sm font-bold text-white font-sans uppercase tracking-wider flex items-center gap-2">
                   <IconSun size={18} stroke={1.5} className="text-[#38BDF8]" />
@@ -587,7 +587,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                     className={`p-4 rounded-[2px] border text-left flex flex-col gap-1.5 transition-colors cursor-pointer ${
                       policy.operatingHoursMode === "FLEXIBLE_24_7"
                         ? "bg-[#CC6600]/10 border-[#CC6600] text-white"
-                        : "bg-[#010D1F] border-white/10 text-white/70 hover:border-white/20"
+                        : "bg-[#050513] border-white/10 text-white/70 hover:border-white/20"
                     }`}
                   >
                     <span className="text-sm font-bold font-sans flex items-center gap-2">
@@ -607,7 +607,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                     className={`p-4 rounded-[2px] border text-left flex flex-col gap-1.5 transition-colors cursor-pointer ${
                       policy.operatingHoursMode === "FIXED_CORE_HOURS"
                         ? "bg-[#CC6600]/10 border-[#CC6600] text-white"
-                        : "bg-[#010D1F] border-white/10 text-white/70 hover:border-white/20"
+                        : "bg-[#050513] border-white/10 text-white/70 hover:border-white/20"
                     }`}
                   >
                     <span className="text-sm font-bold font-sans flex items-center gap-2">
@@ -623,7 +623,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                 </div>
 
                 {policy.operatingHoursMode === "FIXED_CORE_HOURS" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-[#010D1F] border border-white/10 rounded-[2px] animate-content-fade">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-[#050513] border border-white/10 rounded-[2px] animate-content-fade">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-mono uppercase text-white/60 font-semibold">
                         Earliest Permitted Clock-In
@@ -632,7 +632,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                         type="time"
                         value={policy.coreHoursStart}
                         onChange={(e) => setPolicy((p) => ({ ...p, coreHoursStart: e.target.value }))}
-                        className="bg-[#01142B] border border-white/10 rounded-[2px] p-2.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
+                        className="bg-[#0A0A18] border border-white/10 rounded-[2px] p-2.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -643,7 +643,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                         type="time"
                         value={policy.coreHoursEnd}
                         onChange={(e) => setPolicy((p) => ({ ...p, coreHoursEnd: e.target.value }))}
-                        className="bg-[#01142B] border border-white/10 rounded-[2px] p-2.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
+                        className="bg-[#0A0A18] border border-white/10 rounded-[2px] p-2.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
                       />
                     </div>
                   </div>
@@ -652,7 +652,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
             </Card>
 
             {/* Section 3: Meal Break Automation */}
-            <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+            <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
               <div className="border-b border-white/10 pb-3">
                 <h3 className="text-sm font-bold text-white font-sans uppercase tracking-wider flex items-center gap-2">
                   <IconCoffee size={18} stroke={1.5} className="text-[#10B981]" />
@@ -665,7 +665,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Auto-Deduct Toggle */}
-                <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-start justify-between gap-4">
+                <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex items-start justify-between gap-4">
                   <div className="flex flex-col gap-1">
                     <span className="text-sm font-semibold text-white font-sans">
                       Auto-Deduct Meal Break
@@ -681,7 +681,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                 </div>
 
                 {/* Break Duration Selector */}
-                <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-2">
+                <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col gap-2">
                   <label className="text-xs font-mono uppercase text-white/60 font-semibold">
                     Standard Break Duration
                   </label>
@@ -689,7 +689,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                     disabled={!policy.autoDeductMealBreak}
                     value={policy.mealBreakMinutes}
                     onChange={(e) => setPolicy((p) => ({ ...p, mealBreakMinutes: Number(e.target.value) }))}
-                    className="bg-[#01142B] border border-white/10 rounded-[2px] p-2.5 text-xs text-white font-mono outline-none focus:border-[#CC6600] disabled:opacity-50"
+                    className="bg-[#0A0A18] border border-white/10 rounded-[2px] p-2.5 text-xs text-white font-mono outline-none focus:border-[#CC6600] disabled:opacity-50"
                   >
                     <option value={30}>30 Minutes (Short Break)</option>
                     <option value={45}>45 Minutes (Standard)</option>
@@ -702,7 +702,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                 </div>
 
                 {/* Shift Threshold Selector */}
-                <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-2">
+                <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col gap-2">
                   <label className="text-xs font-mono uppercase text-white/60 font-semibold">
                     Minimum Shift Length for Deduction
                   </label>
@@ -710,7 +710,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                     disabled={!policy.autoDeductMealBreak}
                     value={policy.mealBreakThresholdHours}
                     onChange={(e) => setPolicy((p) => ({ ...p, mealBreakThresholdHours: Number(e.target.value) }))}
-                    className="bg-[#01142B] border border-white/10 rounded-[2px] p-2.5 text-xs text-white font-mono outline-none focus:border-[#CC6600] disabled:opacity-50"
+                    className="bg-[#0A0A18] border border-white/10 rounded-[2px] p-2.5 text-xs text-white font-mono outline-none focus:border-[#CC6600] disabled:opacity-50"
                   >
                     <option value={4.0}>Shifts 4.0+ hours</option>
                     <option value={5.0}>Shifts 5.0+ hours (Standard)</option>
@@ -725,7 +725,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
             </Card>
 
             {/* Section 4: Wage Rate & Auto-Cap Protection */}
-            <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+            <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
               <div className="border-b border-white/10 pb-3">
                 <h3 className="text-sm font-bold text-white font-sans uppercase tracking-wider flex items-center gap-2">
                   <IconCoin size={18} stroke={1.5} className="text-amber-400" />
@@ -738,7 +738,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Base Hourly Rate */}
-                <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-2">
+                <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col gap-2">
                   <label className="text-xs font-mono uppercase text-white/60 font-semibold">
                     Base Hourly Compute Rate (PHP)
                   </label>
@@ -751,7 +751,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                       max="10000"
                       value={policy.baseHourlyRate}
                       onChange={(e) => setPolicy((p) => ({ ...p, baseHourlyRate: Number(e.target.value) }))}
-                      className="w-full bg-[#01142B] border border-white/10 rounded-[2px] pl-8 pr-3 py-2.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
+                      className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] pl-8 pr-3 py-2.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
                     />
                   </div>
                   <span className="text-[0.688rem] text-white/40 font-sans">
@@ -760,14 +760,14 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                 </div>
 
                 {/* Runaway Session Auto-Cap */}
-                <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-2">
+                <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col gap-2">
                   <label className="text-xs font-mono uppercase text-white/60 font-semibold">
                     Runaway Session Auto-Cap Threshold
                   </label>
                   <select
                     value={policy.maxShiftCapHours}
                     onChange={(e) => setPolicy((p) => ({ ...p, maxShiftCapHours: Number(e.target.value) }))}
-                    className="bg-[#01142B] border border-white/10 rounded-[2px] p-2.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
+                    className="bg-[#0A0A18] border border-white/10 rounded-[2px] p-2.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
                   >
                     <option value={10}>10 Hours Maximum</option>
                     <option value={12}>12 Hours Maximum</option>

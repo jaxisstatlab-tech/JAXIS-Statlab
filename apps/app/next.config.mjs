@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // `npm run dev:offline` builds into its own folder so it can run next to the normal dev server.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   reactStrictMode: true,
   experimental: {
     optimizePackageImports: [

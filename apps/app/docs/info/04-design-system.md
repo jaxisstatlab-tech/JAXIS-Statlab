@@ -2,7 +2,7 @@
 
 **Workspace:** `apps/app` & `@repo/ui`  
 **Aesthetic Standard:** Dark Precision Terminal / Enterprise Scientific  
-**Primary Color Tokens:** Midnight Navy (`#010114`), Deep Ocean Glass (`#011B38`), Enterprise Orange (`#CC6600`)
+**Primary Color Tokens:** Midnight Navy (`#010114`), Charcoal Elevation (`#0F0F1D`), Enterprise Orange (`#CC6600`)
 
 ---
 
@@ -14,7 +14,7 @@ JAXIS StatLab follows a high-precision, industrial-scientific design system tail
 | Role | Token / Hex | Usage |
 | :--- | :--- | :--- |
 | **Master Canvas** | `#010114` | Unified background for Viewport, Topbar, Sidebar, and Main Canvas. |
-| **Surface Card** | `rgba(1, 22, 46, 0.75)` / `#01142B` / `#011B38` | Elevated panel background for cards, tables, and inspection modals. |
+| **Surface Card** | `rgba(11, 11, 25, 0.75)` / `#0A0A18` / `#0F0F1D` | Elevated panel background for cards, tables, and inspection modals. |
 | **Subtle Overlay** | `rgba(255, 255, 255, 0.04)` | Table headers, muted footers, and passive card hover states. |
 | **Primary Accent** | `#CC6600` (Orange) | Active route tabs, primary CTA buttons, required asterisks, study ID highlights. |
 | **Analytical Tone** | `#0284C7` / `#38BDF8` (Sky) | Methodology badges, statistical script outputs, dataset inspection badges. |
@@ -32,7 +32,7 @@ JAXIS StatLab follows a high-precision, industrial-scientific design system tail
   - Scale with `size={16}` (micro/badges), `size={18}` / `size={20}` (standard buttons/inputs), or `size={24}` (featured cards).
   - Use Tailwind color classes (e.g., `className="text-[#CC6600]"`, `className="text-sky-400"`, `className="text-white/60"`).
 - **Zero Glow Policy**: Blurry box-shadow glows (`shadow-[0_0_...px]`) are prohibited. Use crisp, high-contrast flat borders (`border-white/10` to `border-white/20`) and calibrated opacity tints (`bg-white/[0.04]` or `bg-sky-500/10`).
-- **No Awkward Gradients**: Do not use heavy gradient fills (`bg-gradient-to-r`) on action bars, banners, or modal headers. Rely on solid substrates (`#01142B` / `#011B38`) with calibrated borders.
+- **No Awkward Gradients**: Do not use heavy gradient fills (`bg-gradient-to-r`) on action bars, banners, or modal headers. Rely on solid substrates (`#0A0A18` / `#0F0F1D`) with calibrated borders.
 
 ### 1.3. Copywriting, Tone & Labeling Standards (SIMPLE & HUMAN-FRIENDLY)
 - **Zero Double Slashes Policy**: Double slashes (`//`) are **strictly prohibited** in all UI copy, loading states, badges, alert titles, and toasts.
@@ -148,8 +148,8 @@ To deliver world-class SaaS clarity, visual hierarchy, and spatial rhythm, prima
 5. **Hairline Division**: Borders are strictly flat 1px `border-white/10` to `border-white/15`. Blurry glowing drop shadows are strictly forbidden.
 6. **The 3-Level Substrate Elevation Hierarchy**:
    - `L0 Master Canvas` (`#010114`): 95% foundation; recedes completely.
-   - `L1 Surface Card` (`#01142B` / `rgba(1, 20, 43, 0.85)`): Elevated with 1px `border-white/10`.
-   - `L2 Control Insets & Wells` (`#010D1F`): Recessed controls, date dropdowns, search inputs, and table headers.
+   - `L1 Surface Card` (`#0A0A18` / `rgba(10, 10, 24, 0.85)`): Elevated with 1px `border-white/10`.
+   - `L2 Control Insets & Wells` (`#050513`): Recessed controls, date dropdowns, search inputs, and table headers.
 7. **Two-Line Primary Table Cells**: Primary entity cells (Client, Study Topic, Specialist) use a two-line hierarchy: Line 1 bold white title (`font-sans font-semibold text-xs text-white`), Line 2 metadata subtext (`font-sans text-[11px] text-white/40`).
 8. **Continuous Column Banding (Pricing / Comparison Matrices)**: In multi-tier pricing and service matrices, the recommended / featured column maintains an unbroken vertical tinted substrate (`bg-[#CC6600]/10` with `border-[#CC6600]/30`) from the top pricing card down through every row of the comparison table.
 
@@ -218,7 +218,7 @@ All telemetry, financial, and operational index cards across all roles and pages
    - **Functional Cards Retain Icons**: Tool cards, interactive desks (*DefenseLab Practice*, *Consultation Desk*), file dropzones, and navigation rails continue to use canonical Phosphor fill icons.
 5. **Unit Suffix**: Rendered cleanly inline as `text-xs font-mono text-white/40 select-none` (e.g. `hrs`, `specialists`, `shifts`, `completed`).
 6. **Description / Subtitle**: `text-xs font-sans text-white/50 select-none truncate` preceded by a calibrated `1.5` dot indicator.
-7. **Border & Substrate**: Solid elevated substrate `bg-[#01142B] border border-white/10 hover:border-white/20 rounded-[2px] p-5 sm:p-6 shadow-xl`.
+7. **Border & Substrate**: Solid elevated substrate `bg-[#0A0A18] border border-white/10 hover:border-white/20 rounded-[2px] p-5 sm:p-6 shadow-xl`.
 8. **Inline Micro-Pill & Micro-Action (Dashdark X Standard)**:
      - Beside or directly below the bold numeral, pair a compact status or percentage trend pill (`rounded-[2px] text-[10px] font-mono font-bold px-1.5 py-0.5`):
        - Positive / Active: `bg-emerald-500/15 text-emerald-400 border border-emerald-500/20` (e.g. `28.4% ↗` or `ACTIVE`)
@@ -319,14 +319,14 @@ All continuous telemetry, activity, and milestone time-series curves must use th
 #### Standards:
 1. **SSR Hydration Safety**: Components internally handle client mounting with an animated pulse placeholder to prevent hydration mismatches in Next.js 16.
 2. **Restrained Color Palette**: Default strictly to Enterprise Orange (`#CC6600`) and Analytical Sky (`#38BDF8`). Never render rainbow charts with 4+ disparate neon lines.
-3. **Terminal Substrate**: Encapsulate inside a solid `#01142B` Card with `rounded-[2px]`, `border-white/10`, and a dedicated header with icon and time range label.
-4. **Tooltips**: Built-in dark terminal tooltip (`bg-[#01142B] border-white/15 text-white font-mono`).
+3. **Terminal Substrate**: Encapsulate inside a solid `#0A0A18` Card with `rounded-[2px]`, `border-white/10`, and a dedicated header with icon and time range label.
+4. **Tooltips**: Built-in dark terminal tooltip (`bg-[#0A0A18] border-white/15 text-white font-mono`).
 
 ```tsx
 import { AreaChart, Card } from "@repo/ui";
 import { ChartLineUp } from "@phosphor-icons/react";
 
-<Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-4">
+<Card className="p-5 sm:p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-4">
   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
     <div className="flex items-center gap-2">
       <ChartLineUp size={18} weight="fill" className="text-[#CC6600]" />
@@ -461,10 +461,10 @@ Use this matrix to select the correct UI component pattern for each interaction 
 
 | Variant | Accent Color | Border & Gradient Surface | Icon (`@phosphor-icons/react`) | Primary Use Cases |
 | :--- | :--- | :--- | :--- | :--- |
-| `info` | Analytical Sky (`#38BDF8`) | `bg-gradient-to-r from-sky-950/90 to-[#010D1F] border-sky-500/35` | `<Info size={18} weight="fill" />` | Clipboard copies, download starts, non-destructive notifications, session events. |
-| `success` | Verification Emerald (`#10B981`) | `bg-gradient-to-r from-emerald-950/90 to-[#010D1F] border-emerald-500/35` | `<CheckCircle size={18} weight="fill" />` | Form saves, project creation, profile updates, file attachments, QA approvals, status advancements. |
-| `warning` | Enterprise Amber (`#CC6600` / `#FBBF24`) | `bg-gradient-to-r from-amber-950/90 to-[#010D1F] border-amber-500/35` | `<Warning size={18} weight="fill" />` | Missing information requests sent, staff suspensions, revision requests returned to statistician. |
-| `danger` | Crimson Alert (`#EF4444` / `#F87171`) | `bg-gradient-to-r from-rose-950/90 to-[#010D1F] border-rose-500/35` | `<WarningOctagon size={18} weight="fill" />` | Action failures, network errors, file size >15MB limit exceeded, invalid file formats, account termination. |
+| `info` | Analytical Sky (`#38BDF8`) | `bg-gradient-to-r from-sky-950/90 to-[#050513] border-sky-500/35` | `<Info size={18} weight="fill" />` | Clipboard copies, download starts, non-destructive notifications, session events. |
+| `success` | Verification Emerald (`#10B981`) | `bg-gradient-to-r from-emerald-950/90 to-[#050513] border-emerald-500/35` | `<CheckCircle size={18} weight="fill" />` | Form saves, project creation, profile updates, file attachments, QA approvals, status advancements. |
+| `warning` | Enterprise Amber (`#CC6600` / `#FBBF24`) | `bg-gradient-to-r from-amber-950/90 to-[#050513] border-amber-500/35` | `<Warning size={18} weight="fill" />` | Missing information requests sent, staff suspensions, revision requests returned to statistician. |
+| `danger` | Crimson Alert (`#EF4444` / `#F87171`) | `bg-gradient-to-r from-rose-950/90 to-[#050513] border-rose-500/35` | `<WarningOctagon size={18} weight="fill" />` | Action failures, network errors, file size >15MB limit exceeded, invalid file formats, account termination. |
 
 #### The 5 Golden Rules of Toasts (Mandatory for All Future Desks)
 
@@ -589,7 +589,7 @@ Every modal across the workspace must strictly comply with the following structu
    - **Top Padding:** `paddingTop: "1.25rem"` / `pt-5`
    - **Horizontal Padding:** `paddingLeft/Right: "1.5rem"` / `px-5 sm:px-6`
    - **Border Separation:** `1px solid rgba(255, 255, 255, 0.08)` / `border-t border-white/[0.08]`
-   - **Footer Background:** `rgba(1, 18, 38, 0.98)` / `bg-[#011226]/98 backdrop-blur-md`
+   - **Footer Background:** `rgba(8, 8, 22, 0.98)` / `bg-[#080816]/98 backdrop-blur-md`
 
 2. **Action Alignment & Responsive Stacking:**
    - **Small Screen Mobile (`< 640px`):** Stacks vertically (`flex-col-reverse items-stretch`) where every action button automatically expands to **100% full width** (`w-full`) for accessible touch targets. Primary CTA sits on top, Cancel / Back sits below.
@@ -779,7 +779,7 @@ For switching between sub-views, nested records, or segmented catalog categories
 
 #### **Standard Specifications:**
 - **Container (`TabsList`):**
-  - **`variant="default"` (Segmented / Pill):** Dark glass substrate (`bg-[#01142B]/90 border border-white/[0.08]`), height `h-10`, precision `rounded-[2px]`, padding `p-1`, gap `gap-1`.
+  - **`variant="default"` (Segmented / Pill):** Dark glass substrate (`bg-[#0A0A18]/90 border border-white/[0.08]`), height `h-10`, precision `rounded-[2px]`, padding `p-1`, gap `gap-1`.
   - **`variant="underline"`:** Flat hairline bottom border (`border-b border-white/10 bg-transparent px-1 gap-6 w-full`).
 - **Trigger Button (`TabsTrigger`):**
   - **Typography:** Clean Sans-Serif (`font-sans text-xs font-medium`). Title Case copy (never aggressive all-caps shouting).

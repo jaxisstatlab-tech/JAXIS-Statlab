@@ -90,7 +90,7 @@ export const BlockedMessageReviewModal: React.FC<BlockedMessageReviewModalProps>
         {/* Sender & Project Metadata */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Sender Card */}
-          <div className="p-3.5 rounded-[2px] bg-[#01142B] border border-white/10 flex flex-col gap-1.5 text-xs">
+          <div className="p-3.5 rounded-[2px] bg-[#0A0A18] border border-white/10 flex flex-col gap-1.5 text-xs">
             <div className="flex items-center gap-1.5 text-white/50 font-semibold uppercase tracking-wider text-[0.688rem]">
               <User size={14} weight="fill" className="text-sky-400" />
               <span>Sender Identity</span>
@@ -101,7 +101,7 @@ export const BlockedMessageReviewModal: React.FC<BlockedMessageReviewModalProps>
           </div>
 
           {/* Project Card */}
-          <div className="p-3.5 rounded-[2px] bg-[#01142B] border border-white/10 flex flex-col gap-1.5 text-xs">
+          <div className="p-3.5 rounded-[2px] bg-[#0A0A18] border border-white/10 flex flex-col gap-1.5 text-xs">
             <div className="flex items-center gap-1.5 text-white/50 font-semibold uppercase tracking-wider text-[0.688rem]">
               <Folder size={14} weight="fill" className="text-[#CC6600]" />
               <span>Associated Study</span>
@@ -148,7 +148,7 @@ export const BlockedMessageReviewModal: React.FC<BlockedMessageReviewModalProps>
             placeholder="Add internal audit notes or disciplinary follow-up actions..."
             defaultValue={log.reviewNotes || ""}
             disabled={isSubmitting || Boolean(log.reviewedAt)}
-            className="w-full p-3 rounded-[2px] bg-[#01142B] border border-white/15 text-sm text-white placeholder:text-white/30 focus:border-[#CC6600] focus:outline-none resize-none font-sans disabled:opacity-60"
+            className="w-full p-3 rounded-[2px] bg-[#0A0A18] border border-white/15 text-sm text-white placeholder:text-white/30 focus:border-[#CC6600] focus:outline-none resize-none font-sans disabled:opacity-60"
           />
         </div>
 

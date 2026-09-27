@@ -1,6 +1,7 @@
 /**
  * LOCAL DEV DATA ONLY. Writes sample studies for a test client into the offline JSON stores
- * (.dev-projects.json, .dev-quotations.json, .dev-sows.json, dev_data/payments.json, .dev-alerts.json).
+ * (.dev-projects.json, .dev-quotations.json, .dev-sows.json, dev_data/payments.json, .dev-alerts.json,
+ * .dev-defenselab.json, .dev-messages.json, .dev-analysis.json, .dev-deliverables.json).
  *
  * It never connects to the database or file storage. The app only reads these files when the
  * database is unreachable, so view them with `npm run dev:offline`.
@@ -73,6 +74,8 @@ interface Seed {
   createdDaysAgo: number;
   dueInDays: number;
   addDefenseLab?: boolean;
+  /** DefenseLab hours bought (default 1). */
+  defenseLabHours?: number;
   missingInfoReason?: string;
   quote?: "sent" | "approved";
   sow?: "pending" | "signed";
@@ -143,6 +146,7 @@ const SEEDS: Seed[] = [
     createdDaysAgo: 12,
     dueInDays: 6,
     addDefenseLab: true,
+    defenseLabHours: 2,
     quote: "approved",
     sow: "signed",
     paid: "deposit",
@@ -187,7 +191,9 @@ for (const s of SEEDS) {
   const calc = calculateQuotationTotals({
     packageName: s.pkg,
     basePrice: def.defaultPrice,
-    addOns: s.addDefenseLab ? [{ name: "DEFENSELAB" }] : [],
+    addOns: s.addDefenseLab
+      ? [{ name: "DEFENSELAB", amount: 250 * (s.defenseLabHours ?? 1) }]
+      : [],
   });
   const pkg = { label: def.name, base: calc.basePrice, upfront: calc.isUpfrontEnforced };
   const addOnAmount = calc.addOnsTotal;
@@ -220,6 +226,16 @@ for (const s of SEEDS) {
     createdAt: iso(-s.createdDaysAgo),
     updatedAt: iso(-Math.max(0, s.createdDaysAgo - 1)),
     client: { id: clientId, fullName: clientName, email: clientEmail, clientProfile: profile },
+    // Studies past the deposit have a statistician (the dev account stat@jaxis.dev).
+    assignment: ["IN_PROGRESS", "DELIVERED", "CLOSED"].includes(s.status)
+      ? {
+          statisticianId: "cmt5plu1k0003lrrkl1kribvh",
+          qaLeadId: "cmt5pluuu0004lrrk5qu5ul2t",
+          isActive: true,
+          statistician: { fullName: "Dr. Juan Reyes" },
+          qaLead: { fullName: "QA Lead Maria" },
+        }
+      : null,
     financialSummary: s.quote
       ? {
           totalAmount: total,
@@ -291,7 +307,7 @@ for (const s of SEEDS) {
               quotationId: quoteId,
               itemType: "ADDON",
               itemName: "DEFENSELAB",
-              description: "DefenseLab 1-on-1 mock panel (1 hour)",
+              description: `DefenseLab 1-on-1 mock panel (${s.defenseLabHours ?? 1} hour${(s.defenseLabHours ?? 1) > 1 ? "s" : ""})`,
               amount: addOnAmount,
             },
           ]
@@ -400,14 +416,182 @@ const alerts = [
   alert("welcome", "SYSTEM_ALERT", null, "Welcome to JAXIS StatLab. Send your first study and we'll reply with a fixed price within 24 hours.", "/dashboard/client", 24 * 20, true),
 ];
 
+// ── DefenseLab sessions: one upcoming (study in analysis), one finished with a recording ──
+const session = (
+  key: string,
+  projectKey: string,
+  status: string,
+  dayOffset: number,
+  extra: Partial<Record<string, unknown>> = {}
+) => {
+  const s = SEEDS.find((x) => x.key === projectKey)!;
+  const at = new Date(now + dayOffset * day);
+  at.setHours(14, 0, 0, 0);
+  return {
+    id: `seed_dl_${key}`,
+    projectId: `seed_proj_${projectKey}`,
+    projectIntakeId: s.intakeId,
+    projectTitle: s.title,
+    clientId,
+    clientName,
+    clientEmail,
+    expertId: "cmt5plu1k0003lrrkl1kribvh",
+    expertName: "Dr. Juan Reyes",
+    expertEmail: "stat@jaxis.dev",
+    scheduledAt: at.toISOString(),
+    durationHours: 1,
+    amountPaid: 250,
+    status,
+    meetingUrl: null,
+    recordingUrl: null,
+    completedAt: null,
+    notes: null,
+    rescheduledAt: null,
+    rescheduleReason: null,
+    rescheduleBy: null,
+    penaltyApplied: false,
+    penaltyReason: null,
+    penaltyDeterminedBy: null,
+    penaltyAmount: null,
+    createdAt: iso(-3),
+    ...extra,
+  };
+};
+const defenseLabSessions = [
+  session("upcoming", "analysis", "SCHEDULED", 3, {
+    meetingUrl: "https://meet.google.com/jax-dflb-demo",
+    notes: "Please focus on how I explain the regression results and the sleep-quality scale.",
+  }),
+  session("done", "closed", "COMPLETED", -35, {
+    recordingUrl: "https://drive.google.com/file/d/jaxis-defenselab-demo/view",
+    completedAt: iso(-35),
+  }),
+];
+
+// ── Chat messages (studies with a team). readBy = who has seen it ─────────────────────────
+const STAT = { id: "cmt5plu1k0003lrrkl1kribvh", name: "Dr. Juan Reyes", role: "STATISTICIAN" };
+const QA = { id: "cmt5pluuu0004lrrk5qu5ul2t", name: "QA Lead Maria", role: "SENIOR_QA_LEAD" };
+const ME = { id: clientId, name: clientName, role: "CLIENT" };
+const minutesAgo = (m: number) => new Date(now - m * 60 * 1000).toISOString();
+let msgNo = 0;
+const msg = (projectKey: string, who: typeof STAT, content: string, ageMinutes: number, seenByClient = true) => ({
+  id: `seed_msg_${String(++msgNo).padStart(2, "0")}`,
+  projectId: `seed_proj_${projectKey}`,
+  senderId: who.id,
+  senderName: who.name,
+  senderRole: who.role,
+  content,
+  sentAt: minutesAgo(ageMinutes),
+  readBy: who === ME ? [ME.id, STAT.id] : seenByClient ? [who.id, ME.id] : [who.id],
+});
+const H = 60;
+const D = 24 * H;
+const messages = [
+  msg("analysis", STAT, "Hi Ana! I'm Juan, your statistician for this study. I've gone through your questionnaire and data file.", 3 * D),
+  msg("analysis", ME, "Hi Dr. Reyes, thank you! Is the data file okay?", 3 * D - 20),
+  msg("analysis", STAT, "Mostly yes. 12 respondents skipped the sleep-quality items, so I'll leave them out of that test only. Everything else stays in.", 3 * D - 35),
+  msg("analysis", ME, "Okay, that works. Will that change my results a lot?", 3 * D - 40),
+  msg("analysis", STAT, "Not much. You still have 188 complete answers, which is plenty for the regression.", 3 * D - 55),
+  msg("analysis", QA, "Hello Ana, I'm Maria. I'll check Juan's work before it's sent to you.", 2 * D),
+  msg("analysis", ME, "Nice to meet you, Maria!", 2 * D - 10),
+  msg("analysis", STAT, "Quick question: should the sleep-quality scale be treated as one score, or do you want the 3 parts reported separately?", 26 * H),
+  msg("analysis", STAT, "Your adviser's comments mentioned both, so I wanted to check with you first.", 26 * H - 2, false),
+  msg("delivered", STAT, "Your tables, write-up and code are ready. Let me know if anything is unclear.", 28 * H),
+  msg("delivered", ME, "Got it, thank you so much! I'll read it tonight.", 27 * H),
+  msg("closed", STAT, "Good luck on your defense, Ana. You're well prepared.", 36 * D),
+  msg("closed", ME, "Thank you! It went well.", 35 * D),
+];
+
+// ── Analysis files, QA reviews and final files (workbench, QA review and Files pages) ──
+const hoursAgoIso = (h: number) => new Date(now - h * 60 * 60 * 1000).toISOString();
+const aFile = (
+  projectKey: string,
+  n: number,
+  fileCategory: string,
+  fileName: string,
+  version: number,
+  isCurrent: boolean,
+  ageHours: number,
+  notes: string | null = null
+) => ({
+  id: `seed_af_${projectKey}_${n}`,
+  projectId: `seed_proj_${projectKey}`,
+  statisticianId: STAT.id,
+  statisticianName: STAT.name,
+  fileName,
+  fileType: fileName.endsWith(".pdf") ? "application/pdf" : fileName.endsWith(".xlsx") ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/octet-stream",
+  fileSize: 180_000 + n * 23_000,
+  fileCategory,
+  version,
+  isCurrent,
+  notes,
+  uploadedAt: hoursAgoIso(ageHours),
+});
+const qaReview = (projectKey: string, decision: string, comments: string, ageHours: number, errorClassification: string | null = null) => ({
+  id: `seed_qa_${projectKey}_${decision.toLowerCase()}`,
+  projectId: `seed_proj_${projectKey}`,
+  reviewerId: QA.id,
+  reviewerName: QA.name,
+  decision,
+  errorClassification,
+  comments,
+  reviewedAt: hoursAgoIso(ageHours),
+});
+const analysis = [
+  {
+    id: "seed_analysis_analysis",
+    projectId: "seed_proj_analysis",
+    files: [
+      aFile("analysis", 1, "SPSS_OUTPUT", "0042_regression_output.spv", 1, false, 50, "First run, before removing incomplete sleep answers."),
+      aFile("analysis", 2, "SPSS_OUTPUT", "0042_regression_output.spv", 2, true, 20, "Re-run with 188 complete answers."),
+      aFile("analysis", 3, "EXCEL_WORKBOOK", "0042_apa_tables.xlsx", 1, true, 18),
+    ],
+    reviews: [],
+  },
+  {
+    id: "seed_analysis_delivered",
+    projectId: "seed_proj_delivered",
+    files: [
+      aFile("delivered", 1, "SPSS_OUTPUT", "0017_descriptives_output.spv", 1, true, 80),
+      aFile("delivered", 2, "PDF_REPORT", "0017_chapter4_results.pdf", 1, true, 60),
+    ],
+    reviews: [
+      qaReview("delivered", "QA_REJECTED", "Table 3 is missing the effect sizes. Please add Cramer's V for each chi-square test.", 55, "MINOR"),
+      qaReview("delivered", "QA_APPROVED", "All tables checked against the output. Ready to release.", 30),
+    ],
+  },
+];
+const finalFile = (projectKey: string, n: number, category: string, fileName: string, ageHours: number) => ({
+  id: `seed_dlv_${projectKey}_${n}`,
+  projectId: `seed_proj_${projectKey}`,
+  category,
+  fileName,
+  fileSize: 240_000 + n * 51_000,
+  fileType: fileName.endsWith(".pdf") ? "application/pdf" : fileName.endsWith(".xlsx") ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/octet-stream",
+  uploadedBy: "cmt5plrh90000lrrkrk76bb0b",
+  uploaderName: "Operations Manager",
+  isFinalReleased: true,
+  releasedAt: hoursAgoIso(ageHours - 1),
+  createdAt: hoursAgoIso(ageHours),
+});
+const deliverables = [
+  finalFile("delivered", 1, "PDF_REPORT", "0017_chapter4_results.pdf", 26),
+  finalFile("delivered", 2, "STATISTICAL_OUTPUT", "0017_apa_tables.xlsx", 26),
+  finalFile("delivered", 3, "RAW_DATA_CLEANED", "0017_cleaned_data.csv", 26),
+];
+
 // ── Write (keep any non-seed records already in each file) ─────────────────────
 write(file(".dev-projects.json"), [...projects, ...keepUnseeded(read(file(".dev-projects.json")))]);
 write(file(".dev-quotations.json"), [...quotations, ...keepUnseeded(read(file(".dev-quotations.json")))]);
 write(file(".dev-sows.json"), [...sows, ...keepUnseeded(read(file(".dev-sows.json")))]);
 write(file("dev_data/payments.json"), [...payments, ...keepUnseeded(read(file("dev_data/payments.json")))]);
 write(file(".dev-alerts.json"), [...alerts, ...keepUnseeded(read(file(".dev-alerts.json")))]);
+write(file(".dev-defenselab.json"), [...defenseLabSessions, ...keepUnseeded(read(file(".dev-defenselab.json")))]);
+write(file(".dev-messages.json"), [...messages, ...keepUnseeded(read(file(".dev-messages.json")))]);
+write(file(".dev-analysis.json"), [...analysis, ...keepUnseeded(read(file(".dev-analysis.json")))]);
+write(file(".dev-deliverables.json"), [...deliverables, ...keepUnseeded(read(file(".dev-deliverables.json")))]);
 
 console.log(
-  `Seeded ${projects.length} studies, ${quotations.length} quotes, ${sows.length} agreements, ${payments.length} payments, ${alerts.length} notifications for ${clientEmail}.`
+  `Seeded ${projects.length} studies, ${quotations.length} quotes, ${sows.length} agreements, ${payments.length} payments, ${alerts.length} notifications, ${defenseLabSessions.length} DefenseLab sessions, ${messages.length} chat messages, ${deliverables.length} delivered files for ${clientEmail}.`
 );
 console.log("Local files only. Start the app with `npm run dev:offline` to see them.");

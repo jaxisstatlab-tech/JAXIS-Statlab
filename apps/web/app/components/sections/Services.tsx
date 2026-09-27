@@ -7,7 +7,7 @@ import Reveal from "../ui/Reveal";
 import SpotlightGrid from "../ui/SpotlightGrid";
 import { btnPrimary, container, heading, kicker, subtitle } from "../ui/styles";
 
-const well = "relative rounded-[2px] bg-[#010D1F]";
+const well = "relative rounded-[2px] bg-[#050513]";
 
 function Peso() {
   return <span className="mr-0.5 inline-block select-none font-sans font-normal opacity-85">₱</span>;
@@ -42,7 +42,7 @@ function Footer({ value, children }: { value: ReactNode; children: ReactNode }) 
 
 function Tile({ children, className = "", delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
   return (
-    <div className={`bento-tile flex flex-col bg-[#01142B] p-6 sm:p-7 ${className}`}>
+    <div className={`bento-tile flex flex-col bg-[#0A0A18] p-6 sm:p-7 ${className}`}>
       <Reveal delay={delay} className="flex flex-1 flex-col">
         {children}
       </Reveal>
@@ -87,7 +87,7 @@ export default function Services() {
 
         <SpotlightGrid className="mt-10">
           <div className="grid grid-cols-1 gap-px overflow-hidden rounded-[1px] sm:grid-cols-2 lg:grid-cols-4">
-            <div className="bento-tile relative flex flex-col overflow-hidden bg-[#01142B] sm:col-span-2 lg:row-span-2">
+            <div className="bento-tile relative flex flex-col overflow-hidden bg-[#0A0A18] sm:col-span-2 lg:row-span-2">
               <Reveal className="flex flex-1 flex-col">
                 <div className="p-6 sm:p-8">
                   <h3 className="flex items-center gap-2.5 font-sans text-xl font-bold tracking-[-0.02em] text-white">
@@ -107,7 +107,7 @@ export default function Services() {
                   </div>
                 </div>
 
-                <div className="relative mt-auto flex min-h-[14rem] flex-1 flex-col justify-end bg-[#010D1F]">
+                <div className="relative mt-auto flex min-h-[14rem] flex-1 flex-col justify-end bg-[#050513]">
                   <div
                     aria-hidden="true"
                     className="absolute inset-0 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:100%_2.75rem]"

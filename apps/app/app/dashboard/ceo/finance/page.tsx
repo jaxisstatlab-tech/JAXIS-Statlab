@@ -197,7 +197,7 @@ export default function CeoFinancePage() {
       </div>
 
       {/* Package Profitability & Payout Rate Matrix */}
-      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[4px]">
+      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#0A0A18] border border-white/10 rounded-[4px]">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-5">
           <div className="flex flex-col gap-1">
             <span className="font-semibold text-white text-base">Package Profitability & Commission Rates</span>
@@ -500,18 +500,18 @@ export default function CeoFinancePage() {
               const netMargin = Math.round((100 - totalPool) * 10) / 10;
 
               return (
-                <div className="p-3 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-2">
+                <div className="p-3 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col gap-2">
                   <span className="text-white/60 font-mono text-[0.688rem] uppercase font-semibold">
                     Package Payout Breakdown
                   </span>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-2 bg-[#01142B] border border-white/5 rounded-[2px] flex flex-col">
+                    <div className="p-2 bg-[#0A0A18] border border-white/5 rounded-[2px] flex flex-col">
                       <span className="text-white/50 text-[0.625rem]">Total Expert Pool</span>
                       <span className="font-mono font-bold text-amber-400 text-sm">
                         {totalPool}%
                       </span>
                     </div>
-                    <div className="p-2 bg-[#01142B] border border-white/5 rounded-[2px] flex flex-col">
+                    <div className="p-2 bg-[#0A0A18] border border-white/5 rounded-[2px] flex flex-col">
                       <span className="text-white/50 text-[0.625rem]">Net Platform Margin</span>
                       <span className={`font-mono font-bold text-sm ${netMargin >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                         {netMargin}%

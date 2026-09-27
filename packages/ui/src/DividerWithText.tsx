@@ -25,7 +25,7 @@ export function DividerWithText({
       </div>
       <span
         className={cn(
-          "relative px-3.5 bg-[#010B18] text-[0.688rem] text-slate-400 font-mono uppercase tracking-wider select-none",
+          "relative px-3.5 bg-[#040412] text-[0.688rem] text-slate-400 font-mono uppercase tracking-wider select-none",
           badgeClassName
         )}
       >

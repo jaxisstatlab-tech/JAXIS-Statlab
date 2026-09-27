@@ -34,6 +34,38 @@ export function ClientStudyStepper({ stage, className = "" }: { stage: ClientSta
   );
 }
 
+// Compact 5-segment meter for lists and tables: done steps dim, the current step white, no colour.
+export function ClientStageMeter({ stage, className = "" }: { stage: ClientStage; className?: string }) {
+  const finished = stage.tone === "done";
+  const stopped = stage.tone === "stopped";
+  const stepName = CLIENT_STEPS[stage.step] ?? CLIENT_STEPS[0];
+  return (
+    <div
+      className={`flex items-center gap-2 ${className}`}
+      role="img"
+      aria-label={finished ? "All 5 steps done" : `Step ${stage.step + 1} of 5: ${stepName}`}
+    >
+      <span className="flex gap-0.5" aria-hidden="true">
+        {CLIENT_STEPS.map((name, i) => {
+          const done = i < stage.step || (finished && i === stage.step);
+          const current = i === stage.step && !finished;
+          return (
+            <span
+              key={name}
+              className={`h-1 w-3.5 rounded-[1px] ${
+                current ? (stopped ? "bg-white/30" : "bg-white") : done ? "bg-white/40" : "bg-white/[0.1]"
+              }`}
+            />
+          );
+        })}
+      </span>
+      <span className="font-mono text-[11px] text-white/45 whitespace-nowrap" aria-hidden="true">
+        {finished ? "Done" : `${stage.step + 1}/5 ${stepName}`}
+      </span>
+    </div>
+  );
+}
+
 // Status tag: orange only when the client needs to act; everything else stays neutral.
 export function ClientStageTag({ stage, className = "" }: { stage: ClientStage; className?: string }) {
   const tone =

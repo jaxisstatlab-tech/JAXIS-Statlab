@@ -407,7 +407,7 @@ export default function CeoPayrollPolicyPage() {
             <select
               value={selectedBatchCycle}
               onChange={(e) => setSelectedBatchCycle(e.target.value as CutOffCycle)}
-              className="bg-[#010D1F] border border-white/10 rounded-[2px] px-2.5 py-1.5 text-xs text-white font-mono outline-none focus:border-[#CC6600] cursor-pointer"
+              className="bg-[#050513] border border-white/10 rounded-[2px] px-2.5 py-1.5 text-xs text-white font-mono outline-none focus:border-[#CC6600] cursor-pointer"
             >
               <option value="FIRST_HALF">First Half (Days 1–15)</option>
               <option value="SECOND_HALF">Second Half (Days 16–End)</option>
@@ -471,7 +471,7 @@ export default function CeoPayrollPolicyPage() {
         onValueChange={(val) => setActiveTab(val as "ROLES" | "STAFF" | "PAYSLIPS")}
         className="w-full"
       >
-        <TabsList className="bg-[#01142B] border border-white/10 p-1 rounded-[2px] w-fit flex flex-wrap gap-1">
+        <TabsList className="bg-[#0A0A18] border border-white/10 p-1 rounded-[2px] w-fit flex flex-wrap gap-1">
           <TabsTrigger
             value="ROLES"
             className="flex items-center gap-2 px-4 py-2 text-xs font-sans font-semibold rounded-[2px] transition-colors data-[state=active]:bg-[#CC6600] data-[state=active]:text-white text-white/70 hover:text-white cursor-pointer"
@@ -499,7 +499,7 @@ export default function CeoPayrollPolicyPage() {
         <TabsContent value="ROLES" className="mt-6 flex flex-col gap-6">
           {/* Sleek Collapsible Pay Schedule Ribbon */}
           {scheduleForm && (
-            <Card className="bg-[#01142B] border border-white/10 rounded-[2px] overflow-hidden">
+            <Card className="bg-[#0A0A18] border border-white/10 rounded-[2px] overflow-hidden">
               {/* Header Ribbon */}
               <div className="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -566,7 +566,7 @@ export default function CeoPayrollPolicyPage() {
 
               {/* Expandable Settings Drawer */}
               {isScheduleOpen && (
-                <div className="p-5 sm:p-6 bg-[#010D1F] border-t border-white/10 flex flex-col gap-5 animate-content-fade">
+                <div className="p-5 sm:p-6 bg-[#050513] border-t border-white/10 flex flex-col gap-5 animate-content-fade">
                   {/* Frequency choice */}
                   <div className="flex flex-col gap-2">
                     <span className="text-[0.688rem] uppercase font-mono text-white/60 font-semibold tracking-wider">
@@ -583,7 +583,7 @@ export default function CeoPayrollPolicyPage() {
                         className={`text-left p-3.5 rounded-[2px] border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                           scheduleForm.frequency === "SEMI_MONTHLY"
                             ? "bg-[#CC6600]/10 border-[#CC6600] ring-1 ring-[#CC6600]/40"
-                            : "bg-[#01142B] border-white/10 hover:border-white/20"
+                            : "bg-[#0A0A18] border-white/10 hover:border-white/20"
                         }`}
                       >
                         <div>
@@ -617,7 +617,7 @@ export default function CeoPayrollPolicyPage() {
                         className={`text-left p-3.5 rounded-[2px] border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                           scheduleForm.frequency === "MONTHLY"
                             ? "bg-[#CC6600]/10 border-[#CC6600] ring-1 ring-[#CC6600]/40"
-                            : "bg-[#01142B] border-white/10 hover:border-white/20"
+                            : "bg-[#0A0A18] border-white/10 hover:border-white/20"
                         }`}
                       >
                         <div>
@@ -662,7 +662,7 @@ export default function CeoPayrollPolicyPage() {
                                 prev ? { ...prev, firstCutoffDay: Number(e.target.value) } : prev
                               )
                             }
-                            className="w-full bg-[#01142B] border border-white/15 rounded-[2px] py-2 px-3 pr-24 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
+                            className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] py-2 px-3 pr-24 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
                           />
                           <span className="absolute right-3 text-xs font-mono text-white/40 pointer-events-none select-none">
                             th of month
@@ -687,7 +687,7 @@ export default function CeoPayrollPolicyPage() {
                               prev ? { ...prev, disbursementGraceDays: Number(e.target.value) } : prev
                             )
                           }
-                          className="w-full bg-[#01142B] border border-white/15 rounded-[2px] py-2 px-3 pr-28 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
+                          className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] py-2 px-3 pr-28 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
                         />
                         <span className="absolute right-3 text-xs font-mono text-white/40 pointer-events-none select-none">
                           business days
@@ -704,7 +704,7 @@ export default function CeoPayrollPolicyPage() {
                           prev ? { ...prev, prorateMonthlyBase: !prev.prorateMonthlyBase } : prev
                         )
                       }
-                      className="p-3 bg-[#01142B] border border-white/10 hover:border-white/20 rounded-[2px] flex items-center justify-between gap-4 cursor-pointer transition-colors select-none"
+                      className="p-3 bg-[#0A0A18] border border-white/10 hover:border-white/20 rounded-[2px] flex items-center justify-between gap-4 cursor-pointer transition-colors select-none"
                     >
                       <div className="flex items-center gap-3">
                         <div
@@ -783,7 +783,7 @@ export default function CeoPayrollPolicyPage() {
               return (
                 <Card
                   key={role.roleName}
-                  className={`p-6 sm:p-7 bg-[#01142B] border transition-colors flex flex-col justify-between ${
+                  className={`p-6 sm:p-7 bg-[#0A0A18] border transition-colors flex flex-col justify-between ${
                     isEditing ? "border-[#CC6600] ring-1 ring-[#CC6600]" : "border-white/10"
                   }`}
                 >
@@ -855,7 +855,7 @@ export default function CeoPayrollPolicyPage() {
                                   className={`p-3 rounded-[2px] border text-left font-sans transition-all cursor-pointer ${
                                     isSelected
                                       ? "bg-[#CC6600]/20 border-[#CC6600] text-white ring-1 ring-[#CC6600]"
-                                      : "bg-[#010D1F] border-white/10 text-white/70 hover:text-white hover:border-white/20"
+                                      : "bg-[#050513] border-white/10 text-white/70 hover:text-white hover:border-white/20"
                                   }`}
                                 >
                                   <div className="font-semibold text-xs text-white mb-0.5">{m.title}</div>
@@ -877,11 +877,11 @@ export default function CeoPayrollPolicyPage() {
                           )}
 
                         {/* Focused Inputs */}
-                        <div className="flex flex-col gap-4 p-4 bg-[#010D1F] border border-white/10 rounded-[2px]">
+                        <div className="flex flex-col gap-4 p-4 bg-[#050513] border border-white/10 rounded-[2px]">
                           {(formConfig.compensationType === "TIER_DELIVERABLE" || formConfig.compensationType === "PERCENTAGE_PER_STUDY") && (
                             <div className="flex flex-col gap-3">
                               {/* Package Key Lookup Preview */}
-                              <div className="p-3 bg-[#01142B] border border-white/10 rounded-[2px]">
+                              <div className="p-3 bg-[#0A0A18] border border-white/10 rounded-[2px]">
                                 <div className="flex items-center justify-between mb-2">
                                   <span className="font-mono text-xs text-white/70 font-semibold uppercase tracking-wider">
                                     Package Tier Key Rules (Treasury Single Source of Truth)
@@ -901,7 +901,7 @@ export default function CeoPayrollPolicyPage() {
                                     { key: "JX-04", name: "Advanced", pct: "72%", qa: "12%" },
                                     { key: "DEFENSE", name: "DefenseLab", pct: "80%", qa: "15%" },
                                   ].map((pkg) => (
-                                    <div key={pkg.key} className="p-2 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-1">
+                                    <div key={pkg.key} className="p-2 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col gap-1">
                                       <span className="font-mono text-[0.625rem] text-[#CC6600] font-bold">{pkg.key}</span>
                                       <span className="text-[0.688rem] text-white font-medium line-clamp-1">{pkg.name}</span>
                                       <span className="font-mono text-[0.688rem] text-emerald-400 font-semibold">
@@ -933,7 +933,7 @@ export default function CeoPayrollPolicyPage() {
                                           p ? { ...p, fixedPerStudyBonus: Number(e.target.value) } : null
                                         )
                                       }
-                                      className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-7 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                                      className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-7 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
                                       placeholder="0"
                                     />
                                   </div>
@@ -959,7 +959,7 @@ export default function CeoPayrollPolicyPage() {
                                       p ? { ...p, baseSalaryMonthly: Number(e.target.value) } : null
                                     )
                                   }
-                                  className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-8 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-8 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
                                 />
                               </div>
                               <span className="text-[0.688rem] text-white/40 font-sans mt-1 block">
@@ -985,7 +985,7 @@ export default function CeoPayrollPolicyPage() {
                                       p ? { ...p, hourlyDutyRate: Number(e.target.value) } : null
                                     )
                                   }
-                                  className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-8 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-8 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
                                 />
                               </div>
                             </div>
@@ -1009,7 +1009,7 @@ export default function CeoPayrollPolicyPage() {
                                         p ? { ...p, baseSalaryMonthly: Number(e.target.value) } : null
                                       )
                                     }
-                                    className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-7 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                                    className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-7 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
                                   />
                                 </div>
                               </div>
@@ -1029,7 +1029,7 @@ export default function CeoPayrollPolicyPage() {
                                         p ? { ...p, commissionPercentagePerStudy: Number(e.target.value) } : null
                                       )
                                     }
-                                    className="w-full bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
+                                    className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
                                   />
                                   <span className="absolute right-3 text-xs font-mono text-white/50">
                                     % of study fee
@@ -1037,7 +1037,7 @@ export default function CeoPayrollPolicyPage() {
                                 </div>
                               </div>
 
-                              <div className="sm:col-span-2 p-2.5 bg-[#01142B] border border-[#CC6600]/25 rounded-[2px] text-xs text-white/70 flex items-start gap-2">
+                              <div className="sm:col-span-2 p-2.5 bg-[#0A0A18] border border-[#CC6600]/25 rounded-[2px] text-xs text-white/70 flex items-start gap-2">
                                 <Info weight="fill" size={16} className="text-[#CC6600] shrink-0 mt-0.5" />
                                 <div>
                                   <span className="font-semibold text-white">Dynamic SOW Contract Pricing:</span>
@@ -1071,7 +1071,7 @@ export default function CeoPayrollPolicyPage() {
                                     p ? { ...p, allowancesMonthly: Number(e.target.value) } : null
                                   )
                                 }
-                                className="w-full bg-[#01142B] border border-white/15 rounded-[2px] pl-7 pr-3 py-1.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
+                                className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-7 pr-3 py-1.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
                                 placeholder="0"
                               />
                             </div>
@@ -1079,7 +1079,7 @@ export default function CeoPayrollPolicyPage() {
                         </div>
 
                         {/* Conversational Rule Preview Box */}
-                        <div className="p-3.5 bg-[#010D1F] border border-emerald-500/20 rounded-[2px] flex items-start gap-3">
+                        <div className="p-3.5 bg-[#050513] border border-emerald-500/20 rounded-[2px] flex items-start gap-3">
                           <div className="p-1 bg-emerald-950/60 border border-emerald-500/30 rounded-[2px] text-emerald-400 shrink-0 mt-0.5">
                             <Sparkle weight="fill" size={14} />
                           </div>
@@ -1164,7 +1164,7 @@ export default function CeoPayrollPolicyPage() {
                     ) : (
                       /* Readonly Display - High-Contrast Non-Redundant Rate Hero */
                       <div className="flex flex-col gap-3">
-                        <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div>
                             <span className="text-[0.625rem] uppercase font-mono text-white/40 block mb-1">
                               Standard Pay Rate
@@ -1264,7 +1264,7 @@ export default function CeoPayrollPolicyPage() {
 
         {/* ── TAB 2: SPECIALIST OVERRIDES ── */}
         <TabsContent value="STAFF" className="mt-6 flex flex-col gap-6">
-          <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+          <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
               <div>
                 <h2 className="text-base font-bold text-white font-sans">
@@ -1362,7 +1362,7 @@ export default function CeoPayrollPolicyPage() {
 
         {/* ── TAB 3: PAYSLIPS ── */}
         <TabsContent value="PAYSLIPS" className="mt-6 flex flex-col gap-6">
-          <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+          <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
               <div>
                 <h2 className="text-base font-bold text-white font-sans">
@@ -1395,10 +1395,10 @@ export default function CeoPayrollPolicyPage() {
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-[2px] border border-white/10 bg-[#010D1F]/60 shadow-xl">
+              <div className="overflow-x-auto rounded-[2px] border border-white/10 bg-[#050513]/60 shadow-xl">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-[#010D1F] border-b border-white/10 text-white/50 font-mono uppercase text-[0.688rem] tracking-wider">
+                    <tr className="bg-[#050513] border-b border-white/10 text-white/50 font-mono uppercase text-[0.688rem] tracking-wider">
                       <th className="py-3.5 px-4 whitespace-nowrap min-w-[130px]">Payslip No.</th>
                       <th className="py-3.5 px-4 whitespace-nowrap min-w-[200px]">Staff</th>
                       <th className="py-3.5 px-4 whitespace-nowrap min-w-[160px]">Pay Period</th>

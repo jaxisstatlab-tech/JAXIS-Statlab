@@ -187,7 +187,7 @@ export default function FAQ({
                 }}
                 placeholder="Search questions, like “revisions” or “private”"
                 aria-label="Search questions"
-                className="h-11 w-full rounded-[2px] border border-white/15 bg-[#010D1F] pl-10 pr-12 font-sans text-sm text-white placeholder:text-white/40 focus:border-[#CC6600]/60 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+                className="h-11 w-full rounded-[2px] border border-white/15 bg-[#050513] pl-10 pr-12 font-sans text-sm text-white placeholder:text-white/40 focus:border-[#CC6600]/60 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
               />
               <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
                 {query ? (
@@ -213,7 +213,7 @@ export default function FAQ({
         ) : null}
 
         {matches.length === 0 ? (
-          <div className="mt-8 rounded-[2px] border border-white/10 bg-[#01142B] p-6">
+          <div className="mt-8 rounded-[2px] border border-white/10 bg-[#0A0A18] p-6">
             <p className="font-sans text-sm text-white">No questions match “{q}”.</p>
             <p className="mt-1 font-sans text-sm text-white/60">
               Try another word, or email{" "}

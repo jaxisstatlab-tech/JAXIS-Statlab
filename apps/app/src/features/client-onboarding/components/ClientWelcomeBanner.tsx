@@ -24,7 +24,7 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
   onOpenHowToUseModal,
 }) => {
   return (
-    <Card className="p-6 sm:p-8 border border-white/15 bg-gradient-to-b from-[#011B38]/90 to-[#01142B]/90 rounded-[2px] shadow-2xl flex flex-col gap-6 animate-card-reveal">
+    <Card className="p-6 sm:p-8 border border-white/15 bg-gradient-to-b from-[#0F0F1D]/90 to-[#0A0A18]/90 rounded-[2px] shadow-2xl flex flex-col gap-6 animate-card-reveal">
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5">
@@ -58,8 +58,8 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
         <div
           className={`p-5 rounded-[2px] border transition-all flex flex-col justify-between gap-4 ${
             isProfileComplete
-              ? "bg-[#01142B]/80 border-emerald-500/30"
-              : "bg-[#01142B] border-[#CC6600]/40 ring-1 ring-[#CC6600]/20"
+              ? "bg-[#0A0A18]/80 border-emerald-500/30"
+              : "bg-[#0A0A18] border-[#CC6600]/40 ring-1 ring-[#CC6600]/20"
           }`}
         >
           <div className="flex flex-col gap-2">
@@ -106,7 +106,7 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
         </div>
 
         {/* Step 2: Submit Study */}
-        <div className="p-5 rounded-[2px] bg-[#01142B] border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between gap-4">
+        <div className="p-5 rounded-[2px] bg-[#0A0A18] border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-[0.688rem] font-mono font-bold bg-white/[0.06] text-white/70 border border-white/10 px-2 py-0.5 rounded-[2px]">
@@ -138,7 +138,7 @@ export const ClientWelcomeBanner: React.FC<ClientWelcomeBannerProps> = ({
         </div>
 
         {/* Step 3: Learn How It Works */}
-        <div className="p-5 rounded-[2px] bg-[#01142B] border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between gap-4">
+        <div className="p-5 rounded-[2px] bg-[#0A0A18] border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-[0.688rem] font-mono font-bold bg-white/[0.06] text-white/70 border border-white/10 px-2 py-0.5 rounded-[2px]">

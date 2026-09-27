@@ -1,28 +1,63 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { ArrowRight, Bank, ChalkboardTeacher, CheckCircle, DeviceMobile, ShieldCheck } from "@phosphor-icons/react";
+import {
+  ArrowRight,
+  Bank,
+  ChalkboardTeacher,
+  CheckCircle,
+  DeviceMobile,
+  Lightning,
+  ShieldCheck,
+  Siren,
+  Timer,
+  type Icon,
+} from "@phosphor-icons/react";
 import { LOGIN_URL, REGISTER_URL } from "@/lib/config";
-import { INCLUDED, PLANS, SPEEDS, peso } from "../../content/pricing";
+import {
+  ADDONS,
+  INCLUDED,
+  PLANS,
+  SPEEDS,
+  peso,
+  rangeParts,
+  type AddOn,
+} from "../../content/pricing";
 import Reveal from "../ui/Reveal";
 import { btnGhost, btnPrimary, container, kicker } from "../ui/styles";
 
 function Peso({ className = "" }: { className?: string }) {
-  return <span className={`mr-1 inline-block select-none font-sans font-normal opacity-85 ${className}`}>₱</span>;
+  return (
+    <span
+      className={`mr-1 inline-block select-none font-sans font-normal opacity-85 ${className}`}
+    >
+      ₱
+    </span>
+  );
 }
 
-const microLabel = "font-mono text-[11px] uppercase tracking-wider text-white/50";
+const microLabel =
+  "font-mono text-[11px] uppercase tracking-wider text-white/50";
+const ADDON_ICONS: Record<AddOn["id"], Icon> = {
+  defenselab: ChalkboardTeacher,
+  rush: Timer,
+  express: Lightning,
+  emergency: Siren,
+};
 const DEFAULT_PLAN = PLANS.findIndex((p) => p.featured);
 
 // /pricing: plan tabs over one wide panel. Links like /pricing#plan-core open that tab.
+// Packages are typical price ranges: clients don't pick one, our team recommends the right package
+// after reading their study and sends a fixed written price.
 export default function Pricing() {
   const [planIndex, setPlanIndex] = useState(DEFAULT_PLAN);
-  const [speedId, setSpeedId] = useState<(typeof SPEEDS)[number]["id"]>("standard");
+  const [speedId, setSpeedId] =
+    useState<(typeof SPEEDS)[number]["id"]>("standard");
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const plan = PLANS[planIndex]!;
   const speed = SPEEDS.find((s) => s.id === speedId)!;
-  const price = plan.base + speed.fee;
+  const range = rangeParts(plan);
 
   useEffect(() => {
     const read = () => {
@@ -63,7 +98,10 @@ export default function Pricing() {
   };
 
   return (
-    <section id="pricing" className="relative scroll-mt-16 pb-16 pt-32 lg:pb-24 lg:pt-40">
+    <section
+      id="pricing"
+      className="relative scroll-mt-16 pb-16 pt-32 lg:pb-24 lg:pt-40"
+    >
       <div className={container}>
         <Reveal className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -76,13 +114,18 @@ export default function Pricing() {
             </h1>
           </div>
           <div className="font-mono text-xs leading-relaxed text-white/60 sm:text-sm lg:text-right">
-            <p>Prices below are starting points</p>
+            <p>You don&apos;t need to pick a package</p>
+            <p>We recommend one after reading your study</p>
             <p>Your written price is final, no surprise fees</p>
           </div>
         </Reveal>
 
         <Reveal delay={80} className="mt-12">
-          <div role="tablist" aria-label="Plans" className="flex overflow-x-auto [scrollbar-width:none]">
+          <div
+            role="tablist"
+            aria-label="Plans"
+            className="flex overflow-x-auto [scrollbar-width:none]"
+          >
             {PLANS.map((p, i) => {
               const active = i === planIndex;
               return (
@@ -103,7 +146,7 @@ export default function Pricing() {
                     i > 0 ? "-ml-px" : ""
                   } ${
                     active
-                      ? "z-10 border-white/10 border-b-[#010D1F] bg-[#010D1F] text-white"
+                      ? "z-10 border-white/10 border-b-[#050513] bg-[#050513] text-white"
                       : "border-white/10 text-white/55 hover:text-white"
                   }`}
                 >
@@ -111,9 +154,12 @@ export default function Pricing() {
                   {p.featured ? (
                     <>
                       <span className="hidden rounded-[2px] border border-[#CC6600]/50 px-1.5 py-px font-mono text-[9.5px] uppercase tracking-wider text-[#FFA040] sm:inline">
-                        Recommended
+                        Most common
                       </span>
-                      <span aria-label="Recommended" className="h-1.5 w-1.5 rounded-full bg-[#CC6600] sm:hidden" />
+                      <span
+                        aria-label="Most common"
+                        className="h-1.5 w-1.5 rounded-full bg-[#CC6600] sm:hidden"
+                      />
                     </>
                   ) : null}
                 </button>
@@ -125,23 +171,54 @@ export default function Pricing() {
             role="tabpanel"
             id="plan-panel"
             aria-labelledby={`plan-tab-${plan.id}`}
-            className="grid grid-cols-1 rounded-b-[2px] rounded-tr-[2px] border border-white/10 bg-[#010D1F] lg:grid-cols-2"
+            className="grid grid-cols-1 rounded-b-[2px] rounded-tr-[2px] border border-white/10 bg-[#050513] lg:grid-cols-2"
           >
-            <div key={`left-${plan.id}`} className="plan-swap flex flex-col p-7 sm:p-10 lg:p-12">
-              <div
-                key={price}
-                className="price-swap font-mono text-5xl font-bold leading-none tracking-[-0.03em] text-white sm:text-6xl"
-              >
-                <Peso className="text-[0.8em]" />
-                {peso(price)}
-                {plan.plus ? "+" : ""}
+            <div
+              key={`left-${plan.id}`}
+              className="plan-swap flex flex-col p-7 sm:p-10 lg:p-12"
+            >
+              {/* .price-swap is inline-block (for its animation), so the flex row lives inside it */}
+              <div key={plan.id} className="price-swap">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-4xl font-bold leading-none tracking-[-0.03em] text-white sm:text-5xl">
+                  <span>
+                    <Peso className="text-[0.8em]" />
+                    {range.from}
+                  </span>
+                  {range.to ? (
+                    <>
+                      <span
+                        aria-hidden="true"
+                        className="font-sans font-light text-white/35"
+                      >
+                        –
+                      </span>
+                      <span className="sr-only">to</span>
+                      <span>
+                        <Peso className="text-[0.8em]" />
+                        {range.to}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="font-sans text-2xl font-medium tracking-normal text-white/60 sm:text-3xl">
+                      and up
+                    </span>
+                  )}
+                </div>
               </div>
               <p className="mt-4 font-mono text-[11px] uppercase tracking-wider text-white/80">
-                Starting price · Ready in {speed.time ?? plan.standard}
+                Typical price range · Ready in {speed.time ?? plan.standard}
               </p>
+              {speed.fee ? (
+                <p className="mt-2 font-mono text-[12px] text-[#FFA040]">
+                  + <Peso className="mr-0.5" />
+                  {peso(speed.fee)} for {speed.label} delivery
+                </p>
+              ) : null}
               <p className="mt-8 max-w-sm font-sans text-[15px] leading-relaxed text-white/65">
                 <span className="text-white">{plan.name}.</span> Best for{" "}
                 {plan.bestFor.charAt(0).toLowerCase() + plan.bestFor.slice(1)}.
+                Your exact price depends on your data and the tests you need,
+                and we confirm it in writing before you pay.
               </p>
 
               <div className="mt-auto pt-10">
@@ -161,11 +238,17 @@ export default function Pricing() {
                         aria-checked={on}
                         onClick={() => setSpeedId(s.id)}
                         className={`rounded-[2px] px-3 py-1.5 font-mono text-[12px] transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${
-                          on ? "bg-white/[0.1] text-white" : "text-white/55 hover:text-white"
+                          on
+                            ? "bg-white/[0.1] text-white"
+                            : "text-white/55 hover:text-white"
                         }`}
                       >
                         {s.label}
-                        {s.fee ? <span className="ml-1.5 text-[10px] text-white/45">+{peso(s.fee)}</span> : null}
+                        {s.fee ? (
+                          <span className="ml-1.5 text-[10px] text-white/45">
+                            +{peso(s.fee)}
+                          </span>
+                        ) : null}
                       </button>
                     );
                   })}
@@ -185,8 +268,15 @@ export default function Pricing() {
               <div className={microLabel}>What&apos;s included</div>
               <ul className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 font-mono text-[12.5px] leading-snug text-white/80">
-                    <CheckCircle size={15} weight="fill" className="mt-px shrink-0 text-[#CC6600]" />
+                  <li
+                    key={f}
+                    className="flex items-start gap-2.5 font-mono text-[12.5px] leading-snug text-white/80"
+                  >
+                    <CheckCircle
+                      size={15}
+                      weight="fill"
+                      className="mt-px shrink-0 text-[#CC6600]"
+                    />
                     {f}
                   </li>
                 ))}
@@ -195,8 +285,15 @@ export default function Pricing() {
               <div className={`${microLabel} mt-8`}>On every plan</div>
               <ul className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
                 {INCLUDED.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 font-mono text-[12.5px] leading-snug text-white/60">
-                    <ShieldCheck size={15} weight="fill" className="mt-px shrink-0 text-white/40" />
+                  <li
+                    key={f}
+                    className="flex items-start gap-2.5 font-mono text-[12.5px] leading-snug text-white/60"
+                  >
+                    <ShieldCheck
+                      size={15}
+                      weight="fill"
+                      className="mt-px shrink-0 text-white/40"
+                    />
                     {f}
                   </li>
                 ))}
@@ -204,16 +301,25 @@ export default function Pricing() {
 
               <div className="mt-auto pt-10">
                 <div className="flex flex-wrap gap-3 border-t border-white/10 pt-6">
-                  <a href={LOGIN_URL} data-cta={`pricing-${plan.id}`} className={`${btnPrimary} h-11 px-6`}>
+                  <a
+                    href={LOGIN_URL}
+                    data-cta={`pricing-${plan.id}`}
+                    className={`${btnPrimary} h-11 px-6`}
+                  >
                     Send your study
                     <ArrowRight size={15} weight="bold" />
                   </a>
-                  <a href={REGISTER_URL} data-cta={`pricing-register-${plan.id}`} className={`${btnGhost} h-11 px-6`}>
+                  <a
+                    href={REGISTER_URL}
+                    data-cta={`pricing-register-${plan.id}`}
+                    className={`${btnGhost} h-11 px-6`}
+                  >
                     Create a free account
                   </a>
                 </div>
                 <p className="mt-4 font-mono text-[11px] text-white/50">
-                  Written price within 24 hours · No payment needed to ask
+                  We recommend a package and send a fixed price within 24 hours
+                  · No payment needed to ask
                 </p>
               </div>
             </div>
@@ -231,19 +337,66 @@ export default function Pricing() {
               Bank transfer
             </span>
             <span className="text-white/50">
-              DataCheck and Start are paid upfront. Larger plans pay a deposit, then the rest on delivery.
+              DataCheck and Start are paid upfront. Larger plans pay a deposit,
+              then the rest on delivery.
             </span>
           </div>
-          <span className="inline-flex items-center gap-2 text-white/80">
-            <ChalkboardTeacher size={15} weight="fill" className="text-[#CC6600]" />
-            Add a DefenseLab mock panel for
-            <span className="font-mono font-bold text-white">
-              <Peso className="mr-0.5" />
-              250
-            </span>
-            <span className="text-white/50">/ hr</span>
-          </span>
         </Reveal>
+
+        {/* ── Add-ons (links like /pricing#add-ons land here) ── */}
+        <div id="add-ons" className="mt-16 scroll-mt-24 lg:mt-20">
+          <Reveal className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className={kicker}>Add-ons</div>
+              <h2 className="font-sans text-2xl font-medium tracking-[-0.03em] text-white sm:text-3xl">
+                Optional extras, fixed prices
+              </h2>
+            </div>
+            <p className="max-w-md font-mono text-xs leading-relaxed text-white/55 sm:text-right">
+              Add them when you accept your written price. Pick at most one
+              delivery speed.
+            </p>
+          </Reveal>
+          <ul className="mt-8 grid grid-cols-1 gap-px overflow-hidden rounded-[2px] border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
+            {ADDONS.map((a, i) => {
+              const AddOnIcon = ADDON_ICONS[a.id];
+              return (
+                <Reveal
+                  as="li"
+                  key={a.id}
+                  delay={i * 70}
+                  className="flex flex-col bg-[#050513] p-6"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <AddOnIcon
+                      size={20}
+                      weight="fill"
+                      className="text-[#CC6600]"
+                    />
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-white/45">
+                      {a.group}
+                    </span>
+                  </div>
+                  <p className="mt-5 font-sans text-base font-medium text-white">
+                    {a.name}
+                  </p>
+                  <p className="mt-1 font-mono text-xl font-bold text-white">
+                    +<Peso className="mr-0.5 text-[0.85em]" />
+                    {peso(a.fee)}
+                    {a.unit ? (
+                      <span className="ml-1.5 font-sans text-xs font-normal text-white/50">
+                        {a.unit}
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="mt-4 border-t border-white/[0.08] pt-4 font-mono text-xs leading-relaxed text-white/60">
+                    {a.detail}
+                  </p>
+                </Reveal>
+              );
+            })}
+          </ul>
+        </div>
       </div>
     </section>
   );

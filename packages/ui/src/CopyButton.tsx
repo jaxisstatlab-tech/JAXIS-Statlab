@@ -62,7 +62,7 @@ export function CopyButton({
     if (variant === "badge") {
       return hasCopied
         ? "border-[#10B981]/50 bg-[#10B981]/20 text-[#10B981] font-bold"
-        : "border-[#CC6600]/30 bg-[#CC6600]/15 text-[#FF9433] hover:border-[#CC6600] hover:bg-[#CC6600]/25 font-bold";
+        : "border-white/10 bg-white/[0.04] text-white/75 hover:border-white/25 hover:bg-white/[0.07] hover:text-white font-medium";
     }
     if (variant === "ghost") {
       return hasCopied

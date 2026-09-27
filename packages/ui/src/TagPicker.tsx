@@ -99,7 +99,7 @@ export function TagPicker({
                 "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-xs font-mono transition-all duration-150 cursor-pointer select-none border",
                 isSelected
                   ? "bg-[#CC6600]/15 text-[#FFA040] border-[#CC6600] font-medium shadow-sm"
-                  : "bg-[#01142B] text-slate-300 border-white/10 hover:border-white/25 hover:text-white hover:bg-white/[0.04]"
+                  : "bg-[#0A0A18] text-slate-300 border-white/10 hover:border-white/25 hover:text-white hover:bg-white/[0.04]"
               )}
             >
               {isSelected ? (
@@ -139,7 +139,7 @@ export function TagPicker({
                 handleAddCustom(e);
               }
             }}
-            className="flex-1 h-8 rounded-[2px] bg-[#01142B] border border-white/10 px-3 text-xs text-white placeholder:text-white/30 focus:border-[#CC6600] focus:outline-none font-mono"
+            className="flex-1 h-8 rounded-[2px] bg-[#0A0A18] border border-white/10 px-3 text-xs text-white placeholder:text-white/30 focus:border-[#CC6600] focus:outline-none font-mono"
           />
           <button
             type="button"

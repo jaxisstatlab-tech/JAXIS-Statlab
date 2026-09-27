@@ -135,7 +135,7 @@ export function PayslipStatementModal({
       <div className="flex flex-col gap-4 sm:gap-5">
         {/* View Mode Segmented Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/10 print:hidden">
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 p-1 bg-[#010D1F] border border-white/10 rounded-[2px] w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5 p-1 bg-[#050513] border border-white/10 rounded-[2px] w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setViewMode("document")}
@@ -236,7 +236,7 @@ export function PayslipStatementModal({
             </div>
 
             {/* Payout Details Card */}
-            <div className="p-5 rounded-[2px] bg-[#01142B] border border-white/10 flex flex-col gap-4">
+            <div className="p-5 rounded-[2px] bg-[#0A0A18] border border-white/10 flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   {payout?.payoutChannel === "BANK_TRANSFER" ? (
@@ -330,7 +330,7 @@ export function PayslipStatementModal({
 
             {/* Itemized Studies Commission Table (if applicable) */}
             {payslip.itemizedStudies && payslip.itemizedStudies.length > 0 && (
-              <div className="p-5 rounded-[2px] bg-[#01142B] border border-white/10 space-y-3">
+              <div className="p-5 rounded-[2px] bg-[#0A0A18] border border-white/10 space-y-3">
                 <div className="flex items-center justify-between border-b border-white/10 pb-2">
                   <div className="flex items-center gap-2">
                     <IconSparkles size={16} stroke={1.5} className="text-[#FFA040]" />
@@ -345,7 +345,7 @@ export function PayslipStatementModal({
 
                 <div className="overflow-x-auto border border-white/10 rounded-[2px]">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-[#010D1F] border-b border-white/10 text-white/60 font-mono text-[0.688rem] uppercase">
+                    <thead className="bg-[#050513] border-b border-white/10 text-white/60 font-mono text-[0.688rem] uppercase">
                       <tr>
                         <th className="py-2.5 px-3">Study Ref</th>
                         <th className="py-2.5 px-3">Project Title</th>
@@ -371,7 +371,7 @@ export function PayslipStatementModal({
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-[#010D1F] border-t border-white/10 font-mono font-bold text-xs">
+                    <tfoot className="bg-[#050513] border-t border-white/10 font-mono font-bold text-xs">
                       <tr>
                         <td colSpan={2} className="py-2.5 px-3 text-white/70">Total Delivered Studies Commission</td>
                         <td className="py-2.5 px-3 text-right text-white/70">
@@ -390,7 +390,7 @@ export function PayslipStatementModal({
 
             {/* Platform Duty Hours & Timeclock Log (if applicable) */}
             {(payslip.verifiedDutyHours > 0 || payslip.hourlyRate > 0) && (
-              <div className="p-5 rounded-[2px] bg-[#01142B] border border-white/10 space-y-3">
+              <div className="p-5 rounded-[2px] bg-[#0A0A18] border border-white/10 space-y-3">
                 <div className="flex items-center justify-between border-b border-white/10 pb-2">
                   <div className="flex items-center gap-2">
                     <IconClock size={16} stroke={1.5} className="text-sky-400" />
@@ -403,7 +403,7 @@ export function PayslipStatementModal({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-[#010D1F] border border-white/10 rounded-[2px] font-mono text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-[#050513] border border-white/10 rounded-[2px] font-mono text-xs">
                   <div>
                     <span className="text-[0.625rem] text-white/50 uppercase block">Verified Duty Hours</span>
                     <span className="text-sm font-bold text-white mt-0.5 block">{payslip.verifiedDutyHours} hrs</span>
@@ -427,7 +427,7 @@ export function PayslipStatementModal({
             {/* Consolidated Earnings & Deductions Ledger Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Earnings Table */}
-              <div className="p-5 rounded-[2px] bg-[#01142B] border border-white/10 space-y-3 flex flex-col">
+              <div className="p-5 rounded-[2px] bg-[#0A0A18] border border-white/10 space-y-3 flex flex-col">
                 <div className="border-b border-white/10 pb-2 font-mono text-xs font-bold uppercase tracking-wider text-white/90">
                   Duty Compensation &amp; Allowances
                 </div>
@@ -482,7 +482,7 @@ export function PayslipStatementModal({
               </div>
 
               {/* Deductions Table */}
-              <div className="p-5 rounded-[2px] bg-[#01142B] border border-white/10 space-y-3 flex flex-col">
+              <div className="p-5 rounded-[2px] bg-[#0A0A18] border border-white/10 space-y-3 flex flex-col">
                 <div className="border-b border-white/10 pb-2 font-mono text-xs font-bold uppercase tracking-wider text-white/90">
                   Statutory &amp; Institutional Deductions
                 </div>
@@ -527,7 +527,7 @@ export function PayslipStatementModal({
 
             {/* Treasury Stamp Audit Callout (if Disbursed) */}
             {isDisbursed && (
-              <div className="p-4 bg-[#01142B] border border-emerald-500/30 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+              <div className="p-4 bg-[#0A0A18] border border-emerald-500/30 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-[2px] bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0">
                     <IconShieldCheck size={20} stroke={2} />

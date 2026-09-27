@@ -9,9 +9,9 @@ All AI coding assistants and developers MUST strictly follow the design system, 
 ## 1. Master Design System Reference (MANDATORY)
 - **Primary Source of Truth**: Always inspect and follow [apps/app/docs/design-system.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/docs/design-system.md) when generating, styling, or refactoring any page, component, modal, table, or toast.
 - **Aesthetic**: Dark Precision Terminal / Enterprise Scientific. Clean, modern, authoritative, and spacious.
-- **Palette**: Master Canvas (`#010114`), Surface Card (`rgba(1, 22, 46, 0.75)` / `#01142B` / `#011B38`), Enterprise Orange Accent (`#CC6600`), Analytical Sky (`#38BDF8`), Verification Emerald (`#10B981`), Escrow Amber (`#F59E0B`), Border Division (`rgba(255, 255, 255, 0.08)` / `border-white/10`).
+- **Palette**: Master Canvas (`#010114`), Surface Card (`rgba(11, 11, 25, 0.75)` / `#0A0A18` / `#0F0F1D`), Enterprise Orange Accent (`#CC6600`), Analytical Sky (`#38BDF8`), Verification Emerald (`#10B981`), Escrow Amber (`#F59E0B`), Border Division (`rgba(255, 255, 255, 0.08)` / `border-white/10`).
 - **Zero Glow Policy**: Never use blurry box-shadow glows (`shadow-[0_0_...px]`). Use crisp, high-contrast flat borders (`border-white/10` to `border-white/20`) and calibrated opacity tints.
-- **No Awkward Gradients**: Do not use heavy gradient fills (`bg-gradient-to-r`) on action bars, banners, or modal headers. Rely on solid substrates (`#01142B` / `#011B38`) with calibrated borders.
+- **No Awkward Gradients**: Do not use heavy gradient fills (`bg-gradient-to-r`) on action bars, banners, or modal headers. Rely on solid substrates (`#0A0A18` / `#0F0F1D`) with calibrated borders.
 - **Color Restraint & Anti-Rainbow Mandate**: Reduce the use of colors unless strictly necessary. Color is a scarce cognitive resource. In 90% of cases, `<KpiCard />` metric numbers must default to crisp bold white (`variant="default"`). Never render rainbow rows where 4 adjacent cards each have a different neon hue (Amber, Green, Sky, Orange). In data tables, financial figures must default to bold white; never stack cyan, green, and yellow within a single table cell.
 - **Typography-First KPI Standard (No Decorative Icons on Metric Cards)**: Top-level informational KPI cards must NOT render decorative icons (`icon={...}`). High-contrast monospace numerals and uppercase labels carry the hierarchy cleanly with executive authority. Reserve the `icon` prop exclusively for active alert states where user intervention is required (e.g., `<Clock weight="fill" className="text-amber-400" />` when `Action Required > 0`).
 
@@ -163,7 +163,7 @@ All AI coding assistants and developers MUST strictly follow the design system, 
 - **Mandatory Policy**:
   1. All page and view upgrades must strictly follow [apps/app/docs/ui-design-upgrade.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/docs/ui-design-upgrade.md), [.agents/skills/ui-design-upgrade/SKILL.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/.agents/skills/ui-design-upgrade/SKILL.md), and [.agents/skills/dashdark-precision-ui/SKILL.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/.agents/skills/dashdark-precision-ui/SKILL.md).
   2. **Hard Constraint — Frontend Only**: Zero modifications to backend schemas, database queries, server actions, API routes, authentication logic, or business workflows. Present existing data with peak elegance and clarity.
-  3. **Current Theme Grounding**: Anchor strictly to Master Canvas (`#010114`), Surface Cards (`rgba(1, 22, 46, 0.75)` / `#01142B`), Enterprise Orange (`#CC6600`, 5–10% max visual weight), and crisp 1px borders (`border-white/10`).
+  3. **Current Theme Grounding**: Anchor strictly to Master Canvas (`#010114`), Surface Cards (`rgba(11, 11, 25, 0.75)` / `#0A0A18`), Enterprise Orange (`#CC6600`, 5–10% max visual weight), and crisp 1px borders (`border-white/10`).
   4. **Anti-AI-Slop Mandate**: Zero awkward multi-stop gradients, zero blurry box-shadow glows, zero robotic buzzwords, zero double slashes (`//`), zero broken text truncations (`...`), and zero ALL-CAPS shouting buttons.
   5. **Tactile Motion (Emil Kowalski)**: Buttons scale to `0.97` on `:active`, entrances start from `scale(0.95)` with opacity `0`, fast durations under `250ms`, and custom cubic-bezier easing.
 
@@ -192,7 +192,7 @@ All AI coding assistants and developers MUST strictly follow the design system, 
 - **Mandatory Policy**:
   1. **Asymmetric 2:1 Bento Arrangement**: All primary role dashboards across all roles (Client, Statistician, QA Lead, CEO/Admin) must adopt the 2:1 Asymmetric Bento Grid codified in [apps/app/docs/ui-design-upgrade.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/app/docs/ui-design-upgrade.md) Section 10 and [.agents/skills/dashdark-precision-ui/SKILL.md](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/.agents/skills/dashdark-precision-ui/SKILL.md): (1) Greeting + dual-action toolbar, (2) 4-column balanced KPI row with inline micro status pills, (3) 2:1 Asymmetric Focal Hero Section (8 cols hero card + 4 cols double-stacked auxiliary intelligence cards), (4) Section command ribbon with filter tabs and `/` search, and (5) Lower bento composition (progress gauge / donut meter + high-precision data table/feed).
   2. **Strictly No Rounded Bubbly Corners (`rounded-[2px]`)**: Never use Webflow `rounded-xl` or `rounded-2xl`. Maintain the crisp architectural precision of `rounded-[2px]` across all cards, containers, tables, and buttons.
-  3. **Dark Precision Substrates**: Anchor strictly to `#010114` master canvas, `#01142B` flat card substrates, and hairline flat 1px `border-white/10` divisions (zero blurry box-shadow glows).
+  3. **Dark Precision Substrates**: Anchor strictly to `#010114` master canvas, `#0A0A18` flat card substrates, and hairline flat 1px `border-white/10` divisions (zero blurry box-shadow glows).
 
 ---
 

@@ -1,17 +1,16 @@
 import React from "react";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getAnalysisWorkbenchData } from "@/features/analysis/actions";
-import { PageHeader, Card, Button, Badge } from "@repo/ui";
+import { Card, Badge } from "@repo/ui";
 import {
-  IconArrowLeft,
   IconDownload,
   IconClock,
   IconUser,
   IconAlertTriangle,
 } from "@tabler/icons-react";
 import type { RoleName } from "@prisma/client";
+import { StudySection } from "@/features/projects/components/StudySection";
 
 interface AdminAnalysisPageProps {
   params: Promise<{ id: string }>;
@@ -38,33 +37,14 @@ export default async function AdminAnalysisPage({ params }: AdminAnalysisPagePro
     redirect(`/dashboard/admin/projects/${id}`);
   }
 
-  const { project, analysisFiles, activeScopeCreep } = res.data;
+  const { analysisFiles, activeScopeCreep } = res.data;
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
-      <PageHeader
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "ADMIN", href: "/dashboard/admin" },
-          { label: project.intakeId, href: `/dashboard/admin/projects/${project.id}` },
-          { label: "ANALYSIS AUDIT" },
-        ]}
-        title="Statistical Analysis File Audit"
-        badge={
-          <Badge variant="default" className="font-mono text-xs">
-            ADMIN AUDIT VAULT
-          </Badge>
-        }
-        description={`Immutable Version Lineage Audit • Study: ${project.researchTitle}`}
-        actions={
-          <Link href={`/dashboard/admin/projects/${project.id}`}>
-            <Button variant="secondary" size="sm" className="rounded-[2px] text-xs gap-1.5 cursor-pointer">
-              <IconArrowLeft size={14} stroke={2} />
-              <span>Back to Study Console</span>
-            </Button>
-          </Link>
-        }
-      />
+      <StudySection
+          title="Analysis files"
+          description="Every version the statistician uploaded, oldest first. Nothing here can be changed."
+        />
 
       {/* Scope Creep Audit Log (if present) */}
       {activeScopeCreep && (
@@ -84,7 +64,7 @@ export default async function AdminAnalysisPage({ params }: AdminAnalysisPagePro
       )}
 
       {/* All Versions Ledger Table */}
-      <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-6">
+      <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold text-white">Full Version Lineage Ledger ({analysisFiles.length})</h2>
@@ -105,8 +85,8 @@ export default async function AdminAnalysisPage({ params }: AdminAnalysisPagePro
                 key={file.id}
                 className={`p-4 rounded-[2px] border transition-colors flex flex-col gap-2.5 ${
                   file.isCurrent
-                    ? "bg-[#011B38] border-emerald-500/40"
-                    : "bg-[#01142B] border-white/10 opacity-75 hover:opacity-100"
+                    ? "bg-[#0F0F1D] border-emerald-500/40"
+                    : "bg-[#0A0A18] border-white/10 opacity-75 hover:opacity-100"
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">

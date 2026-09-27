@@ -11,6 +11,7 @@
 
 # next.js
 /.next/
+/.next-offline/
 /out/
 
 # production
@@ -40,4 +41,8 @@ next-env.d.ts
 /.dev-quotations.json
 /.dev-sows.json
 /.dev-alerts.json
+/.dev-defenselab.json
+/.dev-messages.json
+/.dev-analysis.json
+/.dev-deliverables.json
 /dev_data/payments.json

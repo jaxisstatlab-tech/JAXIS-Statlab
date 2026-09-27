@@ -509,7 +509,7 @@ export function HrPortalClient({
               onClick={() => setActiveTab(tab.id as ActiveHrTab)}
               className={`flex items-center gap-2 py-2.5 px-4 text-xs font-sans font-semibold rounded-t-[2px] transition-colors cursor-pointer border-b-2 whitespace-nowrap ${
                 isActive
-                  ? "border-[#CC6600] text-white bg-[#01142B]"
+                  ? "border-[#CC6600] text-white bg-[#0A0A18]"
                   : "border-transparent text-white/60 hover:text-white hover:bg-white/[0.03]"
               }`}
             >
@@ -522,7 +522,7 @@ export function HrPortalClient({
 
       {/* TAB 0: TIMESHEETS */}
       {activeTab === "TIMESHEETS" && (
-        <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+        <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-black/40 border border-white/10 rounded-[2px] text-white">
@@ -659,7 +659,7 @@ export function HrPortalClient({
       {activeTab === "CALENDAR" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Calendar Grid (8 Cols) */}
-          <Card className="lg:col-span-8 p-3.5 sm:p-6 md:p-8 bg-[#01142B] border-white/10 flex flex-col gap-4 sm:gap-6">
+          <Card className="lg:col-span-8 p-3.5 sm:p-6 md:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-4 sm:gap-6">
             {/* Month Header & Controls */}
             <div className="flex items-center justify-between border-b border-white/10 pb-3 sm:pb-4 gap-2">
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
@@ -746,7 +746,7 @@ export function HrPortalClient({
                     ? "bg-emerald-950/60 border-emerald-400 text-emerald-200 animate-pulse"
                     : evt.status === "MISSED_PUNCH"
                     ? "bg-amber-950/20 border-amber-500/20 text-amber-300"
-                    : "bg-[#010D1F] border-white/5 text-white/50";
+                    : "bg-[#050513] border-white/5 text-white/50";
 
                 return (
                   <button
@@ -819,7 +819,7 @@ export function HrPortalClient({
           </Card>
 
           {/* Right Column: Selected Day Duty Inspector (4 Cols) */}
-          <Card className="lg:col-span-4 p-6 bg-[#01142B] border-white/10 flex flex-col gap-5">
+          <Card className="lg:col-span-4 p-6 bg-[#0A0A18] border-white/10 flex flex-col gap-5">
             <div className="border-b border-white/10 pb-3 flex items-center justify-between">
               <div>
                 <span className="text-[0.688rem] uppercase font-mono tracking-wider text-white/50 block">
@@ -846,7 +846,7 @@ export function HrPortalClient({
             {selectedDayEvent ? (
               <div className="flex flex-col gap-4 text-xs font-sans">
                 {/* Status Box */}
-                <div className="p-3 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-center justify-between">
+                <div className="p-3 bg-[#050513] border border-white/10 rounded-[2px] flex items-center justify-between">
                   <span className="text-white/60">Shift Classification:</span>
                   <span className="font-mono font-bold text-white">
                     {selectedDayEvent.status.replace(/_/g, " ")}
@@ -854,7 +854,7 @@ export function HrPortalClient({
                 </div>
 
                 {/* Day Type / Labor Policy Status */}
-                <div className="p-3 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-center justify-between">
+                <div className="p-3 bg-[#050513] border border-white/10 rounded-[2px] flex items-center justify-between">
                   <span className="text-white/60">Day Schedule:</span>
                   <span className="font-mono text-xs text-white/90">
                     {selectedDayEvent.isHoliday
@@ -867,13 +867,13 @@ export function HrPortalClient({
 
                 {/* Clock In / Out Times */}
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="p-3 bg-[#010D1F] border border-white/5 rounded-[2px]">
+                  <div className="p-3 bg-[#050513] border border-white/5 rounded-[2px]">
                     <span className="text-[0.625rem] font-mono uppercase text-white/40 block">Clock In</span>
                     <span className="text-sm font-mono font-bold text-white">
                       {selectedDayEvent.clockInTime || "--:--"}
                     </span>
                   </div>
-                  <div className="p-3 bg-[#010D1F] border border-white/5 rounded-[2px]">
+                  <div className="p-3 bg-[#050513] border border-white/5 rounded-[2px]">
                     <span className="text-[0.625rem] font-mono uppercase text-white/40 block">Clock Out</span>
                     <span className="text-sm font-mono font-bold text-white">
                       {selectedDayEvent.clockOutTime || "--:--"}
@@ -953,7 +953,7 @@ export function HrPortalClient({
               description="Health Protection Active"
             />
 
-            <Card variant="kpi" className="group p-5 sm:p-6 bg-[#01142B] border-white/10 flex flex-col justify-between">
+            <Card variant="kpi" className="group p-5 sm:p-6 bg-[#0A0A18] border-white/10 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <span className="text-xs uppercase font-mono tracking-wider font-semibold text-white/50">
@@ -995,7 +995,7 @@ export function HrPortalClient({
           </div>
 
           {/* Past Leaves Record Table */}
-          <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+          <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
             <div className="border-b border-white/10 pb-4">
               <h2 className="text-base font-bold text-white font-sans">
                 Leave Records & Authorized Windows
@@ -1052,7 +1052,7 @@ export function HrPortalClient({
       {/* TAB 3: OVERTIMES & ADJUSTMENTS */}
       {activeTab === "OVERTIME" && (
         <div className="flex flex-col gap-6">
-          <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+          <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
               <div>
                 <h2 className="text-base font-bold text-white font-sans">
@@ -1081,7 +1081,7 @@ export function HrPortalClient({
             ) : (
               <div className="space-y-3">
                 {portalData.corrections.map((c) => (
-                  <div key={c.id} className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div key={c.id} className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex flex-col gap-1.5">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-xs font-bold text-white">Date: {c.targetDate}</span>
@@ -1129,7 +1129,7 @@ export function HrPortalClient({
       {/* TAB 4: PAYSLIP & MONTHLY EARNINGS */}
       {activeTab === "PAYSLIP" && portalData && (
         <div className="flex flex-col gap-6">
-          <Card className="p-4 sm:p-8 lg:p-10 bg-[#01142B] border-white/10 flex flex-col gap-6">
+          <Card className="p-4 sm:p-8 lg:p-10 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
             {/* Header / Pay Period */}
             <div className="flex flex-col gap-5 border-b border-white/10 pb-6">
               {/* Top Controls Row: Badges & Cycle Selector */}
@@ -1180,7 +1180,7 @@ export function HrPortalClient({
                           const found = allMyPayslips.find((p) => p.id === e.target.value);
                           if (found) setSelectedPayslip(found);
                         }}
-                        className="w-full bg-[#010D1F] border border-white/15 rounded-[2px] pl-3 pr-8 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600] cursor-pointer appearance-none transition-colors hover:border-white/25 truncate"
+                        className="w-full bg-[#050513] border border-white/15 rounded-[2px] pl-3 pr-8 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600] cursor-pointer appearance-none transition-colors hover:border-white/25 truncate"
                       >
                         {allMyPayslips.map((ps) => {
                           const monthMatch = ps.payPeriodMonth.match(/([A-Za-z]+)\s+(\d{4})/);
@@ -1196,7 +1196,7 @@ export function HrPortalClient({
                               : "Full Month";
 
                           return (
-                            <option key={ps.id} value={ps.id} className="bg-[#010D1F] text-white">
+                            <option key={ps.id} value={ps.id} className="bg-[#050513] text-white">
                               {monthStr} ({cycleStr}) · ₱{ps.netPay.toLocaleString("en-PH", { minimumFractionDigits: 2 })} [{ps.status}]
                             </option>
                           );
@@ -1289,7 +1289,7 @@ export function HrPortalClient({
             </div>
 
             {/* Take-Home Pay & Payout Summary Card */}
-            <div className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="p-5 sm:p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               {/* Left Column: Take-Home Pay */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
                 <div className="min-w-0">
@@ -1377,15 +1377,15 @@ export function HrPortalClient({
               </div>
 
               {allMyPayslips.length === 0 ? (
-                <div className="py-8 text-center text-xs text-white/40 italic font-sans border border-white/10 rounded-[2px] bg-[#010D1F]">
+                <div className="py-8 text-center text-xs text-white/40 italic font-sans border border-white/10 rounded-[2px] bg-[#050513]">
                   No past payslip records found.
                 </div>
               ) : (
-                <div className="overflow-hidden rounded-[2px] border border-white/10 bg-[#010D1F]/60 shadow-xl flex flex-col">
+                <div className="overflow-hidden rounded-[2px] border border-white/10 bg-[#050513]/60 shadow-xl flex flex-col">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse font-sans">
                       <thead>
-                        <tr className="bg-[#010D1F] border-b border-white/10 text-white/50 font-mono uppercase text-[0.688rem] tracking-wider">
+                        <tr className="bg-[#050513] border-b border-white/10 text-white/50 font-mono uppercase text-[0.688rem] tracking-wider">
                           <th className="py-3.5 px-4 whitespace-nowrap min-w-[130px]">Payslip No.</th>
                           <th className="py-3.5 px-4 whitespace-nowrap min-w-[160px]">Pay Period</th>
                           <th className="py-3.5 px-4 whitespace-nowrap min-w-[140px]">Pay Structure</th>
@@ -1521,7 +1521,7 @@ export function HrPortalClient({
       {activeTab === "PAYOUT" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main Configuration Card (8 Cols) */}
-          <Card className="lg:col-span-8 p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+          <Card className="lg:col-span-8 p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-[#CC6600]/15 border border-[#CC6600]/30 text-[#FFA040] rounded-[2px]">
@@ -1569,7 +1569,7 @@ export function HrPortalClient({
                         className={`p-3 rounded-[2px] border text-left transition-all cursor-pointer flex flex-col gap-1.5 ${
                           isSelected
                             ? "bg-[#CC6600]/15 border-[#CC6600] text-white shadow-lg"
-                            : "bg-[#010D1F] border-white/10 text-white/60 hover:text-white hover:border-white/20"
+                            : "bg-[#050513] border-white/10 text-white/60 hover:text-white hover:border-white/20"
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -1600,7 +1600,7 @@ export function HrPortalClient({
                     <select
                       value={bankName}
                       onChange={(e) => setBankName(e.target.value)}
-                      className="w-full bg-[#010D1F] border border-white/10 focus:border-[#CC6600] rounded-[2px] pl-3 pr-10 py-2.5 text-xs text-white outline-none cursor-pointer font-sans appearance-none hover:border-white/20 transition-colors"
+                      className="w-full bg-[#050513] border border-white/10 focus:border-[#CC6600] rounded-[2px] pl-3 pr-10 py-2.5 text-xs text-white outline-none cursor-pointer font-sans appearance-none hover:border-white/20 transition-colors"
                       required
                     >
                       <option value="BDO Unibank">BDO Unibank (Banco de Oro)</option>
@@ -1657,7 +1657,7 @@ export function HrPortalClient({
                       ? "1092-3847-1920"
                       : "e.g. JAX-STAFF-001 (HQ Manila Window)"
                   }
-                  className="w-full bg-[#010D1F] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white font-mono placeholder-white/30 outline-none transition-colors"
+                  className="w-full bg-[#050513] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white font-mono placeholder-white/30 outline-none transition-colors"
                 />
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-white/40 font-sans">
@@ -1692,7 +1692,7 @@ export function HrPortalClient({
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
                   placeholder="e.g. Prof. Sofia Benitez or Dr. Juan Reyes"
-                  className="w-full bg-[#010D1F] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white font-sans placeholder-white/30 outline-none"
+                  className="w-full bg-[#050513] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white font-sans placeholder-white/30 outline-none"
                 />
                 <span className="text-xs text-white/40">
                   Must match the exact name registered on your bank or e-wallet account to prevent payment rejections.
@@ -1709,7 +1709,7 @@ export function HrPortalClient({
                   value={payoutNotes}
                   onChange={(e) => setPayoutNotes(e.target.value)}
                   placeholder="e.g. BDO Makati Avenue Branch or GCash merchant verified"
-                  className="w-full bg-[#010D1F] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white font-sans placeholder-white/30 outline-none"
+                  className="w-full bg-[#050513] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white font-sans placeholder-white/30 outline-none"
                 />
               </div>
 
@@ -1743,7 +1743,7 @@ export function HrPortalClient({
 
           {/* Right Column: Live Treasury & Finance View (4 Cols) */}
           <div className="lg:col-span-4 flex flex-col gap-4">
-            <Card className="p-6 bg-[#01142B] border-white/10 flex flex-col gap-4">
+            <Card className="p-6 bg-[#0A0A18] border-white/10 flex flex-col gap-4">
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <span className="text-xs font-mono font-semibold uppercase tracking-wider text-white/60">
                   Live Treasury Verification
@@ -1757,7 +1757,7 @@ export function HrPortalClient({
                 This is how the **Finance Officer** and **CEO** see your payout account when releasing salary disbursements:
               </p>
 
-              <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col gap-3">
+              <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-mono uppercase text-white/40">Channel</span>
                   <Badge variant="amber" className="text-xs font-mono">
@@ -1896,16 +1896,16 @@ export function HrPortalClient({
                       setLeaveReason(e.target.value);
                     }
                   }}
-                  className="w-full bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white/90 focus:border-[#CC6600] focus:ring-0 outline-none cursor-pointer appearance-none pr-8 transition-colors font-sans hover:border-white/30"
+                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white/90 focus:border-[#CC6600] focus:ring-0 outline-none cursor-pointer appearance-none pr-8 transition-colors font-sans hover:border-white/30"
                 >
-                  <option value="" className="bg-[#01142B] text-white/50">
+                  <option value="" className="bg-[#0A0A18] text-white/50">
                     Select standard reason template...
                   </option>
                   {LEAVE_REASON_TEMPLATES.map((tmpl) => (
                     <option
                       key={tmpl.label}
                       value={tmpl.text}
-                      className="bg-[#01142B] text-white py-1"
+                      className="bg-[#0A0A18] text-white py-1"
                     >
                       {tmpl.label}
                     </option>
@@ -1922,7 +1922,7 @@ export function HrPortalClient({
                 value={leaveReason}
                 onChange={(e) => setLeaveReason(e.target.value)}
                 placeholder="e.g. Annual vacation, medical recovery, academic conference presentation..."
-                className="w-full bg-[#01142B] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-16 font-sans leading-relaxed"
+                className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-16 font-sans leading-relaxed"
               />
             </div>
 
@@ -1951,7 +1951,7 @@ export function HrPortalClient({
                     min={new Date().toISOString().split("T")[0]}
                     value={leaveFrom}
                     onChange={(e) => setLeaveFrom(e.target.value)}
-                    className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] px-3 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600] cursor-pointer"
+                    className="w-full bg-[#050513] border border-white/10 rounded-[2px] px-3 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600] cursor-pointer"
                     required
                   />
                 </div>
@@ -1963,7 +1963,7 @@ export function HrPortalClient({
                     min={leaveFrom}
                     value={leaveUntil}
                     onChange={(e) => setLeaveUntil(e.target.value)}
-                    className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] px-3 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600] cursor-pointer"
+                    className="w-full bg-[#050513] border border-white/10 rounded-[2px] px-3 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600] cursor-pointer"
                     required
                   />
                 </div>
@@ -2018,7 +2018,7 @@ export function HrPortalClient({
                     e.target.value as "OVERTIME_CLAIM" | "MISSED_CLOCK_IN" | "MISSED_CLOCK_OUT" | "MISSED_FULL_SHIFT"
                   )
                 }
-                className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] pl-3 pr-10 py-2.5 text-xs text-white outline-none cursor-pointer font-sans appearance-none hover:border-white/20 transition-colors"
+                className="w-full bg-[#050513] border border-white/10 rounded-[2px] pl-3 pr-10 py-2.5 text-xs text-white outline-none cursor-pointer font-sans appearance-none hover:border-white/20 transition-colors"
               >
                 <option value="OVERTIME_CLAIM">Approved Overtime / Emergency Compute Run</option>
                 <option value="MISSED_CLOCK_IN">Forgot to Clock In (Worked on time)</option>
@@ -2040,7 +2040,7 @@ export function HrPortalClient({
                 type="date"
                 value={adjDate}
                 onChange={(e) => setAdjDate(e.target.value)}
-                className="bg-[#010D1F] border border-white/10 rounded-[2px] p-2 text-xs text-white outline-none font-mono cursor-pointer"
+                className="bg-[#050513] border border-white/10 rounded-[2px] p-2 text-xs text-white outline-none font-mono cursor-pointer"
                 required
               />
             </div>
@@ -2051,7 +2051,7 @@ export function HrPortalClient({
                 type="time"
                 value={adjInTime}
                 onChange={(e) => setAdjInTime(e.target.value)}
-                className="bg-[#010D1F] border border-white/10 rounded-[2px] p-2 text-xs text-white outline-none font-mono cursor-pointer"
+                className="bg-[#050513] border border-white/10 rounded-[2px] p-2 text-xs text-white outline-none font-mono cursor-pointer"
                 required
               />
             </div>
@@ -2062,7 +2062,7 @@ export function HrPortalClient({
                 type="time"
                 value={adjOutTime}
                 onChange={(e) => setAdjOutTime(e.target.value)}
-                className="bg-[#010D1F] border border-white/10 rounded-[2px] p-2 text-xs text-white outline-none font-mono cursor-pointer"
+                className="bg-[#050513] border border-white/10 rounded-[2px] p-2 text-xs text-white outline-none font-mono cursor-pointer"
                 required
               />
             </div>
@@ -2072,7 +2072,7 @@ export function HrPortalClient({
               <select
                 value={adjBreakMins}
                 onChange={(e) => setAdjBreakMins(Number(e.target.value))}
-                className="bg-[#010D1F] border border-white/10 rounded-[2px] px-3 pr-10 py-2 text-xs text-white outline-none font-mono cursor-pointer"
+                className="bg-[#050513] border border-white/10 rounded-[2px] px-3 pr-10 py-2 text-xs text-white outline-none font-mono cursor-pointer"
               >
                 <option value={0}>0 mins (No break)</option>
                 <option value={30}>30 mins</option>
@@ -2089,7 +2089,7 @@ export function HrPortalClient({
               value={adjReason}
               onChange={(e) => setAdjReason(e.target.value)}
               placeholder="e.g. Executed urgent statistical compute runs for Study #JX-2026-0001..."
-              className="w-full bg-[#010D1F] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none resize-none font-sans"
+              className="w-full bg-[#050513] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none resize-none font-sans"
               required
             />
           </div>

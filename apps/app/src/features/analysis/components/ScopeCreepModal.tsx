@@ -135,7 +135,7 @@ export const ScopeCreepModal: React.FC<ScopeCreepModalProps> = ({
                   setReason(tmpl.text);
                   setErrorMessage(null);
                 }}
-                className="p-2.5 rounded-[2px] bg-[#01142B] border border-white/10 hover:border-amber-500/40 text-left text-xs text-white/80 hover:text-white transition-colors cursor-pointer flex items-start gap-2"
+                className="p-2.5 rounded-[2px] bg-[#0A0A18] border border-white/10 hover:border-amber-500/40 text-left text-xs text-white/80 hover:text-white transition-colors cursor-pointer flex items-start gap-2"
               >
                 <IconFileText size={14} stroke={1.5} className="text-amber-400 shrink-0 mt-0.5" />
                 <span className="line-clamp-2">{tmpl.label}</span>
@@ -159,7 +159,7 @@ export const ScopeCreepModal: React.FC<ScopeCreepModalProps> = ({
             rows={4}
             maxLength={2000}
             disabled={isSubmitting}
-            className="w-full p-3 bg-[#01142B] border border-white/15 rounded-[2px] text-xs text-white placeholder:text-white/30 focus:border-amber-500 focus:outline-none transition-colors resize-none font-sans"
+            className="w-full p-3 bg-[#0A0A18] border border-white/15 rounded-[2px] text-xs text-white placeholder:text-white/30 focus:border-amber-500 focus:outline-none transition-colors resize-none font-sans"
           />
           <div className="flex justify-between text-[0.688rem] text-white/40 font-mono">
             <span>Minimum 10 characters required</span>

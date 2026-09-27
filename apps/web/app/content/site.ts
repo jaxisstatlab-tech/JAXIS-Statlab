@@ -34,7 +34,7 @@ export const FAQS: Faq[] = [
   {
     pricing: true,
     q: "Is the price I see the price I pay?",
-    a: "The prices on the pricing page are starting points. After you send your study, we reply with a fixed written price for your exact scope. That written price is final, with no surprise fees later.",
+    a: "The pricing page shows typical price ranges, not final prices. You don't need to pick a package: after you send your study, we recommend the one that fits your study and budget, and reply with a fixed written price for your exact scope. That written price is final, with no surprise fees later.",
   },
   {
     pricing: true,

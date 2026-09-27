@@ -61,7 +61,7 @@ export const FormSelect = React.forwardRef<HTMLSelectElement, FormSelectProps>(
             required={required}
             data-no-bg-chevron="true"
             className={cn(
-              "w-full h-11 sm:h-12 px-4 pr-10 text-sm rounded-[4px] text-white bg-[#01142B] border border-white/15 hover:border-white/25 focus:border-[#CC6600] focus:outline-none focus:ring-1 focus:ring-[#CC6600]/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-sans box-border appearance-none cursor-pointer",
+              "w-full h-11 sm:h-12 px-4 pr-10 text-sm rounded-[4px] text-white bg-[#0A0A18] border border-white/15 hover:border-white/25 focus:border-[#CC6600] focus:outline-none focus:ring-1 focus:ring-[#CC6600]/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-sans box-border appearance-none cursor-pointer",
               error && "!border-[#EF4444] focus:!border-[#EF4444] focus:!ring-[#EF4444]",
               className
             )}
@@ -74,7 +74,7 @@ export const FormSelect = React.forwardRef<HTMLSelectElement, FormSelectProps>(
             {...props}
           >
             {placeholder && (
-              <option value="" disabled className="bg-[#01142B] text-white/40">
+              <option value="" disabled className="bg-[#0A0A18] text-white/40">
                 {placeholder}
               </option>
             )}
@@ -83,7 +83,7 @@ export const FormSelect = React.forwardRef<HTMLSelectElement, FormSelectProps>(
                 key={opt.value}
                 value={opt.value}
                 disabled={opt.disabled}
-                className="bg-[#01142B] text-white"
+                className="bg-[#0A0A18] text-white"
               >
                 {opt.label}
               </option>

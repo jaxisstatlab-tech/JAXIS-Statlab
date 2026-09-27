@@ -19,5 +19,5 @@
     "next.config.mjs",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", ".next", ".turbo"]
+  "exclude": ["node_modules", ".next", ".next-offline", ".turbo"]
 }

@@ -16,7 +16,6 @@ import {
   Button,
   Card,
   KpiCard,
-  PageHeader,
   StatusBadge,
   Badge,
   Modal,
@@ -40,6 +39,7 @@ import {
 } from "@tabler/icons-react";
 import { DeliverableCategory } from "@prisma/client";
 import { DELIVERABLE_CATEGORY_METADATA } from "@/lib/delivery-rules";
+import { StudySection } from "@/features/projects/components/StudySection";
 
 interface AdminDeliverablesDeskProps {
   data: AdminDeliverablesDeskDTO;
@@ -192,17 +192,10 @@ export function AdminDeliverablesDesk({ data }: AdminDeliverablesDeskProps) {
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {/* Page Header */}
-      <PageHeader
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "TRIAGE DESK", href: "/dashboard/admin/intake" },
-          { label: project.intakeId, href: `/dashboard/admin/projects/${project.id}` },
-          { label: "DELIVERABLES" },
-        ]}
-        title="Deliverables & Release Desk"
-        description={`Package, verify dual gates, and release final research outputs for ${project.researchTitle}.`}
-        actions={
-          <div className="flex items-center gap-3">
+      <StudySection
+          title="Files"
+          description="Add the final files, check both reviews, then release them to the client."
+          actions={<div className="flex items-center gap-3">
             {!isReleased && (
               <Button
                 variant="secondary"
@@ -210,7 +203,7 @@ export function AdminDeliverablesDesk({ data }: AdminDeliverablesDeskProps) {
                 onClick={() => setShowUploadModal(true)}
               >
                 <IconUpload size={16} />
-                <span>+ Add Deliverable</span>
+                <span>Add File</span>
               </Button>
             )}
             {!isReleased ? (
@@ -229,9 +222,8 @@ export function AdminDeliverablesDesk({ data }: AdminDeliverablesDeskProps) {
                 Released to Client
               </Badge>
             )}
-          </div>
-        }
-      />
+          </div>}
+        />
 
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -312,8 +304,8 @@ export function AdminDeliverablesDesk({ data }: AdminDeliverablesDeskProps) {
         <Card
           className={`p-6 border ${
             gateEligibility.eligible
-              ? "bg-[#011B38] border-emerald-500/30"
-              : "bg-[#01142B] border-amber-500/30"
+              ? "bg-[#0F0F1D] border-emerald-500/30"
+              : "bg-[#0A0A18] border-amber-500/30"
           }`}
         >
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -385,7 +377,7 @@ export function AdminDeliverablesDesk({ data }: AdminDeliverablesDeskProps) {
 
       {/* Released Banner (If Already Delivered) */}
       {isReleased && (
-        <Card className="p-6 bg-[#011B38] border border-emerald-500/30">
+        <Card className="p-6 bg-[#0F0F1D] border border-emerald-500/30">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div className="p-2.5 rounded-[2px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -439,7 +431,7 @@ export function AdminDeliverablesDesk({ data }: AdminDeliverablesDeskProps) {
           </span>
         </div>
 
-        <Card className="overflow-hidden border border-white/10 bg-[#01142B]">
+        <Card className="overflow-hidden border border-white/10 bg-[#0A0A18]">
           {deliverables.length === 0 ? (
             <div className="p-12 text-center flex flex-col items-center justify-center">
               <div className="p-3.5 rounded-[2px] bg-white/[0.04] text-white/40 mb-3 border border-white/10">
@@ -593,7 +585,7 @@ export function AdminDeliverablesDesk({ data }: AdminDeliverablesDeskProps) {
 
           <div className="space-y-3">
             {revisions.map((rev) => (
-              <Card key={rev.id} className="p-5 border border-white/10 bg-[#01142B]">
+              <Card key={rev.id} className="p-5 border border-white/10 bg-[#0A0A18]">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
                   <div className="flex items-center gap-3">
                     <StatusBadge status={rev.status} />
@@ -654,7 +646,7 @@ export function AdminDeliverablesDesk({ data }: AdminDeliverablesDeskProps) {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value as DeliverableCategory)}
-              className="w-full bg-[#01142B] border border-white/10 rounded-[2px] px-3 py-2 text-xs text-white focus:outline-none focus:border-white/30"
+              className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] px-3 py-2 text-xs text-white focus:outline-none focus:border-white/30"
             >
               {Object.entries(DELIVERABLE_CATEGORY_METADATA).map(([key, meta]) => (
                 <option key={key} value={key}>
@@ -677,7 +669,7 @@ export function AdminDeliverablesDesk({ data }: AdminDeliverablesDeskProps) {
               placeholder="e.g. Statistical_Results_Report_Final.pdf"
               value={fileName}
               onChange={(e) => setFileName(e.target.value)}
-              className="w-full bg-[#01142B] border border-white/10 rounded-[2px] px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
+              className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
             />
           </div>
 
@@ -691,7 +683,7 @@ export function AdminDeliverablesDesk({ data }: AdminDeliverablesDeskProps) {
                 min={1}
                 value={Math.round(fileSize / 1024)}
                 onChange={(e) => setFileSize(Number(e.target.value) * 1024)}
-                className="w-full bg-[#01142B] border border-white/10 rounded-[2px] px-3 py-2 text-xs text-white focus:outline-none focus:border-white/30"
+                className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] px-3 py-2 text-xs text-white focus:outline-none focus:border-white/30"
               />
             </div>
 
@@ -703,7 +695,7 @@ export function AdminDeliverablesDesk({ data }: AdminDeliverablesDeskProps) {
                 type="text"
                 value={fileType}
                 onChange={(e) => setFileType(e.target.value)}
-                className="w-full bg-[#01142B] border border-white/10 rounded-[2px] px-3 py-2 text-xs text-white focus:outline-none focus:border-white/30 font-mono"
+                className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] px-3 py-2 text-xs text-white focus:outline-none focus:border-white/30 font-mono"
               />
             </div>
           </div>

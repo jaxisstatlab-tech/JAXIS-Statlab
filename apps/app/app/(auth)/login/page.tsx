@@ -216,7 +216,7 @@ function LoginForm() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="peer h-4 w-4 cursor-pointer appearance-none rounded-[2px] border border-white/25 bg-[#010D1F] transition-colors duration-150 checked:border-[#CC6600] checked:bg-[#CC6600] focus-visible:shadow-[0_0_0_3px_rgba(204,102,0,0.25)]"
+                className="peer h-4 w-4 cursor-pointer appearance-none rounded-[2px] border border-white/25 bg-[#050513] transition-colors duration-150 checked:border-[#CC6600] checked:bg-[#CC6600] focus-visible:shadow-[0_0_0_3px_rgba(204,102,0,0.25)]"
               />
               <Check
                 size={10}

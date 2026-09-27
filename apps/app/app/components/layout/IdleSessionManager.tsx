@@ -113,7 +113,7 @@ export function IdleSessionManager() {
       aria-labelledby="idle-modal-title"
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[#010114]/80 backdrop-blur-sm animate-modal-backdrop-in print:hidden"
     >
-      <div className="w-full max-w-md bg-[#01142B] border border-white/10 rounded-[2px] p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-modal-content-in">
+      <div className="w-full max-w-md bg-[#0A0A18] border border-white/10 rounded-[2px] p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-modal-content-in">
         {/* Header Anatomy */}
         <div className="flex items-center gap-3 border-b border-white/10 pb-4">
           <div className="w-9 h-9 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center flex-shrink-0">

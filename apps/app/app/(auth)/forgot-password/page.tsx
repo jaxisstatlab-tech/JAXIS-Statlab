@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
               Password reset emails are paused for a short while as we move to our new email address.
             </p>
           </div>
-          <div className="flex items-start gap-3 rounded-[2px] border border-white/10 bg-[#010D1F] p-4">
+          <div className="flex items-start gap-3 rounded-[2px] border border-white/10 bg-[#050513] p-4">
             <Info weight="fill" size={18} className="mt-0.5 shrink-0 text-[#CC6600]" />
             <p className="font-sans text-[13px] leading-relaxed text-white/65">
               Need to get back in now? Send us a message from our contact page with the email you signed up with, and
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <div className="flex items-start gap-3 rounded-[2px] border border-white/10 bg-[#010D1F] p-4">
+          <div className="flex items-start gap-3 rounded-[2px] border border-white/10 bg-[#050513] p-4">
             <CheckCircle weight="fill" size={18} className="mt-0.5 shrink-0 text-[#CC6600]" />
             <p className="font-sans text-[13px] leading-relaxed text-white/65">
               The link works once and expires in <span className="font-mono text-white/85">60 minutes</span>. Don&apos;t

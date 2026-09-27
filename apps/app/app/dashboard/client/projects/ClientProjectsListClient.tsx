@@ -1,12 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   PageHeader,
   Card,
-  StatusBadge,
   Button,
   KpiCard,
   FilterToolbar,
@@ -18,22 +16,19 @@ import {
   CopyButton,
 } from "@repo/ui";
 import {
+  ArrowRight,
   DownloadSimple,
+  Eye,
   FolderDashed,
   MagnifyingGlass,
   Plus,
-  ArrowRight,
-  Clock,
 } from "@phosphor-icons/react";
 import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { QuickProfileModal } from "@/features/client-profile/components/QuickProfileModal";
-import { getProjectDisplayStatus } from "@/lib/project-rules";
-import {
-  getFileMeta,
-  formatFileCategory,
-  triggerFileDownload,
-} from "@/lib/file-utils";
+import { getClientStage, clientStagePriority, type ClientStage, type ClientStageTone } from "@/features/projects/client-stage";
+import { ClientStageMeter, ClientStageTag } from "@/features/projects/components/ClientStudyStepper";
+import { getFileMeta, formatFileCategory, triggerFileDownload } from "@/lib/file-utils";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 
 export interface ClientProjectsListClientProps {
@@ -41,15 +36,45 @@ export interface ClientProjectsListClientProps {
   initialProfileComplete: boolean;
 }
 
+type StageFilter = "ALL" | ClientStageTone;
+
+const STAGE_TABS: Array<{ value: StageFilter; label: string }> = [
+  { value: "ALL", label: "All" },
+  { value: "action", label: "Needs you" },
+  { value: "wait", label: "In progress" },
+  { value: "done", label: "Done" },
+  { value: "stopped", label: "Stopped" },
+];
+
+const studyHref = (p: ProjectDetailItem, path = "") => `/dashboard/client/projects/${p.id}${path}`;
+
+function formatDate(value: string | Date | null | undefined) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
+}
+
+/** "in 6 days", "today", "3 days ago" relative to now. */
+function relativeDays(value: string | Date | null | undefined) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((startOf(d) - startOf(new Date())) / 86_400_000);
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  if (days === -1) return "yesterday";
+  return days > 0 ? `in ${days} days` : `${Math.abs(days)} days ago`;
+}
+
 export function ClientProjectsListClient({
   initialProjects,
   initialProfileComplete,
 }: ClientProjectsListClientProps) {
-  const router = useRouter();
   const [projects, setProjects] = useState<ProjectDetailItem[]>(initialProjects);
-  const [isLoading, setIsLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [sortBy, setSortBy] = useState<string>("newest");
+  const [stageFilter, setStageFilter] = useState<StageFilter>("ALL");
+  const [sortBy, setSortBy] = useState<string>("priority");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -62,115 +87,78 @@ export function ClientProjectsListClient({
     variant: "info" | "success" | "danger";
   } | null>(null);
 
-  const isInitialMount = React.useRef(true);
+  // Everything is filtered in the browser, so refresh the full list only when a study changes.
+  const refresh = useCallback(async () => {
+    try {
+      const [res, profile] = await Promise.all([getProjects({ status: "ALL", search: "" }), getClientProfile()]);
+      if (res.success) setProjects(res.data);
+      setIsProfileComplete(Boolean(profile && profile.institutionSchool && profile.contactNumber));
+    } catch (err) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[ClientProjectsList] Refresh failed:", err);
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    async function loadData() {
-      setIsLoading(true);
-      try {
-        const [res, profile] = await Promise.all([
-          getProjects({
-            status: statusFilter,
-            search: searchQuery,
-          }),
-          getClientProfile(),
-        ]);
-        if (res.success) {
-          setProjects(res.data);
-        }
-        if (profile && profile.institutionSchool && profile.contactNumber) {
-          setIsProfileComplete(true);
-        } else {
-          setIsProfileComplete(false);
-        }
-      } catch (err) {
-        router.refresh();
-        if (process.env.NODE_ENV === "development") {
-          console.warn("[ClientProjectsList] Failed to load client projects, refreshed via router:", err);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadData();
-  }, [statusFilter, searchQuery, router]);
+    const onStudyUpdated = () => refresh();
+    window.addEventListener("jaxis:study-updated", onStudyUpdated);
+    return () => window.removeEventListener("jaxis:study-updated", onStudyUpdated);
+  }, [refresh]);
 
-  // Compute live KPIs
-  const kpis = useMemo(() => {
-    const total = projects.length;
-    const awaitingInfo = projects.filter((p) => p.masterStatus === "AWAITING_INFORMATION").length;
-    const underEvaluation = projects.filter(
-      (p) => p.masterStatus === "UNDER_EVALUATION" || p.masterStatus === "NEW_REQUEST"
-    ).length;
-    const active = projects.filter(
-      (p) =>
-        p.masterStatus === "ACTIVE" ||
-        p.masterStatus === "IN_PROGRESS" ||
-        p.masterStatus === "EXPERT_ASSIGNED" ||
-        p.masterStatus === "FOR_QA" ||
-        p.masterStatus === "QA_REVISION"
-    ).length;
-    const delivered = projects.filter(
-      (p) => p.masterStatus === "DELIVERED" || p.masterStatus === "CLOSED"
-    ).length;
-
-    return { total, awaitingInfo, underEvaluation, active, delivered };
+  const stages = useMemo(() => {
+    const map = new Map<string, ClientStage>();
+    for (const p of projects) map.set(p.id, getClientStage(p.masterStatus));
+    return map;
   }, [projects]);
+  const stageOf = useCallback((p: ProjectDetailItem) => stages.get(p.id) ?? getClientStage(p.masterStatus), [stages]);
 
-  // Filter projects in client memory if needed
-  const filteredProjects = useMemo(() => {
-    return projects.filter((p) => {
-      if (statusFilter === "ALL") return true;
-      if (statusFilter === "AWAITING_INFORMATION") return p.masterStatus === "AWAITING_INFORMATION";
-      if (statusFilter === "UNDER_EVALUATION") {
-        return p.masterStatus === "UNDER_EVALUATION" || p.masterStatus === "NEW_REQUEST";
-      }
-      if (statusFilter === "ACTIVE") {
-        return (
-          p.masterStatus === "ACTIVE" ||
-          p.masterStatus === "IN_PROGRESS" ||
-          p.masterStatus === "EXPERT_ASSIGNED" ||
-          p.masterStatus === "FOR_QA"
-        );
-      }
-      if (statusFilter === "DELIVERED") {
-        return p.masterStatus === "DELIVERED" || p.masterStatus === "CLOSED";
-      }
-      return p.masterStatus === statusFilter;
+  const counts = useMemo(() => {
+    const c: Record<StageFilter, number> = { ALL: projects.length, action: 0, wait: 0, done: 0, stopped: 0 };
+    for (const p of projects) c[stageOf(p).tone] += 1;
+    return c;
+  }, [projects, stageOf]);
+
+  const visibleProjects = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const list = projects.filter((p) => {
+      if (stageFilter !== "ALL" && stageOf(p).tone !== stageFilter) return false;
+      if (!q) return true;
+      return [p.researchTitle, p.intakeId, p.researchObjectives, p.researchQuestions]
+        .some((field) => field?.toLowerCase().includes(q));
     });
-  }, [projects, statusFilter]);
-
-  // Sort projects: default Newest First, with Oldest First and Closest Deadline options
-  const sortedFilteredProjects = useMemo(() => {
-    return [...filteredProjects].sort((a, b) => {
-      if (sortBy === "oldest") {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      }
+    const byNewest = (a: ProjectDetailItem, b: ProjectDetailItem) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    return list.sort((a, b) => {
+      if (sortBy === "oldest") return -byNewest(a, b);
+      if (sortBy === "newest") return byNewest(a, b);
       if (sortBy === "deadline") {
-        const timeA = a.deadlineRequested ? new Date(a.deadlineRequested).getTime() : Infinity;
-        const timeB = b.deadlineRequested ? new Date(b.deadlineRequested).getTime() : Infinity;
-        if (timeA !== timeB) return timeA - timeB;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        const ta = a.deadlineRequested ? new Date(a.deadlineRequested).getTime() : Infinity;
+        const tb = b.deadlineRequested ? new Date(b.deadlineRequested).getTime() : Infinity;
+        return ta !== tb ? ta - tb : byNewest(a, b);
       }
-      // Default: "newest"
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      // "priority": things you need to do first, then work in progress, then finished.
+      const pa = clientStagePriority(a.masterStatus);
+      const pb = clientStagePriority(b.masterStatus);
+      return pa !== pb ? pa - pb : byNewest(a, b);
     });
-  }, [filteredProjects, sortBy]);
+  }, [projects, stageFilter, searchQuery, sortBy, stageOf]);
 
-  const paginatedProjects = useMemo(() => {
-    return sortedFilteredProjects.slice(
-      (currentPage - 1) * pageSize,
-      currentPage * pageSize
-    );
-  }, [sortedFilteredProjects, currentPage, pageSize]);
+  const paginatedProjects = useMemo(
+    () => visibleProjects.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [visibleProjects, currentPage, pageSize]
+  );
 
-  const awaitingInfoList = useMemo(() => {
-    return projects.filter((p) => p.masterStatus === "AWAITING_INFORMATION");
-  }, [projects]);
+  const isFiltered = stageFilter !== "ALL" || searchQuery.trim() !== "";
+  const clearFilters = () => {
+    setStageFilter("ALL");
+    setSortBy("priority");
+    setSearchQuery("");
+    setCurrentPage(1);
+  };
+
+  const copyToast = (id: string) =>
+    setToastMessage({ message: "Study ID copied", description: `${id} is on your clipboard.`, variant: "info" });
 
   const handleProfileSuccess = async () => {
     const profile = await getClientProfile();
@@ -178,584 +166,209 @@ export function ClientProjectsListClient({
       setIsProfileComplete(true);
     }
     setToastMessage({
-      message: "School Profile Saved",
-      description: "Your academic and contact details have been saved. Intake desk unlocked.",
+      message: "Profile saved",
+      description: "Your school and contact details are saved. You can send a study now.",
       variant: "success",
     });
   };
 
-  if (isLoading && projects.length === 0) {
-    return (
-      <div className="flex-1 w-full min-h-full flex items-center justify-center animate-content-fade my-auto font-sans">
-        <LoadingState
-          variant="page"
-          label="Loading Research Studies..."
-          description="Retrieving your research projects and consultation status."
-        />
-      </div>
+  const newStudyAction =
+    isProfileComplete === null ? (
+      <Button variant="primary" size="sm" disabled className="opacity-50 cursor-wait pointer-events-none">
+        <LoadingState variant="inline" label="Loading..." />
+      </Button>
+    ) : isProfileComplete === false ? (
+      <Button variant="primary" size="sm" onClick={() => setIsProfileModalOpen(true)}>
+        Finish Your Profile
+        <ArrowRight size={14} weight="bold" />
+      </Button>
+    ) : (
+      <Button asChild variant="primary" size="sm">
+        <Link href="/dashboard/client/projects/new">
+          <Plus size={14} weight="bold" />
+          Send a New Study
+        </Link>
+      </Button>
     );
-  }
 
   return (
-    <div
-      data-portal="client"
-      className="flex flex-col gap-8 max-w-7xl mx-auto pb-20 w-full animate-content-fade"
-    >
+    <div data-portal="client" className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       <PageHeader
-        title="Research Studies Desk"
-        description="Track your research studies, review methodology updates, and download defense-ready statistical packages."
+        title="All Studies"
+        description="Every study you've sent, where it stands, and what to do next."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Client Portal", href: "/dashboard/client" },
-          { label: "Projects" },
+          { label: "My Studies", href: "/dashboard/client" },
+          { label: "All Studies" },
         ]}
-        actions={
-          isProfileComplete === null ? (
-            <Button
-              variant="primary"
-              size="sm"
-              disabled
-              className="opacity-50 cursor-wait pointer-events-none rounded-[2px]"
-            >
-              <LoadingState variant="inline" label="Loading..." />
-            </Button>
-          ) : isProfileComplete === false ? (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setIsProfileModalOpen(true)}
-              className="animate-content-fade rounded-[2px]"
-            >
-              <span>Setup Profile First</span>
-              <ArrowRight size={14} weight="fill" />
-            </Button>
-          ) : (
-            <Link href="/dashboard/client/projects/new" className="animate-content-fade">
-              <Button variant="primary" size="sm" className="bg-[#CC6600] hover:bg-[#B35500] text-white rounded-[2px]">
-                <Plus size={15} weight="fill" />
-                <span>New Project Intake</span>
-              </Button>
-            </Link>
-          )
-        }
+        actions={newStudyAction}
       />
 
-      {/* ── Top KPI Metrics Grid (Dashdark X Precision Standard) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 items-stretch">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <KpiCard label="All studies" value={counts.ALL} description="Since you joined" />
         <KpiCard
-          label="Total Studies"
-          value={kpis.total}
-          variant="default"
-          badge="ALL TIME"
-          badgeColor="gray"
-          description="All client submitted research scopes"
-          className="animate-card-reveal stagger-1"
+          label="Needs you"
+          value={counts.action}
+          variant={counts.action > 0 ? "orange" : "default"}
+          description={counts.action > 0 ? "Waiting on you" : "Nothing waiting"}
         />
-
-        <KpiCard
-          label="Action Required"
-          value={kpis.awaitingInfo}
-          variant={kpis.awaitingInfo > 0 ? "orange" : "default"}
-          badge={kpis.awaitingInfo > 0 ? "ACTION NEEDED" : undefined}
-          badgeColor={kpis.awaitingInfo > 0 ? "orange" : "gray"}
-          description={
-            kpis.awaitingInfo > 0
-              ? "Clarification or dataset needed"
-              : "No pending information requests"
-          }
-          icon={
-            kpis.awaitingInfo > 0 ? (
-              <Clock
-                size={16}
-                weight="fill"
-                className="text-[#FFA040]"
-              />
-            ) : undefined
-          }
-          className="animate-card-reveal stagger-2"
-        />
-
-        <KpiCard
-          label="Under Evaluation"
-          value={kpis.underEvaluation}
-          variant="default"
-          badge="UNDER REVIEW"
-          badgeColor="sky"
-          description="Methodology & pricing assessment"
-          className="animate-card-reveal stagger-3"
-        />
-
-        <KpiCard
-          label="Active & QA"
-          value={kpis.active + kpis.delivered}
-          variant="default"
-          badge="ACTIVE"
-          badgeColor="emerald"
-          description={`${kpis.active} running · ${kpis.delivered} delivered`}
-          className="animate-card-reveal stagger-4"
-        />
+        <KpiCard label="In progress" value={counts.wait} description="We're on it" />
+        <KpiCard label="Done" value={counts.done} description="All finished" />
       </div>
 
-      {/* ── High-Priority Missing Information Alert Banner ── */}
-      {awaitingInfoList.length > 0 && (
-        <div className="flex flex-col gap-3">
-          {awaitingInfoList.map((p) => (
-            <Card
-              key={p.id}
-              className="p-5 border border-amber-500/30 bg-amber-500/[0.06] shadow-xl flex flex-col gap-3"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-                    Action Required: Additional Files or Information Needed
-                  </span>
-                  <span className="text-xs font-mono font-bold text-white bg-amber-500/20 px-2 py-0.5 rounded-[2px]">
-                    {p.intakeId}
-                  </span>
-                </div>
-                <Link href={`/dashboard/client/projects/${p.id}`}>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="py-1.5 px-3.5 h-auto font-sans text-xs font-semibold tracking-wide active:scale-[0.97] transition-transform min-h-[36px]"
-                  >
-                    View &amp; Upload Files →
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold text-white font-sans">
-                  {p.researchTitle}
-                </p>
-                <div
-                  className="p-3.5 rounded-[2px] bg-black/40 border border-amber-500/30 text-xs text-amber-100 font-sans leading-relaxed mt-1"
-                  style={{ padding: "0.875rem 1rem" }}
-                >
-                  <strong className="text-amber-300 font-mono text-[0.6875rem] uppercase block mb-1">
-                    Note from Statistical Team:
-                  </strong>
-                  &ldquo;{p.missingInfoReason || "Please attach the requested dataset or questionnaire clarification."}&rdquo;
-                </div>
-              </div>
-            </Card>
-          ))}
+      <Card className="p-0 overflow-hidden">
+        {/* Stage tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto border-b border-white/[0.08] px-4 py-3 [scrollbar-width:none]" role="tablist" aria-label="Filter by stage">
+          {STAGE_TABS.filter((t) => t.value !== "stopped" || counts.stopped > 0).map((t) => {
+            const active = stageFilter === t.value;
+            return (
+              <button
+                key={t.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => {
+                  setStageFilter(t.value);
+                  setCurrentPage(1);
+                }}
+                className={`inline-flex shrink-0 items-center gap-2 rounded-[2px] px-3 py-1.5 font-sans text-[13px] transition-colors ${
+                  active ? "bg-white/[0.08] font-medium text-white" : "text-white/55 hover:text-white"
+                }`}
+              >
+                {t.value === "action" && counts.action > 0 && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#CC6600]" aria-hidden="true" />
+                )}
+                {t.label}
+                <span className={`font-mono text-[11px] ${active ? "text-white/60" : "text-white/35"}`}>
+                  {counts[t.value]}
+                </span>
+              </button>
+            );
+          })}
         </div>
-      )}
 
-      {/* ── Main Projects List & Filter Table ── */}
-      <Card className="p-0 border border-white/10 overflow-hidden bg-[#01142B]/90 shadow-2xl -mx-4 sm:mx-0 animate-card-reveal stagger-5">
-        {/* Filter Toolbar */}
         <FilterToolbar
           searchQuery={searchQuery}
-          onSearchChange={(q) => { setSearchQuery(q); setCurrentPage(1); }}
-          searchPlaceholder="Search study title, JAXIS ID, or objectives..."
+          onSearchChange={(q) => {
+            setSearchQuery(q);
+            setCurrentPage(1);
+          }}
+          searchPlaceholder="Search by title, study ID, or objectives..."
           filters={[
-            {
-              key: "status",
-              label: "STATUS",
-              value: statusFilter,
-              defaultValue: "ALL",
-              options: [
-                { value: "ALL", label: `All Studies (${kpis.total})` },
-                { value: "AWAITING_INFORMATION", label: `Awaiting Info (${kpis.awaitingInfo})` },
-                { value: "UNDER_EVALUATION", label: `Under Evaluation (${kpis.underEvaluation})` },
-                { value: "ACTIVE", label: `Active & In Progress (${kpis.active})` },
-                { value: "DELIVERED", label: `Delivered (${kpis.delivered})` },
-              ],
-            },
             {
               key: "sort",
               label: "SORT",
               value: sortBy,
-              defaultValue: "newest",
+              defaultValue: "priority",
               options: [
-                { value: "newest", label: "Newest First" },
-                { value: "oldest", label: "Oldest First" },
-                { value: "deadline", label: "Closest Deadline" },
+                { value: "priority", label: "Needs you first" },
+                { value: "newest", label: "Newest first" },
+                { value: "oldest", label: "Oldest first" },
+                { value: "deadline", label: "Closest due date" },
               ],
             },
           ]}
           onFilterChange={(key, value) => {
-            if (key === "status") {
-              setStatusFilter(value);
-              setCurrentPage(1);
-            } else if (key === "sort") {
+            if (key === "sort") {
               setSortBy(value);
               setCurrentPage(1);
             }
           }}
-          onClear={() => {
-            setStatusFilter("ALL");
-            setSortBy("newest");
-            setSearchQuery("");
-            setCurrentPage(1);
-          }}
+          onClear={clearFilters}
         />
 
-        {/* ── Table Container (Dashdark X Precision Standard) ── */}
-        <div className="p-0">
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-[#010D1F] border-b border-white/10">
-                <tr>
-                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[140px] whitespace-nowrap">
-                    Study ID
-                  </th>
-                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold">
-                    Research Study
-                  </th>
-                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[150px] whitespace-nowrap">
-                    Target Date
-                  </th>
-                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[160px] whitespace-nowrap">
-                    Status
-                  </th>
-                  <th className="py-3.5 px-4 text-xs font-mono text-white/50 uppercase tracking-wider font-semibold w-[150px] text-right whitespace-nowrap">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.06]">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="py-16 text-center">
-                      <LoadingState variant="table" label="Loading research studies..." />
-                    </td>
-                  </tr>
-                ) : filteredProjects.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-16 text-center">
-                      <EmptyState
-                        icon={searchQuery || statusFilter !== "ALL" ? MagnifyingGlass : FolderDashed}
-                        title="No Research Studies Found"
-                        description={
-                          searchQuery || statusFilter !== "ALL"
-                            ? "No studies match your current filter criteria."
-                            : "You have not submitted any research project intake requests yet."
-                        }
-                        action={
-                          !searchQuery && statusFilter === "ALL" ? (
-                            <Link href="/dashboard/client/projects/new">
-                              <Button variant="primary" size="sm" className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#B35500] active:scale-[0.97] transition-transform rounded-[2px]">
-                                + Submit Study Request →
-                              </Button>
-                            </Link>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setStatusFilter("ALL");
-                                setSearchQuery("");
-                                setCurrentPage(1);
-                              }}
-                              className="font-sans text-xs font-semibold px-4 py-2 active:scale-[0.97] transition-transform rounded-[2px]"
-                            >
-                              Clear Filters
-                            </Button>
-                          )
-                        }
-                      />
-                    </td>
-                  </tr>
+        {visibleProjects.length === 0 ? (
+          <div className="border-t border-white/[0.08] py-16">
+            <EmptyState
+              icon={isFiltered ? MagnifyingGlass : FolderDashed}
+              title={isFiltered ? "No studies match" : "No studies yet"}
+              description={
+                isFiltered
+                  ? "Try another tab or search, or clear your filters."
+                  : "Send your first study and we'll reply with a fixed price within 24 hours."
+              }
+              action={
+                isFiltered ? (
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    Clear Filters
+                  </Button>
                 ) : (
-                  paginatedProjects.map((p) => {
-                    const isAwaiting = p.masterStatus === "AWAITING_INFORMATION";
-
-                    return (
-                      <tr
-                        key={p.id}
-                        className={`group hover:bg-white/[0.02] transition-colors ${
-                          isAwaiting ? "bg-amber-500/[0.03]" : ""
+                  newStudyAction
+                )
+              }
+            />
+          </div>
+        ) : (
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto border-t border-white/[0.08]">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/[0.08]">
+                    {["Study", "Where it stands", "Due", ""].map((h, i) => (
+                      <th
+                        key={h || i}
+                        scope="col"
+                        className={`px-5 py-3 font-mono text-[11px] font-medium uppercase tracking-wider text-white/40 ${
+                          i === 3 ? "text-right" : ""
                         }`}
                       >
-                        {/* 1. Study ID */}
-                        <td className="py-3.5 px-4 font-mono text-xs whitespace-nowrap align-middle">
-                          <CopyButton
-                            variant="badge"
-                            value={p.intakeId}
-                            label={p.intakeId}
-                            onCopy={() =>
-                              setToastMessage({
-                                message: "Study ID Copied",
-                                description: `"${p.intakeId}" has been copied to your clipboard.`,
-                                variant: "info",
-                              })
-                            }
-                          />
-                        </td>
+                        {h || <span className="sr-only">Actions</span>}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.06]">
+                  {paginatedProjects.map((p) => (
+                    <StudyRow
+                      key={p.id}
+                      project={p}
+                      stage={stageOf(p)}
+                      onInspect={() => setSelectedStudyForInspect(p)}
+                      onCopy={copyToast}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-                        {/* 2. Research Study & Intake (Two-Line Hierarchy) */}
-                        <td className="py-3.5 px-4 max-w-[420px] min-w-0 align-middle">
-                          <div className="flex flex-col gap-0.5 pr-2 min-w-0">
-                            <Link
-                              href={`/dashboard/client/projects/${p.id}`}
-                              prefetch={true}
-                              className="text-sm font-semibold text-white group-hover:text-[#FFA040] transition-colors leading-snug line-clamp-1 font-sans"
-                              title={p.researchTitle}
-                            >
-                              {p.researchTitle}
-                            </Link>
-                            {isAwaiting && p.missingInfoReason ? (
-                              <span
-                                className="text-xs text-amber-300/90 font-sans truncate italic block min-w-0"
-                                title={`Action Required: ${p.missingInfoReason}`}
-                              >
-                                Action Required: {p.missingInfoReason}
-                              </span>
-                            ) : (
-                              <div className="flex items-center gap-2 text-xs text-white/40 font-sans">
-                                <span>{p.client?.clientProfile?.institutionSchool || "JAXIS Statistical Research"}</span>
-                                <span>·</span>
-                                <span className="font-mono text-[11px]">{p.files.length} {p.files.length === 1 ? "doc" : "docs"}</span>
-                              </div>
-                            )}
-                          </div>
-                        </td>
+            {/* Mobile cards */}
+            <ul className="md:hidden divide-y divide-white/[0.06] border-t border-white/[0.08]">
+              {paginatedProjects.map((p) => (
+                <StudyCard
+                  key={p.id}
+                  project={p}
+                  stage={stageOf(p)}
+                  onInspect={() => setSelectedStudyForInspect(p)}
+                  onCopy={copyToast}
+                />
+              ))}
+            </ul>
 
-                        {/* 3. Target Deadline */}
-                        <td className="py-3.5 px-4 whitespace-nowrap align-middle">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-sm font-sans text-white font-medium">
-                              {new Date(p.deadlineRequested).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </span>
-                            <span className="text-[11px] font-sans text-white/40">
-                              Target Date
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* 4. Status */}
-                        <td className="py-3.5 px-4 whitespace-nowrap align-middle">
-                          {(() => {
-                            const displayStatus = getProjectDisplayStatus(p);
-                            return (
-                              <StatusBadge
-                                status={displayStatus.status}
-                                label={displayStatus.label}
-                                pulse={displayStatus.pulse}
-                              />
-                            );
-                          })()}
-                        </td>
-
-                        {/* 5. Actions */}
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap align-middle">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedStudyForInspect(p)}
-                              className="font-sans text-xs font-semibold px-3 py-1.5 active:scale-[0.97] transition-all rounded-[2px]"
-                            >
-                              Details
-                            </Button>
-                            <Link href={`/dashboard/client/projects/${p.id}`} prefetch={true}>
-                              <Button
-                                variant={isAwaiting ? "primary" : "secondary"}
-                                size="sm"
-                                className="font-sans text-xs font-semibold px-3.5 py-1.5 active:scale-[0.97] transition-all rounded-[2px]"
-                              >
-                                {isAwaiting ? "Resolve →" : "Open Desk →"}
-                              </Button>
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {filteredProjects.length > 0 && (
-          <Pagination
-            currentPage={currentPage}
-            totalItems={filteredProjects.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
-            itemLabel="studies"
-          />
+            <Pagination
+              currentPage={currentPage}
+              totalItems={visibleProjects.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              itemLabel="studies"
+            />
+          </>
         )}
       </Card>
 
-      {/* ── Quick View Modal ── */}
       {selectedStudyForInspect && (
-        <Modal
-          open={!!selectedStudyForInspect}
+        <StudyQuickView
+          project={selectedStudyForInspect}
+          stage={stageOf(selectedStudyForInspect)}
           onClose={() => setSelectedStudyForInspect(null)}
-          title={`Study Details: ${selectedStudyForInspect.intakeId}`}
-          description={selectedStudyForInspect.researchTitle}
-          size="lg"
-          footer={
-            <div className="flex items-center justify-between w-full">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setSelectedStudyForInspect(null)}
-                className="font-sans text-xs font-semibold px-4 py-2 active:scale-[0.97] transition-transform"
-              >
-                Close
-              </Button>
-              <Link href={`/dashboard/client/projects/${selectedStudyForInspect.id}`}>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] active:scale-[0.97] transition-transform"
-                >
-                  Open Study →
-                </Button>
-              </Link>
-            </div>
+          onCopy={copyToast}
+          onDownload={(fileName) =>
+            setToastMessage({ message: "Download started", description: `Downloading ${fileName}.`, variant: "info" })
           }
-        >
-          <div className="flex flex-col gap-5 text-xs font-sans text-white/90">
-            {/* Status & Deadline Header Banner */}
-            <div className="p-4 rounded-[2px] bg-[#011C38] border border-white/[0.08] flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-xs text-white/50 uppercase">Status:</span>
-                {(() => {
-                  const displayStatus = getProjectDisplayStatus(selectedStudyForInspect);
-                  return (
-                    <StatusBadge
-                      status={displayStatus.status}
-                      label={displayStatus.label}
-                      pulse={displayStatus.pulse}
-                    />
-                  );
-                })()}
-              </div>
-              <div className="font-mono text-xs text-white/60">
-                Target Deadline:{" "}
-                <strong className="text-amber-400">
-                  {new Date(selectedStudyForInspect.deadlineRequested).toLocaleDateString()}
-                </strong>
-              </div>
-            </div>
-
-            {/* Missing Information Note if applicable */}
-            {selectedStudyForInspect.masterStatus === "AWAITING_INFORMATION" &&
-              selectedStudyForInspect.missingInfoReason && (
-                <div className="p-4 rounded-[2px] bg-amber-500/10 border border-amber-500/30 flex flex-col gap-1 text-amber-200">
-                  <strong className="font-mono text-amber-400 text-[0.6875rem] uppercase">
-                    Information Needed:
-                  </strong>
-                  <p className="text-xs leading-relaxed font-sans">
-                    &ldquo;{selectedStudyForInspect.missingInfoReason}&rdquo;
-                  </p>
-                </div>
-              )}
-
-            {/* Research Problem & Objectives */}
-            <div className="flex flex-col gap-2">
-              <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
-                Core Research Objectives
-              </span>
-              <p className="p-4 text-xs text-slate-300 bg-white/[0.02] rounded-[2px] border border-white/10 leading-relaxed whitespace-pre-wrap font-sans">
-                {selectedStudyForInspect.researchObjectives}
-              </p>
-            </div>
-
-            {/* Research Questions */}
-            <div className="flex flex-col gap-2">
-              <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
-                Key Research Questions
-              </span>
-              <p className="p-4 text-xs text-slate-300 bg-white/[0.02] rounded-[2px] border border-white/10 leading-relaxed whitespace-pre-wrap font-sans">
-                {selectedStudyForInspect.researchQuestions}
-              </p>
-            </div>
-
-            {/* Theoretical Hypotheses */}
-            {selectedStudyForInspect.hypotheses && (
-              <div className="flex flex-col gap-2">
-                <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
-                  Theoretical Hypotheses
-                </span>
-                <p className="p-4 text-xs text-slate-300 bg-white/[0.02] rounded-[2px] border border-white/10 leading-relaxed whitespace-pre-wrap font-sans">
-                  {selectedStudyForInspect.hypotheses}
-                </p>
-              </div>
-            )}
-
-            {/* Uploaded Artifacts */}
-            <div className="flex flex-col gap-2">
-              <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
-                Attached Files ({selectedStudyForInspect.files.length})
-              </span>
-              {selectedStudyForInspect.files.length === 0 ? (
-                <div className="p-4 text-xs text-white/40 italic bg-white/[0.02] border border-white/10 rounded-[2px]">
-                  No files uploaded with this study yet.
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3 max-h-64 overflow-y-auto pr-1">
-                  {selectedStudyForInspect.files.map((file) => {
-                    const meta = getFileMeta(file.fileName, file.fileType);
-                    const category = formatFileCategory(file.fileCategory);
-                    return (
-                      <div
-                        key={file.id}
-                        className="rounded-[2px] bg-[#011C38] border border-white/[0.08] hover:border-white/20 px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between gap-4 transition-colors"
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div
-                            className={`h-9 w-9 rounded-[2px] ${meta.theme.bg} ${meta.theme.border} border flex flex-col items-center justify-center flex-shrink-0`}
-                          >
-                            <span className={`text-[0.625rem] font-mono font-bold uppercase ${meta.theme.text}`}>
-                              {meta.ext}
-                            </span>
-                          </div>
-                          <div className="flex flex-col gap-0.5 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold text-white truncate max-w-[200px] sm:max-w-xs md:max-w-sm font-sans">
-                                {file.fileName}
-                              </span>
-                              <span
-                                className={`text-[0.5625rem] font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded-[2px] border ${category.badgeClass}`}
-                              >
-                                {category.label}
-                              </span>
-                            </div>
-                            <span className="text-[0.688rem] text-white/40 font-mono">
-                              {meta.friendlyType} · {new Date(file.uploadedAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            triggerFileDownload(file.filePath, file.fileName);
-                            setToastMessage({
-                              message: "Download Started",
-                              description: `Downloading "${file.fileName}" to your device.`,
-                              variant: "info",
-                            });
-                          }}
-                          className="px-4 py-2 rounded-[2px] bg-[#CC6600]/20 hover:bg-[#CC6600]/35 text-white border border-[#CC6600]/60 hover:border-[#CC6600] text-xs font-sans font-semibold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer active:scale-[0.97] min-h-[36px]"
-                        >
-                          <DownloadSimple size={14} weight="fill" className="text-[#FFA040]" aria-hidden="true" />
-                          <span>Download</span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </Modal>
+        />
       )}
 
-      {/* ── Quick Profile Setup Modal ── */}
       <QuickProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
@@ -771,5 +384,256 @@ export function ClientProjectsListClient({
         />
       )}
     </div>
+  );
+}
+
+// ─── Pieces ──────────────────────────────────────────────────────────────────
+
+interface StudyItemProps {
+  project: ProjectDetailItem;
+  stage: ClientStage;
+  onInspect: () => void;
+  onCopy: (id: string) => void;
+}
+
+/** One line under the title: our note when we need something, otherwise ID + files + sent date. */
+function StudyMeta({ project: p, onCopy }: Pick<StudyItemProps, "project" | "onCopy">) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-white/45">
+      <CopyButton variant="ghost" value={p.intakeId} label={p.intakeId} onCopy={() => onCopy(p.intakeId)} className="-ml-2 text-[11px]" />
+      <span aria-hidden="true">·</span>
+      <span>{p.files.length} {p.files.length === 1 ? "file" : "files"}</span>
+      <span aria-hidden="true">·</span>
+      <span>Sent {formatDate(p.createdAt)}</span>
+    </div>
+  );
+}
+
+function MissingInfoNote({ project: p }: { project: ProjectDetailItem }) {
+  if (p.masterStatus !== "AWAITING_INFORMATION" || !p.missingInfoReason) return null;
+  return (
+    <p className="mt-2 border-l-2 border-[#CC6600]/60 pl-3 text-[13px] leading-relaxed text-white/70 line-clamp-2">
+      <span className="text-white/45">Our note: </span>
+      {p.missingInfoReason}
+    </p>
+  );
+}
+
+// Row buttons stay outlined: the orange "needs you" tag already marks rows that need action,
+// and the page keeps a single orange button (the header action).
+function StudyActions({ project: p, stage, onInspect, fill = false }: Omit<StudyItemProps, "onCopy"> & { fill?: boolean }) {
+  return (
+    <div className={`flex items-center gap-2 ${fill ? "w-full" : "justify-end"}`}>
+      <button
+        type="button"
+        onClick={onInspect}
+        className="h-9 w-9 shrink-0 rounded-[2px] flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.06] transition-colors"
+        aria-label={`Quick view of ${p.intakeId}`}
+        title="Quick view"
+      >
+        <Eye size={16} weight="fill" />
+      </button>
+      <Button asChild variant="outline" size="sm" className={`whitespace-nowrap ${fill ? "flex-1" : "min-w-[7.5rem]"}`}>
+        <Link href={studyHref(p, stage.action?.path ?? "")} prefetch>
+          {stage.action?.label ?? "Open"}
+          {stage.tone === "action" && <ArrowRight size={13} weight="bold" />}
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
+function DueDate({ project: p, stage }: { project: ProjectDetailItem; stage: ClientStage }) {
+  const rel = relativeDays(p.deadlineRequested);
+  const late = rel.endsWith("ago") && stage.tone !== "done" && stage.tone !== "stopped";
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[13px] text-white/85 whitespace-nowrap">{formatDate(p.deadlineRequested)}</span>
+      {rel && <span className={`font-mono text-[11px] ${late ? "text-white/70" : "text-white/40"}`}>{late ? `${rel.replace(" ago", "")} late` : rel}</span>}
+    </div>
+  );
+}
+
+function StudyRow({ project: p, stage, onInspect, onCopy }: StudyItemProps) {
+  return (
+    <tr className="group align-top transition-colors hover:bg-white/[0.02]">
+      <td className="px-5 py-4 min-w-0 max-w-[30rem]">
+        <Link
+          href={studyHref(p)}
+          prefetch
+          className="font-sans text-sm font-medium leading-snug text-white line-clamp-2 decoration-white/30 underline-offset-4 hover:underline"
+          title={p.researchTitle}
+        >
+          {p.researchTitle}
+        </Link>
+        <div className="mt-1.5">
+          <StudyMeta project={p} onCopy={onCopy} />
+        </div>
+        <MissingInfoNote project={p} />
+      </td>
+      <td className="px-5 py-4">
+        <div className="flex flex-col items-start gap-2">
+          <ClientStageTag stage={stage} />
+          <ClientStageMeter stage={stage} />
+        </div>
+      </td>
+      <td className="px-5 py-4">
+        <DueDate project={p} stage={stage} />
+      </td>
+      <td className="px-5 py-4">
+        <StudyActions project={p} stage={stage} onInspect={onInspect} />
+      </td>
+    </tr>
+  );
+}
+
+function StudyCard({ project: p, stage, onInspect, onCopy }: StudyItemProps) {
+  return (
+    <li className="px-4 py-5">
+      <div className="flex items-start justify-between gap-3">
+        <ClientStageTag stage={stage} />
+        <DueDate project={p} stage={stage} />
+      </div>
+      <Link href={studyHref(p)} prefetch className="mt-3 block font-sans text-[15px] font-medium leading-snug text-white">
+        {p.researchTitle}
+      </Link>
+      <div className="mt-1.5">
+        <StudyMeta project={p} onCopy={onCopy} />
+      </div>
+      <MissingInfoNote project={p} />
+      <ClientStageMeter stage={stage} className="mt-3" />
+      <div className="mt-4">
+        <StudyActions project={p} stage={stage} onInspect={onInspect} fill />
+      </div>
+    </li>
+  );
+}
+
+function StudyQuickView({
+  project: p,
+  stage,
+  onClose,
+  onCopy,
+  onDownload,
+}: {
+  project: ProjectDetailItem;
+  stage: ClientStage;
+  onClose: () => void;
+  onCopy: (id: string) => void;
+  onDownload: (fileName: string) => void;
+}) {
+  const sections = [
+    { label: "Research objectives", body: p.researchObjectives },
+    { label: "Research questions", body: p.researchQuestions },
+    { label: "Hypotheses", body: p.hypotheses },
+  ].filter((s) => s.body && s.body.trim());
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Quick view"
+      description={p.researchTitle}
+      size="lg"
+      footer={
+        <div className="flex w-full items-center justify-between gap-3">
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Close
+          </Button>
+          <Button asChild variant="primary" size="sm">
+            <Link href={studyHref(p)}>
+              Open Study
+              <ArrowRight size={13} weight="bold" />
+            </Link>
+          </Button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-6 font-sans">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-white/[0.08] pb-5">
+          <div className="flex flex-col gap-2">
+            <ClientStageTag stage={stage} />
+            <ClientStageMeter stage={stage} />
+          </div>
+          <dl className="flex gap-6 text-xs">
+            <div>
+              <dt className="font-mono text-[11px] uppercase tracking-wider text-white/40">Study ID</dt>
+              <dd className="mt-1">
+                <CopyButton variant="badge" value={p.intakeId} label={p.intakeId} onCopy={() => onCopy(p.intakeId)} />
+              </dd>
+            </div>
+            <div>
+              <dt className="font-mono text-[11px] uppercase tracking-wider text-white/40">Due</dt>
+              <dd className="mt-1.5 text-[13px] text-white/85">{formatDate(p.deadlineRequested)}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <p className="text-[13px] leading-relaxed text-white/70">
+          <span className="text-white">Now: </span>
+          {stage.now}
+          <br />
+          <span className="text-white">Next: </span>
+          {stage.next}
+        </p>
+
+        {p.masterStatus === "AWAITING_INFORMATION" && p.missingInfoReason && (
+          <div className="rounded-[2px] border border-white/[0.08] border-l-2 border-l-[#CC6600] bg-white/[0.02] px-4 py-3">
+            <p className="text-xs font-medium text-white">What we need from you</p>
+            <p className="mt-1 text-[13px] leading-relaxed text-white/70">{p.missingInfoReason}</p>
+          </div>
+        )}
+
+        {sections.map((s) => (
+          <section key={s.label}>
+            <h4 className="font-mono text-[11px] uppercase tracking-wider text-white/40">{s.label}</h4>
+            <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-white/75">{s.body}</p>
+          </section>
+        ))}
+
+        <section>
+          <h4 className="font-mono text-[11px] uppercase tracking-wider text-white/40">
+            Your files <span className="text-white/30">{p.files.length}</span>
+          </h4>
+          {p.files.length === 0 ? (
+            <p className="mt-2 text-[13px] text-white/45">No files uploaded yet.</p>
+          ) : (
+            <ul className="mt-2 max-h-64 divide-y divide-white/[0.06] overflow-y-auto rounded-[2px] border border-white/[0.08]">
+              {p.files.map((file) => {
+                const meta = getFileMeta(file.fileName, file.fileType);
+                const category = formatFileCategory(file.fileCategory);
+                return (
+                  <li key={file.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] border border-white/10 bg-white/[0.04] font-mono text-[10px] font-semibold text-white/70">
+                        {meta.ext}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] text-white">{file.fileName}</p>
+                        <p className="font-mono text-[11px] text-white/40">
+                          {category.label} · {formatDate(file.uploadedAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        triggerFileDownload(file.filePath, file.fileName);
+                        onDownload(file.fileName);
+                      }}
+                      aria-label={`Download ${file.fileName}`}
+                    >
+                      <DownloadSimple size={15} weight="fill" />
+                      <span className="hidden sm:inline">Download</span>
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      </div>
+    </Modal>
   );
 }

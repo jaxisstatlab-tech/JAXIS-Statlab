@@ -45,7 +45,7 @@ const VALUE_ICONS: Record<Value["icon"], Icon> = {
   time: Hourglass,
 };
 
-const band = "border-y border-white/[0.06] bg-[#010D1F]";
+const band = "border-y border-white/[0.06] bg-[#050513]";
 const card = "rounded-[2px] border border-white/10 bg-[#010114]";
 
 export function AboutHero() {

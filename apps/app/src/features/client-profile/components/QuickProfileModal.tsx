@@ -95,7 +95,7 @@ export function QuickProfileModal({
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 pt-2">
         {/* Information Callout */}
-        <div className="p-3.5 bg-[#01142B] border border-sky-500/25 rounded-[2px] flex items-start gap-3 shadow-sm">
+        <div className="p-3.5 bg-[#0A0A18] border border-sky-500/25 rounded-[2px] flex items-start gap-3 shadow-sm">
           <ShieldCheck size={18} weight="fill" className="text-[#38BDF8] flex-shrink-0 mt-0.5" />
           <div className="text-xs text-white/80 font-sans leading-relaxed">
             Your university details ensure your assigned statistician follows your school&apos;s specific Chapter 4 table formatting and defense criteria.

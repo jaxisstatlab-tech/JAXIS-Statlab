@@ -31,7 +31,7 @@ export const BarList = React.forwardRef<HTMLDivElement, BarListProps>(
               className="group relative flex items-center justify-between py-1 text-xs"
             >
               <div
-                className="absolute inset-y-0 left-0 rounded-[2px] bg-[#02254B]/70 border-l-2 border-[#38BDF8] transition-all duration-300 group-hover:bg-[#02254B]"
+                className="absolute inset-y-0 left-0 rounded-[2px] bg-[#171725]/70 border-l-2 border-[#38BDF8] transition-all duration-300 group-hover:bg-[#171725]"
                 style={{ width: `${percentage}%` }}
               />
               <div className="relative z-10 flex items-center gap-2 px-2.5 py-1 text-white/90 font-medium truncate">

@@ -15,7 +15,6 @@ import {
   Peso,
 } from "@repo/ui";
 import {
-  IconArrowLeft,
   IconFileText,
   IconShieldCheck,
   IconFileCertificate,
@@ -30,6 +29,7 @@ import { SowDocument } from "@/features/sow/components/SowDocument";
 import type { SOWDetailItem } from "@/features/sow/schemas";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 import type { QuotationDetailItem } from "@/features/quotations/schemas";
+import { StudySection } from "@/features/projects/components/StudySection";
 
 export default function AdminSowPage() {
   const params = useParams();
@@ -152,24 +152,9 @@ export default function AdminSowPage() {
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade print:p-0 print:m-0 print:max-w-none print:pb-0 print:animate-none">
       {/* ── Page Header (hidden in print) ── */}
       <div className="print:hidden">
-        <PageHeader
-          title="Statement of Work & Scope Audit"
-          description={`Contract management and scope snapshot control for ${project.intakeId}`}
-          breadcrumbs={[
-            { label: "WORKSPACE", href: "/dashboard" },
-            { label: "Admin Command", href: "/dashboard/admin" },
-            { label: "Projects", href: `/dashboard/admin/projects/${project.id}` },
-            { label: project.intakeId, href: `/dashboard/admin/projects/${project.id}` },
-            { label: "SOW Desk" },
-          ]}
-          actions={
-            <Link href={`/dashboard/admin/projects/${project.id}`}>
-              <Button variant="secondary" size="sm" className="flex items-center gap-2 font-sans font-semibold text-xs">
-                <IconArrowLeft size={15} stroke={1.5} />
-                <span>Return to Project Inspection</span>
-              </Button>
-            </Link>
-          }
+        <StudySection
+          title="Agreement"
+          description="The signed scope for this study and its snapshot."
         />
       </div>
 
@@ -187,7 +172,7 @@ export default function AdminSowPage() {
       {/* ── Case 1: SOW Not Yet Generated (Waiting for Client Quote Acceptance) ── */}
       {!sow ? (
         <div className="flex flex-col gap-6">
-          <Card className="p-8 sm:p-10 bg-[#01142B]/95 border border-white/15 rounded-[6px] flex flex-col gap-6 shadow-2xl">
+          <Card className="p-8 sm:p-10 bg-[#0A0A18]/95 border border-white/15 rounded-[6px] flex flex-col gap-6 shadow-2xl">
             <div className="flex items-start gap-4 border-b border-white/10 pb-6">
               <div className="h-12 w-12 rounded-[4px] bg-[#CC6600]/20 border border-[#CC6600]/40 flex items-center justify-center shrink-0">
                 <IconFileCertificate size={24} stroke={1.5} className="text-[#FFA040]" />
@@ -217,7 +202,7 @@ export default function AdminSowPage() {
             {quotation ? (
               <div className="flex flex-col gap-6">
                 {/* Target Commercial Basis */}
-                <div className="p-6 rounded-[4px] bg-[#011735]/60 border border-white/10 flex flex-col gap-4">
+                <div className="p-6 rounded-[4px] bg-[#0D0D1B]/60 border border-white/10 flex flex-col gap-4">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <span className="text-xs font-sans uppercase font-bold text-white/60 tracking-wider">
                       Commercial Quotation Basis
@@ -249,7 +234,7 @@ export default function AdminSowPage() {
                 </div>
 
                 {/* Custom Contractual Clauses */}
-                <div className="p-6 border border-white/10 rounded-[4px] bg-[#01142B]/60 flex flex-col gap-4">
+                <div className="p-6 border border-white/10 rounded-[4px] bg-[#0A0A18]/60 flex flex-col gap-4">
                   <div className="space-y-1">
                     <h4 className="text-sm font-bold text-white font-sans">
                       Special Terms & Scope Boundaries (Optional)
@@ -295,7 +280,7 @@ export default function AdminSowPage() {
           <SowDocument sow={sow} />
 
           {/* Admin Status & Action Card */}
-          <Card className="p-8 bg-[#01142B]/90 border border-white/15 rounded-[6px] flex flex-col sm:flex-row sm:items-center justify-between gap-6 print:hidden shadow-xl">
+          <Card className="p-8 bg-[#0A0A18]/90 border border-white/15 rounded-[6px] flex flex-col sm:flex-row sm:items-center justify-between gap-6 print:hidden shadow-xl">
             <div className="flex items-center gap-4">
               {sow.isLocked ? (
                 <div className="h-12 w-12 rounded-[4px] bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">

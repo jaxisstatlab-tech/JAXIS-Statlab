@@ -16,7 +16,7 @@ export function AuthModeTabs() {
   if (index < 0) return null;
 
   return (
-    <nav aria-label="Log in or create an account" className="relative grid grid-cols-2 rounded-[2px] border border-white/10 bg-[#010D1F] p-1">
+    <nav aria-label="Log in or create an account" className="relative grid grid-cols-2 rounded-[2px] border border-white/10 bg-[#050513] p-1">
       <span
         aria-hidden="true"
         className="auth-tab-indicator absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-[2px] bg-white/[0.08]"

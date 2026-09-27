@@ -22,6 +22,7 @@ import {
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import { computePurgeDeadline, computeRevisionWindowExpiry } from "@/lib/delivery-rules";
 import type { RoleName, DeliverableCategory } from "@prisma/client";
+import { devStudyDataEnabled, devQaDesk } from "@/features/projects/dev-study-store";
 
 export type QaActionResult<T = void> =
   | { success: true; data: T }
@@ -352,6 +353,7 @@ export async function getQaInspectionDesk(
       },
     };
   } catch (error) {
+    if (devStudyDataEnabled()) return devQaDesk(projectId, session.user);
     console.error("[getQaInspectionDesk] Error:", error);
     return {
       success: false,

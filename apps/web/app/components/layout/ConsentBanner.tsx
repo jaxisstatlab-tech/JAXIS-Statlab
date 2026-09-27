@@ -53,7 +53,7 @@ export default function ConsentBanner() {
       <div
         role="region"
         aria-label="Cookie choices"
-        className="consent-card pointer-events-auto w-full rounded-[2px] border border-white/12 bg-[#010D1F]/95 p-5 backdrop-blur-md sm:w-[26rem]"
+        className="consent-card pointer-events-auto w-full rounded-[2px] border border-white/12 bg-[#050513]/95 p-5 backdrop-blur-md sm:w-[26rem]"
         data-open={open ? "" : undefined}
         inert={!open}
       >
