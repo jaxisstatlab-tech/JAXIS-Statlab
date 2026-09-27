@@ -165,7 +165,7 @@ export function QaPayoutsClient({ initialData }: QaPayoutsClientProps) {
       </div>
 
       {/* Itemized Payout Ledger Card */}
-      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[2px]">
+      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#0A0A18] border border-white/10 rounded-[2px]">
         <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h2 className="text-base font-semibold text-white">QA Audit Fee Ledger</h2>
           <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
@@ -181,7 +181,7 @@ export function QaPayoutsClient({ initialData }: QaPayoutsClientProps) {
                   setSortBy(e.target.value as QaPayoutSortField);
                   setCurrentPage(1);
                 }}
-                className="bg-transparent text-xs font-sans text-white/90 focus:outline-none cursor-pointer pr-1 border-0 ring-0 focus:ring-0 [&>option]:bg-[#01142B] [&>option]:text-white"
+                className="bg-transparent text-xs font-sans text-white/90 focus:outline-none cursor-pointer pr-1 border-0 ring-0 focus:ring-0 [&>option]:bg-[#0A0A18] [&>option]:text-white"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>

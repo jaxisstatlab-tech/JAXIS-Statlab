@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import {
-  PageHeader,
   Card,
   Button,
   Badge,
@@ -16,7 +14,6 @@ import {
   DownloadSimple,
   WarningCircle,
   ShieldCheck,
-  ChatCircleText,
   Files,
   Check,
   Clock,
@@ -34,6 +31,7 @@ import { ScopeCreepModal } from "./ScopeCreepModal";
 import { SubmitForQAModal } from "./SubmitForQAModal";
 import type { WorkbenchDataDTO } from "../schemas";
 import { AnalysisFileCategory } from "@prisma/client";
+import { StudySection } from "@/features/projects/components/StudySection";
 
 const MAX_UPLOAD_SLOTS = 4;
 
@@ -335,41 +333,12 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
       )}
 
       {/* Page Header */}
-      <PageHeader
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "STATISTICIAN", href: "/dashboard/statistician" },
-          { label: "WORKBENCH", href: `/dashboard/statistician/projects/${data.project.id}/workbench` },
-          { label: data.project.intakeId },
-        ]}
-        title="Statistical Analysis Workbench"
-        badge={
-          <Badge
-            variant={
-              isScopeCreepHalted
-                ? "danger"
-                : isForQA
-                ? "sky"
-                : data.project.masterStatus === "IN_PROGRESS"
-                ? "emerald"
-                : "default"
-            }
-            className="font-mono text-xs px-2.5 py-0.5"
-          >
-            {data.project.masterStatus}
-          </Badge>
-        }
-        description={data.project.researchTitle}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/dashboard/statistician/projects/${data.project.id}/messages`}>
-              <Button variant="outline" size="sm" className="rounded-[2px] text-xs gap-1.5 cursor-pointer text-white/80 hover:text-white">
-                <ChatCircleText size={15} weight="fill" className="text-[#38BDF8]" />
-                <span>Consultation Thread</span>
-              </Button>
-            </Link>
-
-            {data.isAssignedStatistician && !isScopeCreepHalted && !isForQA && (
+      <StudySection
+          title="Workbench"
+          description="Upload your analysis files, then send them to the reviewer."
+          actions={
+            <>
+              {data.isAssignedStatistician && !isScopeCreepHalted && !isForQA && (
               <>
                 <Button
                   variant="secondary"
@@ -378,7 +347,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
                   className="rounded-[2px] text-xs text-amber-300 border-amber-500/30 hover:bg-amber-500/10 gap-1.5 cursor-pointer"
                 >
                   <WarningCircle size={15} weight="fill" />
-                  <span>Flag Scope Creep</span>
+                  <span>Flag Extra Work</span>
                 </Button>
 
                 <Button
@@ -389,13 +358,13 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
                   className="rounded-[2px] text-xs font-semibold px-4 gap-1.5 cursor-pointer"
                 >
                   <ShieldCheck size={15} weight="fill" />
-                  <span>Submit for QA Review</span>
+                  <span>Send for Review</span>
                 </Button>
               </>
             )}
-          </div>
-        }
-      />
+            </>
+          }
+        />
 
       {/* QA Revision Alert Banner (if QA requested corrections) */}
       {data.project.masterStatus === "QA_REVISION" && (
@@ -454,7 +423,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
           </div>
 
           {/* Direct Scorecard Feedback */}
-          <div className="p-3.5 bg-[#010D1F] border border-amber-500/25 rounded-[2px] text-xs font-sans text-amber-100/95 leading-relaxed whitespace-pre-wrap select-text">
+          <div className="p-3.5 bg-[#050513] border border-amber-500/25 rounded-[2px] text-xs font-sans text-amber-100/95 leading-relaxed whitespace-pre-wrap select-text">
             {data.activeRevision?.comments ||
               "The Senior QA Lead has requested analytical or formatting adjustments. Please inspect the scorecard notes, update your scripts/workbooks, upload the new corrected versions below, and re-submit for QA Review."}
           </div>
@@ -485,13 +454,13 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
 
       {/* Top Status & SLA Ribbon */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
           <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Client Name</span>
           <span className="text-sm font-semibold text-white truncate">{data.project.clientName}</span>
           <span className="text-[0.688rem] text-white/50">{data.project.clientSchool || "Academic Research"}</span>
         </div>
 
-        <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
           <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Assigned QA Lead</span>
           <span className="text-sm font-semibold text-sky-400 truncate">
             {data.assignment?.qaLeadName || "Unassigned"}
@@ -499,7 +468,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
           <span className="text-[0.688rem] text-white/50">{data.assignment?.qaLeadEmail || "qa@jaxis.dev"}</span>
         </div>
 
-        <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
           <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Analysis Package</span>
           <span className="text-sm font-semibold text-[#CC6600]">
             {data.project.packageName || "Standard Empirical Analysis"}
@@ -507,7 +476,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
           <span className="text-[0.688rem] text-white/50">Contract Package Tier</span>
         </div>
 
-        <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
           <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Contractual SLA</span>
           <div className="flex items-center gap-2">
             <span
@@ -540,7 +509,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
         {/* Left Column: Scope of Work Reference & Verified Datasets (1 col) */}
         <div className="flex flex-col gap-6 lg:col-span-1">
           {/* Research Objectives & SOW Card */}
-          <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-3.5">
+          <Card className="p-5 sm:p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText size={16} weight="fill" className="text-[#38BDF8]" />
@@ -607,7 +576,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
           </Card>
 
           {/* Verified Client Uploaded Files */}
-          <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-3.5">
+          <Card className="p-5 sm:p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-3.5">
             <div className="flex items-center gap-2">
               <Files size={16} weight="fill" className="text-[#38BDF8]" />
               <h2 className="text-sm font-bold text-white">Client Uploaded Files ({data.clientFiles.length})</h2>
@@ -661,7 +630,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
         <div className="flex flex-col gap-6 lg:col-span-2">
           {/* File Upload Zone (if allowed) */}
           {data.canUpload ? (
-            <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-4">
+            <Card className="p-5 sm:p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <CloudArrowUp size={18} weight="fill" className="text-[#CC6600]" />
@@ -690,7 +659,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
                     return (
                       <div
                         key={slot.id}
-                        className="p-2.5 bg-[#011B38]/60 border border-white/10 hover:border-white/20 rounded-[2px] flex flex-col sm:flex-row sm:items-center gap-2.5 transition-colors"
+                        className="p-2.5 bg-[#0F0F1D]/60 border border-white/10 hover:border-white/20 rounded-[2px] flex flex-col sm:flex-row sm:items-center gap-2.5 transition-colors"
                       >
                         {/* Slot Number & Category Dropdown */}
                         <div className="flex items-center gap-2 sm:w-56 shrink-0">
@@ -701,7 +670,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
                             value={slot.category}
                             onChange={(e) => handleSlotCategoryChange(slot.id, e.target.value as AnalysisFileCategory)}
                             disabled={isUploading}
-                            className="w-full py-1.5 px-2 bg-[#01142B] border border-white/15 rounded-[2px] text-xs text-white focus:border-[#CC6600] focus:outline-none transition-colors"
+                            className="w-full py-1.5 px-2 bg-[#0A0A18] border border-white/15 rounded-[2px] text-xs text-white focus:border-[#CC6600] focus:outline-none transition-colors"
                           >
                             {Object.entries(ANALYSIS_CATEGORY_METADATA).map(([key, meta]) => {
                               const isTaken = otherSlotCategories.has(key as AnalysisFileCategory);
@@ -710,7 +679,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
                                   key={key}
                                   value={key}
                                   disabled={isTaken}
-                                  className="bg-[#01142B] text-white disabled:text-white/30"
+                                  className="bg-[#0A0A18] text-white disabled:text-white/30"
                                 >
                                   {meta.label} {isTaken ? "(chosen)" : ""}
                                 </option>
@@ -793,7 +762,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
                       placeholder="Version notes (optional, e.g. Added interaction term, resolved outlier #42)..."
                       maxLength={1000}
                       disabled={isUploading}
-                      className="flex-1 p-2 bg-[#01142B] border border-white/15 rounded-[2px] text-xs text-white placeholder:text-white/30 focus:border-[#CC6600] focus:outline-none transition-colors font-sans"
+                      className="flex-1 p-2 bg-[#0A0A18] border border-white/15 rounded-[2px] text-xs text-white placeholder:text-white/30 focus:border-[#CC6600] focus:outline-none transition-colors font-sans"
                     />
 
                     <Button
@@ -818,14 +787,14 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
               </form>
             </Card>
           ) : (
-            <div className="p-4 rounded-[2px] bg-[#01142B] border border-white/10 text-xs text-white/60 flex items-center gap-2.5">
+            <div className="p-4 rounded-[2px] bg-[#0A0A18] border border-white/10 text-xs text-white/60 flex items-center gap-2.5">
               <WarningCircle size={16} weight="fill" className="text-amber-400 shrink-0" />
               <span>{data.uploadDisabledReason || "Uploads are currently locked for this study."}</span>
             </div>
           )}
 
           {/* Current Versioned Analysis Files Desk */}
-          <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-4">
+          <Card className="p-5 sm:p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-bold text-white">Current Analysis Working Files</h2>
@@ -906,7 +875,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
                 {displayedFiles.map((file) => (
                   <div
                     key={file.id}
-                    className="p-3.5 sm:p-4 rounded-[2px] bg-[#011B38]/70 border border-white/10 hover:border-white/20 transition-all flex flex-col gap-2.5"
+                    className="p-3.5 sm:p-4 rounded-[2px] bg-[#0F0F1D]/70 border border-white/10 hover:border-white/20 transition-all flex flex-col gap-2.5"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -995,7 +964,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
 
       {/* QA Review Lineage & Scorecards (Lower Audit Bento) */}
       {Boolean(data.qaReviews && data.qaReviews.length > 0) && (
-        <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-4 animate-content-fade">
+        <Card className="p-5 sm:p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-4 animate-content-fade">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <ClockCounterClockwise size={16} weight="fill" className="text-white/60" />
@@ -1012,7 +981,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
             {data.qaReviews?.map((rev) => (
               <div
                 key={rev.id}
-                className="p-4 bg-[#011B38]/60 border border-white/10 hover:border-white/20 rounded-[2px] flex flex-col justify-between gap-3 transition-colors"
+                className="p-4 bg-[#0F0F1D]/60 border border-white/10 hover:border-white/20 rounded-[2px] flex flex-col justify-between gap-3 transition-colors"
               >
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">

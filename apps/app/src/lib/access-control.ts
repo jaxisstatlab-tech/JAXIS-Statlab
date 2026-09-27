@@ -3,6 +3,7 @@ import path from "path";
 import type { RoleName } from "@prisma/client";
 import { db, withDbTimeout } from "@/lib/db";
 import { Prisma } from "@prisma/client";
+import { getDevUserByEmail } from "@/lib/mock-data/users.data";
 
 export interface StudyAccessResult {
   hasAccess: boolean;
@@ -64,6 +65,9 @@ export async function assertStudyAccess(
   const isFinance = role === "FINANCE_OFFICER";
 
   let project: StudyAccessRecord | null;
+  // Ids that count as this user. Offline dev also accepts the dev account's id for the same email,
+  // because an offline session id can differ from the id stored in the offline study files.
+  const myIds = new Set<string>([user.id]);
   try {
     project = await withDbTimeout(
       db.project.findFirst({
@@ -106,6 +110,8 @@ export async function assertStudyAccess(
       };
     }
     project = devProject;
+    const devId = user.email ? getDevUserByEmail(user.email)?.id : undefined;
+    if (devId) myIds.add(devId);
   }
 
   if (!project) {
@@ -129,11 +135,13 @@ export async function assertStudyAccess(
     (userEmail !== null && clientEmail !== null && userEmail === clientEmail);
 
   const isAssignedStatistician =
-    project.assignment?.statisticianId === user.id &&
+    !!project.assignment?.statisticianId &&
+    myIds.has(project.assignment.statisticianId) &&
     project.assignment?.isActive !== false;
 
   const isAssignedQaLead =
-    project.assignment?.qaLeadId === user.id &&
+    !!project.assignment?.qaLeadId &&
+    myIds.has(project.assignment.qaLeadId) &&
     project.assignment?.isActive !== false;
 
   const projectData = {

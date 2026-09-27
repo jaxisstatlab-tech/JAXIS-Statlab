@@ -89,7 +89,7 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
             <LoadingState variant="inline" label="Loading version history..." />
           </div>
         ) : history.length === 0 ? (
-          <div className="p-8 text-center text-white/50 text-xs border border-white/10 rounded-[2px] bg-[#01142B]">
+          <div className="p-8 text-center text-white/50 text-xs border border-white/10 rounded-[2px] bg-[#0A0A18]">
             No version history recorded for this category.
           </div>
         ) : (
@@ -99,8 +99,8 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
                 key={ver.id}
                 className={`p-4 rounded-[2px] border transition-colors flex flex-col gap-2.5 ${
                   ver.isCurrent
-                    ? "bg-[#011B38] border-emerald-500/40"
-                    : "bg-[#01142B] border-white/10 opacity-85 hover:opacity-100"
+                    ? "bg-[#0F0F1D] border-emerald-500/40"
+                    : "bg-[#0A0A18] border-white/10 opacity-85 hover:opacity-100"
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">

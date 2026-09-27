@@ -180,7 +180,7 @@ export function AdminRevisionQueue({ revisions }: AdminRevisionQueueProps) {
           </span>
         </div>
 
-        <Card className="overflow-hidden border border-white/10 bg-[#01142B]">
+        <Card className="overflow-hidden border border-white/10 bg-[#0A0A18]">
           {filteredRevisions.length === 0 ? (
             <div className="p-12 text-center flex flex-col items-center justify-center">
               <div className="p-3.5 rounded-[2px] bg-white/[0.04] text-white/40 mb-3 border border-white/10">
@@ -327,7 +327,7 @@ export function AdminRevisionQueue({ revisions }: AdminRevisionQueueProps) {
                       className={`flex items-start gap-3 p-3.5 rounded-[2px] border cursor-pointer transition-colors ${
                         classification === key
                           ? "bg-white/[0.04] border-[#CC6600]"
-                          : "bg-[#01142B] border-white/10 hover:border-white/20"
+                          : "bg-[#0A0A18] border-white/10 hover:border-white/20"
                       }`}
                     >
                       <input

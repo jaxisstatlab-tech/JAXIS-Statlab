@@ -163,7 +163,7 @@ export default function AdminArchivePage() {
 
       {/* CEO Policy Indicator Banner */}
       {retentionConfig && (
-        <div className="p-4 bg-[#011B38] border border-white/10 rounded-[4px] flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div className="p-4 bg-[#0F0F1D] border border-white/10 rounded-[4px] flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-[2px] bg-[#CC6600]/20 text-[#CC6600]">
               <IconShieldCheck size={18} />
@@ -210,7 +210,7 @@ export default function AdminArchivePage() {
       </div>
 
       {/* Main Table Card */}
-      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[4px]">
+      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#0A0A18] border border-white/10 rounded-[4px]">
         {/* Filter and Search Bar */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center border-b border-white/10 pb-5">
           {/* Package Filter Tabs */}
@@ -349,7 +349,7 @@ export default function AdminArchivePage() {
       {/* Snapshot Inspection Modal */}
       {selectedArchive && (
         <div className="fixed inset-0 z-50 bg-[#010114]/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#01142B] border border-white/15 rounded-[4px] max-w-3xl w-full p-6 sm:p-8 flex flex-col gap-5 shadow-2xl animate-in fade-in zoom-in-95 font-sans max-h-[85vh] overflow-y-auto">
+          <div className="bg-[#0A0A18] border border-white/15 rounded-[4px] max-w-3xl w-full p-6 sm:p-8 flex flex-col gap-5 shadow-2xl animate-in fade-in zoom-in-95 font-sans max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-[2px] bg-sky-500/20 text-sky-400">
@@ -432,7 +432,7 @@ export default function AdminArchivePage() {
 
             <div className="flex flex-col gap-3 pt-3 text-xs font-sans">
               {/* Financial & Project Safety Reassurance */}
-              <div className="p-3 bg-[#011E38]/80 border border-emerald-500/30 rounded-[2px] flex items-start gap-2.5">
+              <div className="p-3 bg-[#11111F]/80 border border-emerald-500/30 rounded-[2px] flex items-start gap-2.5">
                 <IconShieldCheck size={18} className="text-emerald-400 shrink-0 mt-0.5" />
                 <div className="text-white/80 leading-relaxed">
                   <strong className="text-emerald-400 font-semibold block">Finance &amp; Historical Records Remain 100% Safe:</strong>
@@ -441,7 +441,7 @@ export default function AdminArchivePage() {
               </div>
 
               {/* What will be purged vs preserved */}
-              <div className="p-3 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-2">
+              <div className="p-3 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-2">
                 <div className="flex items-start gap-2">
                   <IconTrash size={15} className="text-amber-400 shrink-0 mt-0.5" />
                   <span className="text-white/70 leading-relaxed">

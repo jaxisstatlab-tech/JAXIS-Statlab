@@ -173,8 +173,8 @@ export const Modal: React.FC<ModalProps> = ({
           isVisible ? "animate-modal-dialog-in" : "animate-modal-dialog-out"
         } ${className}`}
         style={{
-          backgroundColor: "#01162E",
-          backgroundImage: "linear-gradient(180deg, rgba(1, 27, 56, 0.98) 0%, rgba(1, 18, 38, 0.99) 100%)",
+          backgroundColor: "#0B0B19",
+          backgroundImage: "linear-gradient(180deg, rgba(15, 15, 29, 0.98) 0%, rgba(8, 8, 22, 0.99) 100%)",
           borderColor: "rgba(255, 255, 255, 0.12)",
           borderRadius: "4px",
           boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 1px 1px rgba(255, 255, 255, 0.08)",
@@ -220,7 +220,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Sticky Header */}
         <div
-          className="sticky top-0 z-20 flex-shrink-0 flex items-start justify-between gap-4 border-b border-white/10 bg-[#011B38]/98 backdrop-blur-md print:hidden modal-header"
+          className="sticky top-0 z-20 flex-shrink-0 flex items-start justify-between gap-4 border-b border-white/10 bg-[#0F0F1D]/98 backdrop-blur-md print:hidden modal-header"
           style={{
             position: "sticky",
             top: 0,
@@ -232,7 +232,7 @@ export const Modal: React.FC<ModalProps> = ({
             gap: "1rem",
             padding: "1rem clamp(0.875rem, 3.5vw, 1.75rem)",
             borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-            backgroundColor: "rgba(1, 27, 56, 0.98)",
+            backgroundColor: "rgba(15, 15, 29, 0.98)",
             boxSizing: "border-box",
           }}
         >
@@ -292,14 +292,14 @@ export const Modal: React.FC<ModalProps> = ({
         {/* Sticky Footer */}
         {currentFooter && (
           <div
-            className="sticky bottom-0 z-20 flex-shrink-0 border-t border-white/10 bg-[#011226]/98 backdrop-blur-md flex flex-col-reverse sm:flex-row sm:justify-end items-stretch sm:items-center gap-3 p-3.5 sm:px-7 w-full print:hidden modal-footer"
+            className="sticky bottom-0 z-20 flex-shrink-0 border-t border-white/10 bg-[#080816]/98 backdrop-blur-md flex flex-col-reverse sm:flex-row sm:justify-end items-stretch sm:items-center gap-3 p-3.5 sm:px-7 w-full print:hidden modal-footer"
             style={{
               position: "sticky",
               bottom: 0,
               zIndex: 20,
               flexShrink: 0,
               borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-              backgroundColor: "rgba(1, 18, 38, 0.98)",
+              backgroundColor: "rgba(8, 8, 22, 0.98)",
               display: "flex",
               justifyContent: "flex-end",
               alignItems: "center",

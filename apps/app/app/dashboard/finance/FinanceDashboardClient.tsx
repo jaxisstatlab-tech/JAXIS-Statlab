@@ -217,7 +217,7 @@ export function FinanceDashboardClient({ initialData }: FinanceDashboardClientPr
       {/* 2:1 Asymmetric Bento: Cash Flow Velocity & Escrow Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* 8-Col Hero: Inflow vs Outflow Velocity */}
-        <Card className="lg:col-span-8 p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col justify-between">
+        <Card className="lg:col-span-8 p-5 sm:p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
             <div className="flex items-center gap-2.5">
               <div className="p-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-[2px]">
@@ -252,7 +252,7 @@ export function FinanceDashboardClient({ initialData }: FinanceDashboardClientPr
         {/* 4-Col Auxiliary Stack: Escrow Balance & Payment Channels */}
         <div className="lg:col-span-4 flex flex-col gap-6">
           {/* Card 1: Escrow & Balance Distribution */}
-          <Card className="p-5 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-3.5">
+          <Card className="p-5 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-3.5">
             <div className="flex items-center gap-2 border-b border-white/10 pb-3">
               <div className="p-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-[2px]">
                 <Coins weight="fill" size={16} />
@@ -296,7 +296,7 @@ export function FinanceDashboardClient({ initialData }: FinanceDashboardClientPr
           </Card>
 
           {/* Card 2: Payment Channels Breakdown */}
-          <Card className="p-5 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-3.5 flex-1 overflow-hidden">
+          <Card className="p-5 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-3.5 flex-1 overflow-hidden">
             <div className="flex items-center gap-2 border-b border-white/10 pb-3 shrink-0">
               <div className="p-1.5 bg-sky-500/10 border border-sky-500/30 text-sky-400 rounded-[2px]">
                 <Bank weight="fill" size={16} />
@@ -332,7 +332,7 @@ export function FinanceDashboardClient({ initialData }: FinanceDashboardClientPr
       <PendingLeaveQueue onStatusChange={loadData} />
 
       {/* Receivables & Payment Table */}
-      <Card className="p-0 overflow-hidden border-white/10 bg-[#01142B]/90 rounded-[2px]">
+      <Card className="p-0 overflow-hidden border-white/10 bg-[#0A0A18]/90 rounded-[2px]">
         <div className="p-5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-base font-bold text-white font-sans">

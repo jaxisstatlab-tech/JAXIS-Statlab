@@ -337,7 +337,7 @@ export function AdminDashboardClient({
       {/* ── 2:1 Asymmetric Bento Grid: Milestone Velocity & Operational Intelligence ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* 8-Col Focal Hero Card: Research Milestone Velocity */}
-        <Card className="lg:col-span-8 p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 animate-card-reveal stagger-5">
+        <Card className="lg:col-span-8 p-5 sm:p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 animate-card-reveal stagger-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
             <div className="flex items-center gap-2">
               <ChartLineUp size={18} weight="fill" className="text-[#CC6600]" />
@@ -374,7 +374,7 @@ export function AdminDashboardClient({
         {/* 4-Col Auxiliary Stack: Stage Distribution & Methodology Demand */}
         <div className="lg:col-span-4 flex flex-col gap-6">
           {/* Auxiliary Card 1: Study Stage Distribution */}
-          <Card className="p-5 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
+          <Card className="p-5 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div className="flex items-center gap-2">
                 <Funnel size={16} weight="fill" className="text-[#38BDF8]" />
@@ -420,7 +420,7 @@ export function AdminDashboardClient({
           </Card>
 
           {/* Auxiliary Card 2: Methodology Demand */}
-          <Card className="p-5 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-3 flex-1">
+          <Card className="p-5 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-3 flex-1">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div className="flex items-center gap-2">
                 <Cpu size={16} weight="fill" className="text-[#CC6600]" />
@@ -450,7 +450,7 @@ export function AdminDashboardClient({
       </div>
 
       {/* ── Live Pipeline Table ── */}
-      <Card className="p-0 overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[2px] shadow-2xl animate-card-reveal stagger-6">
+      <Card className="p-0 overflow-hidden border border-white/10 bg-[#0A0A18]/90 rounded-[2px] shadow-2xl animate-card-reveal stagger-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 p-5 sm:p-6">
           <div>
             <h2 className="text-lg sm:text-xl font-semibold text-white tracking-normal font-sans">
@@ -656,7 +656,7 @@ export function AdminDashboardClient({
           <div className="flex flex-col gap-6 text-sm font-sans">
             {/* Overview Metadata Card */}
             <div
-              className="grid grid-cols-1 sm:grid-cols-2 gap-6 rounded-[4px] bg-[#01142B] border border-white/10"
+              className="grid grid-cols-1 sm:grid-cols-2 gap-6 rounded-[4px] bg-[#0A0A18] border border-white/10"
               style={{ padding: "1.5rem", boxSizing: "border-box" }}
             >
               <div>
@@ -705,7 +705,7 @@ export function AdminDashboardClient({
                   {studyAuditLogs.map((log) => (
                     <div
                       key={log.id}
-                      className="rounded-[2px] bg-[#01142B] border border-white/10 flex items-start justify-between gap-4 hover:border-white/20 transition-colors p-3.5"
+                      className="rounded-[2px] bg-[#0A0A18] border border-white/10 flex items-start justify-between gap-4 hover:border-white/20 transition-colors p-3.5"
                     >
                       <div className="flex flex-col gap-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -743,7 +743,7 @@ export function AdminDashboardClient({
                   ))}
                 </div>
               ) : (
-                <div className="rounded-[2px] bg-[#01142B] border border-white/10 flex items-center justify-center text-center text-xs text-white/40 font-sans p-6">
+                <div className="rounded-[2px] bg-[#0A0A18] border border-white/10 flex items-center justify-center text-center text-xs text-white/40 font-sans p-6">
                   No activity logs recorded yet for this study.
                 </div>
               )}

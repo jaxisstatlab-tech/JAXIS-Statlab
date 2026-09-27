@@ -82,7 +82,7 @@ export function NotFoundPage({ primary, secondary, brandHref = "/", registry = "
           </div>
 
           <div
-            className="jx404-in mt-16 overflow-hidden rounded-[2px] border border-white/10 bg-[#010D1F]"
+            className="jx404-in mt-16 overflow-hidden rounded-[2px] border border-white/10 bg-[#050513]"
             style={{ animationDelay: "340ms" }}
           >
             <div className="flex border-b border-white/10 bg-white/[0.02]">

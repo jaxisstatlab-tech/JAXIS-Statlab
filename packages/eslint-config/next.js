@@ -21,6 +21,7 @@ export const nextJsConfig = [
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".next-offline/**", // `npm run dev:offline` build folder (apps/app)
     "out/**",
     "build/**",
     "next-env.d.ts",

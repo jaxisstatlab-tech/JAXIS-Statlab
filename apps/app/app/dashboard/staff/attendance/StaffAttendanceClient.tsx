@@ -223,7 +223,7 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
       </div>
 
       {/* Section 1: Chronological Duty Timesheets */}
-      <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+      <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div>
             <h2 className="text-base font-bold text-white font-sans">
@@ -357,7 +357,7 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
       </Card>
 
       {/* Section 2: Filed Attendance Correction Requests */}
-      <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+      <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div>
             <h2 className="text-base font-bold text-white font-sans">
@@ -378,7 +378,7 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
             {corrections.map((corr) => (
               <div
                 key={corr.id}
-                className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -486,7 +486,7 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
                     e.target.value as "MISSED_CLOCK_IN" | "MISSED_CLOCK_OUT" | "MISSED_FULL_SHIFT" | "BREAK_ADJUSTMENT" | "OVERTIME_CLAIM"
                   )
                 }
-                className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] pl-3 pr-10 py-2.5 text-xs text-white outline-none cursor-pointer font-sans appearance-none hover:border-white/20 transition-colors"
+                className="w-full bg-[#050513] border border-white/10 rounded-[2px] pl-3 pr-10 py-2.5 text-xs text-white outline-none cursor-pointer font-sans appearance-none hover:border-white/20 transition-colors"
               >
                 <option value="MISSED_CLOCK_IN">Forgot to Clock In (Worked scheduled shift, clocked out late)</option>
                 <option value="MISSED_CLOCK_OUT">Forgot to Clock Out (Session stayed open / auto-closed)</option>
@@ -511,7 +511,7 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
                 max={todayStr}
                 value={targetDate}
                 onChange={(e) => setTargetDate(e.target.value)}
-                className="bg-[#010D1F] border border-white/10 rounded-[2px] p-2 text-xs text-white outline-none font-mono cursor-pointer"
+                className="bg-[#050513] border border-white/10 rounded-[2px] p-2 text-xs text-white outline-none font-mono cursor-pointer"
                 required
               />
             </div>
@@ -522,7 +522,7 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
                 type="time"
                 value={claimedClockInTime}
                 onChange={(e) => setClaimedClockInTime(e.target.value)}
-                className="bg-[#010D1F] border border-white/10 rounded-[2px] p-2 text-xs text-white outline-none font-mono cursor-pointer"
+                className="bg-[#050513] border border-white/10 rounded-[2px] p-2 text-xs text-white outline-none font-mono cursor-pointer"
                 required
               />
             </div>
@@ -533,7 +533,7 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
                 type="time"
                 value={claimedClockOutTime}
                 onChange={(e) => setClaimedClockOutTime(e.target.value)}
-                className="bg-[#010D1F] border border-white/10 rounded-[2px] p-2 text-xs text-white outline-none font-mono cursor-pointer"
+                className="bg-[#050513] border border-white/10 rounded-[2px] p-2 text-xs text-white outline-none font-mono cursor-pointer"
                 required
               />
             </div>
@@ -559,7 +559,7 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
                   className={`py-1.5 px-1 text-center font-mono text-xs rounded-[2px] border transition-colors cursor-pointer ${
                     claimedBreakMins === preset.val
                       ? "bg-[#CC6600]/20 border-[#CC6600] text-white font-bold"
-                      : "bg-[#01142B] border-white/10 text-white/60 hover:text-white"
+                      : "bg-[#0A0A18] border-white/10 text-white/60 hover:text-white"
                   }`}
                 >
                   {preset.label}
@@ -569,7 +569,7 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
           </div>
 
           {/* Live Claim Calculation Card */}
-          <div className="p-3 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-center justify-between">
+          <div className="p-3 bg-[#050513] border border-white/10 rounded-[2px] flex items-center justify-between">
             <span className="text-white/60">Net Claimed Working Hours:</span>
             <span className="font-mono text-base font-extrabold text-[#38BDF8]">
               {netClaimedHours} hrs
@@ -586,7 +586,7 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. Conducted remote statistical calculations on server cluster; forgot to initiate the digital punch due to immediate client emergency..."
-              className="w-full bg-[#010D1F] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none resize-none font-sans"
+              className="w-full bg-[#050513] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none resize-none font-sans"
               required
             />
           </div>
@@ -601,12 +601,12 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
               value={tasksDelivered}
               onChange={(e) => setTasksDelivered(e.target.value)}
               placeholder="e.g. Executed SEM analysis for Study #JX-04-2026, generated descriptive tables, and pushed code to repository..."
-              className="w-full bg-[#010D1F] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none resize-none font-sans"
+              className="w-full bg-[#050513] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none resize-none font-sans"
               required
             />
           </div>
 
-          <div className="p-3 bg-[#011B38] border border-white/10 rounded-[2px] flex items-start gap-2 text-white/70 text-[0.688rem]">
+          <div className="p-3 bg-[#0F0F1D] border border-white/10 rounded-[2px] flex items-start gap-2 text-white/70 text-[0.688rem]">
             <IconShieldCheck size={16} stroke={1.5} className="text-[#38BDF8] shrink-0 mt-0.5" />
             <span>
               <strong>Segregation of Duties Enforcement:</strong> Requests are independently audited against study deliverables by the Finance & HR Officer or Administrator prior to payroll disbursement.

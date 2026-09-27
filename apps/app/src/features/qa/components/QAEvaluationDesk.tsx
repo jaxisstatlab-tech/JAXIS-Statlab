@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  PageHeader,
   Card,
   Button,
   Badge,
@@ -21,8 +19,7 @@ import {
   IconClock,
   IconHistory,
   IconAlertOctagon,
-  IconMessages,
-} from "@tabler/icons-react";
+  } from "@tabler/icons-react";
 import { submitQaReview } from "../actions";
 import { getAnalysisFileDownloadUrl } from "@/features/analysis/actions";
 import { formatFileCategory } from "@/lib/file-utils";
@@ -33,6 +30,7 @@ import {
 } from "@/lib/qa-rules";
 import type { QaInspectionDeskDTO } from "../schemas";
 import { QADecision, ErrorClassification } from "@prisma/client";
+import { StudySection } from "@/features/projects/components/StudySection";
 
 interface QAEvaluationDeskProps {
   data: QaInspectionDeskDTO;
@@ -201,48 +199,10 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
       {/* Canonical Page Header */}
-      <PageHeader
-        title={`QA Evaluation Desk: ${data.project.intakeId}`}
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "QA REVIEWS", href: "/dashboard/qa" },
-          { label: data.project.intakeId },
-        ]}
-        badge={
-          <Badge
-            variant={
-              data.project.qaApproved || data.project.masterStatus === "DELIVERED"
-                ? "emerald"
-                : data.project.masterStatus === "QA_REVISION"
-                ? "warning"
-                : data.project.masterStatus === "ETHICAL_BREACH"
-                ? "danger"
-                : "sky"
-            }
-            className="font-mono text-xs font-semibold"
-          >
-            {data.project.qaApproved ? "QA_APPROVED" : data.project.masterStatus}
-          </Badge>
-        }
-        description={data.project.researchTitle}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/dashboard/qa/projects/${data.project.id}/files`}>
-              <Button variant="outline" size="sm" className="rounded-[2px] text-xs gap-1.5 cursor-pointer">
-                <IconFileText size={15} stroke={2} className="text-[#38BDF8]" />
-                <span>Working Files Desk</span>
-              </Button>
-            </Link>
-
-            <Link href={`/dashboard/qa/projects/${data.project.id}/messages`}>
-              <Button variant="outline" size="sm" className="rounded-[2px] text-xs gap-1.5 cursor-pointer">
-                <IconMessages size={15} stroke={2} className="text-[#CC6600]" />
-                <span>Consultation Thread</span>
-              </Button>
-            </Link>
-          </div>
-        }
-      />
+      <StudySection
+          title="Review"
+          description="Check the statistician's files, then approve them or send them back with notes."
+        />
 
       {/* Ethical Breach Lockout Banner */}
       {data.project.isLocked && data.project.masterStatus === "ETHICAL_BREACH" && (
@@ -296,7 +256,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
 
       {/* Top Status & SLA Ribbon */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
           <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Lead Statistician</span>
           <span className="text-sm font-semibold text-white truncate">
             {data.assignment?.statisticianName || "Unassigned"}
@@ -304,7 +264,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
           <span className="text-[0.688rem] text-white/50">{data.assignment?.statisticianEmail || "statistician@jaxis.dev"}</span>
         </div>
 
-        <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
           <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Senior QA Lead</span>
           <span className="text-sm font-semibold text-sky-400 truncate">
             {data.assignment?.qaLeadName || "Senior QA Officer"}
@@ -312,7 +272,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
           <span className="text-[0.688rem] text-white/50">{data.assignment?.qaLeadEmail || "qa@jaxis.dev"}</span>
         </div>
 
-        <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
           <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Contract Package</span>
           <span className="text-sm font-semibold text-[#CC6600]">
             {data.project.packageName || "Standard Empirical Analysis"}
@@ -322,7 +282,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
           </span>
         </div>
 
-        <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
           <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Contractual SLA</span>
           <span
             className={`text-sm font-mono font-bold ${
@@ -357,7 +317,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
         {/* Left Column: Scope of Work, Client Datasets, Review Linage (1 col) */}
         <div className="flex flex-col gap-6 lg:col-span-1">
           {/* SOW & Deliverable Scope Reference */}
-          <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-4">
+          <Card className="p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <IconFileText size={18} stroke={2} className="text-[#38BDF8]" />
               <h2 className="text-sm font-bold text-white">SOW Deliverables Reference</h2>
@@ -397,7 +357,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
           </Card>
 
           {/* Client Uploaded Files (Inputs) */}
-          <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-4">
+          <Card className="p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <IconFiles size={18} stroke={2} className="text-[#38BDF8]" />
@@ -446,7 +406,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
           </Card>
 
           {/* QA Review Lineage & Scorecards */}
-          <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-4">
+          <Card className="p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <IconHistory size={18} stroke={2} className="text-white/60" />
@@ -512,7 +472,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
         {/* Right Column: Submitted Working Files & Interactive Scoring Desk (2 cols) */}
         <div className="flex flex-col gap-6 lg:col-span-2">
           {/* Submitted Statistical Output Files */}
-          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-5">
+          <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <IconShieldCheck size={20} stroke={2} className="text-[#10B981]" />
@@ -540,7 +500,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
                   .map((file) => (
                     <div
                       key={file.id}
-                      className="p-4 rounded-[2px] bg-[#011B38] border border-white/10 hover:border-white/20 transition-all flex flex-col gap-2.5"
+                      className="p-4 rounded-[2px] bg-[#0F0F1D] border border-white/10 hover:border-white/20 transition-all flex flex-col gap-2.5"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -595,7 +555,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
           </Card>
 
           {/* QA Evaluation & Scoring Form */}
-          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-6">
+          <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-white">Quality Assurance Scorecard Decision</h2>
@@ -633,7 +593,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
                       className={`p-3.5 rounded-[2px] border text-left transition-all cursor-pointer flex flex-col gap-1 ${
                         selectedDecision === QADecision.QA_APPROVED
                           ? "bg-emerald-950/40 border-emerald-500/60 ring-1 ring-emerald-500/40"
-                          : "bg-[#011B38] border-white/10 hover:border-white/20 text-white/70"
+                          : "bg-[#0F0F1D] border-white/10 hover:border-white/20 text-white/70"
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -656,7 +616,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
                       className={`p-3.5 rounded-[2px] border text-left transition-all cursor-pointer flex flex-col gap-1 ${
                         selectedDecision === QADecision.QA_REJECTED
                           ? "bg-amber-950/40 border-amber-500/60 ring-1 ring-amber-500/40"
-                          : "bg-[#011B38] border-white/10 hover:border-white/20 text-white/70"
+                          : "bg-[#0F0F1D] border-white/10 hover:border-white/20 text-white/70"
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -679,7 +639,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
                       className={`p-3.5 rounded-[2px] border text-left transition-all cursor-pointer flex flex-col gap-1 ${
                         selectedDecision === QADecision.ESCALATED_TO_CEO
                           ? "bg-red-950/40 border-red-500/60 ring-1 ring-red-500/40"
-                          : "bg-[#011B38] border-white/10 hover:border-white/20 text-white/70"
+                          : "bg-[#0F0F1D] border-white/10 hover:border-white/20 text-white/70"
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -715,7 +675,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
                             className={`p-2.5 rounded-[2px] border text-left transition-colors cursor-pointer flex flex-col gap-0.5 ${
                               selectedError === key
                                 ? "bg-[#CC6600]/20 border-[#CC6600] text-white"
-                                : "bg-[#011B38] border-white/10 hover:border-white/20 text-white/70"
+                                : "bg-[#0F0F1D] border-white/10 hover:border-white/20 text-white/70"
                             }`}
                           >
                             <span className="font-bold text-xs text-white">{meta.label}</span>
@@ -761,7 +721,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
                     rows={4}
                     maxLength={3000}
                     placeholder="Document exact dual-blind recalculated values, discrepancies, and specific table/model adjustments..."
-                    className="p-3 bg-[#011B38] border border-white/15 rounded-[2px] text-xs text-white placeholder:text-white/30 focus:border-[#CC6600] focus:outline-none transition-colors font-sans leading-relaxed resize-none"
+                    className="p-3 bg-[#0F0F1D] border border-white/15 rounded-[2px] text-xs text-white placeholder:text-white/30 focus:border-[#CC6600] focus:outline-none transition-colors font-sans leading-relaxed resize-none"
                   />
                 </div>
 
@@ -788,7 +748,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
                 </div>
               </form>
             ) : (
-              <div className="p-4 rounded-[2px] bg-[#01142B] border border-white/10 text-xs text-white/60 flex items-center gap-3">
+              <div className="p-4 rounded-[2px] bg-[#0A0A18] border border-white/10 text-xs text-white/60 flex items-center gap-3">
                 <IconAlertTriangle size={18} stroke={1.5} className="text-amber-400 shrink-0" />
                 <span>
                   {data.reviewDisabledReason || "QA evaluation is currently locked for this research study."}
@@ -837,7 +797,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
           }
         >
           <div className="flex flex-col gap-4 text-xs font-sans text-white/80">
-            <div className="p-3.5 bg-[#011B38] border border-white/10 rounded-[2px] flex flex-col gap-2">
+            <div className="p-3.5 bg-[#0F0F1D] border border-white/10 rounded-[2px] flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Decision</span>
                 <Badge

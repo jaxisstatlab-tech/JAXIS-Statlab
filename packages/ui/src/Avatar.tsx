@@ -23,7 +23,7 @@ export const Avatar = React.forwardRef<
   <AvatarPrimitive.Root
     ref={ref}
     className={cn(
-      "relative flex shrink-0 overflow-hidden rounded-full border border-white/15 bg-[#01142B] select-none",
+      "relative flex shrink-0 overflow-hidden rounded-full border border-white/15 bg-[#0A0A18] select-none",
       sizeClasses[size],
       className
     )}
@@ -51,7 +51,7 @@ export const AvatarFallback = React.forwardRef<
   <AvatarPrimitive.Fallback
     ref={ref}
     className={cn(
-      "flex h-full w-full items-center justify-center rounded-full bg-[#02254B] font-sans font-semibold text-xs tracking-normal text-white",
+      "flex h-full w-full items-center justify-center rounded-full bg-[#171725] font-sans font-semibold text-xs tracking-normal text-white",
       className
     )}
     {...props}
@@ -115,7 +115,7 @@ export function UserAvatar({
         return "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/40";
       case "CLIENT":
       default:
-        return "bg-[#02254B] text-[#38BDF8] border-white/20";
+        return "bg-[#171725] text-[#38BDF8] border-white/20";
     }
   };
 

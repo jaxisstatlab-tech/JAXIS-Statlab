@@ -383,8 +383,8 @@ export function QuotationBuilderModal({
                         onClick={() => handleSelectPackage(pkgKey)}
                         className={`w-full p-4.5 sm:p-5 rounded-[2px] text-left transition-all border flex flex-col justify-between cursor-pointer group relative min-h-[145px] ${
                           isSelected
-                            ? "bg-[#012247] border-[#FFA040] shadow-md shadow-[#CC6600]/15"
-                            : "bg-[#01142B]/80 border-white/[0.08] hover:border-white/20 hover:bg-[#011B38]"
+                            ? "bg-[#151523] border-[#FFA040] shadow-md shadow-[#CC6600]/15"
+                            : "bg-[#0A0A18]/80 border-white/[0.08] hover:border-white/20 hover:bg-[#0F0F1D]"
                         }`}
                       >
                         {/* Top: Tier ID + Category Badge */}
@@ -442,7 +442,7 @@ export function QuotationBuilderModal({
               </div>
 
               {/* Integrated Base Package Fee Input */}
-              <div className="p-4 sm:p-4.5 rounded-[2px] bg-[#01142B] border border-white/[0.12] flex items-center justify-between gap-4 mt-3 shadow-sm">
+              <div className="p-4 sm:p-4.5 rounded-[2px] bg-[#0A0A18] border border-white/[0.12] flex items-center justify-between gap-4 mt-3 shadow-sm">
                 <div className="space-y-1">
                   <div className="text-xs font-mono font-bold uppercase tracking-wider text-white">
                     Base Package Fee
@@ -453,7 +453,7 @@ export function QuotationBuilderModal({
                   </div>
                 </div>
 
-                <div className="flex items-center rounded-[2px] border border-white/[0.16] bg-[#010D1F] focus-within:border-[#FFA040] focus-within:ring-1 focus-within:ring-[#FFA040]/30 transition-all overflow-hidden h-11 w-60 sm:w-64">
+                <div className="flex items-center rounded-[2px] border border-white/[0.16] bg-[#050513] focus-within:border-[#FFA040] focus-within:ring-1 focus-within:ring-[#FFA040]/30 transition-all overflow-hidden h-11 w-60 sm:w-64">
                   <div className="h-full px-3.5 flex items-center bg-white/[0.05] border-r border-white/[0.12] text-[#FFA040] font-mono text-xs font-bold select-none whitespace-nowrap">
                     PHP (<Peso />)
                   </div>
@@ -503,8 +503,8 @@ export function QuotationBuilderModal({
                         onClick={() => toggleAddOn(addonKey)}
                         className={`w-full p-3.5 sm:p-4 rounded-[2px] text-left transition-all border flex items-center justify-between cursor-pointer group ${
                           isChecked
-                            ? "bg-[#012247] border-[#FFA040] shadow-sm"
-                            : "bg-[#01142B]/80 border-white/[0.08] hover:border-white/20 hover:bg-[#011B38]"
+                            ? "bg-[#151523] border-[#FFA040] shadow-sm"
+                            : "bg-[#0A0A18]/80 border-white/[0.08] hover:border-white/20 hover:bg-[#0F0F1D]"
                         }`}
                       >
                         <div className="flex items-center gap-3.5 min-w-0 flex-1 pr-3">
@@ -565,7 +565,7 @@ export function QuotationBuilderModal({
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="e.g. Include full Chapter 4 write-up and SPSS scripts..."
-                    className="w-full h-11.5 px-4 bg-[#010D1F] border border-white/[0.12] focus:border-[#CC6600] rounded-[2px] text-xs text-white placeholder:text-white/30 focus:outline-none transition-colors font-sans"
+                    className="w-full h-11.5 px-4 bg-[#050513] border border-white/[0.12] focus:border-[#CC6600] rounded-[2px] text-xs text-white placeholder:text-white/30 focus:outline-none transition-colors font-sans"
                     style={{ paddingLeft: "1rem", paddingRight: "1rem", boxSizing: "border-box" }}
                   />
                 </div>
@@ -577,7 +577,7 @@ export function QuotationBuilderModal({
                   <select
                     value={expiresInDays}
                     onChange={(e) => setExpiresInDays(Number(e.target.value))}
-                    className="w-full h-11.5 px-4 bg-[#010D1F] border border-white/[0.12] focus:border-[#CC6600] rounded-[2px] text-xs font-mono text-white focus:outline-none transition-colors cursor-pointer"
+                    className="w-full h-11.5 px-4 bg-[#050513] border border-white/[0.12] focus:border-[#CC6600] rounded-[2px] text-xs font-mono text-white focus:outline-none transition-colors cursor-pointer"
                     style={{ paddingLeft: "1rem", paddingRight: "1rem", boxSizing: "border-box" }}
                   >
                     <option value={3}>3 Days (Standard)</option>
@@ -591,7 +591,7 @@ export function QuotationBuilderModal({
           </div>
 
           {/* ── Right Column: Clean Commercial Summary Card (5 cols) ── */}
-          <div className="lg:col-span-5 p-6 sm:p-7 rounded-[2px] bg-[#01142B] border border-white/[0.12] flex flex-col justify-between shadow-2xl space-y-6 h-full min-h-[660px]">
+          <div className="lg:col-span-5 p-6 sm:p-7 rounded-[2px] bg-[#0A0A18] border border-white/[0.12] flex flex-col justify-between shadow-2xl space-y-6 h-full min-h-[660px]">
             <div className="space-y-5">
               {/* Header */}
               <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
@@ -605,7 +605,7 @@ export function QuotationBuilderModal({
               </div>
 
               {/* Study Telemetry Header */}
-              <div className="p-4 rounded-[2px] bg-[#010D1F]/90 border border-white/[0.06] space-y-1.5">
+              <div className="p-4 rounded-[2px] bg-[#050513]/90 border border-white/[0.06] space-y-1.5">
                 <div className="text-[0.6875rem] font-mono text-[#FFA040] font-bold tracking-wider uppercase">
                   {projectIntakeId || "JAXIS-STUDY"}
                 </div>
@@ -620,7 +620,7 @@ export function QuotationBuilderModal({
               </div>
 
               {/* Itemized Line Items */}
-              <div className="p-4 rounded-[2px] bg-[#010D1F]/90 border border-white/[0.06] space-y-3 text-xs">
+              <div className="p-4 rounded-[2px] bg-[#050513]/90 border border-white/[0.06] space-y-3 text-xs">
                 {/* Main Analytical Package */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-white">
@@ -753,7 +753,7 @@ export function QuotationBuilderModal({
             for study <span className="font-mono text-white">{projectIntakeId}</span>.
           </p>
 
-          <div className="p-4 rounded-[4px] bg-[#010D1F] border border-white/[0.08] space-y-2.5 font-mono text-xs">
+          <div className="p-4 rounded-[4px] bg-[#050513] border border-white/[0.08] space-y-2.5 font-mono text-xs">
             <div className="flex justify-between">
               <span className="text-white/50 font-sans">Package:</span>
               <span className="text-white font-bold">{currentPkgDef.name}</span>

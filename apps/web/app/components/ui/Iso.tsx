@@ -88,7 +88,7 @@ function fills(tone: Tone, id: string) {
     case "ink":
       return { top: "#0B0B1E", left: "#07071A", right: "#040412" };
     default:
-      return { top: `url(#${id}-dt)`, left: "#0A1830", right: "#050F22" };
+      return { top: `url(#${id}-dt)`, left: "#0E0E1C", right: "#070715" };
   }
 }
 
@@ -155,13 +155,13 @@ export function IsoScene({
           <stop offset="1" stopColor="#2E1400" />
         </linearGradient>
         <linearGradient id={`${id}-dt`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#16294A" />
-          <stop offset="1" stopColor="#0E1D38" />
+          <stop offset="0" stopColor="#1B1B29" />
+          <stop offset="1" stopColor="#11111F" />
         </linearGradient>
         <linearGradient id={`${id}-cs`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#0A1830" />
-          <stop offset="0.55" stopColor="#12264A" />
-          <stop offset="1" stopColor="#050F22" />
+          <stop offset="0" stopColor="#0E0E1C" />
+          <stop offset="0.55" stopColor="#191927" />
+          <stop offset="1" stopColor="#070715" />
         </linearGradient>
         <linearGradient id={`${id}-cl`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#6E3200" />

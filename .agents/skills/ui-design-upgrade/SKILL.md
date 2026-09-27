@@ -1,6 +1,6 @@
 ---
 name: ui-design-upgrade
-description: Master Frontend UI/UX Design Upgrade Standard for JAXIS StatLab. Enforces system-first, anti-AI-slop interface elevation using current deep navy substrates (#010114, #01142B), enterprise orange accents (#CC6600), Phosphor fill icons, Emil Kowalski tactile motion, and plain English copywriting. Strictly frontend-only with zero backend/data/auth changes.
+description: Master Frontend UI/UX Design Upgrade Standard for JAXIS StatLab. Enforces system-first, anti-AI-slop interface elevation using current charcoal substrates (#010114, #0A0A18), enterprise orange accents (#CC6600), Phosphor fill icons, Emil Kowalski tactile motion, and plain English copywriting. Strictly frontend-only with zero backend/data/auth changes.
 ---
 
 # UI Design Upgrade Skill — JAXIS StatLab Master Standard
@@ -53,8 +53,8 @@ Never introduce foreign palettes, pastel purple gradients, or generic SaaS trope
 | Token | Hex / Value | Semantic Role |
 |---|---|---|
 | **Master Canvas** | `#010114` | 95% Foundation substrate. Midnight Deep Space Navy. |
-| **Surface Card** | `rgba(1, 22, 46, 0.75)` / `#01142B` | Standard card and sheet substrates with crisp borders. |
-| **Surface Elevation** | `#011B38` / `#01162E` | Hovered rows, active dialogs, and elevated popovers. |
+| **Surface Card** | `rgba(11, 11, 25, 0.75)` / `#0A0A18` | Standard card and sheet substrates with crisp borders. |
+| **Surface Elevation** | `#0F0F1D` / `#0B0B19` | Hovered rows, active dialogs, and elevated popovers. |
 | **Enterprise Orange** | `#CC6600` | Primary accent (**5–10% max rule**). CTAs, active stepper tabs, focus accents. |
 | **Analytical Sky** | `#38BDF8` | Telemetry metrics, research data points, secondary badges. |
 | **Verification Emerald**| `#10B981` | Completed steps, approved milestones, active shifts, success states. |
@@ -80,7 +80,7 @@ Color is a **scarce cognitive resource**. When every number, badge, pill, and la
 3. **Badge & Status Restraint**:
    - Only the primary `<StatusBadge />` carries semantic status color. Do not surround it with 5 other colored chips. Keep ID chips muted (`bg-white/[0.04] text-white/80 border-white/10` or subtle `#CC6600/15 text-[#FF9433]`).
 4. **The 80 / 15 / 5 Color Budget**:
-   - **80% Substrate**: Dark precision canvas (`#010114`) and solid surfaces (`#01142B`).
+   - **80% Substrate**: Dark precision canvas (`#010114`) and solid surfaces (`#0A0A18`).
    - **15% Typographic Contrast**: High-contrast white and calibrated opacity tints (`text-white`, `text-white/70`, `text-white/40`).
    - **5% Maximum Accent**: Enterprise Orange (`#CC6600`) for primary interactive CTAs, with semantic colors (`emerald`, `amber`, `crimson`) used strictly for purposeful state feedback.
 
@@ -88,7 +88,7 @@ Color is a **scarce cognitive resource**. When every number, badge, pill, and la
 - **Zero Rainbow Metric Rows**: Never render multi-colored rainbow cards side-by-side. Default to crisp bold white numerals.
 - **Zero Gratuitous Color Highlights**: Never paint numbers, prices, or add-ons in rainbow hues (cyan, green, yellow, pink) unless communicating a live status trigger.
 - **Zero Box-Shadow Glows**: Never use blurry glowing box-shadows (`shadow-[0_0_...px]`). Use crisp, flat borders.
-- **Zero Awkward Gradients**: Never use multi-stop gradients (`bg-gradient-to-b from-[#01142B] via-[#010E20] to-[#010A17]`) on cards or tables. Use solid substrates (`bg-[#01142B]/85`).
+- **Zero Awkward Gradients**: Never use multi-stop gradients (`bg-gradient-to-b from-[#0A0A18] via-[#060614] to-[#040412]`) on cards or tables. Use solid substrates (`bg-[#0A0A18]/85`).
 - **Zero Shouting All-Caps Buttons**: All buttons must use Title Case or Sentence Case (`"Review Quote →"`, `"View Details"`, `"Save Changes"`). Precision `rounded-[2px]`.
 - **Zero Raw Monospace Peso Glyphs**: Never render raw `₱` inside `font-mono font-bold`. Always use `<Peso />` from `@repo/ui` with `font-sans font-normal opacity-85 select-none inline-block mr-0.5`.
 
@@ -264,7 +264,7 @@ Responsive design in JAXIS StatLab is **never about merely shrinking desktop car
 All UI upgrades must comply with **WCAG 2.2 Level AA**:
 
 ### 6.1. Contrast Ratios & Optical Hierarchy (WCAG 1.4.3 / 1.4.11)
-- **Primary Body & Titles**: Text on Master Canvas (`#010114`) and Surface Cards (`#01142B`) must use `text-white` or `text-white/90` (14:1+ contrast, exceeding 4.5:1 requirement).
+- **Primary Body & Titles**: Text on Master Canvas (`#010114`) and Surface Cards (`#0A0A18`) must use `text-white` or `text-white/90` (14:1+ contrast, exceeding 4.5:1 requirement).
 - **Secondary & Helper Text**: Must use `text-white/60` or `text-white/70` (minimum 4.5:1 contrast).
 - **Strictly Banned**: Low-contrast gray text (`text-white/20` or `text-white/30` for readable labels).
 - **Borders & Focus States**: Hairline borders (`border-white/10` to `border-white/20`) and focus rings must maintain at least 3:1 contrast against adjacent substrates.
@@ -423,7 +423,7 @@ To achieve world-class SaaS simplicity, cleanliness, and spatial elegance, all p
 
 ```text
 [ ] Is this strictly a frontend presentation/UX change? (No backend/database/API changes)
-[ ] Does it use the current theme palette (#010114, #01142B, #CC6600)?
+[ ] Does it use the current theme palette (#010114, #0A0A18, #CC6600)?
 [ ] Are all cards strictly using precision rounded-[2px] (no bubbly rounded-xl/2xl)?
 [ ] Does the layout follow the Asymmetric Bento Grid (2:1 hero split: 8-col hero + 4-col stacked cards)?
 [ ] Are KPI cards using the micro-anatomy (icon + label, bold metric, inline micro-pill indicator)?

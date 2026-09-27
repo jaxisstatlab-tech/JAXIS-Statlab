@@ -134,7 +134,7 @@ export function PaymentLedgerCard({
       </div>
 
       {/* ── Progress Towards Milestone Activation ── */}
-      <Card className="p-6 border-white/10 bg-[#01162E]/70 flex flex-col gap-4 animate-card-reveal stagger-6">
+      <Card className="p-6 border-white/10 bg-[#0B0B19]/70 flex flex-col gap-4 animate-card-reveal stagger-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h3 className="font-sans text-sm font-semibold text-white">
@@ -181,7 +181,7 @@ export function PaymentLedgerCard({
       </Card>
 
       {/* ── Itemized Payment Transactions Ledger ── */}
-      <Card className="p-0 border-white/10 overflow-hidden bg-[#01142B]/90 animate-card-reveal stagger-7">
+      <Card className="p-0 border-white/10 overflow-hidden bg-[#0A0A18]/90 animate-card-reveal stagger-7">
         <div className="p-5 border-b border-white/10 flex items-center justify-between flex-wrap gap-3">
           <div>
             <h3 className="font-sans text-sm font-semibold text-white">
@@ -332,7 +332,7 @@ export function PaymentLedgerCard({
         >
           <div className="flex flex-col gap-5 w-full">
             {/* Transaction Details */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 p-4 rounded-[2px] bg-[#01142B] border border-white/10">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 p-4 rounded-[2px] bg-[#0A0A18] border border-white/10">
               <div className="flex flex-col gap-1">
                 <span className="font-mono text-xs text-white/50 uppercase tracking-wider">
                   Amount Submitted
@@ -424,7 +424,7 @@ export function PaymentLedgerCard({
                     )}
                   </div>
 
-                  <div className="p-3 rounded-[2px] bg-[#010915] border border-white/10 flex flex-col items-center justify-center min-h-[220px] max-h-[420px] overflow-auto">
+                  <div className="p-3 rounded-[2px] bg-[#030311] border border-white/10 flex flex-col items-center justify-center min-h-[220px] max-h-[420px] overflow-auto">
                     {isImage && !imageError ? (
                       <div className="relative flex items-center justify-center w-full min-h-[200px]">
                         {imageLoading && (

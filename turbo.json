@@ -25,7 +25,8 @@
     "DISABLE_DEV_LOGINS",
     "AUTH_GOOGLE_ID",
     "AUTH_GOOGLE_SECRET",
-    "JAXIS_OFFLINE"
+    "JAXIS_OFFLINE",
+    "NEXT_DIST_DIR"
   ],
   "tasks": {
     "build": {

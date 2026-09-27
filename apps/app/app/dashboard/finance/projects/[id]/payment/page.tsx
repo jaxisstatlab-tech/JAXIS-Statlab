@@ -94,7 +94,7 @@ export default function FinanceProjectPaymentPage({ params }: PageProps) {
   if (!project || !paymentsData) {
     return (
       <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
-        <div className="p-8 text-center bg-[#01142B] border border-white/10 rounded-[2px]">
+        <div className="p-8 text-center bg-[#0A0A18] border border-white/10 rounded-[2px]">
           <h2 className="text-base font-sans font-bold text-white">Financial Ledger Unavailable</h2>
           <p className="text-xs text-white/50 mt-1 mb-4 font-sans">
             Unable to locate project or payments for ID: {projectId}.

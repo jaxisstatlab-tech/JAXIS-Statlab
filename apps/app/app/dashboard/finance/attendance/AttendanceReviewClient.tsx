@@ -228,7 +228,7 @@ export function AttendanceReviewClient({ initialData }: AttendanceReviewClientPr
       </div>
 
       {/* Segregation of Duties Governance Alert */}
-      <div className="p-4 bg-[#01142B] border border-sky-500/30 rounded-[2px] flex items-start gap-3">
+      <div className="p-4 bg-[#0A0A18] border border-sky-500/30 rounded-[2px] flex items-start gap-3">
         <IconShieldCheck size={20} stroke={1.5} className="text-[#38BDF8] shrink-0 mt-0.5" />
         <div className="flex flex-col gap-0.5 text-xs text-white/80 font-sans">
           <span className="font-bold text-white">Anti-Fraud Segregation of Duties Protocol Active:</span>
@@ -239,7 +239,7 @@ export function AttendanceReviewClient({ initialData }: AttendanceReviewClientPr
       </div>
 
       {/* Pending Approval Queue */}
-      <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+      <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div>
             <h2 className="text-base font-bold text-white font-sans flex items-center gap-2">
@@ -266,7 +266,7 @@ export function AttendanceReviewClient({ initialData }: AttendanceReviewClientPr
             {pendingQueue.map((item) => (
               <div
                 key={item.id}
-                className="p-5 bg-[#010D1F] border border-white/10 rounded-[2px] flex flex-col lg:flex-row lg:items-center justify-between gap-5"
+                className="p-5 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col lg:flex-row lg:items-center justify-between gap-5"
               >
                 <div className="flex flex-col gap-2 flex-1 min-w-0">
                   {/* Header Row */}
@@ -365,7 +365,7 @@ export function AttendanceReviewClient({ initialData }: AttendanceReviewClientPr
       </Card>
 
       {/* Historical Audit Desk */}
-      <Card className="p-6 sm:p-8 bg-[#01142B] border-white/10 flex flex-col gap-6">
+      <Card className="p-6 sm:p-8 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
         <div className="border-b border-white/10 pb-4">
           <h2 className="text-base font-bold text-white font-sans">
             Processed Attendance Adjustments Audit Trail
@@ -487,7 +487,7 @@ export function AttendanceReviewClient({ initialData }: AttendanceReviewClientPr
             value={declineNotes}
             onChange={(e) => setDeclineNotes(e.target.value)}
             placeholder="e.g. Deliverables stated do not match repository commits or computational logs for this target date..."
-            className="w-full bg-[#010D1F] border border-white/10 focus:border-red-500 rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none resize-none font-sans"
+            className="w-full bg-[#050513] border border-white/10 focus:border-red-500 rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none resize-none font-sans"
             required
           />
         </div>

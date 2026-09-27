@@ -609,7 +609,7 @@ export function StatisticianDashboardClient({
       {/* ── 2:1 Asymmetric Bento Grid: Analysis Output Velocity & Methodological Focus ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* 8-Col Focal Hero Card: Output Velocity AreaChart */}
-        <Card className="lg:col-span-8 p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 animate-card-reveal stagger-5">
+        <Card className="lg:col-span-8 p-5 sm:p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 animate-card-reveal stagger-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
             <div className="flex items-center gap-2">
               <ChartLineUp size={18} weight="fill" className="text-[#CC6600]" />
@@ -646,7 +646,7 @@ export function StatisticianDashboardClient({
         {/* 4-Col Auxiliary Stack: Stage Breakdown & Methodology Workload */}
         <div className="lg:col-span-4 flex flex-col gap-6">
           {/* Auxiliary Card 1: Pipeline Stage Distribution */}
-          <Card className="p-5 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
+          <Card className="p-5 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div className="flex items-center gap-2">
                 <Funnel size={16} weight="fill" className="text-[#38BDF8]" />
@@ -690,7 +690,7 @@ export function StatisticianDashboardClient({
           </Card>
 
           {/* Auxiliary Card 2: Methodological Focus */}
-          <Card className="p-5 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-3 flex-1">
+          <Card className="p-5 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-3 flex-1">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div className="flex items-center gap-2">
                 <Cpu size={16} weight="fill" className="text-[#CC6600]" />
@@ -733,7 +733,7 @@ export function StatisticianDashboardClient({
       )}
 
       {/* Assigned Workbench Projects */}
-      <Card className="p-0 overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[2px]">
+      <Card className="p-0 overflow-hidden border border-white/10 bg-[#0A0A18]/90 rounded-[2px]">
         <div className="p-5 sm:p-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-white font-sans">
@@ -758,7 +758,7 @@ export function StatisticianDashboardClient({
                   setSortBy(e.target.value as StatisticianSortField);
                   setCurrentPage(1);
                 }}
-                className="bg-transparent text-xs font-sans text-white/90 focus:outline-none cursor-pointer pr-1 border-0 ring-0 focus:ring-0 [&>option]:bg-[#01142B] [&>option]:text-white"
+                className="bg-transparent text-xs font-sans text-white/90 focus:outline-none cursor-pointer pr-1 border-0 ring-0 focus:ring-0 [&>option]:bg-[#0A0A18] [&>option]:text-white"
               >
                 <option value="priority">Priority (Revisions &amp; Urgent First)</option>
                 <option value="deadline-asc">Due Date (Earliest First)</option>
@@ -1085,12 +1085,12 @@ export function StatisticianDashboardClient({
 
             {/* Specialist Assignments Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-3.5 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+              <div className="p-3.5 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
                 <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Assigned QA Lead</span>
                 <span className="text-xs font-semibold text-white">{selectedStudy.qaLead.fullName}</span>
                 <span className="text-[0.688rem] text-white/50">{selectedStudy.qaLead.email}</span>
               </div>
-              <div className="p-3.5 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+              <div className="p-3.5 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
                 <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Selected Package</span>
                 <span className="text-xs font-semibold text-[#CC6600]">
                   {selectedStudy.projectMethod || "Empirical Statistical Analysis"}
@@ -1105,7 +1105,7 @@ export function StatisticianDashboardClient({
                 <FileText size={15} weight="fill" className="text-[#38BDF8]" />
                 <span>Research Scope &amp; Objectives</span>
               </span>
-              <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-3 text-xs leading-relaxed text-slate-200">
+              <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-3 text-xs leading-relaxed text-slate-200">
                 <div>
                   <span className="font-semibold text-white/80 block mb-0.5 font-mono text-[0.688rem]">Research Questions:</span>
                   <p>{selectedStudy.researchQuestions || "1. What is the primary statistical effect? 2. Are variances homogeneous across comparison cohorts?"}</p>
@@ -1134,7 +1134,7 @@ export function StatisticianDashboardClient({
                   {selectedStudy.files.map((file) => (
                     <div
                       key={file.id}
-                      className="p-3 bg-[#01142B] border border-white/10 rounded-[2px] flex items-center justify-between text-xs"
+                      className="p-3 bg-[#0A0A18] border border-white/10 rounded-[2px] flex items-center justify-between text-xs"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <Database size={16} weight="fill" className="text-sky-400 shrink-0" />
@@ -1147,7 +1147,7 @@ export function StatisticianDashboardClient({
                   ))}
                 </div>
               ) : (
-                <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex items-center justify-between text-xs">
+                <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2 text-slate-300">
                     <Database size={16} weight="fill" className="text-sky-400" />
                     <span>Raw_Dataset_Verified.xlsx (2.4 MB)</span>
@@ -1213,7 +1213,7 @@ export function StatisticianDashboardClient({
                 value={pauseReason}
                 onChange={(e) => setPauseReason(e.target.value)}
                 placeholder="Detail what is missing or what needs clarification from the Lead Researcher..."
-                className="w-full bg-[#01142B] border border-white/10 rounded-[2px] p-3 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-24 font-sans"
+                className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] p-3 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-24 font-sans"
               />
             </div>
           </div>
@@ -1289,16 +1289,16 @@ export function StatisticianDashboardClient({
                       setLeaveReasonInput(e.target.value);
                     }
                   }}
-                  className="w-full bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white/90 focus:border-[#CC6600] focus:ring-0 outline-none cursor-pointer appearance-none pr-8 transition-colors font-sans hover:border-white/30"
+                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white/90 focus:border-[#CC6600] focus:ring-0 outline-none cursor-pointer appearance-none pr-8 transition-colors font-sans hover:border-white/30"
                 >
-                  <option value="" className="bg-[#01142B] text-white/50">
+                  <option value="" className="bg-[#0A0A18] text-white/50">
                     Select standard reason template...
                   </option>
                   {LEAVE_REASON_TEMPLATES.map((tmpl) => (
                     <option
                       key={tmpl.label}
                       value={tmpl.text}
-                      className="bg-[#01142B] text-white"
+                      className="bg-[#0A0A18] text-white"
                     >
                       {tmpl.label}
                     </option>
@@ -1314,7 +1314,7 @@ export function StatisticianDashboardClient({
                 value={leaveReasonInput}
                 onChange={(e) => setLeaveReasonInput(e.target.value)}
                 placeholder="State specific circumstances, emergency details, or operational notes for the team..."
-                className="w-full bg-[#01142B] border border-white/10 rounded-[2px] p-3 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-20 font-sans"
+                className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] p-3 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-20 font-sans"
               />
             </div>
 
@@ -1329,7 +1329,7 @@ export function StatisticianDashboardClient({
                   min={todayStr}
                   value={leaveFromInput}
                   onChange={(e) => handleLeaveFromChange(e.target.value)}
-                  className={`w-full bg-[#01142B] border rounded-[2px] p-2.5 text-xs text-white outline-none font-mono transition-colors [color-scheme:dark] ${
+                  className={`w-full bg-[#0A0A18] border rounded-[2px] p-2.5 text-xs text-white outline-none font-mono transition-colors [color-scheme:dark] ${
                     isStartInPast
                       ? "border-red-500/60 focus:border-red-500"
                       : "border-white/10 focus:border-[#CC6600]"
@@ -1357,7 +1357,7 @@ export function StatisticianDashboardClient({
                   min={leaveFromInput || todayStr}
                   value={leaveUntilInput}
                   onChange={(e) => handleLeaveUntilChange(e.target.value)}
-                  className={`w-full bg-[#01142B] border rounded-[2px] p-2.5 text-xs text-white outline-none font-mono transition-colors [color-scheme:dark] ${
+                  className={`w-full bg-[#0A0A18] border rounded-[2px] p-2.5 text-xs text-white outline-none font-mono transition-colors [color-scheme:dark] ${
                     isReturnBeforeStart
                       ? "border-red-500/60 focus:border-red-500"
                       : "border-white/10 focus:border-[#CC6600]"

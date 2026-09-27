@@ -2,9 +2,8 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { PageHeader, LoadingState, Toast, Button } from "@repo/ui";
+import { LoadingState, Toast, Button } from "@repo/ui";
 import {
-  IconArrowLeft,
   IconReceipt,
   IconChecklist,
 } from "@tabler/icons-react";
@@ -23,6 +22,7 @@ const PaymentVerificationModal = dynamic(
 );
 import { getProjectById } from "@/features/projects/actions";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
+import { StudySection } from "@/features/projects/components/StudySection";
 
 export default function AdminProjectPaymentPage() {
   const params = useParams();
@@ -91,7 +91,7 @@ export default function AdminProjectPaymentPage() {
   if (!project || !paymentsData) {
     return (
       <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
-        <div className="p-8 text-center bg-[#01142B] border border-white/10 rounded-[2px]">
+        <div className="p-8 text-center bg-[#0A0A18] border border-white/10 rounded-[2px]">
           <h2 className="text-base font-sans font-bold text-white">Financial Ledger Unavailable</h2>
           <p className="text-xs text-white/50 mt-1 mb-4 font-sans">
             Unable to locate project or payments for ID: {projectId}.
@@ -112,25 +112,12 @@ export default function AdminProjectPaymentPage() {
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {/* ── Page Header ── */}
-      <PageHeader
-        title={`Financial Audit & Ledger: ${project.intakeId}`}
-        description={`Audit commercial deposit records, inspect verified receipts, and monitor contract balance fulfillment for ${project.client?.fullName || "Client"}.`}
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Admin Command", href: "/dashboard/admin" },
-          { label: project.intakeId, href: `/dashboard/admin/projects/${project.id}` },
-          { label: "Payment Ledger" },
-        ]}
-        actions={
-          <div className="flex items-center gap-2.5">
-            <Link href={`/dashboard/admin/projects/${project.id}`}>
-              <Button variant="outline" size="sm" className="gap-1.5 font-sans">
-                <IconArrowLeft size={14} stroke={2} />
-                <span>Return to Inspection Desk</span>
-              </Button>
-            </Link>
-
-            {pendingProof && (
+      <StudySection
+          title="Payment"
+          description="Deposits, receipts and what's left to pay."
+          actions={
+            <>
+              {pendingProof && (
               <Button
                 variant="primary"
                 size="sm"
@@ -138,12 +125,12 @@ export default function AdminProjectPaymentPage() {
                 className="gap-1.5 font-sans font-semibold"
               >
                 <IconChecklist size={14} stroke={2} />
-                <span>Inspect Pending Deposit →</span>
+                <span>Check Deposit</span>
               </Button>
             )}
-          </div>
-        }
-      />
+            </>
+          }
+        />
 
       {/* ── Pending Verification Alert (if any) ── */}
       {pendingProof && (

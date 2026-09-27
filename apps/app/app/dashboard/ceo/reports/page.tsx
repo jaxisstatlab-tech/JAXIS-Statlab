@@ -250,8 +250,8 @@ export default function CeoReportsPage() {
               onClick={() => setSelectedReport(item.id)}
               className={`p-3.5 rounded-[4px] border text-left transition-all flex flex-col gap-2 cursor-pointer ${
                 isSelected
-                  ? "bg-[#011B38] border-[#CC6600] shadow-sm ring-1 ring-[#CC6600]"
-                  : "bg-[#01142B] border-white/10 hover:border-white/20 hover:bg-white/[0.02]"
+                  ? "bg-[#0F0F1D] border-[#CC6600] shadow-sm ring-1 ring-[#CC6600]"
+                  : "bg-[#0A0A18] border-white/10 hover:border-white/20 hover:bg-white/[0.02]"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -270,7 +270,7 @@ export default function CeoReportsPage() {
       </div>
 
       {/* Filter and Date Range Card */}
-      <Card className="p-4 sm:p-5 bg-[#01142B] border border-white/10 rounded-[4px] flex flex-wrap gap-4 items-center justify-between">
+      <Card className="p-4 sm:p-5 bg-[#0A0A18] border border-white/10 rounded-[4px] flex flex-wrap gap-4 items-center justify-between">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs text-white/50">
             <IconCalendar size={15} />
@@ -372,7 +372,7 @@ export default function CeoReportsPage() {
           )}
 
           {/* Granular Report Data Table */}
-          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[4px] flex flex-col gap-5">
+          <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[4px] flex flex-col gap-5">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
                 {selectedReport.replace(/-/g, " ")} Records ({reportData.records?.length || 0})
@@ -455,7 +455,7 @@ export default function CeoReportsPage() {
       {/* CEO Storage Retention & Data Purge Policy Modal */}
       {retentionModalOpen && (
         <div className="fixed inset-0 z-50 bg-[#010114]/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#01142B] border border-white/15 rounded-[4px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 font-sans max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#0A0A18] border border-white/15 rounded-[4px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 font-sans max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2.5">
@@ -622,7 +622,7 @@ export default function CeoReportsPage() {
                         key={item.key}
                         className={`p-3 rounded-[3px] border flex items-start gap-3 cursor-pointer transition-colors ${
                           isChecked
-                            ? "bg-[#011B38] border-white/20 text-white"
+                            ? "bg-[#0F0F1D] border-white/20 text-white"
                             : "bg-black/20 border-white/5 text-white/60 hover:bg-white/[0.02]"
                         }`}
                       >

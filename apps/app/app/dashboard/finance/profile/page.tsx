@@ -169,7 +169,7 @@ export default function FinanceProfilePage() {
       />
 
       {isLoading ? (
-        <Card className="p-12 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl">
+        <Card className="p-12 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl">
           <LoadingState variant="card" label="Loading profile..." />
         </Card>
       ) : (
@@ -189,7 +189,7 @@ export default function FinanceProfilePage() {
           <TabsContent value="profile" className="flex flex-col gap-6 outline-none">
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
               {/* Officer Identity Card */}
-              <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-6">
+              <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-6">
                 {/* Canonical Card Header (Rule 21) */}
                 <div className="border-b border-white/10 pb-4 flex items-center justify-between">
                   <div>
@@ -208,9 +208,9 @@ export default function FinanceProfilePage() {
                 </div>
 
                 {/* Profile Identity Banner Row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[2px] bg-[#010D1F] border border-white/10">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[2px] bg-[#050513] border border-white/10">
                   <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-[2px] bg-[#011B38] border border-white/15 flex items-center justify-center font-sans font-bold text-base text-white shadow-inner shrink-0">
+                    <div className="w-12 h-12 rounded-[2px] bg-[#0F0F1D] border border-white/15 flex items-center justify-center font-sans font-bold text-base text-white shadow-inner shrink-0">
                       {initials}
                     </div>
                     <div className="flex flex-col min-w-0">
@@ -231,7 +231,7 @@ export default function FinanceProfilePage() {
 
                 {/* Key-Value Details Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
-                  <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#010D1F]/50 border border-white/[0.06]">
+                  <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#050513]/50 border border-white/[0.06]">
                     <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
                       Company Email
                     </span>
@@ -247,7 +247,7 @@ export default function FinanceProfilePage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#010D1F]/50 border border-white/[0.06]">
+                  <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#050513]/50 border border-white/[0.06]">
                     <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
                       Operational Desk
                     </span>
@@ -256,7 +256,7 @@ export default function FinanceProfilePage() {
                     </span>
                   </div>
 
-                  <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#010D1F]/50 border border-white/[0.06]">
+                  <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#050513]/50 border border-white/[0.06]">
                     <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
                       Signing Authority
                     </span>
@@ -265,7 +265,7 @@ export default function FinanceProfilePage() {
                     </span>
                   </div>
 
-                  <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#010D1F]/50 border border-white/[0.06]">
+                  <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#050513]/50 border border-white/[0.06]">
                     <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
                       Officer ID
                     </span>
@@ -277,7 +277,7 @@ export default function FinanceProfilePage() {
               </Card>
 
               {/* Professional Summary & Scope Card */}
-              <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-6">
+              <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-6">
                 {/* Canonical Card Header (Rule 21) */}
                 <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
@@ -308,7 +308,7 @@ export default function FinanceProfilePage() {
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     rows={4}
-                    className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] p-3.5 text-sm font-sans text-white placeholder:text-white/30 focus:outline-none focus:border-[#CC6600] transition-colors leading-relaxed resize-y"
+                    className="w-full bg-[#050513] border border-white/10 rounded-[2px] p-3.5 text-sm font-sans text-white placeholder:text-white/30 focus:outline-none focus:border-[#CC6600] transition-colors leading-relaxed resize-y"
                   />
                   <p className="text-[11px] font-sans text-white/40">
                     This profile is recorded on corporate payroll audit ledgers and official company filings.
@@ -317,7 +317,7 @@ export default function FinanceProfilePage() {
               </Card>
 
               {/* Operational Competencies Card */}
-              <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-6">
+              <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-6">
                 {/* Canonical Card Header (Rule 21) */}
                 <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
@@ -352,13 +352,13 @@ export default function FinanceProfilePage() {
                   </div>
 
                   {specializations.length === 0 ? (
-                    <div className="p-4 rounded-[2px] bg-[#010D1F] border border-dashed border-white/10 text-center">
+                    <div className="p-4 rounded-[2px] bg-[#050513] border border-dashed border-white/10 text-center">
                       <span className="text-xs text-white/40 font-sans">
                         No competencies selected yet. Add tags below or click from popular domains.
                       </span>
                     </div>
                   ) : (
-                    <div className="flex flex-wrap gap-2 p-3 rounded-[2px] bg-[#010D1F] border border-white/10 min-h-[52px]">
+                    <div className="flex flex-wrap gap-2 p-3 rounded-[2px] bg-[#050513] border border-white/10 min-h-[52px]">
                       {specializations.map((spec) => (
                         <span
                           key={spec}
@@ -392,7 +392,7 @@ export default function FinanceProfilePage() {
                         handleAddTag(customTag);
                       }
                     }}
-                    className="flex-1 bg-[#010D1F] border border-white/10 rounded-[2px] px-3.5 py-2 text-xs font-sans text-white placeholder:text-white/30 focus:outline-none focus:border-[#CC6600] transition-colors"
+                    className="flex-1 bg-[#050513] border border-white/10 rounded-[2px] px-3.5 py-2 text-xs font-sans text-white placeholder:text-white/30 focus:outline-none focus:border-[#CC6600] transition-colors"
                   />
                   <Button
                     type="button"
@@ -434,7 +434,7 @@ export default function FinanceProfilePage() {
               </Card>
 
               {/* Save Action Bar */}
-              <Card className="p-4 sm:p-5 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+              <Card className="p-4 sm:p-5 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-2 text-xs text-white/50 font-sans">
                   <CheckCircle size={15} weight="fill" className="text-emerald-400 shrink-0" />
                   <span>Changes update your signing records across corporate payroll and treasury receipts.</span>
@@ -467,7 +467,7 @@ export default function FinanceProfilePage() {
 
           {/* ── TAB 2: ACCOUNT SECURITY ── */}
           <TabsContent value="security" className="flex flex-col gap-6 outline-none">
-            <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-3">
+            <Card className="p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-3">
               <div className="flex items-center gap-2.5">
                 <ShieldCheck size={20} weight="fill" className="text-[#CC6600]" />
                 <h3 className="text-base font-bold text-white font-sans">

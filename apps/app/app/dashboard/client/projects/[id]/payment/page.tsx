@@ -2,9 +2,8 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { PageHeader, LoadingState, Toast, Button, Peso } from "@repo/ui";
+import { LoadingState, Toast, Button, Peso } from "@repo/ui";
 import {
-  ArrowLeft,
   ShieldCheck,
   Plus,
 } from "@phosphor-icons/react";
@@ -23,6 +22,7 @@ const PaymentProofUploadModal = dynamic(
 );
 import { getProjectById } from "@/features/projects/actions";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
+import { StudySection } from "@/features/projects/components/StudySection";
 
 export default function ClientProjectPaymentPage() {
   const params = useParams();
@@ -98,7 +98,7 @@ export default function ClientProjectPaymentPage() {
   if (!project || !paymentsData) {
     return (
       <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
-        <div className="p-8 text-center bg-[#01142B] border border-white/10 rounded-[2px]">
+        <div className="p-8 text-center bg-[#0A0A18] border border-white/10 rounded-[2px]">
           <h2 className="text-base font-sans font-bold text-white">Payment Records Unavailable</h2>
           <p className="text-xs text-white/50 mt-1 mb-4 font-sans">
             Unable to locate project or quotation terms for ID: {projectId}.
@@ -119,24 +119,12 @@ export default function ClientProjectPaymentPage() {
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {/* ── Page Header & Navigation ── */}
-      <PageHeader
-        title={`Payments & Receipts: ${project.intakeId}`}
-        description="Submit GCash or bank transfer deposit receipts to activate research and track your contract balance."
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "MY STUDIES", href: "/dashboard/client/projects" },
-          { label: project.intakeId, href: `/dashboard/client/projects/${project.id}` },
-          { label: "PAYMENTS" },
-        ]}
-        actions={
-          <div className="flex items-center gap-2.5">
-            <Link href={`/dashboard/client/projects/${project.id}`}>
-              <Button variant="outline" size="sm" className="gap-1.5 font-sans rounded-[2px] active:scale-[0.97] transition-all">
-                <ArrowLeft size={14} weight="fill" />
-                <span>Return to Study</span>
-              </Button>
-            </Link>
-            {!summary.isFullyPaid && (
+      <StudySection
+          title="Payment"
+          description="Pay by GCash or bank transfer, then upload your receipt here."
+          actions={
+            <>
+              {!summary.isFullyPaid && (
               <Button
                 variant="primary"
                 size="sm"
@@ -144,15 +132,15 @@ export default function ClientProjectPaymentPage() {
                 className="gap-1.5 font-sans rounded-[2px] active:scale-[0.97] transition-all bg-[#CC6600] hover:bg-[#E67300] text-white"
               >
                 <Plus size={14} weight="fill" />
-                <span>Submit Deposit Proof</span>
+                <span>Upload Receipt</span>
               </Button>
             )}
-          </div>
-        }
-      />
+            </>
+          }
+        />
 
       {/* ── SOW Agreement Status Banner ── */}
-      <div className="p-4 rounded-[2px] bg-[#011B38]/80 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-card-reveal stagger-1">
+      <div className="p-4 rounded-[2px] bg-[#0F0F1D]/80 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-card-reveal stagger-1">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-[2px] bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
             <ShieldCheck size={20} weight="fill" className="text-emerald-400" />

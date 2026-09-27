@@ -3,15 +3,12 @@
 import React, { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import {
-  PageHeader,
   Card,
-  StatusBadge,
   Button,
   Alert,
   Modal,
   Toast,
   ConfirmDialog,
-  CopyButton,
   LoadingState,
   Peso,
 } from "@repo/ui";
@@ -26,7 +23,6 @@ import {
   Clock,
   ShieldCheck,
   Certificate,
-  ChatCenteredText,
   DownloadSimple,
   Trash,
 } from "@phosphor-icons/react";
@@ -34,7 +30,7 @@ import { getProjectById, deleteProjectFile, resolveMissingInfo, addProjectFile }
 import { uploadFileToR2 } from "@/lib/storage-client";
 import { ProjectFilesCard } from "@/features/projects/components/ProjectFilesCard";
 import { RequestStudyDeletionModal } from "@/features/projects/components/RequestStudyDeletionModal";
-import { getProjectDisplayStatus } from "@/lib/project-rules";
+import { getClientStage } from "@/features/projects/client-stage";
 import type { ProjectDetailItem, ProjectFileItem } from "@/features/projects/schemas";
 import type { FileCategory } from "@prisma/client";
 
@@ -80,45 +76,6 @@ const CATEGORY_OPTIONS: {
     formatLabel: "PDF, DOCX, XLSX, ZIP (Max 15MB)",
   },
 ];
-
-const PIPELINE_STAGES = [
-  { id: "proposal", title: "1. Proposal & Quote", desc: "Pricing & scope" },
-  { id: "sow", title: "2. Contract (SOW)", desc: "Signed agreement" },
-  { id: "deposit", title: "3. Downpayment", desc: "Deposit to start" },
-  { id: "analysis", title: "4. Analysis & QA", desc: "Statistical compute" },
-  { id: "deliverables", title: "5. Deliverables", desc: "Final defense package" },
-];
-
-function getPipelineStageIndex(status: string): number {
-  switch (status) {
-    case "NEW_REQUEST":
-    case "AWAITING_INFORMATION":
-    case "UNDER_EVALUATION":
-    case "QUOTE_SENT":
-      return 0;
-    case "CLIENT_APPROVED":
-    case "SOW_PENDING":
-      return 1;
-    case "SOW_SIGNED":
-    case "AWAITING_PAYMENT":
-      return 2;
-    case "ACTIVE":
-    case "EXPERT_ASSIGNED":
-    case "IN_PROGRESS":
-    case "SLA_PAUSED":
-    case "SCOPE_CREEP_HALTED":
-    case "REASSIGNMENT_NEEDED":
-    case "REVISION_REQUESTED":
-    case "FOR_QA":
-    case "QA_REVISION":
-      return 3;
-    case "DELIVERED":
-    case "CLOSED":
-      return 4;
-    default:
-      return 0;
-  }
-}
 
 function formatRegion(regionCode?: string | null): string {
   if (!regionCode) return "Not Specified";
@@ -435,7 +392,7 @@ export function ClientProjectDetailClient({
         <div className="flex items-center gap-2 text-xs font-mono text-white/40">
           <Link href="/dashboard/client/projects" className="hover:text-white transition-colors">← Back to My Studies</Link>
         </div>
-        <Card className="p-8 text-center flex flex-col items-center gap-4 bg-[#01142B]/90 border-white/[0.08]">
+        <Card className="p-8 text-center flex flex-col items-center gap-4 bg-[#0A0A18]/90 border-white/[0.08]">
           <p className="text-sm text-red-400 font-mono">
             {error || "The requested research project could not be found or you lack permission to view it."}
           </p>
@@ -460,55 +417,8 @@ export function ClientProjectDetailClient({
   return (
     <div
       data-portal="client"
-      className="flex flex-col gap-8 max-w-7xl mx-auto pb-20 w-full animate-content-fade"
+      className="flex flex-col gap-6 pb-20 w-full"
     >
-      <PageHeader
-        title={project.researchTitle}
-        description={`Study ID: ${project.intakeId} · Primary Client: ${project.client.fullName} · Submitted ${new Date(
-          project.createdAt
-        ).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} at ${new Date(
-          project.createdAt
-        ).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}`}
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Client Portal", href: "/dashboard/client" },
-          { label: "Projects", href: "/dashboard/client/projects" },
-          { label: project.intakeId },
-        ]}
-        actions={
-          <div className="flex items-center gap-2">
-            <Link href={`/dashboard/client/projects/${project.id}/messages`}>
-              <Button
-                variant="primary"
-                size="sm"
-                className="cursor-pointer text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-transform bg-[#CC6600] hover:bg-[#E67300] text-white shadow-sm"
-              >
-                <ChatCenteredText size={15} weight="fill" className="mr-1.5" />
-                <span>Messages & Chat</span>
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsDeletionModalOpen(true)}
-              className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-sans text-white/50 hover:text-amber-400 hover:bg-amber-500/10 flex items-center gap-1.5 cursor-pointer"
-              title="Request study deletion"
-            >
-              <Trash size={14} weight="fill" />
-              <span>Request Deletion</span>
-            </Button>
-            <Link href="/dashboard/client/projects">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-sans"
-              >
-                ← Back to My Studies
-              </Button>
-            </Link>
-          </div>
-        }
-      />
 
       {error && <Alert variant="danger">{error}</Alert>}
       {toastMessage && (
@@ -535,41 +445,14 @@ export function ClientProjectDetailClient({
 
       {/* ── Status Action Bar with 5-Stage Study Pipeline ── */}
       {(() => {
-        const currentPipelineStage = getPipelineStageIndex(project.masterStatus);
-
         return (
           <Card
-            className="overflow-hidden border border-white/10 bg-[#01142B] rounded-[2px] shadow-lg flex flex-col gap-4 p-5 sm:p-6 animate-card-reveal stagger-1"
+            className="overflow-hidden border border-white/10 bg-[#0A0A18] rounded-[2px] shadow-lg flex flex-col gap-4 p-5 sm:p-6 animate-card-reveal stagger-1"
           >
             <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-3 sm:gap-6">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <span className="text-xs font-sans text-white/60 font-semibold tracking-wider uppercase">
-                    Status:
-                  </span>
-                  {(() => {
-                    const displayStatus = getProjectDisplayStatus(project);
-                    return (
-                      <StatusBadge
-                        status={displayStatus.status}
-                        label={displayStatus.label}
-                        pulse={displayStatus.pulse}
-                      />
-                    );
-                  })()}
-                  <CopyButton
-                    variant="badge"
-                    value={project.intakeId}
-                    label={project.intakeId}
-                    onCopy={() =>
-                      setToastMessage({
-                        message: "Copied to Clipboard",
-                        description: `Study ID "${project.intakeId}" has been copied to your clipboard.`,
-                        variant: "info",
-                      })
-                    }
-                  />
-                </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-white/45">What&apos;s happening</p>
+                <p className="mt-1 text-sm leading-relaxed text-white/85">{getClientStage(project.masterStatus).now}</p>
               </div>
 
               <div className="flex items-center gap-2.5 flex-wrap">
@@ -673,73 +556,27 @@ export function ClientProjectDetailClient({
                     <span>Attach File</span>
                   </Button>
                 )}
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsDeletionModalOpen(true)}
+                  className="rounded-[2px] text-xs font-sans text-white/50 hover:text-amber-400 hover:bg-amber-500/10 flex items-center gap-1.5"
+                  title="Request study deletion"
+                >
+                  <Trash size={14} weight="fill" />
+                  <span>Request Deletion</span>
+                </Button>
               </div>
             </div>
 
-            {/* ── 5-Stage Visual Study Pipeline Stepper ── */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-3 border-t border-white/[0.06]">
-              {PIPELINE_STAGES.map((stg, i) => {
-                const isCompleted = i < currentPipelineStage;
-                const isCurrent = i === currentPipelineStage;
-
-                return (
-                  <div
-                    key={stg.id}
-                    className={`p-3 rounded-[2px] border transition-all flex flex-col justify-between gap-1.5 ${
-                      isCurrent
-                        ? "bg-[#011C38] border-[#CC6600]/80 shadow-md ring-1 ring-[#CC6600]/40"
-                        : isCompleted
-                        ? "bg-emerald-500/[0.04] border-emerald-500/25 text-white/80"
-                        : "bg-white/[0.01] border-white/[0.06] text-white/40"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`w-5 h-5 rounded-full text-[10px] font-mono font-bold flex items-center justify-center ${
-                          isCurrent
-                            ? "bg-[#CC6600] text-white"
-                            : isCompleted
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                            : "bg-white/[0.05] text-white/40 border border-white/10"
-                        }`}
-                      >
-                        {isCompleted ? <Check size={12} weight="fill" /> : i + 1}
-                      </span>
-
-                      <span className="text-[9px] font-mono tracking-wider uppercase font-semibold">
-                        {isCompleted ? (
-                          <span className="text-emerald-400">Done</span>
-                        ) : isCurrent ? (
-                          <span className="text-[#FFA040] animate-pulse">Active</span>
-                        ) : (
-                          <span className="text-white/30">Next</span>
-                        )}
-                      </span>
-                    </div>
-
-                    <div>
-                      <h4
-                        className={`text-xs font-sans font-semibold leading-snug ${
-                          isCurrent ? "text-white" : isCompleted ? "text-white/90" : "text-white/40"
-                        }`}
-                      >
-                        {stg.title}
-                      </h4>
-                      <p className="text-[10px] font-sans text-white/50 mt-0.5 line-clamp-1">
-                        {stg.desc}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </Card>
         );
       })()}
 
       {/* ── SOW Pending Execution Banner (if SOW_PENDING) ── */}
       {project.masterStatus === "SOW_PENDING" && (
-        <Card className="p-6 sm:p-7 bg-[#01142B] border border-amber-500/30 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
+        <Card className="p-6 sm:p-7 bg-[#0A0A18] border border-amber-500/30 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-[2px] bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
               <Certificate size={20} weight="fill" className="text-amber-400" />
@@ -768,7 +605,7 @@ export function ClientProjectDetailClient({
       {/* ── Awaiting Payment Deposit Banner (if SOW_SIGNED or AWAITING_PAYMENT) ── */}
       {(project.masterStatus === "SOW_SIGNED" || project.masterStatus === "AWAITING_PAYMENT") && (
         project.hasPendingPaymentVerification || project.latestPaymentStatus === "PROOF_SUBMITTED" ? (
-          <Card className="p-6 sm:p-7 bg-[#01142B] border border-sky-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
+          <Card className="p-6 sm:p-7 bg-[#0A0A18] border border-sky-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0">
                 <Clock size={20} weight="fill" className="text-sky-400" />
@@ -793,7 +630,7 @@ export function ClientProjectDetailClient({
             </Link>
           </Card>
         ) : (
-          <Card className="p-6 sm:p-7 bg-[#01142B] border border-[#CC6600]/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
+          <Card className="p-6 sm:p-7 bg-[#0A0A18] border border-[#CC6600]/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center shrink-0">
                 <Receipt size={20} weight="fill" className="text-[#FFA040]" />
@@ -822,7 +659,7 @@ export function ClientProjectDetailClient({
 
       {/* ── Pending Assignment Banner (if ACTIVE) ── */}
       {project.masterStatus === "ACTIVE" && (
-        <Card className="p-6 sm:p-7 bg-[#01142B] border border-sky-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
+        <Card className="p-6 sm:p-7 bg-[#0A0A18] border border-sky-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-[2px] bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0">
               <Clock size={20} weight="fill" className="text-sky-400" />
@@ -851,7 +688,7 @@ export function ClientProjectDetailClient({
       {/* ── Deliverables Released or Payment Locked Banner (if DELIVERED or REVISION_REQUESTED) ── */}
       {(project.masterStatus === "DELIVERED" || project.masterStatus === "REVISION_REQUESTED") && (
         project.financialSummary && !project.financialSummary.isFullyPaid && project.financialSummary.remainingBalance > 0 ? (
-          <Card className="p-6 sm:p-7 bg-[#01142B] border border-amber-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-content-fade">
+          <Card className="p-6 sm:p-7 bg-[#0A0A18] border border-amber-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-content-fade">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
                 <Receipt size={20} weight="fill" className="text-amber-400" />
@@ -877,7 +714,7 @@ export function ClientProjectDetailClient({
             </Link>
           </Card>
         ) : (
-          <Card className="p-6 sm:p-7 bg-[#01142B] border border-emerald-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-content-fade">
+          <Card className="p-6 sm:p-7 bg-[#0A0A18] border border-emerald-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-content-fade">
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
                 <ShieldCheck size={20} weight="fill" className="text-emerald-400" />
@@ -934,7 +771,7 @@ export function ClientProjectDetailClient({
         <div className="lg:col-span-2 flex flex-col gap-6">
           {/* Price Quote & Scope Card */}
           {(project.masterStatus === "QUOTE_SENT" || project.masterStatus === "CLIENT_APPROVED") && (
-            <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-4 shadow-sm">
+            <Card className="p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-4 shadow-sm">
               <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <Receipt size={18} weight="fill" className="text-[#CC6600]" />
@@ -978,7 +815,7 @@ export function ClientProjectDetailClient({
                 Statement of the Problem / Key Questions
               </span>
               <div
-                className="p-4 rounded-[2px] bg-[#011C38] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
+                className="p-4 rounded-[2px] bg-[#10101E] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
                 style={{ padding: "1rem" }}
               >
                 {project.researchQuestions || (
@@ -992,7 +829,7 @@ export function ClientProjectDetailClient({
                 Core Research Objectives
               </span>
               <div
-                className="p-4 rounded-[2px] bg-[#011C38] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
+                className="p-4 rounded-[2px] bg-[#10101E] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
                 style={{ padding: "1rem" }}
               >
                 {project.researchObjectives || (
@@ -1007,7 +844,7 @@ export function ClientProjectDetailClient({
                   Theoretical Hypotheses
                 </span>
                 <div
-                  className="p-4 rounded-[2px] bg-[#011C38] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
+                  className="p-4 rounded-[2px] bg-[#10101E] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
                   style={{ padding: "1rem" }}
                 >
                   {project.hypotheses}
@@ -1265,7 +1102,7 @@ export function ClientProjectDetailClient({
 
               {selectedUploadFile ? (
                 /* Staged File Progress Card */
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#01142B] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
+                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
                   {/* Top Row: File Icon + Name + 100% Badge */}
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -1292,7 +1129,7 @@ export function ClientProjectDetailClient({
 
                   {/* Bottom Group: Progress Bar + Status Footer */}
                   <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#000D1A] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
+                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
                       <div
                         className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-300 w-full"
                       />

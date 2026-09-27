@@ -39,7 +39,7 @@ export default async function StatisticianWorkbenchPage({
           description="You do not have authorization to view this analytical workbench."
         />
 
-        <Card className="p-8 bg-[#01142B] border border-red-500/30 rounded-[2px] flex flex-col items-center text-center gap-4">
+        <Card className="p-8 bg-[#0A0A18] border border-red-500/30 rounded-[2px] flex flex-col items-center text-center gap-4">
           <IconAlertTriangle size={36} stroke={2} className="text-red-400" />
           <div className="flex flex-col gap-1">
             <h2 className="text-base font-bold text-white">Workbench Authorization Error</h2>

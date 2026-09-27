@@ -20,6 +20,15 @@ import {
   type ProjectThreadSummaryDTO,
   type MessagingActionResult,
 } from "./schemas";
+import {
+  devMessagingEnabled,
+  devSendMessage,
+  devSyncSince,
+  devMarkRead,
+  devProjectMessages,
+  devThreads,
+  devUnreadCount,
+} from "./dev-store";
 
 /**
  * 1. Send a new message in a project communication thread.
@@ -214,6 +223,7 @@ export async function sendMessage(
       };
     })());
   } catch (err: unknown) {
+    if (devMessagingEnabled()) return devSendMessage(projectId, session.user, content);
     console.error("[sendMessage] Error:", err);
     return {
       success: false,
@@ -350,6 +360,7 @@ export async function syncNewMessages(
       };
     })());
   } catch (err: unknown) {
+    if (devMessagingEnabled()) return { success: true, data: devSyncSince(projectId, session.user, sinceIso) };
     console.error("[syncNewMessages] Error:", err);
     return {
       success: false,
@@ -409,6 +420,9 @@ export async function markMessagesAsRead(
       return { success: true, data: { readCount: validMessages.length } };
     })());
   } catch (err: unknown) {
+    if (devMessagingEnabled()) {
+      return { success: true, data: { readCount: devMarkRead(projectId, session.user, messageIds) } };
+    }
     console.error("[markMessagesAsRead] Error:", err);
     return { success: false, error: { code: "SERVER_ERROR", message: (err as Error).message } };
   }
@@ -434,11 +448,13 @@ export async function getProjectMessages(
       clientName: string;
       statisticianName: string | null;
       qaLeadName: string | null;
+      clientId?: string;
+      statisticianId?: string | null;
+      qaLeadId?: string | null;
     };
     messages: MessageDTO[];
     hasMore: boolean;
     nextCursor: string | null;
-    totalCount: number;
     currentUserId?: string | null;
     currentUserName?: string | null;
   }>
@@ -484,8 +500,9 @@ export async function getProjectMessages(
         isBlocked: false,
       };
 
-      // Run project verification, message count, and messages query ALL IN PARALLEL
-      const [project, totalCount, rawMessagesDesc] = await Promise.all([
+      // Project check and one page of messages, in parallel. (No full count: nothing needs it and
+      // counting every message gets slower as a chat grows.)
+      const [project, rawMessagesDesc] = await Promise.all([
         db.project.findUnique({
           where: { id: projectId },
           select: {
@@ -506,9 +523,6 @@ export async function getProjectMessages(
               },
             },
           },
-        }),
-        db.message.count({
-          where: baseFilter,
         }),
         db.message.findMany({
           where: {
@@ -627,17 +641,21 @@ export async function getProjectMessages(
             clientName: project.client.fullName,
             statisticianName: project.assignment?.statistician?.fullName || null,
             qaLeadName: project.assignment?.qaLead?.fullName || null,
+            clientId: project.clientId,
+            statisticianId: project.assignment?.statisticianId ?? null,
+            qaLeadId: project.assignment?.qaLeadId ?? null,
           },
           messages,
           hasMore,
           nextCursor,
-          totalCount,
           currentUserId: userId || null,
           currentUserName: (session.user as { name?: string; fullName?: string }).fullName || session.user.name || null,
         },
       };
     })());
   } catch (err: unknown) {
+    const dev = devMessagingEnabled() ? devProjectMessages(projectId, session.user, options) : null;
+    if (dev) return { success: true, data: dev };
     console.error("[getProjectMessages] Error:", err);
     return {
       success: false,
@@ -725,6 +743,9 @@ export async function getMyProjectThreads(): Promise<
           clientName: p.client.fullName,
           statisticianName: p.assignment?.statistician?.fullName || null,
           qaLeadName: p.assignment?.qaLead?.fullName || null,
+          clientId: p.clientId,
+          statisticianId: p.assignment?.statisticianId ?? null,
+          qaLeadId: p.assignment?.qaLeadId ?? null,
           lastMessage: lastMsg
             ? {
                 content: lastMsg.content,
@@ -741,6 +762,7 @@ export async function getMyProjectThreads(): Promise<
       return { success: true, data: summaries };
     })());
   } catch (err: unknown) {
+    if (devMessagingEnabled()) return { success: true, data: devThreads(session.user) };
     console.error("[getMyProjectThreads] Error:", err);
     return {
       success: false,
@@ -802,6 +824,7 @@ export async function getUnreadMessagesCount(): Promise<number> {
       return unreadCount;
     })());
   } catch (err) {
+    if (devMessagingEnabled()) return devUnreadCount(session.user);
     console.error("[getUnreadMessagesCount] Error:", err);
     return 0;
   }

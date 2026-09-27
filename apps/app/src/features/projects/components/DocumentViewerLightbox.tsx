@@ -694,12 +694,12 @@ export function DocumentViewerLightbox({
     <div className="fixed inset-0 z-50 bg-[#000814]/96 backdrop-blur-md flex flex-col select-none text-white animate-in fade-in duration-200">
       {/* ── Top Precision Document Toolbar ── */}
       <header
-        className="h-16 flex-shrink-0 bg-[#010D1F] border-b border-white/10 flex items-center justify-between gap-4 z-40 px-6 sm:px-8"
+        className="h-16 flex-shrink-0 bg-[#050513] border-b border-white/10 flex items-center justify-between gap-4 z-40 px-6 sm:px-8"
         style={{ paddingLeft: "1.5rem", paddingRight: "1.5rem" }}
       >
         {/* Left: Document Icon + Title */}
         <div className="flex items-center gap-3.5 min-w-0 max-w-[45%]">
-          <div className="h-9 w-9 rounded-[2px] bg-[#011B38] border border-white/15 flex items-center justify-center flex-shrink-0">
+          <div className="h-9 w-9 rounded-[2px] bg-[#0F0F1D] border border-white/15 flex items-center justify-center flex-shrink-0">
             {meta.iconType === "pdf" ? (
               <FilePdf size={20} weight="fill" className="text-rose-400" />
             ) : meta.iconType === "doc" ? (
@@ -731,7 +731,7 @@ export function DocumentViewerLightbox({
 
           {/* Document Stepper Buttons */}
           {hasMultipleFiles && (
-            <div className="hidden sm:flex items-center gap-1 bg-[#01142B] border border-white/15 p-0.5 rounded-[2px] ml-1 shrink-0">
+            <div className="hidden sm:flex items-center gap-1 bg-[#0A0A18] border border-white/15 p-0.5 rounded-[2px] ml-1 shrink-0">
               <button
                 type="button"
                 onClick={handlePrevDocument}
@@ -759,7 +759,7 @@ export function DocumentViewerLightbox({
 
         {/* Center: Pagination & Zoom Controls (for Simulated Documents) */}
         {!isRealPdf && isPdfOrDoc ? (
-          <div className="hidden md:flex items-center gap-2 bg-[#01142B] border border-white/15 px-3 py-1.5 rounded-[2px] shadow-sm">
+          <div className="hidden md:flex items-center gap-2 bg-[#0A0A18] border border-white/15 px-3 py-1.5 rounded-[2px] shadow-sm">
             {/* Page Navigation */}
             <div className="flex items-center gap-1.5 font-mono text-xs text-white/70">
               <span>Page</span>
@@ -890,7 +890,7 @@ export function DocumentViewerLightbox({
           <button
             type="button"
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            className="fixed left-4 sm:left-8 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#011B38]/90 backdrop-blur-sm hover:bg-[#02254B] border border-white/20 hover:border-sky-400/50 text-white/70 hover:text-white flex items-center justify-center transition-all shadow-2xl z-30 cursor-pointer hover:scale-105 print:hidden"
+            className="fixed left-4 sm:left-8 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#0F0F1D]/90 backdrop-blur-sm hover:bg-[#171725] border border-white/20 hover:border-sky-400/50 text-white/70 hover:text-white flex items-center justify-center transition-all shadow-2xl z-30 cursor-pointer hover:scale-105 print:hidden"
             title="Previous Page"
           >
             <CaretLeft size={24} weight="bold" />
@@ -902,7 +902,7 @@ export function DocumentViewerLightbox({
           <button
             type="button"
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            className="fixed right-4 sm:right-8 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#011B38]/90 backdrop-blur-sm hover:bg-[#02254B] border border-white/20 hover:border-sky-400/50 text-white/70 hover:text-white flex items-center justify-center transition-all shadow-2xl z-30 cursor-pointer hover:scale-105 print:hidden"
+            className="fixed right-4 sm:right-8 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#0F0F1D]/90 backdrop-blur-sm hover:bg-[#171725] border border-white/20 hover:border-sky-400/50 text-white/70 hover:text-white flex items-center justify-center transition-all shadow-2xl z-30 cursor-pointer hover:scale-105 print:hidden"
             title="Next Page"
           >
             <CaretRight size={24} weight="bold" />
@@ -935,7 +935,7 @@ export function DocumentViewerLightbox({
           >
             {isRealPdf ? (
               /* ── Real Cloudflare PDF Document Viewer ── */
-              <div className="w-full max-w-5xl h-[85vh] bg-[#01142B] border border-white/20 rounded-[2px] shadow-2xl overflow-hidden flex flex-col my-auto">
+              <div className="w-full max-w-5xl h-[85vh] bg-[#0A0A18] border border-white/20 rounded-[2px] shadow-2xl overflow-hidden flex flex-col my-auto">
                 <iframe
                   src={realFileUrl!}
                   className="w-full h-full border-none rounded-[2px] bg-white"
@@ -1042,7 +1042,7 @@ export function DocumentViewerLightbox({
               </div>
             ) : isCsv ? (
               /* ── Google Sheets Style Tabular Dataset Inspector ── */
-              <div className="w-full max-w-5xl bg-[#01142B] border border-white/15 rounded-[2px] shadow-2xl p-6 flex flex-col gap-4">
+              <div className="w-full max-w-5xl bg-[#0A0A18] border border-white/15 rounded-[2px] shadow-2xl p-6 flex flex-col gap-4">
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
                   <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 font-bold">
                     <FileCsv size={16} weight="fill" />
@@ -1083,7 +1083,7 @@ export function DocumentViewerLightbox({
               </div>
             ) : isImage ? (
               /* Image Preview */
-              <div className="p-4 bg-[#01142B] border border-white/15 rounded-[2px] shadow-2xl flex items-center justify-center">
+              <div className="p-4 bg-[#0A0A18] border border-white/15 rounded-[2px] shadow-2xl flex items-center justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={realFileUrl || file.filePath}
@@ -1094,7 +1094,7 @@ export function DocumentViewerLightbox({
             ) : (
               /* Binary Dossier / Application File Card */
               <div
-                className="max-w-lg w-full bg-[#01142B] border border-white/15 rounded-[2px] text-center flex flex-col items-center justify-center gap-6 shadow-2xl"
+                className="max-w-lg w-full bg-[#0A0A18] border border-white/15 rounded-[2px] text-center flex flex-col items-center justify-center gap-6 shadow-2xl"
                 style={{ padding: "2.5rem 2rem" }}
               >
                 <div className="h-16 w-16 rounded-[2px] bg-white/[0.05] border border-white/15 flex items-center justify-center text-sky-400 mb-1">

@@ -11,7 +11,7 @@ export interface PageHeaderBreadcrumb {
 
 export interface PageHeaderProps {
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   breadcrumbs?: PageHeaderBreadcrumb[];
   actions?: React.ReactNode;
   badge?: React.ReactNode;

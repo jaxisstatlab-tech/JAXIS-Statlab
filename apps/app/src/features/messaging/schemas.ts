@@ -77,6 +77,10 @@ export interface ProjectThreadSummaryDTO {
   clientName: string;
   statisticianName: string | null;
   qaLeadName: string | null;
+  /** Participant ids, for online dots. */
+  clientId?: string;
+  statisticianId?: string | null;
+  qaLeadId?: string | null;
   lastMessage: {
     content: string;
     sentAt: string;

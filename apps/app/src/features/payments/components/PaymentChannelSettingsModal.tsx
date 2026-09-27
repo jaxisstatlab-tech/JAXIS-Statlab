@@ -213,7 +213,7 @@ export function PaymentChannelSettingsModal({
 
           {/* ── GCash Tab ── */}
           <TabsContent value="GCASH" className="mt-4 flex flex-col gap-4">
-            <div className="p-4 rounded-[2px] border border-white/10 bg-[#01142B] flex flex-col gap-4">
+            <div className="p-4 rounded-[2px] border border-white/10 bg-[#0A0A18] flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white uppercase tracking-wider font-mono">
                   Primary GCash Configuration
@@ -344,7 +344,7 @@ export function PaymentChannelSettingsModal({
 
             {/* Add Bank Form */}
             {isAddingBank && (
-              <div className="p-4 rounded-[2px] border border-[#CC6600]/40 bg-[#01142B] flex flex-col gap-3">
+              <div className="p-4 rounded-[2px] border border-[#CC6600]/40 bg-[#0A0A18] flex flex-col gap-3">
                 <div className="flex items-center justify-between border-b border-white/10 pb-2">
                   <span className="text-xs font-semibold text-[#CC6600] uppercase tracking-wider font-mono">
                     New Bank Account
@@ -426,7 +426,7 @@ export function PaymentChannelSettingsModal({
                 .map((bank, index) => (
                   <div
                     key={index}
-                    className="p-4 rounded-[2px] border border-white/10 bg-[#01142B] flex flex-col gap-3"
+                    className="p-4 rounded-[2px] border border-white/10 bg-[#0A0A18] flex flex-col gap-3"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-white font-mono">

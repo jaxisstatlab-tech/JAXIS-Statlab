@@ -53,7 +53,7 @@ export function DataTable<T extends object = Record<string, unknown>>({
   return (
     <div
       className={cn(
-        "w-full overflow-hidden border border-white/10 rounded-[2px] bg-[#010D1F]",
+        "w-full overflow-hidden border border-white/10 rounded-[2px] bg-[#050513]",
         className
       )}
     >

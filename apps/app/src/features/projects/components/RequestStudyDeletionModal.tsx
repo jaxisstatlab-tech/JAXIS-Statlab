@@ -164,10 +164,10 @@ export function RequestStudyDeletionModal({
               value={selectedReason}
               onChange={(e) => setSelectedReason(e.target.value)}
               disabled={isSubmitting}
-              className="bg-[#01142B] border border-white/15 text-white text-xs rounded-[2px] px-3 py-2 outline-none focus:border-[#CC6600]"
+              className="bg-[#0A0A18] border border-white/15 text-white text-xs rounded-[2px] px-3 py-2 outline-none focus:border-[#CC6600]"
             >
               {CLIENT_REASONS.map((r) => (
-                <option key={r} value={r} className="bg-[#01142B] text-white">
+                <option key={r} value={r} className="bg-[#0A0A18] text-white">
                   {r}
                 </option>
               ))}
@@ -185,7 +185,7 @@ export function RequestStudyDeletionModal({
               placeholder="Provide any additional details or instructions for our administration team..."
               disabled={isSubmitting}
               rows={3}
-              className="bg-[#01142B] border-white/15 text-white text-xs rounded-[2px] resize-none"
+              className="bg-[#0A0A18] border-white/15 text-white text-xs rounded-[2px] resize-none"
             />
           </div>
         </div>

@@ -41,10 +41,10 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          "relative overflow-hidden rounded-[2px] border border-white/10 hover:border-white/20 transition-all duration-200 backdrop-blur-md flex flex-col box-border shadow-xl",
+          "relative overflow-hidden rounded-[2px] border border-white/[0.07] hover:border-white/[0.14] transition-colors duration-200 flex flex-col box-border",
           isKpi
-            ? "bg-[#01142B]/95 justify-between"
-            : "bg-[#01142B]/90 justify-start",
+            ? "bg-[#0A0A18] justify-between"
+            : "bg-[#0A0A18] justify-start",
           hasZeroPadding ? "p-0" : isKpi ? "p-6" : "p-6 sm:p-8",
           className
         )}
@@ -55,12 +55,6 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
         }}
         {...props}
       >
-        {/* Subtle top edge specular highlight */}
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.15] to-transparent"
-          aria-hidden="true"
-        />
-
         {/* Legacy header support */}
         {header && (
           <div className="border-b border-white/10 pb-4 mb-6 w-full">

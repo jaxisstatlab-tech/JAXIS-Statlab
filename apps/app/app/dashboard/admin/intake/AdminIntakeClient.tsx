@@ -380,7 +380,7 @@ export function AdminIntakeClient({
 
       {/* ── Main Triage & Queue Glass Card ── */}
       <Card
-        className="p-0 border-white/[0.08] overflow-hidden bg-gradient-to-b from-[#01142B]/90 via-[#010E20]/95 to-[#010A17] shadow-2xl"
+        className="p-0 border-white/[0.08] overflow-hidden bg-gradient-to-b from-[#0A0A18]/90 via-[#060614]/95 to-[#040412] shadow-2xl"
         style={{ padding: 0 }}
       >
         {/* Filter Toolbar */}
@@ -759,7 +759,7 @@ export function AdminIntakeClient({
         >
           <div className="flex flex-col gap-6 font-sans">
             {/* Researcher & Institution Card */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 sm:px-7 rounded-[3px] bg-[#011B38] border border-white/10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 sm:px-7 rounded-[3px] bg-[#0F0F1D] border border-white/10">
               <div className="flex flex-col gap-1">
                 <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
                   Lead Researcher
@@ -838,7 +838,7 @@ export function AdminIntakeClient({
                     return (
                       <div
                         key={file.id}
-                        className="rounded-[2px] bg-[#011C38] border border-white/[0.08] hover:border-white/20 px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between gap-4 transition-colors"
+                        className="rounded-[2px] bg-[#10101E] border border-white/[0.08] hover:border-white/20 px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between gap-4 transition-colors"
                       >
                         <div className="flex items-center gap-3.5 min-w-0">
                           <div

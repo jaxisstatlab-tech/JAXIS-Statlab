@@ -75,7 +75,7 @@ export function Pagination({
   return (
     <div
       className={cn(
-        "flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-white/10 bg-[#01142B]/70 select-none",
+        "flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-white/10 bg-[#0A0A18]/70 select-none",
         className
       )}
     >
@@ -104,10 +104,10 @@ export function Pagination({
                   onPageSizeChange(newSize);
                   onPageChange(1);
                 }}
-                className="bg-[#01142B] hover:bg-[#011B38] text-white/90 border border-white/15 hover:border-white/25 rounded-[2px] pl-2 pr-5 py-0.5 text-xs font-mono focus:outline-none focus:border-white/30 focus:ring-0 transition-colors cursor-pointer appearance-none shadow-none"
+                className="bg-[#0A0A18] hover:bg-[#0F0F1D] text-white/90 border border-white/15 hover:border-white/25 rounded-[2px] pl-2 pr-5 py-0.5 text-xs font-mono focus:outline-none focus:border-white/30 focus:ring-0 transition-colors cursor-pointer appearance-none shadow-none"
               >
                 {pageSizeOptions.map((opt) => (
-                  <option key={opt} value={opt} className="bg-[#01142B] text-white">
+                  <option key={opt} value={opt} className="bg-[#0A0A18] text-white">
                     {opt}
                   </option>
                 ))}

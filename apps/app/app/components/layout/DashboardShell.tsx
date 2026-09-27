@@ -7,11 +7,14 @@ import { Sidebar } from "./Sidebar";
 import { IdleSessionManager } from "./IdleSessionManager";
 import type { RoleName } from "@prisma/client";
 import type { ActiveShiftStatus } from "@/features/attendance/schemas";
+import { startPresence } from "@/lib/presence";
 
 export interface DashboardShellProps {
   userFullName: string;
   userRole: RoleName | string;
   userEmail: string;
+  /** Id used for the "online" dot other people see. */
+  presenceId?: string;
   clientProfileIncomplete?: boolean;
   initialActiveShift?: ActiveShiftStatus | null;
   initialUnreadMessagesCount?: number;
@@ -22,6 +25,7 @@ export function DashboardShell({
   userFullName,
   userRole,
   userEmail,
+  presenceId,
   clientProfileIncomplete = false,
   initialActiveShift,
   initialUnreadMessagesCount = 0,
@@ -31,6 +35,9 @@ export function DashboardShell({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+
+  // Show this person as online to the people they chat with.
+  React.useEffect(() => (presenceId ? startPresence(presenceId) : undefined), [presenceId]);
 
   // Clear navigating state whenever pathname completes a transition
   React.useEffect(() => {

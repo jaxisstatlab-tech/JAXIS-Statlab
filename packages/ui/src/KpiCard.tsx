@@ -18,6 +18,43 @@ export interface KpiCardProps {
   href?: string;
   className?: string;
   monoLabel?: boolean;
+  /** Optional sparkline (oldest to newest) drawn beside the value. */
+  trend?: number[];
+  /** Screen-reader summary of the trend, e.g. "Studies sent per month, last 6 months". */
+  trendLabel?: string;
+  /** Optional progress bar under the value (e.g. paid vs total). */
+  meter?: { value: number; max: number; label?: string };
+  /** @deprecated Every card now uses the charcoal surface; kept so existing callers still compile. */
+  surface?: "navy" | "neutral";
+}
+
+const SURFACE_HEX = "#0A0A18";
+
+// Single-series sparkline: 2px line, 10% area wash, end dot with a surface-coloured ring.
+function Sparkline({ points, label, ring }: { points: number[]; label?: string; ring: string }) {
+  if (points.length < 2) return null;
+  const w = 88;
+  const h = 32;
+  const pad = 4;
+  const max = Math.max(...points);
+  const min = Math.min(...points);
+  const span = max - min || 1;
+  const xy = points.map((v, i) => [
+    pad + (i * (w - pad * 2)) / (points.length - 1),
+    h - pad - ((v - min) / span) * (h - pad * 2),
+  ]);
+  const line = xy.map(([x, y], i) => `${i ? "L" : "M"}${x!.toFixed(1)},${y!.toFixed(1)}`).join(" ");
+  const first = xy[0]!;
+  const last = xy[xy.length - 1]!;
+  const area = `${line} L${last[0]!.toFixed(1)},${h} L${first[0]!.toFixed(1)},${h} Z`;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} role="img" aria-label={label} className="shrink-0 overflow-visible">
+      {label ? <title>{label}</title> : null}
+      <path d={area} fill="#CC6600" fillOpacity={0.1} />
+      <path d={line} fill="none" stroke="#CC6600" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={last[0]} cy={last[1]} r={3.5} fill="#CC6600" stroke={ring} strokeWidth={2} />
+    </svg>
+  );
 }
 
 const VARIANT_VALUE_COLORS: Record<KpiCardVariant, string> = {
@@ -59,13 +96,18 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   href,
   className = "",
   monoLabel = true,
+  trend,
+  trendLabel,
+  meter,
 }) => {
+  const surfaceClasses = `bg-[#0A0A18] border border-white/[0.07] hover:border-white/[0.14] shadow-none ${
+    href ? "cursor-pointer hover:bg-[#0F0F1D]" : ""
+  }`;
+  const meterPct = meter && meter.max > 0 ? Math.min(100, Math.max(0, (meter.value / meter.max) * 100)) : 0;
   const content = (
     <Card
       variant="kpi"
-      className={`rounded-[2px] transition-all duration-200 group h-full flex flex-col justify-between min-h-[140px] bg-[#01142B] border border-white/10 hover:border-white/20 shadow-xl ${
-        href ? "cursor-pointer hover:bg-[#011B38]" : ""
-      } ${className}`}
+      className={`rounded-[2px] transition-all duration-200 group h-full flex flex-col justify-between min-h-[140px] ${surfaceClasses} ${className}`}
       style={{
         padding: "1.25rem 1.5rem",
         boxSizing: "border-box",
@@ -107,7 +149,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         </div>
 
         {/* Value Row: Canonical Telemetry Metric Typography (font-mono font-bold tracking-tight) */}
-        <div className="py-0.5 my-auto flex items-baseline gap-1.5 flex-wrap">
+        <div className="my-auto flex items-end justify-between gap-3">
+        <div className="py-0.5 flex items-baseline gap-1.5 flex-wrap min-w-0">
           <span
             className={`font-mono font-bold tracking-tight block ${
               typeof value === "string" && value.length > 10
@@ -138,6 +181,23 @@ export const KpiCard: React.FC<KpiCardProps> = ({
             </span>
           )}
         </div>
+        {trend && trend.length > 1 ? (
+          <Sparkline points={trend} label={trendLabel} ring={SURFACE_HEX} />
+        ) : null}
+        </div>
+
+        {meter ? (
+          <div
+            className="h-1 w-full overflow-hidden rounded-[1px] bg-white/[0.08]"
+            role="meter"
+            aria-label={meter.label ?? label}
+            aria-valuemin={0}
+            aria-valuemax={meter.max}
+            aria-valuenow={meter.value}
+          >
+            <div className="h-full rounded-[1px] bg-[#CC6600] transition-[width] duration-500" style={{ width: `${meterPct}%` }} />
+          </div>
+        ) : null}
 
         {/* Footer / Subtitle Row */}
         <div className="pt-2.5 border-t border-white/[0.06] flex items-center min-h-[1.5rem]">

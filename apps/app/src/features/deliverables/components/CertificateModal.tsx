@@ -53,9 +53,9 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-[#010D1F] border border-white/10 rounded-[2px] shadow-2xl overflow-hidden z-10 print:static print:w-auto print:max-w-none print:max-h-none print:border-none print:shadow-none print:bg-transparent">
+      <div className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-[#050513] border border-white/10 rounded-[2px] shadow-2xl overflow-hidden z-10 print:static print:w-auto print:max-w-none print:max-h-none print:border-none print:shadow-none print:bg-transparent">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#01142B] print:hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0A0A18] print:hidden">
           <div className="flex items-center gap-2.5">
             <ShieldCheck size={20} weight="fill" className="text-[#CC6600]" />
             <div>

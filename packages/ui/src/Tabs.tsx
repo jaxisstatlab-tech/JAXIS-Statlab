@@ -20,7 +20,7 @@ const TabsList = React.forwardRef<
     className={cn(
       variant === "underline"
         ? "inline-flex h-10 items-center justify-start gap-6 border-b border-white/10 bg-transparent px-1 text-white/60 w-full"
-        : "inline-flex h-10 items-center justify-start rounded-[2px] bg-[#01142B]/90 p-1 text-white/60 border border-white/[0.08] gap-1",
+        : "inline-flex h-10 items-center justify-start rounded-[2px] bg-[#0A0A18]/90 p-1 text-white/60 border border-white/[0.08] gap-1",
       className
     )}
     {...props}

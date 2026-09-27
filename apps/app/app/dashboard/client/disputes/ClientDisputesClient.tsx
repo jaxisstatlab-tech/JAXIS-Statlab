@@ -298,7 +298,7 @@ export function ClientDisputesClient({
             <LoadingState variant="card" label="Checking delivery dates..." />
           </div>
         ) : eligibleProjects.length === 0 ? (
-          <Card className="p-8 text-center text-xs text-white/40 flex flex-col items-center gap-2 bg-[#01142B] border border-white/10 rounded-[2px]">
+          <Card className="p-8 text-center text-xs text-white/40 flex flex-col items-center gap-2 bg-[#0A0A18] border border-white/10 rounded-[2px]">
             <ShieldCheck size={28} weight="fill" className="text-white/20" />
             <span>No delivered studies found. Claims can only be filed once your study deliverables are released.</span>
           </Card>
@@ -309,7 +309,7 @@ export function ClientDisputesClient({
               return (
                 <Card
                   key={p.projectId}
-                  className={`p-5 flex flex-col justify-between gap-4 bg-[#01142B] border border-white/10 rounded-[2px] animate-card-reveal stagger-${Math.min(idx + 1, 8)}`}
+                  className={`p-5 flex flex-col justify-between gap-4 bg-[#0A0A18] border border-white/10 rounded-[2px] animate-card-reveal stagger-${Math.min(idx + 1, 8)}`}
                 >
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
@@ -366,7 +366,7 @@ export function ClientDisputesClient({
       </div>
 
       {/* Filed Claims Table */}
-      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#01142B] border border-white/10 rounded-[2px] animate-card-reveal stagger-4">
+      <Card className="p-6 sm:p-8 flex flex-col gap-6 bg-[#0A0A18] border border-white/10 rounded-[2px] animate-card-reveal stagger-4">
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div>
             <h2 className="text-base font-bold text-white">Your Filed Claims</h2>
@@ -467,7 +467,7 @@ export function ClientDisputesClient({
       {/* Dispute Filing Modal */}
       {isFilingModalOpen && (
         <div className="fixed inset-0 z-50 bg-[#010114]/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#01142B] border border-white/15 rounded-[2px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#0A0A18] border border-white/15 rounded-[2px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2.5">
                 <ShieldWarning size={22} weight="fill" className="text-amber-400" />
@@ -498,7 +498,7 @@ export function ClientDisputesClient({
                   required
                 >
                   {openEligibleProjects.map((p) => (
-                    <option key={p.projectId} value={p.projectId} className="bg-[#01142B] text-white">
+                    <option key={p.projectId} value={p.projectId} className="bg-[#0A0A18] text-white">
                       {p.intakeId} — {p.researchTitle} ({p.remainingDays} days left)
                     </option>
                   ))}
@@ -514,13 +514,13 @@ export function ClientDisputesClient({
                   className="bg-black/30 border border-white/10 rounded-[2px] p-2.5 text-white outline-none focus:border-white/30"
                   required
                 >
-                  <option value="METHODOLOGY_DEVIATION" className="bg-[#01142B] text-white">
+                  <option value="METHODOLOGY_DEVIATION" className="bg-[#0A0A18] text-white">
                     Methodology Deviation (Wrong Statistical Test, Missed SOW Variable)
                   </option>
-                  <option value="MATHEMATICAL_ERROR" className="bg-[#01142B] text-white">
+                  <option value="MATHEMATICAL_ERROR" className="bg-[#0A0A18] text-white">
                     Calculation or Table Error (p-values, odds ratios, incorrect counts)
                   </option>
-                  <option value="SLA_BREACH" className="bg-[#01142B] text-white">
+                  <option value="SLA_BREACH" className="bg-[#0A0A18] text-white">
                     Missed Delivery Deadline (Rush/Express add-on refund)
                   </option>
                 </select>
@@ -611,7 +611,7 @@ export function ClientDisputesClient({
       {/* Details & Ruling Dossier Modal */}
       {selectedDispute && (
         <div className="fixed inset-0 z-50 bg-[#010114]/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#01142B] border border-white/15 rounded-[2px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#0A0A18] border border-white/15 rounded-[2px] max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-2">
                 <FileText size={22} weight="fill" className="text-sky-400" />
@@ -677,7 +677,7 @@ export function ClientDisputesClient({
 
               {/* Ruling Box */}
               {selectedDispute.resolutionType ? (
-                <div className="bg-[#011B38] border border-emerald-500/20 rounded-[2px] p-4 flex flex-col gap-2">
+                <div className="bg-[#0F0F1D] border border-emerald-500/20 rounded-[2px] p-4 flex flex-col gap-2">
                   <div className="flex items-center gap-2 text-emerald-400 font-bold">
                     <Gavel size={16} weight="fill" />
                     <span>CEO Decision</span>

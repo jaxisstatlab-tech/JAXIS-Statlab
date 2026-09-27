@@ -4,7 +4,7 @@
 
 :root {
   --bg: #010114;
-  --surface: #01142b;
+  --surface: #0A0A18;
   --accent: #cc6600;
   --accent-hover: #e67300;
 }
@@ -565,7 +565,7 @@ html[data-intro="done"] .intro {
     transition: background-color 200ms ease;
   }
   .bento-tile:hover {
-    background-color: #011830;
+    background-color: #0D0D1B;
   }
 }
 

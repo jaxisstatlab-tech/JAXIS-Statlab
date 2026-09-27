@@ -319,7 +319,7 @@ export function CEODashboardClient({
       {/* 2:1 Asymmetric Bento Hero Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* 8-Col Hero: Monthly Contract Volume vs Staff Payouts */}
-        <Card className="lg:col-span-8 p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col justify-between">
+        <Card className="lg:col-span-8 p-5 sm:p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
             <div className="flex items-center gap-2.5">
               <div className="p-2 bg-orange-500/10 border border-[#CC6600]/30 text-[#FFA040] rounded-[2px]">
@@ -354,7 +354,7 @@ export function CEODashboardClient({
         {/* 4-Col Stack: Pipeline Velocity & Top Disciplines */}
         <div className="lg:col-span-4 flex flex-col gap-6">
           {/* Card 1: Pipeline Velocity */}
-          <Card className="p-5 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-3.5">
+          <Card className="p-5 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-3.5">
             <div className="flex items-center gap-2 border-b border-white/10 pb-3">
               <div className="p-1.5 bg-sky-500/10 border border-sky-500/30 text-sky-400 rounded-[2px]">
                 <Kanban weight="fill" size={16} />
@@ -400,7 +400,7 @@ export function CEODashboardClient({
           </Card>
 
           {/* Card 2: Research Disciplines */}
-          <Card className="p-5 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-3.5 flex-1 overflow-hidden">
+          <Card className="p-5 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-3.5 flex-1 overflow-hidden">
             <div className="flex items-center gap-2 border-b border-white/10 pb-3 shrink-0">
               <div className="p-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-[2px]">
                 <GraduationCap weight="fill" size={16} />
@@ -433,7 +433,7 @@ export function CEODashboardClient({
       </div>
 
       {/* Global Pipeline Registry Card */}
-      <Card className="p-0 overflow-hidden bg-[#01142B] border border-white/10 rounded-[2px]">
+      <Card className="p-0 overflow-hidden bg-[#0A0A18] border border-white/10 rounded-[2px]">
         <div className="p-4 sm:p-5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-white font-sans">All Research Studies</h2>
@@ -448,7 +448,7 @@ export function CEODashboardClient({
               placeholder="Search studies..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] px-3 py-1.5 text-xs text-white font-mono placeholder:text-white/30 outline-none focus:border-[#CC6600]"
+              className="w-full bg-[#050513] border border-white/10 rounded-[2px] px-3 py-1.5 text-xs text-white font-mono placeholder:text-white/30 outline-none focus:border-[#CC6600]"
             />
             {searchQuery && (
               <button

@@ -8,7 +8,6 @@ import {
   Button,
   Card,
   KpiCard,
-  PageHeader,
   StatusBadge,
   Badge,
   Toast,
@@ -27,6 +26,7 @@ import {
 } from "@phosphor-icons/react";
 import { DELIVERABLE_CATEGORY_METADATA } from "@/lib/delivery-rules";
 import { downloadCertificatePdf } from "../utils/generateCertificatePdf";
+import { StudySection } from "@/features/projects/components/StudySection";
 
 interface ClientDeliverablesDeskProps {
   data: ClientDeliverablesDTO;
@@ -145,28 +145,20 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {/* Page Header */}
-      <PageHeader
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "MY STUDIES", href: "/dashboard/client/projects" },
-          { label: project.intakeId, href: `/dashboard/client/projects/${project.id}` },
-          { label: "DELIVERABLES" },
-        ]}
-        title="Final Deliverables Portal"
-        description={`Official statistical outputs, data tables, and manuscript findings for ${project.researchTitle}.`}
-        actions={
-          isReleased && revisionWindow.isActive && !hasPendingRevision ? (
+      <StudySection
+          title="Your files"
+          description="Your tables, write-up and code, checked by our reviewer before release."
+          actions={isReleased && revisionWindow.isActive && !hasPendingRevision ? (
             <Button
               variant="secondary"
               size="md"
               onClick={() => router.push(`/dashboard/client/projects/${project.id}/revision`)}
             >
               <ArrowCounterClockwise size={16} weight="bold" />
-              <span>Request Included Revision</span>
+              <span>Request Changes</span>
             </Button>
-          ) : undefined
-        }
-      />
+          ) : undefined}
+        />
 
       {/* Overview Cards (When Released) */}
       {isReleased ? (
@@ -233,7 +225,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
 
       {/* Payment Lock Notice */}
       {!isReleased && paymentLock?.isLocked && (
-        <Card className="p-8 sm:p-12 text-center bg-[#01142B] border border-amber-500/30 animate-card-reveal stagger-1">
+        <Card className="p-8 sm:p-12 text-center bg-[#0A0A18] border border-amber-500/30 animate-card-reveal stagger-1">
           <div className="mx-auto w-16 h-16 rounded-[2px] bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-4">
             <Receipt size={36} weight="fill" />
           </div>
@@ -259,7 +251,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
 
       {/* Unreleased Under Packaging Notice */}
       {!isReleased && !paymentLock?.isLocked && (
-        <Card className="p-8 sm:p-12 text-center bg-[#01142B] border border-sky-500/20 animate-card-reveal stagger-1">
+        <Card className="p-8 sm:p-12 text-center bg-[#0A0A18] border border-sky-500/20 animate-card-reveal stagger-1">
           <div className="mx-auto w-16 h-16 rounded-[2px] bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mb-4">
             <ShieldCheck size={36} weight="fill" />
           </div>
@@ -283,7 +275,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
 
       {/* Active Revision Window Banner */}
       {isReleased && revisionWindow.isActive && (
-        <Card className="p-6 bg-[#011B38] border border-sky-500/30 animate-card-reveal stagger-4">
+        <Card className="p-6 bg-[#0F0F1D] border border-sky-500/30 animate-card-reveal stagger-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="p-2.5 rounded-[2px] bg-sky-500/10 text-sky-400 border border-sky-500/20">
@@ -339,7 +331,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
               return (
                 <Card
                   key={file.id}
-                  className="p-6 border border-white/10 bg-[#01142B] hover:border-white/20 transition-all flex flex-col justify-between"
+                  className="p-6 border border-white/10 bg-[#0A0A18] hover:border-white/20 transition-all flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-3 mb-3">
@@ -391,7 +383,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
 
             {/* Official Certificate of Statistical Audit Card in Grid */}
             {data.qaCertificate && (
-              <Card className="p-6 border border-[#CC6600]/40 bg-[#01142B] hover:border-[#CC6600]/70 transition-all flex flex-col justify-between relative overflow-hidden group">
+              <Card className="p-6 border border-[#CC6600]/40 bg-[#0A0A18] hover:border-[#CC6600]/70 transition-all flex flex-col justify-between relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#CC6600]/5 rounded-full blur-2xl pointer-events-none -mr-8 -mt-8 group-hover:bg-[#CC6600]/10 transition-all" />
 
                 <div>
@@ -459,7 +451,7 @@ export function ClientDeliverablesDesk({ data }: ClientDeliverablesDeskProps) {
 
           <div className="space-y-3">
             {revisions.map((rev) => (
-              <Card key={rev.id} className="p-5 border border-white/10 bg-[#01142B]">
+              <Card key={rev.id} className="p-5 border border-white/10 bg-[#0A0A18]">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
                   <div className="flex items-center gap-3">
                     <StatusBadge status={rev.status} />

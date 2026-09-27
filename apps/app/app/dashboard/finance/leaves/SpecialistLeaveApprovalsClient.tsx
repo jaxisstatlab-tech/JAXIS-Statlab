@@ -406,7 +406,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
           subtitle="Review and acknowledge specialist absence requests before activating official leave status."
         />
       ) : (
-        <Card className="p-5 border border-white/10 bg-[#01142B]/70 rounded-[2px] flex items-center justify-between gap-4">
+        <Card className="p-5 border border-white/10 bg-[#0A0A18]/70 rounded-[2px] flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-[2px] bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-center shrink-0">
               <IconCheck size={18} stroke={2} className="text-emerald-400" />
@@ -427,7 +427,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
       )}
 
       {/* ── Specialist Availability Roster ── */}
-      <Card className="p-0 overflow-hidden border border-white/10 bg-[#01142B] rounded-[2px]">
+      <Card className="p-0 overflow-hidden border border-white/10 bg-[#0A0A18] rounded-[2px]">
         {/* Table Header & Controls */}
         <div className="p-5 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -449,7 +449,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
                 placeholder="Search specialist..."
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                className="w-48 sm:w-56 bg-[#010D1F] border border-white/15 rounded-[2px] pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-white/40 focus:border-[#CC6600] outline-none font-sans"
+                className="w-48 sm:w-56 bg-[#050513] border border-white/15 rounded-[2px] pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-white/40 focus:border-[#CC6600] outline-none font-sans"
               />
             </div>
 
@@ -458,7 +458,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
               <select
                 value={roleFilter}
                 onChange={(e) => { setRoleFilter(e.target.value as typeof roleFilter); setCurrentPage(1); }}
-                className="bg-[#010D1F] border border-white/15 rounded-[2px] pl-2.5 pr-8 py-1.5 text-xs text-white/80 focus:border-[#CC6600] outline-none cursor-pointer font-sans appearance-none hover:border-white/25 transition-colors"
+                className="bg-[#050513] border border-white/15 rounded-[2px] pl-2.5 pr-8 py-1.5 text-xs text-white/80 focus:border-[#CC6600] outline-none cursor-pointer font-sans appearance-none hover:border-white/25 transition-colors"
               >
                 <option value="ALL">All Roles</option>
                 <option value="STATISTICIAN">Statisticians</option>
@@ -476,7 +476,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
               <select
                 value={statusFilter}
                 onChange={(e) => { setStatusFilter(e.target.value as typeof statusFilter); setCurrentPage(1); }}
-                className="bg-[#010D1F] border border-white/15 rounded-[2px] pl-2.5 pr-8 py-1.5 text-xs text-white/80 focus:border-[#CC6600] outline-none cursor-pointer font-sans appearance-none hover:border-white/25 transition-colors"
+                className="bg-[#050513] border border-white/15 rounded-[2px] pl-2.5 pr-8 py-1.5 text-xs text-white/80 focus:border-[#CC6600] outline-none cursor-pointer font-sans appearance-none hover:border-white/25 transition-colors"
               >
                 <option value="ALL">All Statuses</option>
                 <option value="ACTIVE">Active</option>
@@ -729,16 +729,16 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
                       setModalError(null);
                     }
                   }}
-                  className="w-full bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white/90 focus:border-[#CC6600] outline-none cursor-pointer appearance-none pr-8 font-sans hover:border-white/30"
+                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white/90 focus:border-[#CC6600] outline-none cursor-pointer appearance-none pr-8 font-sans hover:border-white/30"
                 >
-                  <option value="" className="bg-[#01142B] text-white/50">
+                  <option value="" className="bg-[#0A0A18] text-white/50">
                     Select standard reason template...
                   </option>
                   {LEAVE_REASON_TEMPLATES.map((tmpl) => (
                     <option
                       key={tmpl.label}
                       value={tmpl.text}
-                      className="bg-[#01142B] text-white py-1"
+                      className="bg-[#0A0A18] text-white py-1"
                     >
                       {tmpl.label}
                     </option>
@@ -757,7 +757,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
                   setModalError(null);
                 }}
                 placeholder="e.g. Approved personal sabbatical, research conference presentation..."
-                className="w-full bg-[#01142B] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-16 font-sans leading-relaxed"
+                className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-16 font-sans leading-relaxed"
               />
             </div>
 
@@ -792,7 +792,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
                     min={todayStr}
                     value={modalFrom}
                     onChange={(e) => handleModalFromChange(e.target.value)}
-                    className={`w-full bg-[#01142B] border rounded-[2px] p-2 text-xs text-white focus:border-[#CC6600] outline-none font-mono cursor-pointer transition-colors ${
+                    className={`w-full bg-[#0A0A18] border rounded-[2px] p-2 text-xs text-white focus:border-[#CC6600] outline-none font-mono cursor-pointer transition-colors ${
                       isModalStartInPast ? "border-rose-500/60 bg-rose-950/10" : "border-white/10 hover:border-white/20"
                     }`}
                   />
@@ -811,7 +811,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
                     min={modalFrom || todayStr}
                     value={modalUntil}
                     onChange={(e) => handleModalUntilChange(e.target.value)}
-                    className={`w-full bg-[#01142B] border rounded-[2px] p-2 text-xs text-white focus:border-[#CC6600] outline-none font-mono cursor-pointer transition-colors ${
+                    className={`w-full bg-[#0A0A18] border rounded-[2px] p-2 text-xs text-white focus:border-[#CC6600] outline-none font-mono cursor-pointer transition-colors ${
                       isModalReturnBeforeStart ? "border-rose-500/60 bg-rose-950/10" : "border-white/10 hover:border-white/20"
                     }`}
                   />

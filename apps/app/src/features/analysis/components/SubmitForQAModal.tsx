@@ -107,7 +107,7 @@ export const SubmitForQAModal: React.FC<SubmitForQAModalProps> = ({
       }
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-sm font-sans">
-        <div className="p-3.5 bg-[#011B38] border border-sky-500/30 rounded-[2px] text-xs text-sky-200 leading-relaxed">
+        <div className="p-3.5 bg-[#0F0F1D] border border-sky-500/30 rounded-[2px] text-xs text-sky-200 leading-relaxed">
           <span className="font-semibold block mb-1 text-white">Quality Assurance Handoff Protocol:</span>
           Submitting advances this study to <strong className="text-white font-mono">FOR_QA</strong>. Workbench
           file uploads will be locked while the assigned Senior QA Lead performs mathematical and methodological
@@ -144,7 +144,7 @@ export const SubmitForQAModal: React.FC<SubmitForQAModalProps> = ({
                   className={`p-3 rounded-[2px] border text-left text-xs transition-colors flex items-start gap-2.5 cursor-pointer ${
                     isChecked
                       ? "bg-emerald-950/30 border-emerald-500/40 text-white"
-                      : "bg-[#01142B] border-white/10 text-white/70 hover:text-white"
+                      : "bg-[#0A0A18] border-white/10 text-white/70 hover:text-white"
                   }`}
                 >
                   <div
@@ -175,7 +175,7 @@ export const SubmitForQAModal: React.FC<SubmitForQAModalProps> = ({
             rows={3}
             maxLength={2000}
             disabled={isSubmitting}
-            className="w-full p-3 bg-[#01142B] border border-white/15 rounded-[2px] text-xs text-white placeholder:text-white/30 focus:border-[#38BDF8] focus:outline-none transition-colors resize-none font-sans"
+            className="w-full p-3 bg-[#0A0A18] border border-white/15 rounded-[2px] text-xs text-white placeholder:text-white/30 focus:border-[#38BDF8] focus:outline-none transition-colors resize-none font-sans"
           />
         </div>
       </form>

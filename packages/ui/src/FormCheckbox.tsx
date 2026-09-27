@@ -44,7 +44,7 @@ export const FormCheckbox = React.forwardRef<HTMLInputElement, FormCheckboxProps
               ? `p-4 sm:p-5 rounded-[2px] border ${
                   checked
                     ? "bg-[#CC6600]/10 border-[#CC6600]/50"
-                    : "bg-[#01142B]/85 border-white/[0.09] hover:border-white/20"
+                    : "bg-[#0A0A18]/85 border-white/[0.09] hover:border-white/20"
                 }`
               : ""
           }`}
@@ -86,13 +86,13 @@ export const FormCheckbox = React.forwardRef<HTMLInputElement, FormCheckboxProps
               className={`w-5 h-5 rounded-[2px] border flex items-center justify-center transition-all ${
                 checked
                   ? "bg-[#CC6600] border-[#CC6600] text-white shadow-sm"
-                  : "bg-[#011C38] border-white/25 text-transparent hover:border-[#CC6600]/70"
+                  : "bg-[#10101E] border-white/25 text-transparent hover:border-[#CC6600]/70"
               }`}
               style={{
                 width: "1.25rem",
                 height: "1.25rem",
                 borderRadius: "2px",
-                backgroundColor: checked ? "#CC6600" : "#011C38",
+                backgroundColor: checked ? "#CC6600" : "#10101E",
                 borderColor: checked ? "#CC6600" : "rgba(255, 255, 255, 0.25)",
                 display: "flex",
                 alignItems: "center",

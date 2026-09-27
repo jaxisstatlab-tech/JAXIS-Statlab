@@ -173,7 +173,7 @@ export function AssignmentsClient({
 
       <div className="flex flex-col gap-8">
         {/* Section 1: Studies Awaiting Assignment Table */}
-        <Card className="p-0 overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[2px]">
+        <Card className="p-0 overflow-hidden border border-white/10 bg-[#0A0A18]/90 rounded-[2px]">
           <div className="p-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-white tracking-normal font-sans flex items-center gap-2">
@@ -278,7 +278,7 @@ export function AssignmentsClient({
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Column 1: Lead Statisticians */}
-            <Card className="p-6 border border-white/10 bg-[#01142B]/90 rounded-[2px] flex flex-col gap-4">
+            <Card className="p-6 border border-white/10 bg-[#0A0A18]/90 rounded-[2px] flex flex-col gap-4">
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 bg-sky-500/10 border border-sky-500/20 rounded-[2px] text-sky-400">
@@ -298,7 +298,7 @@ export function AssignmentsClient({
                   return (
                     <div
                       key={stat.id}
-                      className="p-4 bg-[#011B38] border border-white/10 rounded-[2px] flex flex-col gap-3"
+                      className="p-4 bg-[#0F0F1D] border border-white/10 rounded-[2px] flex flex-col gap-3"
                     >
                       {/* Staff Header */}
                       <div className="flex items-start justify-between gap-3">
@@ -379,7 +379,7 @@ export function AssignmentsClient({
                           {stat.assignedStudies.map((study) => (
                             <div
                               key={study.id}
-                              className="p-2.5 bg-[#01142B] border border-white/[0.06] rounded-[2px] flex items-center justify-between gap-3 text-xs"
+                              className="p-2.5 bg-[#0A0A18] border border-white/[0.06] rounded-[2px] flex items-center justify-between gap-3 text-xs"
                             >
                               <div className="min-w-0 flex flex-col gap-0.5">
                                 <div className="flex items-center gap-2">
@@ -421,7 +421,7 @@ export function AssignmentsClient({
             </Card>
 
             {/* Column 2: Senior QA Leads */}
-            <Card className="p-6 border border-white/10 bg-[#01142B]/90 rounded-[2px] flex flex-col gap-4">
+            <Card className="p-6 border border-white/10 bg-[#0A0A18]/90 rounded-[2px] flex flex-col gap-4">
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-[2px] text-emerald-400">
@@ -441,7 +441,7 @@ export function AssignmentsClient({
                   return (
                     <div
                       key={qa.id}
-                      className="p-4 bg-[#011B38] border border-white/10 rounded-[2px] flex flex-col gap-3"
+                      className="p-4 bg-[#0F0F1D] border border-white/10 rounded-[2px] flex flex-col gap-3"
                     >
                       {/* Staff Header */}
                       <div className="flex items-start justify-between gap-3">
@@ -515,7 +515,7 @@ export function AssignmentsClient({
                           {qa.assignedStudies.map((study) => (
                             <div
                               key={study.id}
-                              className="p-2.5 bg-[#01142B] border border-white/[0.06] rounded-[2px] flex items-center justify-between gap-3 text-xs"
+                              className="p-2.5 bg-[#0A0A18] border border-white/[0.06] rounded-[2px] flex items-center justify-between gap-3 text-xs"
                             >
                               <div className="min-w-0 flex flex-col gap-0.5">
                                 <div className="flex items-center gap-2">

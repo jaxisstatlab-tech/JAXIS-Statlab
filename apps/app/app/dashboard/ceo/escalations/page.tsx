@@ -80,7 +80,7 @@ export default async function CeoEscalationsPage() {
       </div>
 
       {/* Escalation Incidents Queue */}
-      <Card className="p-0 overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[2px] flex flex-col">
+      <Card className="p-0 overflow-hidden border border-white/10 bg-[#0A0A18]/90 rounded-[2px] flex flex-col">
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <IconShieldLock size={22} stroke={2} className="text-red-400" />

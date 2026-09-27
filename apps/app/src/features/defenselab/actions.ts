@@ -89,29 +89,44 @@ function buildEntitlement(
   };
 }
 
-/** Local dev only: entitlements from the offline JSON stores when the DB is unreachable. */
-function readDevDefenseLabEntitlements(userId: string, email?: string | null): DefenseLabProjectEntitlementDTO[] {
-  if (process.env.NODE_ENV === "production") return [];
-  const readJson = <T,>(file: string): T[] => {
+/** Local dev only: entitlements and sessions from the offline JSON stores when the DB is unreachable. */
+function readDevDefenseLabData(
+  userId: string,
+  email?: string | null
+): { entitlements: DefenseLabProjectEntitlementDTO[]; sessions: DefenseLabSessionDTO[] } {
+  if (process.env.NODE_ENV === "production") return { entitlements: [], sessions: [] };
+  // Fixed file paths (not built from a variable) so the build doesn't trace the whole project.
+  const readJson = <T,>(full: string): T[] => {
     try {
-      const full = path.join(/*turbopackIgnore: true*/ process.cwd(), file);
       return fs.existsSync(full) ? (JSON.parse(fs.readFileSync(full, "utf-8")) as T[]) : [];
     } catch {
       return [];
     }
   };
-  type DevProject = { id: string; intakeId: string; researchTitle: string; clientId: string; createdAt: string; client?: { email?: string } };
+  type DevProject = {
+    id: string;
+    intakeId: string;
+    researchTitle: string;
+    clientId: string;
+    createdAt: string;
+    client?: { email?: string };
+    assignment?: { statisticianId?: string; statistician?: { fullName?: string } } | null;
+  };
   type DevQuote = { projectId: string; status: string; lineItems?: EntitlementSource["lineItems"] };
   type DevPayment = { projectId: string; paymentStatus: string };
 
   const lowerEmail = email?.toLowerCase();
-  const projects = readJson<DevProject>(".dev-projects.json")
+  const projects = readJson<DevProject>(path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json"))
     .filter((p) => p.clientId === userId || (!!lowerEmail && p.client?.email?.toLowerCase() === lowerEmail))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const quotes = readJson<DevQuote>(".dev-quotations.json");
-  const payments = readJson<DevPayment>("dev_data/payments.json");
+  const quotes = readJson<DevQuote>(path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-quotations.json"));
+  const payments = readJson<DevPayment>(path.join(/*turbopackIgnore: true*/ process.cwd(), "dev_data", "payments.json"));
+  const projectIds = new Set(projects.map((p) => p.id));
+  const sessions = readJson<DefenseLabSessionDTO>(path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-defenselab.json"))
+    .filter((s) => projectIds.has(s.projectId))
+    .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime());
 
-  return projects.flatMap((p) => {
+  const entitlements = projects.flatMap((p) => {
     const entitlement = buildEntitlement(
       {
         id: p.id,
@@ -121,13 +136,14 @@ function readDevDefenseLabEntitlements(userId: string, email?: string | null): D
           .filter((q) => q.projectId === p.id && ["CLIENT_APPROVED", "SUPERSEDED"].includes(q.status))
           .flatMap((q) => q.lineItems ?? []),
         isPaid: payments.some((pay) => pay.projectId === p.id && ["VERIFIED", "FULLY_PAID"].includes(pay.paymentStatus)),
-        expertName: null,
-        expertId: null,
+        expertName: p.assignment?.statistician?.fullName ?? null,
+        expertId: p.assignment?.statisticianId ?? null,
       },
-      []
+      sessions
     );
     return entitlement ? [entitlement] : [];
   });
+  return { entitlements, sessions };
 }
 
 /**
@@ -231,10 +247,10 @@ export async function getClientDefenseLabData(): Promise<
   } catch (err: any) {
     console.error("[GetClientDefenseLabData] Error:", err);
     if (process.env.NODE_ENV !== "production") {
-      // Offline dev: show studies from the local stores; no session store exists offline.
+      // Offline dev: studies and sessions from the local stores (.dev-projects.json, .dev-defenselab.json).
       return {
         success: true,
-        data: { entitlements: readDevDefenseLabEntitlements(session.user.id, session.user.email), sessions: [] },
+        data: readDevDefenseLabData(session.user.id, session.user.email),
       };
     }
     return {

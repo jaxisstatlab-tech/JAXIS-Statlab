@@ -89,7 +89,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
     study.client?.clientProfile?.institutionSchool || null;
 
   return (
-    <Card className={`p-6 sm:p-8 border border-white/10 bg-[#01142B] hover:border-white/20 transition-all rounded-[2px] shadow-xl flex flex-col gap-6 ${className}`}>
+    <Card className={`p-6 sm:p-8 border border-white/10 bg-[#0A0A18] hover:border-white/20 transition-all rounded-[2px] shadow-xl flex flex-col gap-6 ${className}`}>
       {/* ── Top Header: Title, ID, Status Badge ── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="flex flex-col gap-2 min-w-0 flex-1">
@@ -190,7 +190,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
                       ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
                       : isCurrent
                       ? "bg-[#CC6600] text-white ring-2 ring-[#CC6600]/40 border-2 border-white/80"
-                      : "bg-[#010D1F] border border-white/15 text-white/30"
+                      : "bg-[#050513] border border-white/15 text-white/30"
                   }`}
                 >
                   {isPassed ? (

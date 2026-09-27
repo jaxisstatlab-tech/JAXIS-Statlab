@@ -3,12 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getAnalysisWorkbenchData } from "@/features/analysis/actions";
-import { PageHeader, Card, Button, Badge } from "@repo/ui";
+import { Card, Button, Badge } from "@repo/ui";
 import {
   IconDownload,
-  IconArrowLeft,
-  IconMessages,
-  IconDatabase,
   IconFiles,
   IconUser,
   IconClock,
@@ -17,6 +14,7 @@ import {
   IconArrowRight,
 } from "@tabler/icons-react";
 import { formatFileCategory } from "@/lib/file-utils";
+import { StudySection } from "@/features/projects/components/StudySection";
 
 interface QAProjectFilesPageProps {
   params: Promise<{ id: string }>;
@@ -45,34 +43,12 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
-      <PageHeader
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "QA", href: "/dashboard/qa" },
-          { label: project.intakeId },
-          { label: "WORKING FILES" },
-        ]}
-        title="Statistical Analysis Working Files"
-        badge={
-          <Badge
-            variant={
-              isDelivered
-                ? "emerald"
-                : isReadyForQa
-                ? "emerald"
-                : project.masterStatus === "QA_REVISION"
-                ? "warning"
-                : "sky"
-            }
-            className="font-mono text-xs"
-          >
-            {project.masterStatus}
-          </Badge>
-        }
-        description={`Senior QA Lead File Inspection • Study: ${project.researchTitle}`}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {isReadyForQa && (
+      <StudySection
+          title="Working files"
+          description="Every file the statistician uploaded for this study."
+          actions={
+            <>
+              {isReadyForQa && (
               <Link href={`/dashboard/qa/projects/${project.id}/review`}>
                 <Button
                   variant="primary"
@@ -80,30 +56,18 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
                   className="rounded-[2px] text-xs gap-1.5 cursor-pointer bg-[#CC6600] hover:bg-[#CC6600]/90 text-white font-semibold shadow-sm"
                 >
                   <IconShieldCheck size={14} stroke={2} />
-                  <span>Open Evaluation Desk</span>
+                  <span>Open Review</span>
                   <IconArrowRight size={12} stroke={2} />
                 </Button>
               </Link>
             )}
-            <Link href={`/dashboard/qa/messages`}>
-              <Button variant="outline" size="sm" className="rounded-[2px] text-xs gap-1.5 cursor-pointer">
-                <IconMessages size={14} stroke={2} className="text-[#38BDF8]" />
-                <span>Consultation Thread</span>
-              </Button>
-            </Link>
-            <Link href="/dashboard/qa">
-              <Button variant="secondary" size="sm" className="rounded-[2px] text-xs gap-1.5 cursor-pointer">
-                <IconArrowLeft size={14} stroke={2} />
-                <span>Return to QA Queue</span>
-              </Button>
-            </Link>
-          </div>
-        }
-      />
+            </>
+          }
+        />
 
       {/* Lifecycle Status Guidance Banner */}
       {project.masterStatus === "IN_PROGRESS" && (
-        <div className="p-4 rounded-[2px] bg-[#01142B] border border-amber-500/30 flex items-start gap-3 text-xs animate-content-fade">
+        <div className="p-4 rounded-[2px] bg-[#0A0A18] border border-amber-500/30 flex items-start gap-3 text-xs animate-content-fade">
           <IconClock size={18} stroke={2} className="text-amber-400 shrink-0 mt-0.5" />
           <div className="flex flex-col gap-0.5">
             <span className="font-semibold text-amber-300">Study Still In Progress (Draft Mode)</span>
@@ -117,7 +81,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
       )}
 
       {isReadyForQa && (
-        <div className="p-4 rounded-[2px] bg-[#01142B] border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs animate-content-fade">
+        <div className="p-4 rounded-[2px] bg-[#0A0A18] border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs animate-content-fade">
           <div className="flex items-start gap-3">
             <IconShieldCheck size={18} stroke={2} className="text-emerald-400 shrink-0 mt-0.5" />
             <div className="flex flex-col gap-0.5">
@@ -141,7 +105,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
       )}
 
       {isDelivered && (
-        <div className="p-4 rounded-[2px] bg-[#01142B] border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs animate-content-fade">
+        <div className="p-4 rounded-[2px] bg-[#0A0A18] border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs animate-content-fade">
           <div className="flex items-start gap-3">
             <IconCheck size={18} stroke={2} className="text-emerald-400 shrink-0 mt-0.5" />
             <div className="flex flex-col gap-0.5">
@@ -161,7 +125,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
 
       {/* Meta Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
           <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Lead Statistician</span>
           <span className="text-sm font-semibold text-white truncate">
             {assignment?.statisticianName || "Assigned Statistician"}
@@ -169,7 +133,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
           <span className="text-[0.688rem] text-white/50">{assignment?.statisticianEmail || "stat@jaxis.dev"}</span>
         </div>
 
-        <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
           <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Package Tier</span>
           <span className="text-sm font-semibold text-[#CC6600]">
             {project.packageName || "Standard Empirical"}
@@ -177,7 +141,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
           <span className="text-[0.688rem] text-white/50">Contractual Level</span>
         </div>
 
-        <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-1">
+        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
           <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Current Output Files</span>
           <span className="text-sm font-mono font-bold text-emerald-400">
             {currentFiles.length} File{currentFiles.length !== 1 ? "s" : ""} Available
@@ -189,7 +153,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
       {/* Files Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Verified Client Uploaded Files */}
-        <Card className="p-6 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-4 lg:col-span-1">
+        <Card className="p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-4 lg:col-span-1">
           <div className="flex items-center gap-2">
             <IconFiles size={18} stroke={2} className="text-[#38BDF8]" />
             <h2 className="text-sm font-bold text-white">Client Uploaded Files ({clientFiles.length})</h2>
@@ -236,7 +200,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
         </Card>
 
         {/* Statistical Analysis Outputs */}
-        <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-6 lg:col-span-2">
+        <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-6 lg:col-span-2">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-bold text-white">Statistical Outputs &amp; Scripts</h2>
@@ -258,7 +222,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
               {currentFiles.map((file) => (
                 <div
                   key={file.id}
-                  className="p-4 sm:p-5 rounded-[2px] bg-[#011B38] border border-white/10 flex flex-col gap-3"
+                  className="p-4 sm:p-5 rounded-[2px] bg-[#0F0F1D] border border-white/10 flex flex-col gap-3"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">

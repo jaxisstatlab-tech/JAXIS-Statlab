@@ -1691,6 +1691,7 @@ export async function getClientQuotationsData(): Promise<ClientQuoteEntry[]> {
   return results.filter(
     (r) =>
       r.quotation !== null ||
+      r.project.masterStatus === "NEW_REQUEST" ||
       r.project.masterStatus === "QUOTE_SENT" ||
       r.project.masterStatus === "UNDER_EVALUATION" ||
       r.project.masterStatus === "CLIENT_APPROVED"

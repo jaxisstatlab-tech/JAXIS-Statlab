@@ -15,7 +15,7 @@ const EVENTS: { icon: Icon; title: string; meta: ReactNode; stage: number }[] = 
     meta: (
       <>
         Core Thesis · <Peso />
-        2,400
+        2,500
       </>
     ),
     stage: 1,

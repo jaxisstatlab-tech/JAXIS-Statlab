@@ -115,7 +115,7 @@ export function ProjectFilesCard({
 
       {/* ── Files List ── */}
       {files.length === 0 ? (
-        <div className="p-8 rounded-[2px] bg-[#011C38]/40 border border-dashed border-white/10 flex flex-col items-center justify-center text-center gap-2">
+        <div className="p-8 rounded-[2px] bg-[#10101E]/40 border border-dashed border-white/10 flex flex-col items-center justify-center text-center gap-2">
           <span className="text-xs font-mono text-white/40">
             No research files or dataset packages uploaded with this submission.
           </span>
@@ -131,7 +131,7 @@ export function ProjectFilesCard({
             return (
               <div
                 key={file.id}
-                className="group rounded-[2px] bg-[#011C38] border border-white/[0.08] hover:border-white/20 transition-colors px-6 sm:px-8 lg:px-9 py-4.5 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6"
+                className="group rounded-[2px] bg-[#10101E] border border-white/[0.08] hover:border-white/20 transition-colors px-6 sm:px-8 lg:px-9 py-4.5 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6"
               >
                 {/* Left: Type Icon + File Details */}
                 <div

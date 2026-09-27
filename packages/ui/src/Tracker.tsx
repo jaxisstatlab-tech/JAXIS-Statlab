@@ -56,7 +56,7 @@ export const Tracker = React.forwardRef<HTMLDivElement, TrackerProps>(
                     <TooltipPrimitives.Content
                       side="top"
                       sideOffset={6}
-                      className="z-50 rounded-[2px] border border-white/15 bg-[#01142B] px-3 py-1.5 text-xs font-medium tracking-wide text-white shadow-xl backdrop-blur-md"
+                      className="z-50 rounded-[2px] border border-white/15 bg-[#0A0A18] px-3 py-1.5 text-xs font-medium tracking-wide text-white shadow-xl backdrop-blur-md"
                     >
                       {item.tooltip}
                     </TooltipPrimitives.Content>

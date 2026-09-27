@@ -364,7 +364,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
             </span>
           ) : shiftStatus?.isOnDuty ? (
             /* Active Duty Live Timer Pill */
-            <div className="flex items-center bg-[#01142B] border border-emerald-500/40 rounded-[2px] p-0.5 sm:p-1 gap-1 sm:gap-1.5 shadow-sm shrink-0">
+            <div className="flex items-center bg-[#0A0A18] border border-emerald-500/40 rounded-[2px] p-0.5 sm:p-1 gap-1 sm:gap-1.5 shadow-sm shrink-0">
               {/* Clickable Timer Pill */}
               <button
                 type="button"
@@ -456,7 +456,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
       >
         <div className="flex flex-col gap-4 text-xs font-sans text-white/90">
           {/* Simple Duration Summary */}
-          <div className="p-4 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-center justify-between">
+          <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-[2px] bg-emerald-950/50 border border-emerald-500/30 text-emerald-400">
                 <Clock size={20} weight="fill" />
@@ -481,7 +481,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
           </div>
 
           {/* Automatic Meal Break Notice */}
-          <div className="p-3 bg-[#010D1F] border border-white/10 rounded-[2px] flex items-center justify-between text-xs">
+          <div className="p-3 bg-[#050513] border border-white/10 rounded-[2px] flex items-center justify-between text-xs">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 rounded-[2px] bg-[#CC6600]/10 border border-[#CC6600]/30 text-[#CC6600]">
                 <Coffee size={15} weight="fill" />
@@ -523,7 +523,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
               value={shiftNotes}
               onChange={(e) => setShiftNotes(e.target.value)}
               placeholder="e.g. Statistical analysis on Study #202608-0001"
-              className="w-full bg-[#010D1F] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none font-sans"
+              className="w-full bg-[#050513] border border-white/10 focus:border-[#CC6600] rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none font-sans"
             />
           </div>
         </div>

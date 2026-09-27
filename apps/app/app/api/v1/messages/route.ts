@@ -8,6 +8,9 @@ import {
   type MessageDTO,
   type MessagingActionResult,
 } from "@/features/messaging/schemas";
+import { syncNewMessages } from "@/features/messaging/actions";
+import { devMessagingEnabled, devSendMessage } from "@/features/messaging/dev-store";
+import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 
 interface CachedProjectAuth {
   id: string;
@@ -161,6 +164,15 @@ export async function POST(
           },
         }).catch((err) => console.warn("[Firewall Audit Write Error]", err));
 
+        dispatchRealtimeNotification({
+          eventType: "SECURITY_ALERT",
+          projectId: project.id,
+          title: "Firewall Alert: Contact Info Blocked",
+          message: `${userName} triggered a communication policy block in consultation.`,
+          targetRoles: ["ADMIN", "CEO"],
+          excludeUserId: userId,
+        }).catch((err) => console.warn("[POST /api/v1/messages] Alert warning:", err));
+
         return NextResponse.json(
           {
             success: false,
@@ -186,6 +198,17 @@ export async function POST(
         },
       });
 
+      // Bell alert for the other people on the study (same as the sendMessage action). Not awaited.
+      const preview = newMsg.content.length > 80 ? `${newMsg.content.slice(0, 80)}...` : newMsg.content;
+      dispatchRealtimeNotification({
+        eventType: "MESSAGE_ALERT",
+        projectId: project.id,
+        title: "New Consultation Message",
+        message: `${userName}: ${preview}`,
+        includeProjectParties: true,
+        excludeUserId: userId,
+      }).catch((err) => console.warn("[POST /api/v1/messages] Alert warning:", err));
+
       const messageDTO: MessageDTO = {
         id: newMsg.id,
         projectId: project.id,
@@ -209,6 +232,10 @@ export async function POST(
       });
     })());
   } catch (err: unknown) {
+    if (devMessagingEnabled()) {
+      const res = devSendMessage(projectId, { ...session.user, role: callerRole }, content);
+      return NextResponse.json(res, { status: res.success ? 200 : res.blocked ? 422 : 403 });
+    }
     console.error("[POST /api/v1/messages] Error:", err);
     return NextResponse.json(
       {
@@ -218,4 +245,22 @@ export async function POST(
       { status: 500 }
     );
   }
+}
+
+/**
+ * GET /api/v1/messages?projectId=…&since=ISO — new messages since a time (the chat's catch-up check).
+ * A plain GET instead of a server action, so frequent checks never queue behind other actions.
+ */
+export async function GET(request: NextRequest) {
+  const projectId = request.nextUrl.searchParams.get("projectId");
+  const since = request.nextUrl.searchParams.get("since");
+  if (!projectId || !since) {
+    return NextResponse.json(
+      { success: false, error: { code: "BAD_REQUEST", message: "projectId and since are required." } },
+      { status: 400 }
+    );
+  }
+  const res = await syncNewMessages(projectId, since);
+  const status = res.success ? 200 : res.error?.code === "UNAUTHORIZED" ? 401 : 403;
+  return NextResponse.json(res, { status, headers: { "Cache-Control": "no-store" } });
 }

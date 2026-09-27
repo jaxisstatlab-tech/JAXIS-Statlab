@@ -12,7 +12,7 @@ function UnauthorizedContent() {
 
   return (
     <div className="min-h-screen w-full bg-[#010114] text-white flex items-center justify-center p-6 font-sans selection:bg-[#CC6600]/30 selection:text-white">
-      <Card className="max-w-md w-full p-8 border border-white/[0.12] bg-[#01142B]/90 backdrop-blur-xl rounded-[2px] shadow-2xl flex flex-col items-center text-center">
+      <Card className="max-w-md w-full p-8 border border-white/[0.12] bg-[#0A0A18]/90 backdrop-blur-xl rounded-[2px] shadow-2xl flex flex-col items-center text-center">
         {/* Warning Icon Emblem */}
         <div className="h-14 w-14 rounded-[2px] bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 mb-6 shadow-inner">
           <Warning size={28} weight="fill" />

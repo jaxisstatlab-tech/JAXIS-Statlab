@@ -1,10 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useTransition, use, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useTransition,
+  use,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   PageHeader,
-  Card,
   Button,
   Modal,
   ModalFooter,
@@ -14,21 +22,14 @@ import {
   CopyButton,
 } from "@repo/ui";
 import {
-  ArrowLeft,
+  ArrowRight,
+  ChatCenteredText,
   Check,
-  Receipt,
+  CheckCircle,
   Clock,
-  ShieldCheck,
-  Sparkle,
-  Warning,
   GraduationCap,
-  Lightning,
-  Flame,
-  Lock,
-  X,
-  ClipboardText,
-  FileText,
-  Certificate,
+  PencilSimple,
+  Warning,
 } from "@phosphor-icons/react";
 import { getProjectById } from "@/features/projects/actions";
 import {
@@ -40,13 +41,65 @@ import {
   ADDONS_CATALOG,
   calculateQuotationTotals,
 } from "@/lib/pricing-rules";
-import { formatPeso } from "@/lib/formatters";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 import type { QuotationDetailItem } from "@/features/quotations/schemas";
 import type { AddOnName } from "@prisma/client";
+import { clientPackage, clientPackageName, clientStandardTime } from "@/features/projects/client-packages";
+import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
+import { StudySection } from "@/features/projects/components/StudySection";
+
+// Client "Your price" page, laid out like a checkout: choices on the left, the price summary and
+// the accept button on the right. Pricing is recalculated with the same rules the server uses.
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+const SPEED_CODES = ["RUSH", "EXPRESS", "EMERGENCY"];
+
+// Plain names shown to clients (the catalog names are for staff screens).
+const CLIENT_ADDON_COPY: Record<string, { name: string; detail: string }> = {
+  DEFENSELAB: {
+    name: "DefenseLab practice session",
+    detail:
+      "A 1-hour mock defense with a senior statistician. You get the recording.",
+  },
+  RUSH: {
+    name: "Rush",
+    detail: "Ready in 3 days after your deposit is confirmed.",
+  },
+  EXPRESS: {
+    name: "Express",
+    detail: "Ready in 48 hours after your deposit is confirmed.",
+  },
+  EMERGENCY: {
+    name: "Emergency",
+    detail: "Ready in 24 hours, with a senior reviewer on your study.",
+  },
+};
+
+const money = (n: number) => Math.round(n).toLocaleString("en-PH");
+const subscribeNever = () => () => {};
+/** True only in the browser (after hydration), so portals never render on the server. */
+const useIsClient = () =>
+  useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  );
+const longDate = (value: string | Date) =>
+  new Date(value).toLocaleDateString("en-PH", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+interface AddOnOption {
+  code: string;
+  name: string;
+  detail: string;
+  amount: number;
+  isSpeed: boolean;
 }
 
 export default function ClientQuotationReviewPage({ params }: PageProps) {
@@ -59,11 +112,11 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Decision Modal States
   const [isAcceptModalOpen, setIsAcceptModalOpen] = useState(false);
   const [isDeclineModalOpen, setIsDeclineModalOpen] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
   const [isPending, startTransition] = useTransition();
+  const isClient = useIsClient();
 
   const [toastMessage, setToastMessage] = useState<{
     message: string;
@@ -83,18 +136,23 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
       if (projRes.success && projRes.data) {
         setProject(projRes.data);
       } else {
-        setError(!projRes.success ? projRes.error.message : "Failed to load project details.");
+        setError(
+          !projRes.success
+            ? projRes.error.message
+            : "We couldn't load this study.",
+        );
       }
 
       setQuotation(quoteRes);
       if (quoteRes) {
-        const initialCodes = quoteRes.lineItems
-          .filter((li) => li.itemType === "ADDON")
-          .map((li) => li.itemName);
-        setSelectedAddOnCodes(initialCodes);
+        setSelectedAddOnCodes(
+          quoteRes.lineItems
+            .filter((li) => li.itemType === "ADDON")
+            .map((li) => li.itemName),
+        );
       }
     } catch {
-      setError("Failed to load commercial quotation proposal.");
+      setError("We couldn't load your price. Please try again in a moment.");
     } finally {
       setIsLoading(false);
     }
@@ -104,9 +162,10 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
     loadData();
   }, [loadData]);
 
+  const isOpen = quotation?.status === "QUOTE_SENT" && !quotation.isExpired;
+
   const handleAcceptProposal = () => {
     if (!quotation) return;
-
     startTransition(async () => {
       try {
         const res = await respondQuotation({
@@ -114,26 +173,27 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
           decision: "ACCEPT",
           selectedAddOnCodes,
         });
-
         if (res.success) {
           setToastMessage({
-            message: "Proposal Accepted",
-            description: "Thank you! Our operations admin has been notified to draft your formal Statement of Work.",
+            message: "Price accepted",
+            description:
+              "Thank you! We're preparing your agreement and will let you know when it's ready to sign.",
             variant: "success",
           });
           setIsAcceptModalOpen(false);
           loadData();
         } else {
           setToastMessage({
-            message: "Acceptance Failed",
-            description: res.error?.message || "Failed to accept proposal.",
+            message: "Couldn't accept the price",
+            description: res.error?.message || "Please try again in a moment.",
             variant: "danger",
           });
         }
       } catch (err: unknown) {
         setToastMessage({
-          message: "System Error",
-          description: (err as Error).message || "An unexpected error occurred.",
+          message: "Something went wrong",
+          description:
+            (err as Error).message || "Please try again in a moment.",
           variant: "danger",
         });
       }
@@ -142,7 +202,6 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
 
   const handleDeclineProposal = () => {
     if (!quotation) return;
-
     startTransition(async () => {
       try {
         const res = await respondQuotation({
@@ -150,169 +209,126 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
           decision: "DECLINE",
           declineReason,
         });
-
         if (res.success) {
           setToastMessage({
-            message: "Proposal Declined",
-            description: "Your feedback has been transmitted to our statistical team for revision.",
-            variant: "warning",
+            message: "Changes requested",
+            description:
+              "We've sent your note to our team. We'll send you an updated price.",
+            variant: "info",
           });
           setIsDeclineModalOpen(false);
           await loadData();
         } else {
           setToastMessage({
-            message: "Decline Failed",
-            description: res.error?.message || "Failed to process decline response.",
+            message: "Couldn't send your request",
+            description: res.error?.message || "Please try again in a moment.",
             variant: "danger",
           });
         }
       } catch (err: unknown) {
         setToastMessage({
-          message: "System Error",
-          description: (err as Error).message || "An unexpected error occurred.",
+          message: "Something went wrong",
+          description:
+            (err as Error).message || "Please try again in a moment.",
           variant: "danger",
         });
       }
     });
   };
 
-  const getAddOnIcon = (name: AddOnName | string, isSelected: boolean = false) => {
-    const iconClass = isSelected ? "text-[#FFA040]" : "text-white/40";
-    switch (name) {
-      case "DEFENSELAB":
-        return <GraduationCap size={18} weight="fill" className={iconClass} />;
-      case "RUSH":
-        return <Lightning size={18} weight="fill" className={iconClass} />;
-      case "EXPRESS":
-        return <Flame size={18} weight="fill" className={iconClass} />;
-      case "EMERGENCY":
-        return <Warning size={18} weight="fill" className={iconClass} />;
-      default:
-        return <Sparkle size={18} weight="fill" className={iconClass} />;
-    }
-  };
-
-  // Master available add-ons (combining quotation line items and master catalog)
-  const availableAddOns = useMemo(() => {
+  // Options the client can see: once accepted, only what they agreed to; while open, the full catalog
+  // with any prices the quote set for specific add-ons.
+  const availableAddOns = useMemo<AddOnOption[]>(() => {
     if (!quotation) return [];
-
-    // If quotation is already approved by client, only show the add-ons that were approved and agreed upon
-    if (quotation.status === "CLIENT_APPROVED") {
-      return quotation.lineItems
-        .filter((li) => li.itemType === "ADDON")
-        .map((li) => {
-          const catalogDef = ADDONS_CATALOG[li.itemName as AddOnName];
-          return {
-            code: li.itemName,
-            name: li.description || catalogDef?.name || li.itemName,
-            amount: Number(li.amount),
-            tagline: catalogDef?.tagline || "Agreed priority add-on service",
-            badge: catalogDef?.badge || "PRIORITY ADD-ON",
-            isSpeedRider: ["RUSH", "EXPRESS", "EMERGENCY"].includes(li.itemName),
-          };
-        });
-    }
-
-    // When quote is open for review: combine quote's attached add-ons + full catalog
-    const catalogKeys = Object.keys(ADDONS_CATALOG) as AddOnName[];
-    const map = new Map<
-      string,
-      { code: string; name: string; amount: number; tagline: string; badge: string; isSpeedRider: boolean }
-    >();
-
-    catalogKeys.forEach((key) => {
-      const def = ADDONS_CATALOG[key];
-      map.set(key, {
-        code: key,
-        name: def.name,
-        amount: def.defaultPrice,
-        tagline: def.tagline,
-        badge: def.badge,
-        isSpeedRider: ["RUSH", "EXPRESS", "EMERGENCY"].includes(key),
-      });
+    const toOption = (
+      code: string,
+      amount: number,
+      fallbackName: string,
+    ): AddOnOption => ({
+      code,
+      name: CLIENT_ADDON_COPY[code]?.name ?? fallbackName,
+      detail:
+        CLIENT_ADDON_COPY[code]?.detail ??
+        ADDONS_CATALOG[code as AddOnName]?.tagline ??
+        "",
+      amount,
+      isSpeed: SPEED_CODES.includes(code),
     });
 
-    quotation.lineItems
-      .filter((li) => li.itemType === "ADDON")
-      .forEach((li) => {
-        const existing = map.get(li.itemName);
-        map.set(li.itemName, {
-          code: li.itemName,
-          name: li.description || existing?.name || li.itemName,
-          amount: Number(li.amount),
-          tagline: existing?.tagline || "Priority statistical add-on service",
-          badge: existing?.badge || "PRIORITY ADD-ON",
-          isSpeedRider: ["RUSH", "EXPRESS", "EMERGENCY"].includes(li.itemName),
-        });
-      });
+    const quoted = quotation.lineItems.filter((li) => li.itemType === "ADDON");
+    if (quotation.status === "CLIENT_APPROVED") {
+      return quoted.map((li) =>
+        toOption(li.itemName, Number(li.amount), li.description || li.itemName),
+      );
+    }
 
+    const map = new Map<string, AddOnOption>();
+    (Object.keys(ADDONS_CATALOG) as AddOnName[]).forEach((key) => {
+      const def = ADDONS_CATALOG[key];
+      map.set(key, toOption(key, def.defaultPrice, def.name));
+    });
+    quoted.forEach((li) =>
+      map.set(
+        li.itemName,
+        toOption(li.itemName, Number(li.amount), li.description || li.itemName),
+      ),
+    );
     return Array.from(map.values());
   }, [quotation]);
 
-  const generalAddOns = useMemo(
-    () => availableAddOns.filter((a) => !a.isSpeedRider),
-    [availableAddOns]
+  const extras = useMemo(
+    () => availableAddOns.filter((a) => !a.isSpeed),
+    [availableAddOns],
   );
-
-  const speedAddOns = useMemo(
-    () => availableAddOns.filter((a) => a.isSpeedRider),
-    [availableAddOns]
+  const speeds = useMemo(
+    () => availableAddOns.filter((a) => a.isSpeed),
+    [availableAddOns],
   );
+  const selectedSpeed =
+    speeds.find((s) => selectedAddOnCodes.includes(s.code))?.code ?? null;
 
-  // Toggle add-on selection
-  const toggleAddOn = (code: string) => {
-    if (quotation?.status !== "QUOTE_SENT" || quotation?.isExpired) return;
-
-    setSelectedAddOnCodes((prev) => {
-      const isSelected = prev.includes(code);
-      const isSpeedRider = ["RUSH", "EXPRESS", "EMERGENCY"].includes(code);
-
-      if (isSelected) {
-        return prev.filter((k) => k !== code);
-      } else {
-        if (isSpeedRider) {
-          // A study can only have 1 active turnaround speed rider at a time
-          return [...prev.filter((k) => !["RUSH", "EXPRESS", "EMERGENCY"].includes(k)), code];
-        } else {
-          return [...prev, code];
-        }
-      }
-    });
+  const toggleExtra = (code: string) => {
+    if (!isOpen) return;
+    setSelectedAddOnCodes((prev) =>
+      prev.includes(code) ? prev.filter((k) => k !== code) : [...prev, code],
+    );
   };
 
-  // Real-time calculation based on selected add-ons
+  // A study can only have one delivery speed; null means Standard.
+  const chooseSpeed = (code: string | null) => {
+    if (!isOpen) return;
+    setSelectedAddOnCodes((prev) => [
+      ...prev.filter((k) => !SPEED_CODES.includes(k)),
+      ...(code ? [code] : []),
+    ]);
+  };
+
   const currentPricing = useMemo(() => {
-    if (!quotation) {
+    if (!quotation)
       return {
         totalAmount: 0,
         downpaymentRequired: 0,
         releaseBalance: 0,
         downpaymentPercentage: 50,
       };
-    }
-
-    if (quotation.status !== "QUOTE_SENT" || quotation.isExpired) {
-      return {
-        totalAmount: quotation.totalAmount,
-        downpaymentRequired: quotation.downpaymentRequired,
-        releaseBalance: quotation.releaseBalance,
-        downpaymentPercentage: quotation.downpaymentPercentage,
-      };
-    }
-
-    const selectedItems = availableAddOns
-      .filter((a) => selectedAddOnCodes.includes(a.code))
-      .map((a) => ({
-        name: a.code as AddOnName,
-        amount: a.amount,
-        description: a.name,
-      }));
-
+    const fromQuote = {
+      totalAmount: quotation.totalAmount,
+      downpaymentRequired: quotation.downpaymentRequired,
+      releaseBalance: quotation.releaseBalance,
+      downpaymentPercentage: quotation.downpaymentPercentage,
+    };
+    if (!isOpen) return fromQuote;
     try {
       const breakdown = calculateQuotationTotals({
         packageName: quotation.packageName,
         basePrice: quotation.basePrice,
-        addOns: selectedItems,
+        addOns: availableAddOns
+          .filter((a) => selectedAddOnCodes.includes(a.code))
+          .map((a) => ({
+            name: a.code as AddOnName,
+            amount: a.amount,
+            description: a.name,
+          })),
       });
       return {
         totalAmount: breakdown.totalAmount,
@@ -321,765 +337,483 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
         downpaymentPercentage: breakdown.downpaymentPercentage,
       };
     } catch {
-      return {
-        totalAmount: quotation.totalAmount,
-        downpaymentRequired: quotation.downpaymentRequired,
-        releaseBalance: quotation.releaseBalance,
-        downpaymentPercentage: quotation.downpaymentPercentage,
-      };
+      return fromQuote;
     }
-  }, [quotation, availableAddOns, selectedAddOnCodes]);
+  }, [quotation, isOpen, availableAddOns, selectedAddOnCodes]);
+
+  const copyId = (id: string) =>
+    setToastMessage({
+      message: "Study ID copied",
+      description: `${id} is on your clipboard.`,
+      variant: "info",
+    });
+
+  const breadcrumbs = (intakeId?: string) => [
+    { label: "WORKSPACE", href: "/dashboard" },
+    { label: "My Studies", href: "/dashboard/client" },
+    ...(intakeId
+      ? [{ label: intakeId, href: `/dashboard/client/projects/${projectId}` }]
+      : []),
+    { label: "Your Price" },
+  ];
 
   if (isLoading) {
     return (
       <div className="flex-1 w-full min-h-full flex items-center justify-center animate-content-fade my-auto">
-        <LoadingState
-          variant="page"
-          label="Retrieving commercial proposal..."
-          description="Loading analytical scope, milestone schedule, and pricing basis"
-        />
+        <LoadingState variant="page" label="Loading your price..." />
       </div>
     );
   }
 
   if (error || !project) {
     return (
-      <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
-        <PageHeader
-          title="Proposal Error"
-          breadcrumbs={[
-            { label: "WORKSPACE", href: "/dashboard" },
-            { label: "Projects", href: "/dashboard/client/projects" },
-            { label: "Commercial Proposal" },
-          ]}
-        />
-        <Card className="p-8 sm:p-12 text-center flex flex-col items-center gap-6 bg-[#01142B]/90 border border-white/10 rounded-[6px]">
-          <Warning size={36} weight="fill" className="text-rose-400 mx-auto" />
-          <div className="space-y-1">
-            <h2 className="text-lg font-bold text-white font-sans">Unable to Load Quotation</h2>
-            <p className="text-sm text-white/60 font-sans">{error || "Study not found."}</p>
-          </div>
-          <Link href="/dashboard/client/projects">
-            <Button variant="secondary" size="md">
-              ← Return to Projects Registry
+      <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-24 w-full animate-content-fade">
+        <PageHeader title="Your Price" breadcrumbs={breadcrumbs()} />
+        <Panel>
+          <PanelBody className="flex flex-col items-center gap-4 py-12 text-center">
+            <Warning size={28} weight="fill" className="text-white/40" />
+            <div>
+              <p className="text-base font-semibold text-white">
+                We couldn&apos;t load this price
+              </p>
+              <p className="mt-1 text-sm text-white/55">
+                {error || "We couldn't find this study."}
+              </p>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/client/projects">Back to My Studies</Link>
             </Button>
-          </Link>
-        </Card>
+          </PanelBody>
+        </Panel>
       </div>
     );
   }
 
   if (!quotation) {
     return (
-      <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
-        <PageHeader
-          title={project.researchTitle}
-          description={`Study ID: ${project.intakeId} · Primary Client: ${project.client.fullName}`}
-          breadcrumbs={[
-            { label: "WORKSPACE", href: "/dashboard" },
-            { label: "Client Portal", href: "/dashboard/client" },
-            { label: "Projects", href: "/dashboard/client/projects" },
-            { label: project.intakeId, href: `/dashboard/client/projects/${projectId}` },
-            { label: "Commercial Proposal" },
-          ]}
-          actions={
-            <Link href={`/dashboard/client/projects/${projectId}`}>
-              <Button variant="secondary" size="sm" className="font-sans font-semibold text-xs">
-                ← Return to Study Details
-              </Button>
-            </Link>
-          }
+      <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-24 w-full animate-content-fade">
+        <StudySection
+          title="Your price"
         />
-
-        <Card className="p-10 sm:p-14 bg-[#01142B] border border-white/10 rounded-[6px] text-center space-y-5 max-w-2xl mx-auto shadow-2xl">
-          <div className="h-14 w-14 rounded-full bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center mx-auto text-[#FFA040]">
-            <Clock size={32} weight="fill" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-xl font-bold text-white font-sans">
-              Proposal Under Statistical Modeling
-            </h2>
-            <p className="text-sm text-white/70 font-sans leading-relaxed">
-              Our Senior Statistical Team is currently reviewing your study methodology, hypotheses, and uploaded data vectors to prepare a customized commercial proposal. You will be notified as soon as your quote is issued.
-            </p>
-          </div>
-          <div className="pt-2">
-            <Link href={`/dashboard/client/projects/${projectId}`}>
-              <Button variant="secondary" size="md">
-                View Study Tracker
-              </Button>
-            </Link>
-          </div>
-        </Card>
+        <Panel>
+          <PanelBody className="flex flex-col items-center gap-4 py-12 text-center">
+            <Clock size={28} weight="fill" className="text-white/40" />
+            <div className="max-w-md">
+              <p className="text-base font-semibold text-white">
+                We&apos;re preparing your price
+              </p>
+              <p className="mt-1.5 text-sm leading-relaxed text-white/55">
+                Our team is reading your research questions and files.
+                You&apos;ll get a fixed written price within 24 hours, and
+                we&apos;ll let you know as soon as it&apos;s ready.
+              </p>
+            </div>
+          </PanelBody>
+        </Panel>
       </div>
     );
   }
 
-  const pkgDef = PACKAGES_CATALOG[quotation.packageName] || PACKAGES_CATALOG.JX_03_CORE;
+  // Client-facing package copy matches the website; the staff catalog is only a fallback.
+  const staffPkg = PACKAGES_CATALOG[quotation.packageName];
+  const sitePkg = clientPackage(quotation.packageName);
+  const pkgName = clientPackageName(quotation.packageName) ?? "Your package";
+  const pkgFeatures = sitePkg?.features ?? staffPkg?.deliverables ?? [];
+  const pkgBestFor = sitePkg?.bestFor ?? staffPkg?.recommendedFor ?? null;
+  const standardDetail = `Our usual timeline: ${clientStandardTime(quotation.packageName)} after your deposit is confirmed.`;
+  const chosenExtras = extras.filter((a) =>
+    selectedAddOnCodes.includes(a.code),
+  );
+  const chosenSpeed = speeds.find((s) => s.code === selectedSpeed) ?? null;
+  const upfront = quotation.isUpfrontEnforced;
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
-      {/* ── 1. Page Header ── */}
-      <PageHeader
-        title={project.researchTitle}
-        description={`Study ID: ${project.intakeId} · Primary Client: ${project.client.fullName} · Submitted ${new Date(
-          project.createdAt
-        ).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`}
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Client Portal", href: "/dashboard/client" },
-          { label: "Projects", href: "/dashboard/client/projects" },
-          { label: project.intakeId, href: `/dashboard/client/projects/${projectId}` },
-          { label: "Quote & Proposal" },
-        ]}
-        actions={
-          <Link href={`/dashboard/client/projects/${projectId}`}>
-            <Button variant="secondary" size="sm" className="font-sans font-semibold text-xs flex items-center gap-2 rounded-[2px] active:scale-[0.97] transition-transform">
-              <ArrowLeft size={15} weight="fill" />
-              <span>Return to Study Details</span>
-            </Button>
-          </Link>
-        }
+    <div
+      data-portal="client"
+      className="flex flex-col gap-6 max-w-6xl mx-auto pb-24 w-full animate-content-fade"
+    >
+      <StudySection
+          title="Your price"
+          description="Check what's included, pick extras, then accept or ask for changes."
+        />
+
+      <StatusBanner
+        quotation={quotation}
+        project={project}
+        projectId={projectId}
       />
 
-      {/* ── 2. Quotation Status Bar ── */}
-      <Card className="p-5 sm:p-6 bg-[#01142B] border border-white/10 rounded-[2px]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-sans text-white/50 uppercase font-bold tracking-wider">
-              Proposal Status:
-            </span>
-            {quotation.status === "CLIENT_APPROVED" ? (
-              <span className="text-xs font-sans text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-[2px] uppercase font-bold flex items-center gap-1.5">
-                <Check size={14} weight="fill" />
-                PROPOSAL ACCEPTED
-              </span>
-            ) : quotation.status === "QUOTE_DECLINED" ? (
-              <span className="text-xs font-sans text-rose-400 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-[2px] uppercase font-bold flex items-center gap-1.5">
-                <X size={14} weight="fill" />
-                PROPOSAL DECLINED
-              </span>
-            ) : quotation.isExpired ? (
-              <span className="text-xs font-sans text-rose-400 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-[2px] uppercase font-bold flex items-center gap-1.5">
-                <Warning size={14} weight="fill" />
-                PROPOSAL EXPIRED
-              </span>
-            ) : (
-              <span className="text-xs font-sans text-amber-300 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-[2px] uppercase font-bold flex items-center gap-1.5">
-                <Clock size={14} weight="fill" />
-                READY FOR YOUR REVIEW
-              </span>
-            )}
-
-            <CopyButton
-              variant="badge"
-              value={project.intakeId}
-              label={project.intakeId}
-              onCopy={() =>
-                setToastMessage({
-                  message: "Copied to Clipboard",
-                  description: `Study ID "${project.intakeId}" has been copied to your clipboard.`,
-                  variant: "info",
-                })
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        {/* ── Left: what you get + choices ── */}
+        <div className="flex flex-col gap-6 lg:col-span-7">
+          <Panel aria-label="What you get">
+            <PanelHeader
+              title="What you get"
+              subtitle={pkgName}
+              aside={
+                <CopyButton
+                  variant="ghost"
+                  value={project.intakeId}
+                  label={project.intakeId}
+                  onCopy={() => copyId(project.intakeId)}
+                  className="text-[11px]"
+                />
               }
             />
-          </div>
-
-          {quotation.status === "QUOTE_SENT" && !quotation.isExpired && (
-            <div className="text-xs font-sans text-white/70 flex items-center gap-2">
-              <span className="text-white/40">Proposal Valid Until:</span>
-              <span className="text-amber-300 font-mono font-bold">
-                {new Date(quotation.expiresAt).toLocaleDateString("en-US", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </span>
-            </div>
-          )}
-        </div>
-      </Card>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-6">
-            <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
-                  <ClipboardText size={18} weight="fill" className="text-[#CC6600]" />
-                  <span>{pkgDef?.name || quotation.packageName}</span>
-                </h3>
-                <p className="text-xs text-white/60 font-sans mt-1">
-                  {pkgDef?.tagline || "Comprehensive statistical modeling and hypothesis testing scope."}
-                </p>
-              </div>
-              <span className="text-xs font-mono text-white/70 uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-white/[0.06] border border-white/10 flex-shrink-0 self-start sm:self-auto">
-                {pkgDef?.badge || "Standard Research"}
-              </span>
-            </div>
-
-            {pkgDef?.recommendedFor && (
-              <div className="flex items-center gap-2 flex-wrap text-xs font-sans text-white/60">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 font-semibold">
-                  Recommended For:
-                </span>
-                <span className="text-white/80 font-medium bg-white/[0.03] border border-white/10 px-2.5 py-0.5 rounded-[2px]">
-                  {pkgDef.recommendedFor}
-                </span>
-              </div>
-            )}
-
-            {pkgDef?.deliverables && pkgDef.deliverables.length > 0 && (
-              <div className="space-y-3 pt-1">
-                <div className="flex items-center justify-between px-0.5">
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-white/50 font-semibold flex items-center gap-1.5">
-                    <ShieldCheck size={14} weight="fill" className="text-emerald-400" />
-                    <span>Guaranteed Deliverables Included in this Scope</span>
-                  </span>
-                  <span className="text-[10px] font-mono uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-[2px] font-semibold">
-                    All Included
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  {pkgDef.deliverables.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3.5 sm:p-4 rounded-[2px] bg-[#010D1F] border border-white/10 flex items-start gap-3 transition-colors hover:border-white/20"
+            <PanelBody className="flex flex-col gap-5">
+              {pkgFeatures.length ? (
+                <ul className="flex flex-col gap-3">
+                  {pkgFeatures.map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-start gap-3 text-sm text-white/85"
                     >
-                      <div className="w-5 h-5 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 flex-shrink-0 mt-0.5">
-                        <Check size={12} weight="bold" />
-                      </div>
-                      <span className="text-xs sm:text-sm font-medium text-white/90 font-sans leading-relaxed">
-                        {item}
-                      </span>
-                    </div>
+                      <Check
+                        size={16}
+                        weight="bold"
+                        className="mt-0.5 shrink-0 text-white/50"
+                      />
+                      <span className="leading-relaxed">{item}</span>
+                    </li>
                   ))}
-                </div>
-              </div>
-            )}
-          </Card>
-
-          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-6">
-            <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
-                  <Receipt size={18} weight="fill" className="text-[#CC6600]" />
-                  <span>Pricing Breakdown &amp; Scope Options</span>
-                </h3>
-                <p className="text-xs text-white/60 font-sans mt-1">
-                  {quotation.status === "QUOTE_SENT" && !quotation.isExpired
-                    ? "Choose optional coaching or faster delivery turnaround for your study:"
-                    : "Itemized summary of research services and confirmed scope add-ons:"}
-                </p>
-              </div>
-              <span className="text-xs font-mono text-white/70 uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-white/[0.06] border border-white/10 flex-shrink-0 self-start sm:self-auto">
-                {quotation.isUpfrontEnforced ? "100% Upfront" : "50% Milestone"}
-              </span>
-            </div>
-
-            <div className="space-y-4">
-              {/* Base Service Package */}
-              <div className="p-4 sm:p-5 rounded-[2px] bg-[#010D1F] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start gap-3.5">
-                  <div className="pt-0.5 flex-shrink-0">
-                    <div className="w-5 h-5 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                      <Check size={12} weight="bold" />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-white font-sans">
-                        {pkgDef?.name || quotation.packageName}
-                      </span>
-                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-[2px] bg-white/[0.06] text-white/70 border border-white/10 font-medium">
-                        Base Package · Included
-                      </span>
-                    </div>
-                    <p className="text-xs text-white/60 font-sans leading-relaxed">
-                      Full statistical modeling, hypothesis testing, and APA 7th summary tables
-                    </p>
-                  </div>
-                </div>
-                <div className="text-base sm:text-lg font-mono font-bold text-white flex-shrink-0 self-end sm:self-auto">
-                  <Peso className="text-white/70 font-sans mr-0.5" />{quotation.basePrice.toLocaleString()}
-                </div>
-              </div>
-
-              {/* Optional Coaching Services */}
-              {generalAddOns.length > 0 && (
-                <div className="space-y-2.5 pt-1">
-                  <div className="flex items-center justify-between flex-wrap gap-2 px-0.5">
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-white/50 font-semibold flex items-center gap-1.5">
-                      <GraduationCap size={14} weight="fill" className="text-white/40" />
-                      <span>Optional Add-On Services</span>
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {generalAddOns.map((addon) => {
-                      const isSelected = selectedAddOnCodes.includes(addon.code);
-                      const isInteractive = quotation.status === "QUOTE_SENT" && !quotation.isExpired;
-
-                      return (
-                        <div
-                          key={addon.code}
-                          onClick={() => isInteractive && toggleAddOn(addon.code)}
-                          className={`p-4 sm:p-5 rounded-[2px] border transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none ${
-                            isInteractive ? "cursor-pointer group" : "cursor-default"
-                          } ${
-                            isSelected
-                              ? "bg-[#011736] border-white/20 border-l-[3px] border-l-[#CC6600]"
-                              : "bg-[#010D1F] border-white/10 hover:border-white/20 hover:bg-[#01142B]/70 opacity-85 hover:opacity-100"
-                          }`}
-                        >
-                          <div className="flex items-start gap-3.5">
-                            {isInteractive ? (
-                              <div className="pt-0.5 flex-shrink-0">
-                                <div
-                                  className={`w-5 h-5 rounded-[2px] border flex items-center justify-center transition-all duration-150 active:scale-90 ${
-                                    isSelected
-                                      ? "bg-[#CC6600] border-[#CC6600] text-white shadow-sm"
-                                      : "border-white/25 bg-white/[0.04] group-hover:border-white/40"
-                                  }`}
-                                >
-                                  {isSelected && <Check size={12} weight="bold" />}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="pt-0.5 flex-shrink-0">
-                                <div className="w-5 h-5 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                                  <Check size={12} weight="bold" />
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                {getAddOnIcon(addon.code, isSelected)}
-                                <span className="text-sm font-semibold font-sans text-white">
-                                  {addon.name}
-                                </span>
-                                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-[2px] bg-white/[0.05] text-white/60 border border-white/10 font-medium">
-                                  {addon.badge}
-                                </span>
-                              </div>
-                              <p className="text-xs text-white/60 font-sans leading-relaxed">
-                                {addon.tagline}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div
-                            className={`text-base sm:text-lg font-mono flex-shrink-0 self-end sm:self-auto transition-colors ${
-                              isSelected ? "font-bold text-white" : "font-medium text-white/40"
-                            }`}
-                          >
-                            +<Peso className={isSelected ? "text-white/70 font-sans mr-0.5" : "text-white/40 font-sans mr-0.5"} />{addon.amount.toLocaleString()}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Turnaround Speed Tiers */}
-              {speedAddOns.length > 0 && (
-                <div className="space-y-2.5 pt-1">
-                  <div className="flex items-center justify-between flex-wrap gap-2 px-0.5">
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-white/50 font-semibold flex items-center gap-1.5">
-                      <Clock size={14} weight="fill" className="text-white/40" />
-                      <span>Turnaround Speed (Select One)</span>
-                    </span>
-                    <span className="text-[11px] font-sans text-white/40">
-                      Standard turnaround: 5–7 business days
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {speedAddOns.map((addon) => {
-                      const isSelected = selectedAddOnCodes.includes(addon.code);
-                      const isInteractive = quotation.status === "QUOTE_SENT" && !quotation.isExpired;
-
-                      return (
-                        <div
-                          key={addon.code}
-                          onClick={() => isInteractive && toggleAddOn(addon.code)}
-                          className={`p-4 sm:p-5 rounded-[2px] border transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none ${
-                            isInteractive ? "cursor-pointer group" : "cursor-default"
-                          } ${
-                            isSelected
-                              ? "bg-[#011736] border-white/20 border-l-[3px] border-l-[#CC6600]"
-                              : "bg-[#010D1F] border-white/10 hover:border-white/20 hover:bg-[#01142B]/70 opacity-85 hover:opacity-100"
-                          }`}
-                        >
-                          <div className="flex items-start gap-3.5">
-                            {isInteractive ? (
-                              <div className="pt-0.5 flex-shrink-0">
-                                <div
-                                  className={`w-5 h-5 rounded-[2px] border flex items-center justify-center transition-all duration-150 active:scale-90 ${
-                                    isSelected
-                                      ? "bg-[#CC6600] border-[#CC6600] text-white shadow-sm"
-                                      : "border-white/25 bg-white/[0.04] group-hover:border-white/40"
-                                  }`}
-                                >
-                                  {isSelected && <Check size={12} weight="bold" />}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="pt-0.5 flex-shrink-0">
-                                <div className="w-5 h-5 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                                  <Check size={12} weight="bold" />
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                {getAddOnIcon(addon.code, isSelected)}
-                                <span className="text-sm font-semibold font-sans text-white">
-                                  {addon.name}
-                                </span>
-                                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-[2px] bg-white/[0.05] text-white/60 border border-white/10 font-medium">
-                                  {addon.badge}
-                                </span>
-                              </div>
-                              <p className="text-xs text-white/60 font-sans leading-relaxed">
-                                {addon.tagline}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div
-                            className={`text-base sm:text-lg font-mono flex-shrink-0 self-end sm:self-auto transition-colors ${
-                              isSelected ? "font-bold text-white" : "font-medium text-white/40"
-                            }`}
-                          >
-                            +<Peso className={isSelected ? "text-white/70 font-sans mr-0.5" : "text-white/40 font-sans mr-0.5"} />{addon.amount.toLocaleString()}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Dynamically Recalculated Total Investment Box */}
-              <div className="p-5 sm:p-6 rounded-[2px] bg-[#010D1F] border border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-3">
-                <div className="space-y-1.5 max-w-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-semibold uppercase text-white/50 tracking-wider">
-                      Total Estimated Investment
-                    </span>
-                    {selectedAddOnCodes.length > 0 && (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-[2px] bg-[#CC6600]/15 text-[#FFA040] border border-[#CC6600]/30 font-semibold">
-                        +{selectedAddOnCodes.length} {selectedAddOnCodes.length === 1 ? "Add-On" : "Add-Ons"} Included
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-white/60 font-sans leading-relaxed">
-                    {quotation.isUpfrontEnforced
-                      ? "All-inclusive statistical modeling, QA review, and summary tables · 100% upfront deposit"
-                      : selectedAddOnCodes.length > 0
-                        ? `Includes base scope + ${selectedAddOnCodes.length} add-on${selectedAddOnCodes.length > 1 ? "s" : ""} · ${quotation.downpaymentPercentage}% milestone deposit (${formatPeso(currentPricing.downpaymentRequired, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}) due upon signing`
-                        : `Base package scope · ${quotation.downpaymentPercentage}% milestone deposit (${formatPeso(currentPricing.downpaymentRequired, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}) due upon signing`}
-                  </p>
-                </div>
-                <div className="flex flex-col items-start sm:items-end flex-shrink-0">
-                  <div className="text-2xl sm:text-3xl lg:text-4xl font-mono font-bold text-white tracking-tight flex items-baseline">
-                    <Peso className="text-white/70 font-sans mr-1" />
-                    <span>{currentPricing.totalAmount.toLocaleString()}</span>
-                  </div>
-                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider mt-0.5">
-                    PHP · Philippine Peso
+                </ul>
+              ) : null}
+              <div className="grid grid-cols-1 gap-2 border-t border-white/[0.07] pt-4 text-[13px] text-white/60 sm:grid-cols-2">
+                {[
+                  "Checked by a second statistician",
+                  "Explained in plain English",
+                  "Free fixes within your scope",
+                  "Files your adviser can open",
+                ].map((t) => (
+                  <span key={t} className="flex items-center gap-2">
+                    <CheckCircle
+                      size={15}
+                      weight="fill"
+                      className="shrink-0 text-white/35"
+                    />
+                    {t}
                   </span>
-                </div>
+                ))}
               </div>
-            </div>
-          </Card>
+              {pkgBestFor ? (
+                <p className="text-xs text-white/45">Best for: {pkgBestFor}</p>
+              ) : null}
+            </PanelBody>
+          </Panel>
 
-          {quotation.notes && (
-            <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-3">
-              <div className="border-b border-white/10 pb-3 flex items-center gap-2">
-                <FileText size={18} weight="fill" className="text-[#CC6600]" />
-                <h3 className="text-sm font-bold text-white font-sans">
-                  Scope Notes &amp; Assumptions
-                </h3>
-              </div>
-              <div className="p-4 rounded-[2px] bg-[#010D1F] border border-white/10 text-xs text-white/80 font-sans leading-relaxed whitespace-pre-line">
-                {quotation.notes}
-              </div>
-            </Card>
-          )}
+          {speeds.length > 0 && (isOpen || chosenSpeed) ? (
+            <Panel aria-label="Delivery speed">
+              <PanelHeader
+                title="Delivery speed"
+                subtitle={
+                  isOpen ? "Need it sooner? Pick one." : "The speed you chose."
+                }
+              />
+              <PanelBody>
+                <div
+                  role="radiogroup"
+                  aria-label="Delivery speed"
+                  className="flex flex-col gap-2"
+                >
+                  {isOpen ? (
+                    <OptionRow
+                      kind="radio"
+                      selected={selectedSpeed === null}
+                      onSelect={() => chooseSpeed(null)}
+                      title="Standard"
+                      detail={standardDetail}
+                      price={null}
+                    />
+                  ) : null}
+                  {speeds
+                    .filter((s) => isOpen || s.code === selectedSpeed)
+                    .map((s) => (
+                      <OptionRow
+                        key={s.code}
+                        kind="radio"
+                        selected={selectedSpeed === s.code}
+                        onSelect={() => chooseSpeed(s.code)}
+                        title={s.name}
+                        detail={s.detail}
+                        price={s.amount}
+                        disabled={!isOpen}
+                      />
+                    ))}
+                </div>
+              </PanelBody>
+            </Panel>
+          ) : null}
+
+          {extras.length > 0 && (isOpen || chosenExtras.length > 0) ? (
+            <Panel aria-label="Extras">
+              <PanelHeader
+                title="Extras"
+                subtitle={
+                  isOpen
+                    ? "Optional. Add them now or later."
+                    : "Extras you chose."
+                }
+              />
+              <PanelBody>
+                <div className="flex flex-col gap-2">
+                  {extras
+                    .filter(
+                      (a) => isOpen || selectedAddOnCodes.includes(a.code),
+                    )
+                    .map((a) => (
+                      <OptionRow
+                        key={a.code}
+                        kind="checkbox"
+                        selected={selectedAddOnCodes.includes(a.code)}
+                        onSelect={() => toggleExtra(a.code)}
+                        title={a.name}
+                        detail={a.detail}
+                        price={a.amount}
+                        icon={
+                          a.code === "DEFENSELAB" ? (
+                            <GraduationCap size={16} weight="fill" />
+                          ) : undefined
+                        }
+                        disabled={!isOpen}
+                      />
+                    ))}
+                </div>
+              </PanelBody>
+            </Panel>
+          ) : null}
+
+          {quotation.notes ? (
+            <Panel aria-label="A note from our team">
+              <PanelHeader title="A note from our team" />
+              <PanelBody>
+                <p className="whitespace-pre-line text-sm leading-relaxed text-white/75">
+                  {quotation.notes}
+                </p>
+              </PanelBody>
+            </Panel>
+          ) : null}
         </div>
 
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-5">
-            <div className="border-b border-white/10 pb-3">
-              <span className="text-xs font-sans uppercase text-white/50 font-semibold tracking-wider">
-                Payment Milestones
-              </span>
-              <h3 className="text-base font-bold text-white font-sans mt-0.5">
-                Payment Schedule
-              </h3>
-            </div>
+        {/* ── Right: price summary (sticks while scrolling on desktop) ── */}
+        <div className="flex flex-col gap-6 lg:sticky lg:top-6 lg:col-span-5">
+          <Panel aria-label="Price summary">
+            <PanelHeader title="Price summary" />
+            <PanelBody className="flex flex-col gap-5">
+              <dl className="flex flex-col gap-2.5 text-sm">
+                <SummaryLine
+                  label={pkgName}
+                  amount={quotation.basePrice}
+                />
+                {chosenSpeed ? (
+                  <SummaryLine
+                    label={`${chosenSpeed.name} delivery`}
+                    amount={chosenSpeed.amount}
+                    plus
+                  />
+                ) : null}
+                {chosenExtras.map((a) => (
+                  <SummaryLine
+                    key={a.code}
+                    label={a.name}
+                    amount={a.amount}
+                    plus
+                  />
+                ))}
+              </dl>
 
-            <div className="space-y-3">
-              <div className="p-4 sm:p-5 rounded-[2px] bg-[#010D1F] border border-emerald-500/25 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-sans uppercase text-emerald-400 font-semibold tracking-wider flex items-center gap-1.5">
-                    <Lock size={14} weight="fill" />
-                    <span>1. Escrow Deposit</span>
-                  </span>
-                  <span className="text-base font-mono font-bold text-emerald-400">
-                    <Peso />{currentPricing.downpaymentRequired.toLocaleString()}
-                  </span>
-                </div>
-                <p className="text-xs text-white/60 font-sans leading-relaxed">
-                  {quotation.isUpfrontEnforced
-                    ? "100% Upfront deposit required to activate analysis queue."
-                    : `Initial ${currentPricing.downpaymentPercentage}% deposit due upon SOW signing to commence computation.`}
+              <div className="flex items-end justify-between gap-3 border-t border-white/[0.07] pt-4">
+                <span className="text-sm text-white/60">Total</span>
+                <span className="font-mono text-3xl font-bold tracking-tight text-white">
+                  <Peso />
+                  {money(currentPricing.totalAmount)}
+                </span>
+              </div>
+
+              <div className="rounded-[2px] border border-white/[0.07] bg-white/[0.02] p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-white/45">
+                  How you pay
+                </p>
+                {upfront ? (
+                  <PayStep
+                    n={1}
+                    title="Pay in full"
+                    when="After you sign your agreement, before we start."
+                    amount={currentPricing.downpaymentRequired}
+                  />
+                ) : (
+                  <>
+                    <PayStep
+                      n={1}
+                      title={`Deposit (${currentPricing.downpaymentPercentage}%)`}
+                      when="After you sign your agreement. We start once it's confirmed."
+                      amount={currentPricing.downpaymentRequired}
+                    />
+                    {currentPricing.releaseBalance > 0 ? (
+                      <PayStep
+                        n={2}
+                        title="The rest"
+                        when="When your files are ready, before you download them."
+                        amount={currentPricing.releaseBalance}
+                      />
+                    ) : null}
+                  </>
+                )}
+                <p className="mt-3 text-xs text-white/45">
+                  GCash or bank transfer. You upload the receipt here.
                 </p>
               </div>
 
-              {!quotation.isUpfrontEnforced && currentPricing.releaseBalance > 0 && (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#010D1F] border border-white/10 flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-sans uppercase text-white/50 font-semibold tracking-wider">
-                      2. Deliverable Release
-                    </span>
-                    <span className="text-base font-mono font-bold text-[#38BDF8]">
-                      <Peso />{currentPricing.releaseBalance.toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-xs text-white/60 font-sans leading-relaxed">
-                    Payable only after you inspect and accept the final statistical findings.
+              {isOpen ? (
+                <div className="flex flex-col gap-2.5">
+                  <Button
+                    variant="primary"
+                    size="md"
+                    onClick={() => setIsAcceptModalOpen(true)}
+                    disabled={isPending}
+                    className="w-full gap-2"
+                  >
+                    <Check size={16} weight="bold" />
+                    Accept Price
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="md"
+                    onClick={() => setIsDeclineModalOpen(true)}
+                    disabled={isPending}
+                    className="w-full gap-2"
+                  >
+                    <PencilSimple size={15} weight="fill" />
+                    Ask for Changes
+                  </Button>
+                  <p className="text-center text-xs text-white/45">
+                    This price is good until {longDate(quotation.expiresAt)}.
                   </p>
                 </div>
-              )}
-            </div>
+              ) : null}
+            </PanelBody>
+          </Panel>
 
-            <div className="p-4 rounded-[2px] bg-emerald-500/[0.06] border border-emerald-500/20 text-xs text-white/75 font-sans leading-relaxed flex items-start gap-2.5">
-              <ShieldCheck size={18} weight="fill" className="text-emerald-400 flex-shrink-0 mt-0.5" />
-              <span>
-                <strong className="text-emerald-300 font-semibold">JAXIS Escrow Protection:</strong> Funds remain securely vaulted until you review and approve your defense-ready deliverables.
-              </span>
-            </div>
-          </Card>
+          <Link
+            href={`/dashboard/client/messages?projectId=${projectId}`}
+            className="flex items-center gap-3 rounded-[2px] border border-white/[0.07] bg-[#0A0A18] px-5 py-4 text-[13px] text-white/65 transition-colors hover:border-white/[0.14] hover:text-white"
+          >
+            <ChatCenteredText
+              size={18}
+              weight="fill"
+              className="shrink-0 text-white/40"
+            />
+            <span>Questions about this price? Message our team.</span>
+            <ArrowRight size={13} weight="bold" className="ml-auto shrink-0" />
+          </Link>
+        </div>
+      </div>
 
-          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col gap-5">
-            <div className="border-b border-white/10 pb-3">
-              <span className="text-xs font-sans uppercase font-bold text-white/80 tracking-wider">
-                Actions
-              </span>
-            </div>
-
-            {quotation.status === "QUOTE_SENT" && !quotation.isExpired ? (
-              <div className="space-y-3 pt-1">
+      {/* ── Phones: checkout bar pinned to the bottom so the total and Accept are always in reach ── */}
+      {isOpen && isClient
+        ? createPortal(
+            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/[0.08] bg-[#0A0A18]/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 backdrop-blur-md lg:hidden">
+              <div className="mx-auto flex max-w-xl items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-[11px] text-white/50">Total</p>
+                  <p className="font-mono text-lg font-bold leading-tight text-white">
+                    <Peso />
+                    {money(currentPricing.totalAmount)}
+                  </p>
+                </div>
                 <Button
                   variant="primary"
                   size="md"
                   onClick={() => setIsAcceptModalOpen(true)}
                   disabled={isPending}
-                  className="w-full gap-2 justify-center bg-[#CC6600] text-white hover:bg-[#E67300] min-h-[42px] text-xs font-sans font-semibold cursor-pointer flex items-center rounded-[2px] active:scale-[0.97] transition-transform"
+                  className="gap-2"
                 >
-                  <Check size={16} weight="fill" />
-                  <span>Accept Quote &amp; Proceed to SOW →</span>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="md"
-                  onClick={() => setIsDeclineModalOpen(true)}
-                  disabled={isPending}
-                  className="w-full text-white/75 hover:text-rose-400 hover:border-rose-500/40 justify-center text-xs font-sans min-h-[38px] cursor-pointer flex items-center gap-2 rounded-[2px] active:scale-[0.97] transition-transform"
-                >
-                  <X size={15} weight="fill" />
-                  <span>Decline / Request Scope Adjustment</span>
+                  <Check size={16} weight="bold" />
+                  Accept Price
                 </Button>
               </div>
-            ) : quotation.status === "CLIENT_APPROVED" ? (
-              <div className="space-y-4">
-                {project.masterStatus === "CLIENT_APPROVED" ? (
-                  <>
-                    <div className="p-5 rounded-[2px] bg-emerald-950/20 border border-emerald-500/30 text-left space-y-1.5">
-                      <div className="text-xs font-sans text-emerald-400 font-bold flex items-center gap-2">
-                        <Check size={16} weight="fill" />
-                        <span>Proposal Accepted</span>
-                      </div>
-                      <p className="text-xs text-white/70 font-sans leading-relaxed">
-                        Terms accepted! Our operations team has been notified and is preparing your formal Statement of Work (SOW). You will be notified as soon as it is ready for your signature.
-                      </p>
-                    </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
-                    <div className="space-y-2.5">
-                      <Link href={`/dashboard/client/projects/${projectId}`} className="block w-full">
-                        <Button
-                          variant="secondary"
-                          size="md"
-                          className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer rounded-[2px] active:scale-[0.97] transition-transform"
-                        >
-                          <ArrowLeft size={15} weight="fill" />
-                          <span>Return to Study Details</span>
-                        </Button>
-                      </Link>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="p-5 rounded-[2px] bg-emerald-950/20 border border-emerald-500/30 text-left space-y-1.5">
-                      <div className="text-xs font-sans text-emerald-400 font-bold flex items-center gap-2">
-                        <Check size={16} weight="fill" />
-                        <span>SOW Ready for Signing</span>
-                      </div>
-                      <p className="text-xs text-white/70 font-sans leading-relaxed">
-                        Your formal Statement of Work (SOW) agreement has been compiled by our admin team and is ready for your digital signature.
-                      </p>
-                    </div>
-
-                    <div className="space-y-2.5">
-                      <Link href={`/dashboard/client/projects/${projectId}/sow`} className="block w-full">
-                        <Button
-                          variant="primary"
-                          size="md"
-                          className="w-full min-h-[42px] font-sans text-xs font-semibold flex items-center justify-center gap-2 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] active:scale-[0.97] transition-transform"
-                        >
-                          <Certificate size={16} weight="fill" />
-                          <span>Sign Statement of Work Now →</span>
-                        </Button>
-                      </Link>
-
-                      <Link href={`/dashboard/client/projects/${projectId}`} className="block w-full">
-                        <Button
-                          variant="secondary"
-                          size="md"
-                          className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer rounded-[2px] active:scale-[0.97] transition-transform"
-                        >
-                          <ArrowLeft size={15} weight="fill" />
-                          <span>Return to Study Details</span>
-                        </Button>
-                      </Link>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : quotation.status === "QUOTE_DECLINED" ? (
-              <div className="space-y-4">
-                <div className="p-5 rounded-[2px] bg-amber-950/20 border border-amber-500/30 text-left space-y-1.5">
-                  <div className="text-xs font-sans text-amber-300 font-bold flex items-center gap-2">
-                    <Clock size={16} weight="fill" />
-                    <span>Proposal Declined</span>
-                  </div>
-                  <p className="text-xs text-white/70 font-sans leading-relaxed">
-                    Our Senior Statistical Team is reviewing your requested adjustments and will prepare an updated scope.
-                  </p>
-                </div>
-
-                <Link href={`/dashboard/client/projects/${projectId}`} className="block w-full">
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer rounded-[2px] active:scale-[0.97] transition-transform"
-                  >
-                    <ArrowLeft size={15} weight="fill" />
-                    <span>Return to Study Details</span>
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="p-5 rounded-[2px] bg-rose-950/20 border border-rose-500/30 text-left space-y-1.5">
-                  <div className="text-xs font-sans text-rose-400 font-bold flex items-center gap-2">
-                    <Warning size={16} weight="fill" />
-                    <span>Proposal Expired</span>
-                  </div>
-                  <p className="text-xs text-white/70 font-sans leading-relaxed">
-                    This quote has expired. Return to your study tracker to request an updated quotation.
-                  </p>
-                </div>
-
-                <Link href={`/dashboard/client/projects/${projectId}`} className="block w-full">
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    className="w-full min-h-[38px] font-sans text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer rounded-[2px] active:scale-[0.97] transition-transform"
-                  >
-                    <ArrowLeft size={15} weight="fill" />
-                    <span>Return to Study Details</span>
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </Card>
-        </div>
-      </div>
-
-      {/* ── Accept Proposal Confirmation Modal ── */}
+      {/* ── Accept confirmation ── */}
       <Modal
         isOpen={isAcceptModalOpen}
         onClose={() => setIsAcceptModalOpen(false)}
-        title="Accept Quote & Scope"
+        title="Accept this price?"
         size="md"
       >
-        <div className="space-y-5 text-sm font-sans text-white/80 p-1">
+        <div className="flex flex-col gap-5 p-1 font-sans text-sm text-white/75">
           <p className="leading-relaxed">
-            By accepting this quote for study{" "}
-            <strong className="text-white font-mono">{project.intakeId}</strong>, you approve the{" "}
-            <strong className="text-white font-semibold">{pkgDef?.name || quotation.packageName}</strong> scope and total price of{" "}
-            <strong className="text-white font-mono font-bold"><Peso />{currentPricing.totalAmount.toLocaleString()}</strong>.
+            You&apos;re accepting{" "}
+            <span className="font-medium text-white">
+              {pkgName}
+            </span>{" "}
+            for study{" "}
+            <span className="font-mono text-white">{project.intakeId}</span>.
           </p>
-
-          <div className="p-4 rounded-[2px] bg-[#01142B] border border-white/10 space-y-3 font-sans text-sm shadow-sm">
-            <div className="text-xs uppercase font-semibold text-white/50 tracking-wider">
-              Selected Services &amp; Scope:
-            </div>
-            <div className="space-y-1.5 pl-1">
-              <div className="text-xs text-white/90 flex items-center justify-between">
-                <span>{pkgDef?.name || quotation.packageName} (Base Package)</span>
-                <span className="font-mono text-white/80"><Peso />{quotation.basePrice.toLocaleString()}</span>
+          <div className="rounded-[2px] border border-white/[0.07] bg-white/[0.02] p-4">
+            <dl className="flex flex-col gap-2 text-[13px]">
+              <SummaryLine
+                label={pkgName}
+                amount={quotation.basePrice}
+              />
+              {chosenSpeed ? (
+                <SummaryLine
+                  label={`${chosenSpeed.name} delivery`}
+                  amount={chosenSpeed.amount}
+                  plus
+                />
+              ) : null}
+              {chosenExtras.map((a) => (
+                <SummaryLine
+                  key={a.code}
+                  label={a.name}
+                  amount={a.amount}
+                  plus
+                />
+              ))}
+            </dl>
+            <div className="mt-3 flex flex-col gap-1.5 border-t border-white/[0.07] pt-3 text-[13px]">
+              <div className="flex justify-between font-medium text-white">
+                <span>Total</span>
+                <span className="font-mono">
+                  <Peso />
+                  {money(currentPricing.totalAmount)}
+                </span>
               </div>
-              {availableAddOns
-                .filter((a) => selectedAddOnCodes.includes(a.code))
-                .map((a) => (
-                  <div key={a.code} className="text-xs text-white/80 flex items-center justify-between">
-                    <span className="text-white/70">+ {a.name}</span>
-                    <span className="font-mono text-white/90">+<Peso />{a.amount.toLocaleString()}</span>
-                  </div>
-                ))}
-              {selectedAddOnCodes.length === 0 && (
-                <div className="text-xs text-white/40 italic">
-                  Standard 5–7 business days turnaround (No add-ons selected)
+              <div className="flex justify-between text-white/60">
+                <span>
+                  {upfront
+                    ? "Pay in full"
+                    : `Deposit (${currentPricing.downpaymentPercentage}%)`}
+                </span>
+                <span className="font-mono">
+                  <Peso />
+                  {money(currentPricing.downpaymentRequired)}
+                </span>
+              </div>
+              {!upfront && currentPricing.releaseBalance > 0 ? (
+                <div className="flex justify-between text-white/60">
+                  <span>The rest, when files are ready</span>
+                  <span className="font-mono">
+                    <Peso />
+                    {money(currentPricing.releaseBalance)}
+                  </span>
                 </div>
-              )}
-            </div>
-
-            <div className="border-t border-white/10 pt-2.5 space-y-2">
-              <div className="flex justify-between font-semibold">
-                <span className="text-white/80">Total Amount:</span>
-                <span className="text-white font-mono font-bold"><Peso />{currentPricing.totalAmount.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-white/50">Initial Downpayment ({currentPricing.downpaymentPercentage}%):</span>
-                <span className="text-white font-mono font-bold"><Peso />{currentPricing.downpaymentRequired.toLocaleString()}</span>
-              </div>
-              {!quotation.isUpfrontEnforced && currentPricing.releaseBalance > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-white/50">Final Balance:</span>
-                  <span className="text-white/80 font-mono font-bold"><Peso />{currentPricing.releaseBalance.toLocaleString()}</span>
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
-
-          <p className="text-xs text-white/50 leading-relaxed">
-            Once confirmed, our team will prepare your formal Statement of Work agreement for digital signature.
+          <p className="text-[13px] leading-relaxed text-white/55">
+            Next, we&apos;ll prepare your agreement. You&apos;ll review and sign
+            it before paying anything.
           </p>
-
           <ModalFooter>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsAcceptModalOpen(false)}
               disabled={isPending}
-              className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-sans"
             >
               Cancel
             </Button>
@@ -1087,65 +821,62 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
               variant="primary"
               size="sm"
               onClick={handleAcceptProposal}
+              loading={isPending}
               disabled={isPending}
-              className="gap-2 bg-[#CC6600] text-white hover:bg-[#E67300] font-sans text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
+              className="gap-1.5"
             >
-              <Check size={16} weight="fill" />
-              <span>{isPending ? "Approving..." : "Confirm & Accept Quote"}</span>
+              {isPending ? "Accepting..." : "Yes, Accept Price"}
             </Button>
           </ModalFooter>
         </div>
       </Modal>
 
-      {/* ── Decline Proposal Modal ── */}
+      {/* ── Ask for changes ── */}
       <Modal
         isOpen={isDeclineModalOpen}
         onClose={() => setIsDeclineModalOpen(false)}
-        title="Decline Quote"
+        title="Ask for changes"
         size="md"
       >
-        <div className="space-y-5 text-sm font-sans text-white/80 p-1">
+        <div className="flex flex-col gap-5 p-1 font-sans text-sm text-white/75">
           <p className="leading-relaxed">
-            Please let our statistical team know why this quote does not meet your requirements so we can adjust the scope or pricing for you.
+            Tell us what doesn&apos;t work for you and we&apos;ll send an
+            updated price. This closes the current price.
           </p>
-
-          <div className="space-y-2">
-            <label className="text-xs font-sans uppercase text-white/70 font-bold">
-              Reason / Requested Adjustments (Optional)
-            </label>
+          <label className="flex flex-col gap-2">
+            <span className="text-xs font-medium text-white/70">
+              What should we change? (optional)
+            </span>
             <textarea
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
-              placeholder="e.g., I only need Chapter 4 descriptive tables, or my deadline is 1 week later..."
+              placeholder="For example: I only need the descriptive tables, or my deadline is a week later."
               rows={4}
-              className="w-full bg-[#01142B] border border-white/15 rounded-[2px] p-4 text-sm font-sans text-white placeholder:text-white/30 focus:outline-none focus:border-[#CC6600] transition-colors resize-none leading-relaxed"
+              className="w-full resize-none rounded-[2px] border border-white/15 bg-[#050513] p-4 text-sm leading-relaxed text-white placeholder:text-white/30 transition-colors focus:border-[#CC6600] focus:outline-none"
             />
-          </div>
-
+          </label>
           <ModalFooter>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsDeclineModalOpen(false)}
               disabled={isPending}
-              className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-sans"
             >
               Back
             </Button>
             <Button
-              variant="danger"
+              variant="primary"
               size="sm"
               onClick={handleDeclineProposal}
+              loading={isPending}
               disabled={isPending}
-              className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-semibold"
             >
-              {isPending ? "Submitting..." : "Submit Decline"}
+              {isPending ? "Sending..." : "Send Request"}
             </Button>
           </ModalFooter>
         </div>
       </Modal>
 
-      {/* ── Global Toast ── */}
       {toastMessage && (
         <Toast
           message={toastMessage.message}
@@ -1154,6 +885,211 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
           onClose={() => setToastMessage(null)}
         />
       )}
+    </div>
+  );
+}
+
+// ─── Pieces ──────────────────────────────────────────────────────────────────
+
+/** One plain sentence about where this price stands, with the next step when there is one. */
+function StatusBanner({
+  quotation,
+  project,
+  projectId,
+}: {
+  quotation: QuotationDetailItem;
+  project: ProjectDetailItem;
+  projectId: string;
+}) {
+  let tone: "action" | "calm" = "calm";
+  let title: string;
+  let body: string;
+  let action: { label: string; href: string } | null = null;
+
+  if (quotation.status === "QUOTE_SENT" && !quotation.isExpired) {
+    tone = "action";
+    title = "Your price is ready";
+    body = `Choose any extras, then accept by ${longDate(quotation.expiresAt)}. You won't pay anything until you've signed your agreement.`;
+  } else if (quotation.status === "CLIENT_APPROVED") {
+    const agreementReady = project.masterStatus !== "CLIENT_APPROVED";
+    title = "You accepted this price";
+    body = agreementReady
+      ? "Your agreement is ready. Review and sign it to continue."
+      : "We're preparing your agreement. We'll let you know when it's ready to sign.";
+    if (agreementReady) {
+      tone = project.masterStatus === "SOW_PENDING" ? "action" : "calm";
+      action = {
+        label: "Review Agreement",
+        href: `/dashboard/client/projects/${projectId}/sow`,
+      };
+    }
+  } else if (quotation.status === "QUOTE_DECLINED") {
+    title = "You asked for changes";
+    body =
+      "Our team is updating your price. We'll let you know when the new one is ready.";
+  } else {
+    title = "This price has expired";
+    body = `It was good until ${longDate(quotation.expiresAt)}. Message our team and we'll send you a new one.`;
+    action = {
+      label: "Message Our Team",
+      href: `/dashboard/client/messages?projectId=${projectId}`,
+    };
+  }
+
+  return (
+    <div
+      className={`flex flex-col gap-3 rounded-[2px] border bg-[#0A0A18] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 ${
+        tone === "action" ? "border-[#CC6600]/35" : "border-white/[0.07]"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <span
+          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${tone === "action" ? "bg-[#CC6600]" : "bg-white/35"}`}
+          aria-hidden="true"
+        />
+        <div>
+          <p className="text-sm font-medium text-white">{title}</p>
+          <p className="mt-0.5 text-[13px] leading-relaxed text-white/60">
+            {body}
+          </p>
+        </div>
+      </div>
+      {action ? (
+        <Button
+          asChild
+          variant={tone === "action" ? "primary" : "outline"}
+          size="sm"
+          className="shrink-0 gap-1.5 self-start sm:self-center"
+        >
+          <Link href={action.href}>
+            {action.label}
+            <ArrowRight size={14} weight="bold" />
+          </Link>
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+/** Selectable row used for delivery speeds (radio) and extras (checkbox). */
+function OptionRow({
+  kind,
+  selected,
+  onSelect,
+  title,
+  detail,
+  price,
+  icon,
+  disabled = false,
+}: {
+  kind: "radio" | "checkbox";
+  selected: boolean;
+  onSelect: () => void;
+  title: string;
+  detail: string;
+  price: number | null;
+  icon?: React.ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role={kind}
+      aria-checked={selected}
+      onClick={onSelect}
+      disabled={disabled}
+      className={`flex w-full items-start gap-3.5 rounded-[2px] border px-4 py-3.5 text-left transition-colors ${
+        selected
+          ? "border-white/25 bg-white/[0.05]"
+          : "border-white/[0.07] hover:border-white/[0.16] hover:bg-white/[0.02]"
+      } ${disabled ? "cursor-default" : "cursor-pointer"}`}
+    >
+      <span
+        aria-hidden="true"
+        className={`mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center border transition-colors ${
+          kind === "radio" ? "rounded-full" : "rounded-[2px]"
+        } ${selected ? "border-[#CC6600] bg-[#CC6600] text-white" : "border-white/30"}`}
+      >
+        {selected ? (
+          kind === "radio" ? (
+            <span className="h-1.5 w-1.5 rounded-full bg-white" />
+          ) : (
+            <Check size={11} weight="bold" />
+          )
+        ) : null}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2 text-sm font-medium text-white">
+          {icon ? <span className="text-white/45">{icon}</span> : null}
+          {title}
+        </span>
+        <span className="mt-0.5 block text-[13px] leading-relaxed text-white/55">
+          {detail}
+        </span>
+      </span>
+      <span
+        className={`shrink-0 font-mono text-sm ${selected ? "text-white" : "text-white/55"}`}
+      >
+        {price === null ? (
+          "Included"
+        ) : (
+          <>
+            +<Peso />
+            {money(price)}
+          </>
+        )}
+      </span>
+    </button>
+  );
+}
+
+function SummaryLine({
+  label,
+  amount,
+  plus = false,
+}: {
+  label: string;
+  amount: number;
+  plus?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <dt className="text-white/70">{label}</dt>
+      <dd className="shrink-0 font-mono text-white/85">
+        {plus ? "+" : ""}
+        <Peso />
+        {money(amount)}
+      </dd>
+    </div>
+  );
+}
+
+function PayStep({
+  n,
+  title,
+  when,
+  amount,
+}: {
+  n: number;
+  title: string;
+  when: string;
+  amount: number;
+}) {
+  return (
+    <div className="mt-3 flex items-start gap-3">
+      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[2px] border border-white/15 font-mono text-[11px] text-white/60">
+        {n}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-[13px] font-medium text-white">{title}</span>
+          <span className="shrink-0 font-mono text-[13px] text-white">
+            <Peso />
+            {money(amount)}
+          </span>
+        </div>
+        <p className="mt-0.5 text-xs leading-relaxed text-white/50">{when}</p>
+      </div>
     </div>
   );
 }

@@ -350,7 +350,7 @@ export default function AdminDefenseLabPage() {
           </div>
 
           {/* SESSIONS QUEUE TABLE CARD */}
-          <Card className="p-6 bg-[#010D1F] border border-white/[0.08] flex flex-col gap-5">
+          <Card className="p-6 bg-[#050513] border border-white/[0.08] flex flex-col gap-5">
             {/* Filter Tabs & Search */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
               <div className="flex flex-wrap items-center gap-1.5">
@@ -369,7 +369,7 @@ export default function AdminDefenseLabPage() {
                     className={`px-3 py-1.5 rounded-[2px] text-xs font-mono transition-colors cursor-pointer ${
                       activeTab === tab.id
                         ? "bg-[#CC6600] text-white font-semibold"
-                        : "bg-[#01142B] text-white/60 hover:text-white hover:bg-white/10"
+                        : "bg-[#0A0A18] text-white/60 hover:text-white hover:bg-white/10"
                     }`}
                   >
                     {tab.label}
@@ -382,7 +382,7 @@ export default function AdminDefenseLabPage() {
                 placeholder="Search by Intake ID, Study, Client, or Statistician..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-1.5 text-xs text-white font-mono placeholder-white/40 outline-none focus:border-[#CC6600] w-full md:w-80"
+                className="bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-1.5 text-xs text-white font-mono placeholder-white/40 outline-none focus:border-[#CC6600] w-full md:w-80"
               />
             </div>
 
@@ -629,7 +629,7 @@ export default function AdminDefenseLabPage() {
                 placeholder="https://meet.google.com/abc-defg-hij or https://zoom.us/j/..."
                 value={meetingUrlInput}
                 onChange={(e) => setMeetingUrlInput(e.target.value)}
-                className="w-full bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
+                className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
                 required
               />
             </div>
@@ -670,7 +670,7 @@ export default function AdminDefenseLabPage() {
                 placeholder="https://drive.google.com/... or https://dropbox.com/..."
                 value={recordingUrlInput}
                 onChange={(e) => setRecordingUrlInput(e.target.value)}
-                className="w-full bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
+                className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
               />
               <span className="text-[0.625rem] text-white/50 font-mono">
                 You can also upload or update this recording link at a later time.
@@ -684,7 +684,7 @@ export default function AdminDefenseLabPage() {
                 value={completionNotesInput}
                 onChange={(e) => setCompletionNotesInput(e.target.value)}
                 rows={3}
-                className="w-full bg-[#01142B] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none leading-relaxed"
+                className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none leading-relaxed"
               />
             </div>
           </form>
@@ -724,7 +724,7 @@ export default function AdminDefenseLabPage() {
                 placeholder="https://drive.google.com/... or https://dropbox.com/..."
                 value={recordingUrlInput}
                 onChange={(e) => setRecordingUrlInput(e.target.value)}
-                className="w-full bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
+                className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
                 required
               />
             </div>
@@ -765,7 +765,7 @@ export default function AdminDefenseLabPage() {
                 value={penaltyReasonInput}
                 onChange={(e) => setPenaltyReasonInput(e.target.value)}
                 rows={3}
-                className="w-full bg-[#01142B] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none leading-relaxed"
+                className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none leading-relaxed"
                 required
               />
             </div>
@@ -778,7 +778,7 @@ export default function AdminDefenseLabPage() {
                 step={50}
                 value={penaltyAmountInput}
                 onChange={(e) => setPenaltyAmountInput(Number(e.target.value))}
-                className="bg-[#01142B] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
+                className="bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
               />
             </div>
           </form>

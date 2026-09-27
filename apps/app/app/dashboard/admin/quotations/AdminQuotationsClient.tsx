@@ -261,7 +261,7 @@ export function AdminQuotationsClient({
 
       {/* ── Main Proposals Queue Substrate Card ── */}
       <Card
-        className="p-0 border border-white/10 overflow-hidden bg-[#01142B]/85 rounded-[2px] shadow-xl backdrop-blur-sm"
+        className="p-0 border border-white/10 overflow-hidden bg-[#0A0A18]/85 rounded-[2px] shadow-xl backdrop-blur-sm"
         style={{ padding: 0 }}
       >
         {/* Filter Toolbar */}

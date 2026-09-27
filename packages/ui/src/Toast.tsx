@@ -28,7 +28,7 @@ const toastVariantConfig = {
     iconColor: "#EF4444",
     iconBg: "rgba(239, 68, 68, 0.12)",
     iconBorder: "rgba(239, 68, 68, 0.25)",
-    bg: "rgba(1, 22, 46, 0.98)",
+    bg: "rgba(11, 11, 25, 0.98)",
     border: "rgba(239, 68, 68, 0.35)",
     titleColor: "#F87171",
     label: "CRITICAL ALERT",
@@ -38,7 +38,7 @@ const toastVariantConfig = {
     iconColor: "#F59E0B",
     iconBg: "rgba(245, 158, 11, 0.12)",
     iconBorder: "rgba(245, 158, 11, 0.25)",
-    bg: "rgba(1, 22, 46, 0.98)",
+    bg: "rgba(11, 11, 25, 0.98)",
     border: "rgba(245, 158, 11, 0.35)",
     titleColor: "#FBBF24",
     label: "ATTENTION REQUIRED",
@@ -48,7 +48,7 @@ const toastVariantConfig = {
     iconColor: "#10B981",
     iconBg: "rgba(16, 185, 129, 0.12)",
     iconBorder: "rgba(16, 185, 129, 0.25)",
-    bg: "rgba(1, 22, 46, 0.98)",
+    bg: "rgba(11, 11, 25, 0.98)",
     border: "rgba(16, 185, 129, 0.35)",
     titleColor: "#34D399",
     label: "CONFIRMATION",
@@ -58,7 +58,7 @@ const toastVariantConfig = {
     iconColor: "#38BDF8",
     iconBg: "rgba(56, 189, 248, 0.12)",
     iconBorder: "rgba(56, 189, 248, 0.25)",
-    bg: "rgba(1, 22, 46, 0.98)",
+    bg: "rgba(11, 11, 25, 0.98)",
     border: "rgba(56, 189, 248, 0.35)",
     titleColor: "#38BDF8",
     label: "SYSTEM TELEMETRY",
@@ -124,10 +124,10 @@ export const Toast: React.FC<ToastProps> = ({
         aria-live="polite"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
-        className={`fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-[9999] flex flex-col rounded-[2px] shadow-2xl backdrop-blur-xl transition-all ${className}`}
+        className={`fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-[10000] flex flex-col rounded-[2px] shadow-2xl backdrop-blur-xl transition-all ${className}`}
         style={{
           position: "fixed",
-          zIndex: 9999,
+          zIndex: 10000, // above modals and drawers (9999)
           backgroundColor: cfg.bg,
           border: `1px solid ${cfg.border}`,
           borderRadius: "2px",

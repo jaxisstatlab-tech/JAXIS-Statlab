@@ -2,148 +2,156 @@
 
 import React from "react";
 import type { MessageDTO } from "../schemas";
-import { Badge } from "@repo/ui";
-import {
-  Warning,
-  Check,
-  Checks,
-} from "@phosphor-icons/react";
+import { Check, Checks, Clock, WarningCircle } from "@phosphor-icons/react";
+import { firstName, fullTimeLabel, initials, roleLabel, timeLabel } from "./chat-format";
+
+/** A message as the chat holds it: server data plus local send state. */
+export type ChatMessage = MessageDTO & {
+  /** Set when saving failed (network or server error). The row stays with Try Again. */
+  failed?: boolean;
+  failReason?: string;
+};
 
 interface MessageBubbleProps {
-  message: MessageDTO;
+  message: ChatMessage;
+  /** First / last message in a run from the same sender (first shows avatar, name and time). */
+  firstInGroup?: boolean;
+  lastInGroup?: boolean;
+  /** Show Sending / Sent / Delivered / Seen under this message (your latest one). */
+  showStatus?: boolean;
   isNew?: boolean;
+  onRetry?: (message: ChatMessage) => void;
+  onDiscard?: (message: ChatMessage) => void;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isNew }) => {
-  const { isMine, senderName, senderRole, content, sentAt, isBlocked, blockedReason, isRead } = message;
-
-  const timeFormatted = new Date(sentAt).toLocaleTimeString("en-PH", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const dateFormatted = new Date(sentAt).toLocaleDateString("en-PH", {
-    month: "short",
-    day: "numeric",
-  });
-
-  // Role Badge Variant Mapping (Minimalist & Calm)
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case "CLIENT":
-        return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-white/10 text-white/50 bg-white/[0.02]">Client</Badge>;
-      case "STATISTICIAN":
-        return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-white/10 text-white/60 bg-white/[0.03]">Statistician</Badge>;
-      case "SENIOR_QA_LEAD":
-        return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-white/10 text-white/60 bg-white/[0.03]">QA Lead</Badge>;
-      case "ADMIN":
-        return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-amber-500/20 text-amber-300/80 bg-amber-500/[0.04]">Admin</Badge>;
-      case "CEO":
-        return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-emerald-500/20 text-emerald-300/80 bg-emerald-500/[0.04]">Director</Badge>;
-      default:
-        return <Badge variant="outline" className="text-[0.625rem] font-mono px-1.5 py-0 border-white/10 text-white/50 bg-white/[0.02]">{role.replace(/_/g, " ")}</Badge>;
-    }
-  };
-
-  if (isBlocked) {
-    return (
-      <div className={`flex flex-col gap-1 max-w-xl my-1.5 animate-message-pop ${isMine ? "ml-auto items-end" : "mr-auto items-start"}`}>
-        <div className="flex items-center gap-1.5 text-xs font-sans text-white/50">
-          <span className="font-semibold text-white/80">{isMine ? "You" : senderName}</span>
-          {!isMine && getRoleBadge(senderRole)}
-          <span className="text-white/35 text-[0.688rem] font-mono">• {timeFormatted}</span>
-        </div>
-
-        <div className="p-3.5 rounded-[2px] bg-red-950/40 border border-red-500/40 text-red-200 text-xs font-sans flex flex-col gap-2 shadow-lg">
-          <div className="flex items-center gap-2 text-red-300 font-bold uppercase tracking-wider text-[0.688rem]">
-            <Warning size={15} weight="fill" className="text-red-400 shrink-0" />
-            <span>Message Blocked by Communication Firewall</span>
-          </div>
-          <p className="text-white/70 italic line-clamp-3">
-            &ldquo;{content}&rdquo;
-          </p>
-          <div className="pt-2 border-t border-red-500/20 text-[0.688rem] text-red-300">
-            <strong>Reason:</strong> Prohibited {blockedReason?.replace(/_/g, " ").toLowerCase() || "external contact info"} detected. This message was NOT delivered to recipients.
-          </div>
-        </div>
-      </div>
-    );
-  }
+/**
+ * One chat message as a Slack-style row: avatar, name, role and time on the first line of a
+ * group, the text underneath. Later messages in the same group are just text, with the time
+ * shown in the left gutter on hover.
+ */
+export const MessageBubble: React.FC<MessageBubbleProps> = ({
+  message,
+  firstInGroup = true,
+  showStatus = false,
+  isNew = false,
+  onRetry,
+  onDiscard,
+}) => {
+  const { isMine, senderName, senderRole, content, sentAt, isBlocked } = message;
+  const role = isMine ? "" : roleLabel(senderRole);
+  const pending = message.status === "sending" && !message.failed;
 
   return (
     <div
-      className={`flex flex-col gap-1 max-w-[85%] sm:max-w-xl my-1.5 animate-message-pop transition-all ${
-        isMine ? "ml-auto items-end origin-bottom-right" : "mr-auto items-start origin-bottom-left"
-      }`}
+      className={`group relative -mx-2 flex gap-3 rounded-[2px] px-2 py-0.5 transition-colors hover:bg-white/[0.025] ${
+        firstInGroup ? "mt-3 pt-1.5" : ""
+      } ${isNew ? "bg-white/[0.03]" : ""} animate-message-pop`}
     >
-      {/* Sender Header */}
-      <div className={`flex items-center gap-1.5 text-xs font-sans px-1 ${isMine ? "justify-end text-white/40" : "text-white/60"}`}>
-        {isMine ? (
-          <span className="text-[0.688rem] font-mono text-white/40">You • {timeFormatted}</span>
+      {/* Avatar on the first row; hover time in the gutter on the rest */}
+      <div className="w-8 shrink-0">
+        {firstInGroup ? (
+          <span
+            aria-hidden
+            className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-[2px] text-[0.688rem] font-semibold select-none ${
+              isMine ? "bg-[#CC6600]/20 text-[#F08A2E]" : "bg-white/[0.08] text-white/75"
+            }`}
+          >
+            {initials(senderName)}
+          </span>
         ) : (
-          <>
-            <span className="font-semibold text-white/90">{senderName}</span>
-            {getRoleBadge(senderRole)}
-            <span className="text-white/35 text-[0.688rem] font-mono">• {dateFormatted} {timeFormatted}</span>
-          </>
+          <span className="block pt-[3px] text-right text-[0.625rem] leading-5 text-white/30 opacity-0 transition-opacity select-none group-hover:opacity-100">
+            {timeLabel(sentAt).replace(/\s?[AP]M$/i, "")}
+          </span>
         )}
       </div>
 
-      {/* Bubble Container */}
-      <div
-        className={`px-3.5 py-2.5 rounded-[2px] border text-sm font-sans leading-relaxed whitespace-pre-wrap break-words transition-all duration-300 ${
-          isMine
-            ? "bg-[#011E3D] border-white/15 text-white"
-            : `bg-[#01142B] text-white/90 ${
-                isNew ? "border-[#38BDF8]/60 animate-message-highlight" : "border-white/10"
-              }`
-        }`}
-      >
-        {content}
-      </div>
+      <div className="min-w-0 flex-1">
+        {firstInGroup ? (
+          <p className="flex flex-wrap items-baseline gap-x-2 leading-5">
+            <span className="text-sm font-semibold text-white">{isMine ? "You" : senderName}</span>
+            {role ? <span className="text-xs text-white/45">{role}</span> : null}
+            <span className="text-[0.688rem] text-white/35" title={fullTimeLabel(sentAt)}>
+              {timeLabel(sentAt)}
+            </span>
+          </p>
+        ) : null}
 
-      {/* Footer Delivery & Read Receipts */}
-      {isMine && (
-        <div className="flex items-center gap-1.5 text-[0.625rem] font-mono text-white/35 px-1 justify-end select-none">
-          {message.status === "sending" || message.status === "sent" ? (
-            <span className="flex items-center gap-1 text-white/40" title="Sent">
-              <Check size={13} weight="bold" className="text-white/40" />
-              <span>Sent</span>
+        {isBlocked ? (
+          <div className="mt-0.5 text-sm">
+            <p className="text-white/40 line-through decoration-white/20">{content}</p>
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-red-300">
+              <WarningCircle size={13} weight="fill" /> Not sent. It looked like it had contact details.
+            </p>
+          </div>
+        ) : (
+          <div
+            title={fullTimeLabel(sentAt)}
+            className={`whitespace-pre-wrap break-words text-[0.938rem] leading-relaxed sm:text-sm ${
+              message.failed ? "text-white/55" : pending ? "text-white/60" : "text-white/90"
+            }`}
+          >
+            {content}
+          </div>
+        )}
+
+        {message.failed ? (
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-red-300">
+            <span className="flex items-center gap-1">
+              <WarningCircle size={13} weight="fill" />
+              {message.failReason ? `Not sent. ${message.failReason}` : "Not sent."}
             </span>
-          ) : message.status === "delivered" ? (
-            <span className="flex items-center gap-1 text-white/55" title="Delivered to recipients">
-              <Checks size={13} weight="bold" className="text-white/50" />
-              <span>Delivered</span>
-            </span>
-          ) : message.status === "seen" ? (
-            <span
-              className="flex items-center gap-1 text-[#38BDF8]"
-              title={
-                message.seenByNames && message.seenByNames.length > 0
-                  ? `Seen by ${message.seenByNames.join(", ")}`
-                  : "Seen"
-              }
+            <button
+              type="button"
+              onClick={() => onRetry?.(message)}
+              className="font-semibold text-white underline-offset-4 hover:underline"
             >
-              <Checks size={13} weight="bold" className="text-[#38BDF8]" />
-              <span className="text-[#38BDF8] font-medium">
-                {message.seenByNames && message.seenByNames.length > 0
-                  ? `Seen by ${message.seenByNames[0]}`
-                  : "Seen"}
-              </span>
-            </span>
-          ) : isRead ? (
-            <span className="flex items-center gap-1 text-[#38BDF8]">
-              <Checks size={13} weight="bold" className="text-[#38BDF8]" />
-              <span className="text-[#38BDF8] font-medium">Seen</span>
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-white/40">
-              <Check size={13} weight="bold" className="text-white/40" />
-              <span>Sent</span>
-            </span>
-          )}
-        </div>
-      )}
+              Try Again
+            </button>
+            <span className="text-white/20">·</span>
+            <button
+              type="button"
+              onClick={() => onDiscard?.(message)}
+              className="text-white/60 underline-offset-4 hover:text-white hover:underline"
+            >
+              Remove
+            </button>
+          </div>
+        ) : showStatus ? (
+          <DeliveryStatus message={message} />
+        ) : null}
+      </div>
     </div>
   );
 };
+
+function DeliveryStatus({ message }: { message: ChatMessage }) {
+  const base = "mt-0.5 flex items-center gap-1 text-[0.688rem] select-none";
+  if (message.status === "sending") {
+    return (
+      <p className={`${base} text-white/40`}>
+        <Clock size={12} weight="fill" /> Sending…
+      </p>
+    );
+  }
+  if (message.status === "seen" || message.isRead) {
+    const who = message.seenByNames?.length ? firstName(message.seenByNames[0]) : "";
+    return (
+      <p className={`${base} text-white/55`}>
+        <Checks size={13} weight="bold" className="text-[#CC6600]" />
+        {who ? `Seen by ${who}` : "Seen"}
+      </p>
+    );
+  }
+  if (message.status === "delivered") {
+    return (
+      <p className={`${base} text-white/40`}>
+        <Checks size={13} weight="bold" /> Delivered
+      </p>
+    );
+  }
+  return (
+    <p className={`${base} text-white/40`}>
+      <Check size={13} weight="bold" /> Sent
+    </p>
+  );
+}

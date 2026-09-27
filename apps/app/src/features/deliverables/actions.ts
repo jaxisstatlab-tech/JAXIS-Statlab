@@ -31,6 +31,7 @@ import {
 } from "./schemas";
 import { Deliverable, RevisionRequest, RoleName, DeliverableCategory } from "@prisma/client";
 import { assertStudyAccess } from "@/lib/access-control";
+import { devStudyDataEnabled, devAdminDeliverables, devClientDeliverables } from "@/features/projects/dev-study-store";
 
 /**
  * Maps Deliverable Prisma record to DeliverableDTO
@@ -117,67 +118,72 @@ export async function getAdminDeliverablesDesk(projectId: string): Promise<Admin
     throw new Error(access.error?.message || "Unauthorized: You do not have permission to view this deliverables desk.");
   }
 
-  const project = await db.project.findUnique({
-    where: { id: projectId },
-    include: {
-      client: {
-        select: { id: true, fullName: true, email: true },
-      },
-      assignment: {
-        include: {
-          statistician: { select: { id: true, fullName: true } },
-          qaLead: { select: { id: true, fullName: true } },
+  try {
+    const project = await db.project.findUnique({
+      where: { id: projectId },
+      include: {
+        client: {
+          select: { id: true, fullName: true, email: true },
+        },
+        assignment: {
+          include: {
+            statistician: { select: { id: true, fullName: true } },
+            qaLead: { select: { id: true, fullName: true } },
+          },
+        },
+        deliverables: {
+          include: {
+            uploader: { select: { id: true, fullName: true } },
+            releaser: { select: { id: true, fullName: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+        revisionRequests: {
+          include: {
+            client: { select: { id: true, fullName: true, email: true } },
+            classifier: { select: { id: true, fullName: true } },
+          },
+          orderBy: { createdAt: "desc" },
         },
       },
-      deliverables: {
-        include: {
-          uploader: { select: { id: true, fullName: true } },
-          releaser: { select: { id: true, fullName: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      },
-      revisionRequests: {
-        include: {
-          client: { select: { id: true, fullName: true, email: true } },
-          classifier: { select: { id: true, fullName: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      },
-    },
-  });
+    });
 
-  if (!project) {
-    throw new Error(`Project ${projectId} not found.`);
+    if (!project) {
+      throw new Error(`Project ${projectId} not found.`);
+    }
+
+    const gateEligibility = await assertReleaseEligibility(projectId);
+
+    return {
+      project: {
+        id: project.id,
+        intakeId: project.intakeId,
+        researchTitle: project.researchTitle,
+        masterStatus: project.masterStatus,
+        packageName: project.packageName,
+        qaApproved: project.qaApproved,
+        deliveredAt: project.deliveredAt ? project.deliveredAt.toISOString() : null,
+        filesPurgeAt: project.filesPurgeAt ? project.filesPurgeAt.toISOString() : null,
+        revisionWindowExpiresAt: project.revisionWindowExpiresAt
+          ? project.revisionWindowExpiresAt.toISOString()
+          : null,
+        client: project.client,
+        assignedStatistician: project.assignment?.statistician || null,
+        assignedQaLead: project.assignment?.qaLead || null,
+      },
+      gateEligibility,
+      deliverables: project.deliverables.map(toDeliverableDTO),
+      revisions: project.revisionRequests.map((r) =>
+        toRevisionRequestDTO({
+          ...r,
+          project: { id: project.id, intakeId: project.intakeId, researchTitle: project.researchTitle },
+        })
+      ),
+    };
+  } catch (err) {
+    if (devStudyDataEnabled()) return devAdminDeliverables(projectId, session.user);
+    throw err;
   }
-
-  const gateEligibility = await assertReleaseEligibility(projectId);
-
-  return {
-    project: {
-      id: project.id,
-      intakeId: project.intakeId,
-      researchTitle: project.researchTitle,
-      masterStatus: project.masterStatus,
-      packageName: project.packageName,
-      qaApproved: project.qaApproved,
-      deliveredAt: project.deliveredAt ? project.deliveredAt.toISOString() : null,
-      filesPurgeAt: project.filesPurgeAt ? project.filesPurgeAt.toISOString() : null,
-      revisionWindowExpiresAt: project.revisionWindowExpiresAt
-        ? project.revisionWindowExpiresAt.toISOString()
-        : null,
-      client: project.client,
-      assignedStatistician: project.assignment?.statistician || null,
-      assignedQaLead: project.assignment?.qaLead || null,
-    },
-    gateEligibility,
-    deliverables: project.deliverables.map(toDeliverableDTO),
-    revisions: project.revisionRequests.map((r) =>
-      toRevisionRequestDTO({
-        ...r,
-        project: { id: project.id, intakeId: project.intakeId, researchTitle: project.researchTitle },
-      })
-    ),
-  };
 }
 
 /**
@@ -384,320 +390,325 @@ export async function getClientDeliverables(projectId: string): Promise<ClientDe
   const userRole = (session.user as { role?: RoleName })?.role;
   const isClient = userRole === "CLIENT";
 
-  let project = await db.project.findUnique({
-    where: { id: projectId },
-    include: {
-      client: {
-        include: {
-          clientProfile: true,
-        },
-      },
-      assignment: {
-        include: {
-          statistician: {
-            include: {
-              staffProfile: true,
-            },
-          },
-          qaLead: {
-            include: {
-              staffProfile: true,
-            },
+  try {
+    let project = await db.project.findUnique({
+      where: { id: projectId },
+      include: {
+        client: {
+          include: {
+            clientProfile: true,
           },
         },
-      },
-      qaReviews: {
-        where: { decision: "QA_APPROVED" },
-        include: {
-          reviewer: {
-            include: {
-              staffProfile: true,
-            },
-          },
-        },
-        orderBy: { reviewedAt: "desc" },
-        take: 1,
-      },
-      deliverables: {
-        where: isClient ? { isFinalReleased: true } : undefined,
-        include: {
-          uploader: { select: { id: true, fullName: true } },
-          releaser: { select: { id: true, fullName: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      },
-      analysisFiles: {
-        where: { isCurrent: true },
-        include: {
-          statistician: {
-            include: {
-              staffProfile: true,
-            },
-          },
-        },
-      },
-      revisionRequests: {
-        where: isClient ? { clientId: session.user.id } : undefined,
-        include: {
-          client: { select: { id: true, fullName: true, email: true } },
-          classifier: { select: { id: true, fullName: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      },
-    },
-  });
-
-  if (!project) {
-    throw new Error(`Project ${projectId} not found.`);
-  }
-
-  if (isClient && project.clientId !== session.user.id) {
-    throw new Error("Unauthorized: You do not have access to this study's deliverables.");
-  }
-
-  // Check Dual Release Gates (RULE_REL_01 financial & RULE_REL_02 QA clearance)
-  const gateEligibility = await assertReleaseEligibility(projectId);
-  const isFinancialLocked = !gateEligibility.financialGatePassed && gateEligibility.remainingBalance > 0;
-
-  // If study is DELIVERED and financial gate passed, ensure analysis files are packaged as deliverables
-  if (project.masterStatus === "DELIVERED" && !isFinancialLocked) {
-    const now = new Date();
-    const purgeDeadline = computePurgeDeadline(now, 90);
-    const revisionExpiry = await computeRevisionWindowExpiry(now, 3);
-
-    if (project.deliverables.length === 0 && project.analysisFiles.length > 0) {
-      for (const af of project.analysisFiles) {
-        // Prevent duplicate creation
-        const existing = await db.deliverable.findFirst({
-          where: { projectId: project.id, filePath: af.filePath },
-        });
-        if (existing) continue;
-
-        let cat: DeliverableCategory = "STATISTICAL_OUTPUT";
-        if (af.fileCategory === "PDF_REPORT") cat = "PDF_REPORT";
-        else if (af.fileCategory === "RAW_DATASET") cat = "RAW_DATA_CLEANED";
-        else if (af.fileCategory === "OTHER") cat = "OTHER";
-
-        await db.deliverable.create({
-          data: {
-            projectId: project.id,
-            category: cat,
-            fileName: af.fileName,
-            filePath: af.filePath,
-            fileSize: af.fileSize || 1024,
-            fileType: af.fileType || "application/octet-stream",
-            uploadedBy: af.statisticianId || session.user.id,
-            isFinalReleased: true,
-            releasedAt: now,
-            releasedBy: session.user.id,
-          },
-        });
-      }
-
-      await db.project.update({
-        where: { id: project.id },
-        data: {
-          deliveredAt: project.deliveredAt || now,
-          filesPurgeAt: project.filesPurgeAt || purgeDeadline,
-          revisionWindowExpiresAt: project.revisionWindowExpiresAt || revisionExpiry,
-        },
-      });
-
-      // Refetch project with newly created deliverables
-      const refreshed = await db.project.findUnique({
-        where: { id: projectId },
-        include: {
-          client: {
-            include: {
-              clientProfile: true,
-            },
-          },
-          assignment: {
-            include: {
-              statistician: {
-                include: {
-                  staffProfile: true,
-                },
+        assignment: {
+          include: {
+            statistician: {
+              include: {
+                staffProfile: true,
               },
-              qaLead: {
-                include: {
-                  staffProfile: true,
-                },
+            },
+            qaLead: {
+              include: {
+                staffProfile: true,
               },
             },
           },
-          qaReviews: {
-            where: { decision: "QA_APPROVED" },
-            include: {
-              reviewer: {
-                include: {
-                  staffProfile: true,
-                },
-              },
-            },
-            orderBy: { reviewedAt: "desc" },
-            take: 1,
-          },
-          deliverables: {
-            where: isClient ? { isFinalReleased: true } : undefined,
-            include: {
-              uploader: { select: { id: true, fullName: true } },
-              releaser: { select: { id: true, fullName: true } },
-            },
-            orderBy: { createdAt: "desc" },
-          },
-          analysisFiles: {
-            where: { isCurrent: true },
-            include: {
-              statistician: {
-                include: {
-                  staffProfile: true,
-                },
+        },
+        qaReviews: {
+          where: { decision: "QA_APPROVED" },
+          include: {
+            reviewer: {
+              include: {
+                staffProfile: true,
               },
             },
           },
-          revisionRequests: {
-            where: isClient ? { clientId: session.user.id } : undefined,
-            include: {
-              client: { select: { id: true, fullName: true, email: true } },
-              classifier: { select: { id: true, fullName: true } },
+          orderBy: { reviewedAt: "desc" },
+          take: 1,
+        },
+        deliverables: {
+          where: isClient ? { isFinalReleased: true } : undefined,
+          include: {
+            uploader: { select: { id: true, fullName: true } },
+            releaser: { select: { id: true, fullName: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+        analysisFiles: {
+          where: { isCurrent: true },
+          include: {
+            statistician: {
+              include: {
+                staffProfile: true,
+              },
             },
-            orderBy: { createdAt: "desc" },
           },
         },
-      });
-      if (refreshed) {
-        project = refreshed;
-      }
-    } else if (!project.revisionWindowExpiresAt) {
-      await db.project.update({
-        where: { id: project.id },
-        data: {
-          deliveredAt: project.deliveredAt || now,
-          filesPurgeAt: project.filesPurgeAt || purgeDeadline,
-          revisionWindowExpiresAt: revisionExpiry,
+        revisionRequests: {
+          where: isClient ? { clientId: session.user.id } : undefined,
+          include: {
+            client: { select: { id: true, fullName: true, email: true } },
+            classifier: { select: { id: true, fullName: true } },
+          },
+          orderBy: { createdAt: "desc" },
         },
-      });
-      project.deliveredAt = project.deliveredAt || now;
-      project.filesPurgeAt = project.filesPurgeAt || purgeDeadline;
-      project.revisionWindowExpiresAt = revisionExpiry;
+      },
+    });
+
+    if (!project) {
+      throw new Error(`Project ${projectId} not found.`);
     }
-  }
 
-  const isReleased =
-    !isFinancialLocked &&
-    (project.masterStatus === "DELIVERED" || Boolean(project.deliveredAt)) &&
-    project.deliverables.length > 0;
-  const countdown = getRevisionWindowCountdown(project.revisionWindowExpiresAt);
-
-  const pendingRevision = project.revisionRequests.some(
-    (r) => r.status === "PENDING_REVIEW" || r.status === "INCLUDED"
-  );
-
-  // Format package tier label
-  const formatTierExecuted = (pkg?: string | null): string => {
-    if (!pkg) return "JX-04 Advanced Analysis (Econometrics Specialty)";
-    if (pkg.includes("04") || pkg.includes("ADVANCED")) {
-      return "JX-04 Advanced Analysis (Econometrics Specialty)";
+    if (isClient && project.clientId !== session.user.id) {
+      throw new Error("Unauthorized: You do not have access to this study's deliverables.");
     }
-    if (pkg.includes("03") || pkg.includes("CORE")) {
-      return "JX-03 Core Analytical Processing (Multivariate Modeling)";
-    }
-    if (pkg.includes("02") || pkg.includes("START")) {
-      return "JX-02 Start (Foundational Statistical Package)";
-    }
-    if (pkg.includes("01") || pkg.includes("DATACHECK")) {
-      return "JX-01 DataCheck (Exploratory Data Diagnostics)";
-    }
-    return pkg;
-  };
 
-  // Resolve assigned statistician and QA signatory details
-  const assignedStatistician =
-    project.assignment?.statistician ||
-    project.analysisFiles?.find((f) => f.statistician)?.statistician;
+    // Check Dual Release Gates (RULE_REL_01 financial & RULE_REL_02 QA clearance)
+    const gateEligibility = await assertReleaseEligibility(projectId);
+    const isFinancialLocked = !gateEligibility.financialGatePassed && gateEligibility.remainingBalance > 0;
 
-  const statisticianName =
-    assignedStatistician?.fullName || "Lead Consulting Statistician";
-  const statisticianTitle =
-    assignedStatistician?.staffProfile?.bio ||
-    "Lead Consulting Statistician, Statistical Computing & Analytics";
-  const statisticianSignatureUrl =
-    assignedStatistician?.staffProfile?.signatureUrl || null;
+    // If study is DELIVERED and financial gate passed, ensure analysis files are packaged as deliverables
+    if (project.masterStatus === "DELIVERED" && !isFinancialLocked) {
+      const now = new Date();
+      const purgeDeadline = computePurgeDeadline(now, 90);
+      const revisionExpiry = await computeRevisionWindowExpiry(now, 3);
 
-  const approvedReview = project.qaReviews?.[0];
-  const qaUser = approvedReview?.reviewer || project.assignment?.qaLead;
-  const qaLeadName = qaUser?.fullName || "Senior QA Review Lead";
-  const qaLeadTitle = qaUser?.staffProfile?.bio || "Statistical Review Editor, Quality Assurance";
-  const qaSignatureUrl = qaUser?.staffProfile?.signatureUrl || null;
+      if (project.deliverables.length === 0 && project.analysisFiles.length > 0) {
+        for (const af of project.analysisFiles) {
+          // Prevent duplicate creation
+          const existing = await db.deliverable.findFirst({
+            where: { projectId: project.id, filePath: af.filePath },
+          });
+          if (existing) continue;
 
-  const cleanIntakeNum = project.intakeId.replace(/^JAXIS-?/i, "");
-  const certificateId = `JAXIS-AUDIT-2026-${cleanIntakeNum}`;
+          let cat: DeliverableCategory = "STATISTICAL_OUTPUT";
+          if (af.fileCategory === "PDF_REPORT") cat = "PDF_REPORT";
+          else if (af.fileCategory === "RAW_DATASET") cat = "RAW_DATA_CLEANED";
+          else if (af.fileCategory === "OTHER") cat = "OTHER";
 
-  const completionDate = (project.deliveredAt || approvedReview?.reviewedAt || new Date()).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  const qaCertificate: QaCertificateDTO = {
-    certificateId,
-    researchTitle: project.researchTitle,
-    clientName: project.client?.fullName || "Lead Researcher",
-    clientEmail: project.client?.email || "",
-    institution: project.client?.clientProfile?.institutionSchool || "Higher Education Institution",
-    program: project.client?.clientProfile?.academicProgram || "Graduate & Doctoral Research",
-    tierExecuted: formatTierExecuted(project.packageName),
-    completionDate,
-    statisticianName,
-    statisticianTitle,
-    statisticianSignatureUrl,
-    qaLeadName,
-    qaLeadTitle,
-    qaSignatureUrl,
-  };
-
-  return {
-    project: {
-      id: project.id,
-      intakeId: project.intakeId,
-      researchTitle: project.researchTitle,
-      masterStatus: project.masterStatus,
-      packageName: project.packageName,
-      deliveredAt: project.deliveredAt ? project.deliveredAt.toISOString() : null,
-      filesPurgeAt: project.filesPurgeAt ? project.filesPurgeAt.toISOString() : null,
-      revisionWindowExpiresAt: project.revisionWindowExpiresAt
-        ? project.revisionWindowExpiresAt.toISOString()
-        : null,
-    },
-    isReleased,
-    paymentLock: isFinancialLocked
-      ? {
-          isLocked: true,
-          remainingBalance: gateEligibility.remainingBalance,
-          totalAmount: gateEligibility.totalAmount,
-          totalPaid: gateEligibility.totalPaid,
+          await db.deliverable.create({
+            data: {
+              projectId: project.id,
+              category: cat,
+              fileName: af.fileName,
+              filePath: af.filePath,
+              fileSize: af.fileSize || 1024,
+              fileType: af.fileType || "application/octet-stream",
+              uploadedBy: af.statisticianId || session.user.id,
+              isFinalReleased: true,
+              releasedAt: now,
+              releasedBy: session.user.id,
+            },
+          });
         }
-      : null,
-    revisionWindow: {
-      ...countdown,
-      expiresAtFormatted: project.revisionWindowExpiresAt
-        ? new Date(project.revisionWindowExpiresAt).toLocaleString("en-PH", {
-            dateStyle: "medium",
-            timeStyle: "short",
-          })
+
+        await db.project.update({
+          where: { id: project.id },
+          data: {
+            deliveredAt: project.deliveredAt || now,
+            filesPurgeAt: project.filesPurgeAt || purgeDeadline,
+            revisionWindowExpiresAt: project.revisionWindowExpiresAt || revisionExpiry,
+          },
+        });
+
+        // Refetch project with newly created deliverables
+        const refreshed = await db.project.findUnique({
+          where: { id: projectId },
+          include: {
+            client: {
+              include: {
+                clientProfile: true,
+              },
+            },
+            assignment: {
+              include: {
+                statistician: {
+                  include: {
+                    staffProfile: true,
+                  },
+                },
+                qaLead: {
+                  include: {
+                    staffProfile: true,
+                  },
+                },
+              },
+            },
+            qaReviews: {
+              where: { decision: "QA_APPROVED" },
+              include: {
+                reviewer: {
+                  include: {
+                    staffProfile: true,
+                  },
+                },
+              },
+              orderBy: { reviewedAt: "desc" },
+              take: 1,
+            },
+            deliverables: {
+              where: isClient ? { isFinalReleased: true } : undefined,
+              include: {
+                uploader: { select: { id: true, fullName: true } },
+                releaser: { select: { id: true, fullName: true } },
+              },
+              orderBy: { createdAt: "desc" },
+            },
+            analysisFiles: {
+              where: { isCurrent: true },
+              include: {
+                statistician: {
+                  include: {
+                    staffProfile: true,
+                  },
+                },
+              },
+            },
+            revisionRequests: {
+              where: isClient ? { clientId: session.user.id } : undefined,
+              include: {
+                client: { select: { id: true, fullName: true, email: true } },
+                classifier: { select: { id: true, fullName: true } },
+              },
+              orderBy: { createdAt: "desc" },
+            },
+          },
+        });
+        if (refreshed) {
+          project = refreshed;
+        }
+      } else if (!project.revisionWindowExpiresAt) {
+        await db.project.update({
+          where: { id: project.id },
+          data: {
+            deliveredAt: project.deliveredAt || now,
+            filesPurgeAt: project.filesPurgeAt || purgeDeadline,
+            revisionWindowExpiresAt: revisionExpiry,
+          },
+        });
+        project.deliveredAt = project.deliveredAt || now;
+        project.filesPurgeAt = project.filesPurgeAt || purgeDeadline;
+        project.revisionWindowExpiresAt = revisionExpiry;
+      }
+    }
+
+    const isReleased =
+      !isFinancialLocked &&
+      (project.masterStatus === "DELIVERED" || Boolean(project.deliveredAt)) &&
+      project.deliverables.length > 0;
+    const countdown = getRevisionWindowCountdown(project.revisionWindowExpiresAt);
+
+    const pendingRevision = project.revisionRequests.some(
+      (r) => r.status === "PENDING_REVIEW" || r.status === "INCLUDED"
+    );
+
+    // Format package tier label
+    const formatTierExecuted = (pkg?: string | null): string => {
+      if (!pkg) return "JX-04 Advanced Analysis (Econometrics Specialty)";
+      if (pkg.includes("04") || pkg.includes("ADVANCED")) {
+        return "JX-04 Advanced Analysis (Econometrics Specialty)";
+      }
+      if (pkg.includes("03") || pkg.includes("CORE")) {
+        return "JX-03 Core Analytical Processing (Multivariate Modeling)";
+      }
+      if (pkg.includes("02") || pkg.includes("START")) {
+        return "JX-02 Start (Foundational Statistical Package)";
+      }
+      if (pkg.includes("01") || pkg.includes("DATACHECK")) {
+        return "JX-01 DataCheck (Exploratory Data Diagnostics)";
+      }
+      return pkg;
+    };
+
+    // Resolve assigned statistician and QA signatory details
+    const assignedStatistician =
+      project.assignment?.statistician ||
+      project.analysisFiles?.find((f) => f.statistician)?.statistician;
+
+    const statisticianName =
+      assignedStatistician?.fullName || "Lead Consulting Statistician";
+    const statisticianTitle =
+      assignedStatistician?.staffProfile?.bio ||
+      "Lead Consulting Statistician, Statistical Computing & Analytics";
+    const statisticianSignatureUrl =
+      assignedStatistician?.staffProfile?.signatureUrl || null;
+
+    const approvedReview = project.qaReviews?.[0];
+    const qaUser = approvedReview?.reviewer || project.assignment?.qaLead;
+    const qaLeadName = qaUser?.fullName || "Senior QA Review Lead";
+    const qaLeadTitle = qaUser?.staffProfile?.bio || "Statistical Review Editor, Quality Assurance";
+    const qaSignatureUrl = qaUser?.staffProfile?.signatureUrl || null;
+
+    const cleanIntakeNum = project.intakeId.replace(/^JAXIS-?/i, "");
+    const certificateId = `JAXIS-AUDIT-2026-${cleanIntakeNum}`;
+
+    const completionDate = (project.deliveredAt || approvedReview?.reviewedAt || new Date()).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const qaCertificate: QaCertificateDTO = {
+      certificateId,
+      researchTitle: project.researchTitle,
+      clientName: project.client?.fullName || "Lead Researcher",
+      clientEmail: project.client?.email || "",
+      institution: project.client?.clientProfile?.institutionSchool || "Higher Education Institution",
+      program: project.client?.clientProfile?.academicProgram || "Graduate & Doctoral Research",
+      tierExecuted: formatTierExecuted(project.packageName),
+      completionDate,
+      statisticianName,
+      statisticianTitle,
+      statisticianSignatureUrl,
+      qaLeadName,
+      qaLeadTitle,
+      qaSignatureUrl,
+    };
+
+    return {
+      project: {
+        id: project.id,
+        intakeId: project.intakeId,
+        researchTitle: project.researchTitle,
+        masterStatus: project.masterStatus,
+        packageName: project.packageName,
+        deliveredAt: project.deliveredAt ? project.deliveredAt.toISOString() : null,
+        filesPurgeAt: project.filesPurgeAt ? project.filesPurgeAt.toISOString() : null,
+        revisionWindowExpiresAt: project.revisionWindowExpiresAt
+          ? project.revisionWindowExpiresAt.toISOString()
+          : null,
+      },
+      isReleased,
+      paymentLock: isFinancialLocked
+        ? {
+            isLocked: true,
+            remainingBalance: gateEligibility.remainingBalance,
+            totalAmount: gateEligibility.totalAmount,
+            totalPaid: gateEligibility.totalPaid,
+          }
         : null,
-    },
-    deliverables: project.deliverables.map(toDeliverableDTO),
-    revisions: project.revisionRequests.map((r) =>
-      toRevisionRequestDTO({
-        ...r,
-        project: { id: project.id, intakeId: project.intakeId, researchTitle: project.researchTitle },
-      })
-    ),
-    hasPendingRevision: pendingRevision,
-    qaCertificate: (isReleased || project.qaApproved || project.masterStatus === "DELIVERED") ? qaCertificate : null,
-  };
+      revisionWindow: {
+        ...countdown,
+        expiresAtFormatted: project.revisionWindowExpiresAt
+          ? new Date(project.revisionWindowExpiresAt).toLocaleString("en-PH", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })
+          : null,
+      },
+      deliverables: project.deliverables.map(toDeliverableDTO),
+      revisions: project.revisionRequests.map((r) =>
+        toRevisionRequestDTO({
+          ...r,
+          project: { id: project.id, intakeId: project.intakeId, researchTitle: project.researchTitle },
+        })
+      ),
+      hasPendingRevision: pendingRevision,
+      qaCertificate: (isReleased || project.qaApproved || project.masterStatus === "DELIVERED") ? qaCertificate : null,
+    };
+  } catch (err) {
+    if (devStudyDataEnabled()) return devClientDeliverables(projectId, session.user);
+    throw err;
+  }
 }
 
 /**
@@ -710,9 +721,6 @@ export async function getDeliverableDownloadUrl(
   if (!session?.user?.id) {
     throw new Error("Authentication required.");
   }
-
-  const userRole = (session.user as { role?: RoleName })?.role;
-  const isClient = userRole === "CLIENT";
 
   const deliverable = await db.deliverable.findUnique({
     where: { id: deliverableId },

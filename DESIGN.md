@@ -21,8 +21,8 @@ The **JAXIS StatLab** design system projects an **Enterprise, High-Trust, Missio
   --bg-primary: #010114;           /* Midnight Navy */
   
   /* 2. Surface & Glassmorphism — Content Separation */
-  --surface-secondary: #012E57;    /* Deep Ocean Blue */
-  --surface-glass: rgba(1, 46, 87, 0.55);
+  --surface-secondary: #1E1E2C;    /* Deep Ocean Blue */
+  --surface-glass: rgba(30, 30, 44, 0.55);
   --border-glass: rgba(255, 255, 255, 0.12);
   --border-glass-hover: rgba(255, 255, 255, 0.25);
 
@@ -50,7 +50,7 @@ The **JAXIS StatLab** design system projects an **Enterprise, High-Trust, Missio
 ```
 Background (#010114)
    │
-   └── Surface (#012E57)
+   └── Surface (#1E1E2C)
          │
          └── Accent (#CC6600)  ─── 5-10% Max Usage Rule
                │
@@ -61,7 +61,7 @@ Background (#010114)
 - **Purpose:** Primary backdrop for the entire application.
 - **Used For:** Entire page background, hero section, navbar, footer, modal backdrops, dark cards, and main dashboard shells.
 
-### 2. Deep Ocean Blue (`#012E57`) — Surface Color
+### 2. Deep Ocean Blue (`#1E1E2C`) — Surface Color
 - **Purpose:** Content separation without relying on generic gray backgrounds.
 - **Used For:** Secondary cards, feature sections, hover states, glassmorphism panels, active navigation items, code snippets, and pricing highlight cards.
 
@@ -81,13 +81,13 @@ All project and operational statuses across the 9 workflow stages utilize the en
 
 | Status Key | Display Name | Background / Border Token | Text Color |
 | :--- | :--- | :--- | :--- |
-| `DRAFT_QUOTE` | Draft Quote | Surface (`#012E57`) + Border (`rgba(255,255,255,0.2)`) | White (`#FFFFFF`) |
+| `DRAFT_QUOTE` | Draft Quote | Surface (`#1E1E2C`) + Border (`rgba(255,255,255,0.2)`) | White (`#FFFFFF`) |
 | `QUOTE_SENT` | Quote Issued | Accent Glow (`rgba(204,102,0,0.2)`) | Enterprise Orange (`#CC6600`) |
 | `AWAITING_PAYMENT`| Awaiting Payment | Amber Muted (`rgba(245,158,11,0.2)`) | Warning Amber (`#F59E0B`) |
 | `PAYMENT_SUBMITTED`| Proof Under Review | Amber Muted (`rgba(245,158,11,0.2)`) | Warning Amber (`#F59E0B`) |
 | `FULLY_PAID` | Fully Paid | Emerald Muted (`rgba(16,185,129,0.2)`) | Success Emerald (`#10B981`) |
-| `IN_ANALYSIS` | Analysis Active | Surface Accent (`#012E57`) | White (`#FFFFFF`) |
-| `FOR_QA` | Pending QA Review | Surface Accent (`#012E57`) | White (`#FFFFFF`) |
+| `IN_ANALYSIS` | Analysis Active | Surface Accent (`#1E1E2C`) | White (`#FFFFFF`) |
+| `FOR_QA` | Pending QA Review | Surface Accent (`#1E1E2C`) | White (`#FFFFFF`) |
 | `QA_APPROVED` | QA Approved | Emerald Muted (`rgba(16,185,129,0.2)`) | Success Emerald (`#10B981`) |
 | `RELEASED` | Deliverables Released | Emerald Muted (`rgba(16,185,129,0.2)`) | Success Emerald (`#10B981`) |
 | `BLOCKED_UNPAID` | Release Blocked | Crimson Muted (`rgba(239,68,68,0.2)`) | Crimson Alert (`#EF4444`) |
@@ -101,11 +101,11 @@ All 6 interface desks are built upon the Midnight Navy foundation with Deep Ocea
 
 1. **Client Portal:**
    - Background: Midnight Navy (`#010114`)
-   - Project Cards: Deep Ocean Blue (`#012E57`) with White text
+   - Project Cards: Deep Ocean Blue (`#1E1E2C`) with White text
    - Action Buttons: Enterprise Orange (`#CC6600`)
 
 2. **Admin Executive Desk:**
-   - High-density data grids framed in Deep Ocean Blue (`#012E57`)
+   - High-density data grids framed in Deep Ocean Blue (`#1E1E2C`)
    - Triage action triggers highlighted in Enterprise Orange (`#CC6600`)
 
 3. **Statistician Workspace:**
@@ -113,11 +113,11 @@ All 6 interface desks are built upon the Midnight Navy foundation with Deep Ocea
    - Upload action buttons styled in Enterprise Orange (`#CC6600`)
 
 4. **Senior QA Studio:**
-   - Audit scorecard checklists in Deep Ocean Blue (`#012E57`)
+   - Audit scorecard checklists in Deep Ocean Blue (`#1E1E2C`)
    - Risk escalation badges styled in Crimson (`#EF4444`) or Enterprise Orange (`#CC6600`)
 
 5. **Finance Officer Console:**
-   - Financial breakdown cards using Deep Ocean Blue (`#012E57`) with Emerald indicators for cleared funds
+   - Financial breakdown cards using Deep Ocean Blue (`#1E1E2C`) with Emerald indicators for cleared funds
 
 6. **CEO Risk Dashboard:**
    - Executive overview desk with high-level KPI cards and instant action overrides
@@ -129,8 +129,8 @@ All 6 interface desks are built upon the Midnight Navy foundation with Deep Ocea
 Shared components inside `packages/ui` must follow these styling tokens:
 
 - **Button Primary:** `background: #CC6600; color: #FFFFFF; hover: #E67300; border-radius: 2px;`
-- **Button Secondary:** `background: #012E57; color: #FFFFFF; border: 1px solid rgba(255,255,255,0.15); border-radius: 2px;`
-- **Card Container:** `background: #012E57; border: 1px solid rgba(255,255,255,0.1); border-radius: 2px;`
+- **Button Secondary:** `background: #1E1E2C; color: #FFFFFF; border: 1px solid rgba(255,255,255,0.15); border-radius: 2px;`
+- **Card Container:** `background: #1E1E2C; border: 1px solid rgba(255,255,255,0.1); border-radius: 2px;`
 - **Page Wrapper:** `background: #010114; min-height: 100vh; color: #FFFFFF;`
 
 ---
@@ -193,10 +193,10 @@ JAXIS StatLab incorporates a mission-critical, portaled toast alert system (`@re
 
 | Variant | Accent Color | Border & Gradient Surface | Icon (`@phosphor-icons/react`) | Primary Use Cases |
 | :--- | :--- | :--- | :--- | :--- |
-| `info` | Analytical Sky (`#38BDF8`) | `bg-gradient-to-r from-sky-950/90 to-[#010D1F] border-sky-500/35` | `<Info size={18} weight="fill" />` | Clipboard copies, download starts, non-destructive notifications, session events. |
-| `success` | Verification Emerald (`#10B981`) | `bg-gradient-to-r from-emerald-950/90 to-[#010D1F] border-emerald-500/35` | `<CheckCircle size={18} weight="fill" />` | Form saves, project creation, profile updates, file attachments, QA approvals, status advancements. |
-| `warning` | Enterprise Amber (`#CC6600` / `#FBBF24`) | `bg-gradient-to-r from-amber-950/90 to-[#010D1F] border-amber-500/35` | `<Warning size={18} weight="fill" />` | Missing information requests sent, staff suspensions, revision requests returned to statistician. |
-| `danger` | Crimson Alert (`#EF4444` / `#F87171`) | `bg-gradient-to-r from-rose-950/90 to-[#010D1F] border-rose-500/35` | `<WarningOctagon size={18} weight="fill" />` | Action failures, network errors, file size >15MB limit exceeded, invalid file formats, account termination. |
+| `info` | Analytical Sky (`#38BDF8`) | `bg-gradient-to-r from-sky-950/90 to-[#050513] border-sky-500/35` | `<Info size={18} weight="fill" />` | Clipboard copies, download starts, non-destructive notifications, session events. |
+| `success` | Verification Emerald (`#10B981`) | `bg-gradient-to-r from-emerald-950/90 to-[#050513] border-emerald-500/35` | `<CheckCircle size={18} weight="fill" />` | Form saves, project creation, profile updates, file attachments, QA approvals, status advancements. |
+| `warning` | Enterprise Amber (`#CC6600` / `#FBBF24`) | `bg-gradient-to-r from-amber-950/90 to-[#050513] border-amber-500/35` | `<Warning size={18} weight="fill" />` | Missing information requests sent, staff suspensions, revision requests returned to statistician. |
+| `danger` | Crimson Alert (`#EF4444` / `#F87171`) | `bg-gradient-to-r from-rose-950/90 to-[#050513] border-rose-500/35` | `<WarningOctagon size={18} weight="fill" />` | Action failures, network errors, file size >15MB limit exceeded, invalid file formats, account termination. |
 
 ### B. Mandatory Rules for When & Where to Trigger Toasts
 

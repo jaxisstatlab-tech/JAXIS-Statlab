@@ -163,8 +163,8 @@ export default function AdminReportsPage() {
               onClick={() => setSelectedReport(item.id)}
               className={`p-3.5 rounded-[4px] border text-left transition-all flex flex-col gap-2 cursor-pointer ${
                 isSelected
-                  ? "bg-[#011B38] border-[#CC6600] shadow-sm ring-1 ring-[#CC6600]"
-                  : "bg-[#01142B] border-white/10 hover:border-white/20 hover:bg-white/[0.02]"
+                  ? "bg-[#0F0F1D] border-[#CC6600] shadow-sm ring-1 ring-[#CC6600]"
+                  : "bg-[#0A0A18] border-white/10 hover:border-white/20 hover:bg-white/[0.02]"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -183,7 +183,7 @@ export default function AdminReportsPage() {
       </div>
 
       {/* Filter and Date Range Card */}
-      <Card className="p-4 sm:p-5 bg-[#01142B] border border-white/10 rounded-[4px] flex flex-wrap gap-4 items-center justify-between">
+      <Card className="p-4 sm:p-5 bg-[#0A0A18] border border-white/10 rounded-[4px] flex flex-wrap gap-4 items-center justify-between">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs text-white/50">
             <IconCalendar size={15} />
@@ -286,7 +286,7 @@ export default function AdminReportsPage() {
           )}
 
           {/* Granular Report Data Table */}
-          <Card className="p-6 sm:p-8 bg-[#01142B] border border-white/10 rounded-[4px] flex flex-col gap-5">
+          <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[4px] flex flex-col gap-5">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
                 {selectedReport.replace(/-/g, " ")} Records ({reportData.records?.length || 0})

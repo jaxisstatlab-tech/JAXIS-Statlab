@@ -31,7 +31,7 @@ export const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
             <span className="font-bold text-white">{Math.round(percentage)}%</span>
           </div>
         )}
-        <div className="h-2 w-full overflow-hidden rounded-[2px] bg-[#01142B] border border-white/[0.08]">
+        <div className="h-2 w-full overflow-hidden rounded-[2px] bg-[#0A0A18] border border-white/[0.08]">
           <div
             className={cn("h-full transition-all duration-500 ease-out rounded-[1px]", barClass)}
             style={{ width: `${percentage}%` }}

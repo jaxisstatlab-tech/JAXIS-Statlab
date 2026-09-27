@@ -29,6 +29,7 @@ import {
   QA_DECISION_METADATA,
   ERROR_CLASSIFICATION_METADATA,
 } from "@/lib/qa-rules";
+import { devStudyDataEnabled, devWorkbench } from "@/features/projects/dev-study-store";
 
 type ProjectWithWorkbench = Prisma.ProjectGetPayload<{
   include: {
@@ -351,6 +352,7 @@ export async function getAnalysisWorkbenchData(
       },
     };
   } catch (err) {
+    if (devStudyDataEnabled()) return devWorkbench(projectId, session.user);
     console.error("[getAnalysisWorkbenchData] Error:", err);
     return {
       success: false,

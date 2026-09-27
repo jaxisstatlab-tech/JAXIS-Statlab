@@ -25,9 +25,7 @@ import {
   IconReceipt2,
   IconFileText,
   IconEdit,
-  IconFileCertificate,
-  IconFileCheck,
-} from "@tabler/icons-react";
+  } from "@tabler/icons-react";
 import {
   getProjectById,
   updateProjectStatus,
@@ -273,40 +271,13 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-20 w-full animate-content-fade">
-      <PageHeader
-        title={project.researchTitle}
-        description={`Study ID: ${project.intakeId} · Primary Client: ${project.client.fullName} · Submitted ${new Date(
-          project.createdAt
-        ).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} at ${new Date(
-          project.createdAt
-        ).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })}`}
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Admin Command", href: "/dashboard/admin" },
-          { label: "Intake Triage", href: "/dashboard/admin/intake" },
-          { label: project.intakeId },
-        ]}
-        actions={
-          <div className="flex items-center gap-2">
-            <Link href={`/dashboard/admin/projects/${project.id}/analysis`}>
-              <Button variant="outline" size="sm" className="rounded-[2px] text-xs">
-                Analysis Files Audit
-              </Button>
-            </Link>
-            <Link href="/dashboard/admin/intake">
-              <Button variant="secondary" size="sm" className="rounded-[2px] text-xs">
-                ← Triage Queue
-              </Button>
-            </Link>
-          </div>
-        }
-      />
+      
 
       {error && <Alert variant="danger">{error}</Alert>}
 
       {/* ── Governance Status Action Bar ── */}
       <Card
-        className="overflow-hidden border border-white/10 bg-[#01142B]/90 rounded-[4px] shadow-lg"
+        className="overflow-hidden border border-white/10 bg-[#0A0A18]/90 rounded-[4px] shadow-lg"
         style={{ padding: "0.875rem 1.5rem" }}
       >
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
@@ -506,7 +477,7 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
             project.masterStatus === "IN_PROGRESS" ||
             quotation !== null ||
             sow !== null) && (
-            <Card className="p-6 bg-[#01142B] border border-white/[0.08] flex flex-col gap-5">
+            <Card className="p-6 bg-[#0A0A18] border border-white/[0.08] flex flex-col gap-5">
               {/* Card Header */}
               <div className="flex items-center justify-between border-b border-white/[0.08] pb-3.5">
                 <div className="flex items-center gap-2.5">
@@ -527,7 +498,7 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
               {/* Two-Column Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* ── Price Quote ── */}
-                <div className="p-4 rounded-[2px] bg-[#010D1F] border border-white/[0.06] flex flex-col justify-between gap-4">
+                <div className="p-4 rounded-[2px] bg-[#050513] border border-white/[0.06] flex flex-col justify-between gap-4">
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
@@ -626,7 +597,7 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
                 </div>
 
                 {/* ── Agreement (SOW) ── */}
-                <div className="p-4 rounded-[2px] bg-[#010D1F] border border-white/[0.06] flex flex-col justify-between gap-4">
+                <div className="p-4 rounded-[2px] bg-[#050513] border border-white/[0.06] flex flex-col justify-between gap-4">
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
@@ -739,7 +710,7 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
                 Statement of the Problem / Key Questions
               </span>
               <div
-                className="p-4 rounded-[2px] bg-[#011C38] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
+                className="p-4 rounded-[2px] bg-[#10101E] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
                 style={{ padding: "1rem" }}
               >
                 {project.researchQuestions}
@@ -751,7 +722,7 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
                 Core Research Objectives
               </span>
               <div
-                className="p-4 rounded-[2px] bg-[#011C38] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
+                className="p-4 rounded-[2px] bg-[#10101E] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
                 style={{ padding: "1rem" }}
               >
                 {project.researchObjectives}
@@ -764,7 +735,7 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
                   Theoretical Hypotheses
                 </span>
                 <div
-                  className="p-4 rounded-[2px] bg-[#011C38] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
+                  className="p-4 rounded-[2px] bg-[#10101E] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
                   style={{ padding: "1rem" }}
                 >
                   {project.hypotheses}

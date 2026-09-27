@@ -185,7 +185,7 @@ export function FinancePaymentsQueueClient({
 
       {/* ── KPI Metric Counters ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-5 border-white/10 bg-[#01142B]/80 flex flex-col justify-between">
+        <Card className="p-5 border-white/10 bg-[#0A0A18]/80 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="font-sans text-xs font-semibold text-white/50 uppercase tracking-wider">
               Pending Clearances
@@ -202,7 +202,7 @@ export function FinancePaymentsQueueClient({
           </div>
         </Card>
 
-        <Card className="p-5 border-white/10 bg-[#01142B]/80 flex flex-col justify-between">
+        <Card className="p-5 border-white/10 bg-[#0A0A18]/80 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="font-sans text-xs font-semibold text-white/50 uppercase tracking-wider">
               Verified Vault Volume
@@ -219,7 +219,7 @@ export function FinancePaymentsQueueClient({
           </div>
         </Card>
 
-        <Card className="p-5 border-white/10 bg-[#01142B]/80 flex flex-col justify-between">
+        <Card className="p-5 border-white/10 bg-[#0A0A18]/80 flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="font-sans text-xs font-semibold text-white/50 uppercase tracking-wider">
               Pending Volume
@@ -247,7 +247,7 @@ export function FinancePaymentsQueueClient({
         }}
         className="w-full"
       >
-        <TabsList className="bg-[#01142B] border border-white/10 p-1 rounded-[2px]">
+        <TabsList className="bg-[#0A0A18] border border-white/10 p-1 rounded-[2px]">
           <TabsTrigger value="PENDING" className="gap-2 font-sans font-semibold text-xs cursor-pointer">
             <IconChecklist size={14} stroke={2} />
             <span>Pending Review ({pendingPayments.length})</span>
@@ -264,7 +264,7 @@ export function FinancePaymentsQueueClient({
           )}
         </TabsList>
 
-        <Card className="p-0 border-white/10 overflow-hidden bg-[#01142B]/90 mt-4">
+        <Card className="p-0 border-white/10 overflow-hidden bg-[#0A0A18]/90 mt-4">
           {/* Method Filter Toolbar */}
           <div className="p-5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">

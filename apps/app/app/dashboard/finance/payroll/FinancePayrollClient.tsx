@@ -248,7 +248,7 @@ export function FinancePayrollClient({
               <select
                 value={selectedBatchCycle}
                 onChange={(e) => setSelectedBatchCycle(e.target.value as CutOffCycle)}
-                className="bg-[#010D1F] border border-white/10 rounded-[2px] pl-3 pr-9 py-1.5 text-xs text-white font-mono outline-none focus:border-[#CC6600] cursor-pointer appearance-none hover:border-white/25 transition-colors"
+                className="bg-[#050513] border border-white/10 rounded-[2px] pl-3 pr-9 py-1.5 text-xs text-white font-mono outline-none focus:border-[#CC6600] cursor-pointer appearance-none hover:border-white/25 transition-colors"
               >
                 <option value="FIRST_HALF">First Half (Days 1–15)</option>
                 <option value="SECOND_HALF">Second Half (Days 16–End)</option>
@@ -280,7 +280,7 @@ export function FinancePayrollClient({
       />
 
       {/* Active Pay Policy Banner */}
-      <div className="p-3.5 sm:p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="p-3.5 sm:p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
           <div className="p-2 bg-[#CC6600]/15 border border-[#CC6600]/40 rounded-[2px] text-[#FFA040] shrink-0 mt-0.5">
             <IconShieldCheck size={18} stroke={1.5} />
@@ -319,7 +319,7 @@ export function FinancePayrollClient({
           {roleConfigs.map((rc) => (
             <span
               key={rc.roleName}
-              className="px-2.5 py-1.5 bg-[#010D1F] border border-white/10 rounded-[2px] text-white/80 text-[0.688rem] flex items-center justify-between sm:justify-start gap-2"
+              className="px-2.5 py-1.5 bg-[#050513] border border-white/10 rounded-[2px] text-white/80 text-[0.688rem] flex items-center justify-between sm:justify-start gap-2"
             >
               <strong className="text-white font-sans">{rc.roleName.replace(/_/g, " ")}:</strong>{" "}
               <span className="inline-flex items-baseline font-mono text-white/90">
@@ -379,7 +379,7 @@ export function FinancePayrollClient({
       </div>
 
       {/* Main Payslips Ledger Card */}
-      <Card className="p-3.5 sm:p-4 lg:p-5 bg-[#01142B] border-white/10 flex flex-col gap-6">
+      <Card className="p-3.5 sm:p-4 lg:p-5 bg-[#0A0A18] border-white/10 flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
           <div>
             <h2 className="text-base font-bold text-white font-sans">
@@ -398,7 +398,7 @@ export function FinancePayrollClient({
                 <select
                   value={selectedPeriod}
                   onChange={(e) => setSelectedPeriod(e.target.value)}
-                  className="bg-[#010D1F] border border-white/10 rounded-[2px] pl-3 pr-9 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600] cursor-pointer appearance-none hover:border-white/25 transition-colors"
+                  className="bg-[#050513] border border-white/10 rounded-[2px] pl-3 pr-9 py-2 text-xs text-white font-mono outline-none focus:border-[#CC6600] cursor-pointer appearance-none hover:border-white/25 transition-colors"
                 >
                   <option value="ALL">All Pay Periods</option>
                   {availablePeriods.map((p) => (
@@ -422,12 +422,12 @@ export function FinancePayrollClient({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search staff or ID..."
-                className="w-full bg-[#010D1F] border border-white/10 rounded-[2px] pl-9 pr-3 py-2 text-xs text-white placeholder-white/30 outline-none focus:border-[#CC6600] font-sans"
+                className="w-full bg-[#050513] border border-white/10 rounded-[2px] pl-9 pr-3 py-2 text-xs text-white placeholder-white/30 outline-none focus:border-[#CC6600] font-sans"
               />
             </div>
 
             {/* Status Filter */}
-            <div className="flex items-center gap-1 bg-[#010D1F] p-1 border border-white/10 rounded-[2px]">
+            <div className="flex items-center gap-1 bg-[#050513] p-1 border border-white/10 rounded-[2px]">
               {["ALL", "DRAFT", "APPROVED", "DISBURSED"].map((st) => (
                 <button
                   key={st}
@@ -451,10 +451,10 @@ export function FinancePayrollClient({
             No payslips found for the selected filter. Click &ldquo;Generate Payslips&rdquo; to calculate.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-[2px] border border-white/10 bg-[#010D1F]/60 shadow-xl">
+          <div className="overflow-x-auto rounded-[2px] border border-white/10 bg-[#050513]/60 shadow-xl">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-[#010D1F] border-b border-white/10 text-white/50 font-mono uppercase text-[0.625rem] sm:text-[0.688rem] tracking-wider">
+                <tr className="bg-[#050513] border-b border-white/10 text-white/50 font-mono uppercase text-[0.625rem] sm:text-[0.688rem] tracking-wider">
                   <th className="py-2.5 px-1.5 whitespace-nowrap">Payslip No.</th>
                   <th className="py-2.5 px-2 min-w-[110px]">Staff</th>
                   <th className="py-2.5 px-1.5">Role</th>

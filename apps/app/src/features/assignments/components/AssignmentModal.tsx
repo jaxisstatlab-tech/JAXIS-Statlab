@@ -221,7 +221,7 @@ export function AssignmentModal({
         )}
 
         {/* Study Context Ribbon */}
-        <div className="p-4 bg-[#01142B] border border-white/10 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <span className="text-[0.688rem] font-sans font-semibold uppercase tracking-wider text-white/40">
               Contractual Turnaround
@@ -277,16 +277,16 @@ export function AssignmentModal({
                         setReassignReason(e.target.value);
                       }
                     }}
-                    className="w-full bg-[#01142B] border border-white/20 rounded-[2px] px-3 py-2 text-xs text-white focus:border-[#CC6600] focus:ring-0 outline-none cursor-pointer appearance-none pr-8 transition-colors font-sans hover:border-white/30"
+                    className="w-full bg-[#0A0A18] border border-white/20 rounded-[2px] px-3 py-2 text-xs text-white focus:border-[#CC6600] focus:ring-0 outline-none cursor-pointer appearance-none pr-8 transition-colors font-sans hover:border-white/30"
                   >
-                    <option value="" className="bg-[#01142B] text-white/50">
+                    <option value="" className="bg-[#0A0A18] text-white/50">
                       Select reason template from dropdown...
                     </option>
                     {REASSIGNMENT_TEMPLATES.map((tmpl) => (
                       <option
                         key={tmpl.label}
                         value={tmpl.text}
-                        className="bg-[#01142B] text-white py-1"
+                        className="bg-[#0A0A18] text-white py-1"
                       >
                         {tmpl.label}
                       </option>
@@ -303,7 +303,7 @@ export function AssignmentModal({
                   value={reassignReason}
                   onChange={(e) => setReassignReason(e.target.value)}
                   placeholder="Explain why the specialist is being reassigned (e.g. medical leave, domain realignment, client request)..."
-                  className="w-full bg-[#01142B] border border-white/15 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-16 font-sans leading-relaxed"
+                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-16 font-sans leading-relaxed"
                 />
                 <span className="text-[0.688rem] text-amber-300/80 font-sans">
                   Notice: Reassigning will archive the previous assignment and transfer active SLA oversight to the new specialist.
@@ -339,10 +339,10 @@ export function AssignmentModal({
                       onClick={() => !stat.isOnLeave && setSelectedStatId(stat.id)}
                       className={`text-left p-3 rounded-[2px] border transition-colors flex items-center justify-between gap-3 ${
                         stat.isOnLeave
-                          ? "bg-[#010D1F]/50 border-white/5 opacity-40 cursor-not-allowed select-none"
+                          ? "bg-[#050513]/50 border-white/5 opacity-40 cursor-not-allowed select-none"
                           : isSelected
-                          ? "bg-[#011B38] border-[#CC6600] cursor-pointer"
-                          : "bg-[#01142B] border-white/10 hover:border-white/20 cursor-pointer"
+                          ? "bg-[#0F0F1D] border-[#CC6600] cursor-pointer"
+                          : "bg-[#0A0A18] border-white/10 hover:border-white/20 cursor-pointer"
                       }`}
                     >
                       <div className="flex flex-col gap-1 min-w-0 flex-1">
@@ -442,10 +442,10 @@ export function AssignmentModal({
                       onClick={() => !qa.isOnLeave && setSelectedQaId(qa.id)}
                       className={`text-left p-3 rounded-[2px] border transition-colors flex items-center justify-between gap-3 ${
                         qa.isOnLeave
-                          ? "bg-[#010D1F]/50 border-white/5 opacity-40 cursor-not-allowed select-none"
+                          ? "bg-[#050513]/50 border-white/5 opacity-40 cursor-not-allowed select-none"
                           : isSelected
-                          ? "bg-[#011B38] border-[#CC6600] cursor-pointer"
-                          : "bg-[#01142B] border-white/10 hover:border-white/20 cursor-pointer"
+                          ? "bg-[#0F0F1D] border-[#CC6600] cursor-pointer"
+                          : "bg-[#0A0A18] border-white/10 hover:border-white/20 cursor-pointer"
                       }`}
                     >
                       <div className="flex flex-col gap-1 min-w-0 flex-1">
