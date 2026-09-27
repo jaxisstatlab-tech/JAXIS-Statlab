@@ -24,6 +24,8 @@ Then open **http://localhost:3011**.
 | CEO | ceo@jaxis.dev | JaxisCeo2026! |
 | Finance | finance@jaxis.dev | JaxisFin2026! |
 
+Faster: the login page shows an **Offline mode: sign in as** dropdown. Pick an account to fill in the email and password, then press Log in. It only appears in offline mode and isn't included in production builds. If you don't see it, restart `npm run dev:offline`.
+
 Tip: to test chat between two people, log in as the client in a normal window and as the statistician in a private window.
 
 ## Reset the sample data

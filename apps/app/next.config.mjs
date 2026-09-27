@@ -1,7 +1,13 @@
+/* global process */
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // `npm run dev:offline` builds into its own folder so it can run next to the normal dev server.
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  // Always defined (empty outside `npm run dev:offline`) so the build can drop offline-only code,
+  // like the login page's sample-account picker, from production bundles.
+  env: {
+    NEXT_PUBLIC_JAXIS_OFFLINE: process.env.NEXT_PUBLIC_JAXIS_OFFLINE || "",
+  },
   reactStrictMode: true,
   experimental: {
     optimizePackageImports: [

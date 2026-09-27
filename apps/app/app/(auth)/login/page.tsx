@@ -11,6 +11,14 @@ import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { PASSWORD_RESET_EMAIL_AVAILABLE } from "@/components/auth/availability";
 import { SoonTag } from "@/components/auth/SoonTag";
+import dynamic from "next/dynamic";
+
+// Offline dev only. NEXT_PUBLIC_JAXIS_OFFLINE is set by `npm run dev:offline` and never in production
+// builds, where this is `null` and the picker's code isn't included at all.
+const DevAccountPicker =
+  process.env.NEXT_PUBLIC_JAXIS_OFFLINE === "1"
+    ? dynamic(() => import("@/components/auth/DevAccountPicker").then((m) => m.DevAccountPicker), { ssr: false })
+    : null;
 import { authHeading, authField, authSubmit, authSubtitle, authTextLink, authTitle } from "@/components/auth/styles";
 import { safeCallbackPath } from "@/lib/site";
 
@@ -148,6 +156,16 @@ function LoginForm() {
           Please log in with your email and password instead.
         </Alert>
       )}
+
+      {DevAccountPicker ? (
+        <DevAccountPicker
+          onPick={(pickedEmail, pickedPassword) => {
+            setEmail(pickedEmail);
+            setPassword(pickedPassword);
+            setErrorMessage(null);
+          }}
+        />
+      ) : null}
 
       <GoogleSignInButton callbackUrl={callbackUrl} onError={(err) => setErrorMessage(err)} />
       <AuthDivider>or with email</AuthDivider>
