@@ -1,7 +1,8 @@
 /**
  * LOCAL DEV DATA ONLY. Writes sample studies for a test client into the offline JSON stores
  * (.dev-projects.json, .dev-quotations.json, .dev-sows.json, dev_data/payments.json, .dev-alerts.json,
- * .dev-defenselab.json, .dev-messages.json, .dev-analysis.json, .dev-deliverables.json, .dev-disputes.json).
+ * .dev-defenselab.json, .dev-messages.json, .dev-analysis.json, .dev-deliverables.json, .dev-disputes.json,
+ * .dev-revisions.json).
  *
  * It never connects to the database or file storage. The app only reads these files when the
  * database is unreachable, so view them with `npm run dev:offline`.
@@ -578,6 +579,8 @@ const deliverables = [
   finalFile("delivered", 1, "PDF_REPORT", "0017_chapter4_results.pdf", 26),
   finalFile("delivered", 2, "STATISTICAL_OUTPUT", "0017_apa_tables.xlsx", 26),
   finalFile("delivered", 3, "RAW_DATA_CLEANED", "0017_cleaned_data.csv", 26),
+  finalFile("closed", 1, "PDF_REPORT", "0009_chapter4_results.pdf", 42 * 24),
+  finalFile("closed", 2, "STATISTICAL_OUTPUT", "0009_apa_tables.xlsx", 42 * 24),
 ];
 
 // ── Study claims (Revisions & help): one past claim, reviewed with no refund ─────────────
@@ -602,6 +605,26 @@ const disputes = [
   },
 ];
 
+// ── Change requests (Request changes): one finished free change on the closed study ──────
+const revisions = [
+  {
+    id: "seed_rev_closed",
+    projectId: "seed_proj_closed",
+    clientId,
+    description:
+      "Please add the effect size next to each t-test in Table 4, and write the results in past tense like my adviser asked.",
+    requestedSections: "Table 4, Chapter 4 section 4.3",
+    status: "RESOLVED",
+    classification: "INCLUDED",
+    classificationNotes:
+      "This is within your agreed scope, so it's free. We added Cohen's d to Table 4 and changed the write-up to past tense. The updated files replaced the old ones.",
+    classifiedAt: claimDay(41),
+    resolvedAt: claimDay(40),
+    createdAt: claimDay(41.5),
+    updatedAt: claimDay(40),
+  },
+];
+
 // ── Write (keep any non-seed records already in each file) ─────────────────────
 write(file(".dev-projects.json"), [...projects, ...keepUnseeded(read(file(".dev-projects.json")))]);
 write(file(".dev-quotations.json"), [...quotations, ...keepUnseeded(read(file(".dev-quotations.json")))]);
@@ -613,6 +636,7 @@ write(file(".dev-messages.json"), [...messages, ...keepUnseeded(read(file(".dev-
 write(file(".dev-analysis.json"), [...analysis, ...keepUnseeded(read(file(".dev-analysis.json")))]);
 write(file(".dev-deliverables.json"), [...deliverables, ...keepUnseeded(read(file(".dev-deliverables.json")))]);
 write(file(".dev-disputes.json"), [...disputes, ...keepUnseeded(read(file(".dev-disputes.json")))]);
+write(file(".dev-revisions.json"), [...revisions, ...keepUnseeded(read(file(".dev-revisions.json")))]);
 
 console.log(
   `Seeded ${projects.length} studies, ${quotations.length} quotes, ${sows.length} agreements, ${payments.length} payments, ${alerts.length} notifications, ${defenseLabSessions.length} DefenseLab sessions, ${messages.length} chat messages, ${deliverables.length} delivered files for ${clientEmail}.`

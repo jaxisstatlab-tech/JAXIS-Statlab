@@ -38,6 +38,16 @@ export function ClientStudyHeader({ initial }: { initial: StudyHeaderData }) {
   const [study, setStudy] = useState(initial);
   const [copied, setCopied] = useState<string | null>(null);
   const firstPath = useRef(pathname);
+  const tabsRef = useRef<HTMLElement>(null);
+
+  // On phones the tab row scrolls sideways; keep the current tab in view.
+  useEffect(() => {
+    const nav = tabsRef.current;
+    const on = nav?.querySelector<HTMLElement>("[aria-current=\"page\"]");
+    if (!nav || !on) return;
+    const left = on.offsetLeft - (nav.clientWidth - on.offsetWidth) / 2;
+    nav.scrollLeft = Math.max(0, left);
+  }, [pathname]);
 
   // After an action on one tab (accept a price, sign, pay) the stage may have moved on.
   useEffect(() => {
@@ -110,7 +120,7 @@ export function ClientStudyHeader({ initial }: { initial: StudyHeaderData }) {
       {/* The chat needs the room, so the tracker hides on the Messages tab. */}
       {active === "/messages" ? null : <ClientStudyStepper stage={stage} className="mt-5" />}
 
-      <nav aria-label="Study pages" className="-mx-1 mt-5 overflow-x-auto border-b border-white/[0.08] px-1">
+      <nav ref={tabsRef} aria-label="Study pages" className="-mx-1 mt-5 overflow-x-auto border-b border-white/[0.08] px-1">
         <ul className="flex min-w-max gap-1">
           {tabs.map((t) => {
             const on = t.path === active;

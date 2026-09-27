@@ -36,7 +36,7 @@ If the sample data looks wrong, or you want a fresh start:
 npm run seed:local-dev
 ```
 
-This rebuilds 8 sample studies for Ana Cruz: quotes, agreements, payments, notifications, DefenseLab sessions, chat messages, the statistician's analysis files, QA reviews, delivered files and a past claim. Anything you added yourself is kept.
+This rebuilds 8 sample studies for Ana Cruz: quotes, agreements, payments, notifications, DefenseLab sessions, chat messages, the statistician's analysis files, QA reviews, delivered files, a past change request and a past claim. Anything you added yourself is kept.
 
 ## Which port is which
 
@@ -49,7 +49,7 @@ Both can run at the same time.
 
 ## Good to know
 
-- Sample data lives in local files that git ignores (`.dev-projects.json`, `.dev-quotations.json`, `.dev-sows.json`, `dev_data/payments.json`, `.dev-alerts.json`, `.dev-defenselab.json`, `.dev-messages.json`, `.dev-analysis.json`, `.dev-deliverables.json`, `.dev-disputes.json`). They are never committed and never touch the real database or file storage.
+- Sample data lives in local files that git ignores (`.dev-projects.json`, `.dev-quotations.json`, `.dev-sows.json`, `dev_data/payments.json`, `.dev-alerts.json`, `.dev-defenselab.json`, `.dev-messages.json`, `.dev-analysis.json`, `.dev-deliverables.json`, `.dev-disputes.json`, `.dev-revisions.json`). They are never committed and never touch the real database or file storage.
 - Offline mode builds into its own `.next-offline` folder, so it doesn't clash with `npm run dev`.
 - Live chat updates (instant push, "is typing") don't work offline. New messages still arrive within about 3 seconds.
 - Uploading or downloading files doesn't work offline (there's no storage). The file lists still show.

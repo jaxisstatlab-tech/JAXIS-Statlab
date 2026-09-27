@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
 import type { QaCertificateDTO } from "../schemas";
+import { CERTIFICATE_TEXT, certificateRows } from "../certificate-text";
 
 // In-memory cache for official brand assets to eliminate redundant network fetches
 let cachedSealBytes: Uint8Array | null = null;
@@ -444,19 +445,18 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   currentY = jaxisTitleY - 21;
 
   // CERTIFICATE OF STATISTICAL AUDIT
-  drawCenteredText("CERTIFICATE OF STATISTICAL AUDIT", currentY, 12.5, fontSansBold, charcoal);
+  drawCenteredText(CERTIFICATE_TEXT.title.toUpperCase(), currentY, 12.5, fontSansBold, charcoal);
   currentY -= 17;
 
   // Certificate ID:
-  const certIdText = `Certificate ID: ${data.certificateId}`;
+  const certIdText = `Certificate no. ${data.certificateId}`;
   drawCenteredText(certIdText, currentY, 9, courier, mutedGray);
   currentY -= 28;
 
   // ══════════════════════════════════════════════════════════════════════
   // 3. INTRODUCTORY STATEMENT (Exact text outline, sans-serif)
   // ══════════════════════════════════════════════════════════════════════
-  const introText =
-    "This is to certify that the quantitative data processing, statistical modeling, and analytical outputs for the research study detailed below have undergone formal methodological evaluation and computational audit by JAXIS STATLAB.";
+  const introText = CERTIFICATE_TEXT.statement;
   const introLines = wrapText(introText, contentWidth, 10, fontSans);
   for (const line of introLines) {
     page.drawText(line, {
@@ -473,7 +473,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   // ══════════════════════════════════════════════════════════════════════
   // 4. SECTION 1: PROJECT & CLIENT METADATA (Exact text outline, sans-serif)
   // ══════════════════════════════════════════════════════════════════════
-  page.drawText("PROJECT & CLIENT METADATA", {
+  page.drawText("THE STUDY", {
     x: contentLeft,
     y: currentY,
     size: 10.5,
@@ -489,33 +489,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   });
   currentY -= 18;
 
-  const metadataRows = [
-    {
-      label: "Research Title :",
-      value: data.researchTitle,
-      italic: true,
-    },
-    {
-      label: "Principal Investigator :",
-      value: `${data.clientName}${data.clientEmail ? ` (${data.clientEmail})` : ""}`,
-      italic: false,
-    },
-    {
-      label: "Institution / Program :",
-      value: `${data.institution} / ${data.program}`,
-      italic: false,
-    },
-    {
-      label: "Tier Executed :",
-      value: data.tierExecuted,
-      italic: false,
-    },
-    {
-      label: "Audit Completion Date :",
-      value: data.completionDate,
-      italic: false,
-    },
-  ];
+  const metadataRows = certificateRows(data).map((r) => ({ label: r.label, value: r.value, italic: r.label === "Study title" }));
 
   const labelColWidth = 150;
   const valueColX = contentLeft + labelColWidth;
@@ -551,7 +525,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   // ══════════════════════════════════════════════════════════════════════
   // 5. SECTION 2: METHODOLOGICAL AUDIT FRAMEWORK (Exact text outline)
   // ══════════════════════════════════════════════════════════════════════
-  page.drawText("METHODOLOGICAL AUDIT FRAMEWORK", {
+  page.drawText("WHAT WAS CHECKED", {
     x: contentLeft,
     y: currentY,
     size: 10.5,
@@ -567,18 +541,15 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   });
   currentY -= 18;
 
-  const frameworkText =
-    "JAXIS STATLAB certifies that the analytical outputs have been independently evaluated across four institutional compliance standards: Data Hygiene & Scale Verification, Statistical Assumption Testing, Model Alignment with Research Intent, and Analytical Execution Integrity. All procedures were confirmed mathematically valid and compliant with academic research standards.";
-  const frameworkLines = wrapText(frameworkText, contentWidth, 9.5, fontSans);
-  for (const line of frameworkLines) {
-    page.drawText(line, {
-      x: contentLeft,
-      y: currentY,
-      size: 9.5,
-      font: fontSans,
-      color: charcoal,
+  for (const item of CERTIFICATE_TEXT.checks) {
+    const itemLines = wrapText(item, contentWidth - 14, 9.5, fontSans);
+    itemLines.forEach((line, i) => {
+      if (i === 0) {
+        page.drawText("-", { x: contentLeft, y: currentY, size: 9.5, font: fontSans, color: charcoal });
+      }
+      page.drawText(line, { x: contentLeft + 12, y: currentY, size: 9.5, font: fontSans, color: charcoal });
+      currentY -= 15;
     });
-    currentY -= 15;
   }
 
   currentY -= 20;
@@ -586,7 +557,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   // ══════════════════════════════════════════════════════════════════════
   // 6. SECTION 3: AUDIT ATTESTATION & SIGNATURES (Exact text outline)
   // ══════════════════════════════════════════════════════════════════════
-  page.drawText("AUDIT ATTESTATION & SIGNATURES", {
+  page.drawText("APPROVAL", {
     x: contentLeft,
     y: currentY,
     size: 10.5,
@@ -602,8 +573,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   });
   currentY -= 18;
 
-  const attestationText =
-    "It is hereby affirmed that the statistical procedures employed are mathematically valid, appropriate for the stated research questions, and rendered in full compliance with academic research standards.";
+  const attestationText = CERTIFICATE_TEXT.approval(data);
   const attestationLines = wrapText(attestationText, contentWidth, 9.5, fontSans);
   for (const line of attestationLines) {
     page.drawText(line, {
@@ -632,8 +602,8 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   const leftColCenter = contentLeft + colWidth / 2;
   const rightColCenter = contentRight - colWidth / 2;
 
-  // LEFT COLUMN: AUDITED & APPROVED BY (QA Lead)
-  const auditedLabel = "AUDITED & APPROVED BY:";
+  // LEFT COLUMN: REVIEWED & APPROVED BY (the reviewing statistical analyst)
+  const auditedLabel = "REVIEWED & APPROVED BY:";
   const auditedW = fontSansBold.widthOfTextAtSize(auditedLabel, 8.5);
   page.drawText(auditedLabel, {
     x: leftColCenter - auditedW / 2,
@@ -645,7 +615,8 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
 
   const sigUnderlineY = 135;
 
-  // Embed QA Signature image (realistic handwritten signature)
+  // The reviewer's own signature only. Never fall back to another person's signature image:
+  // with no signature on file, the line says it was approved electronically instead.
   let sigBytes: Uint8Array | null = null;
   if (data.qaSignatureUrl) {
     if (data.qaSignatureUrl === "/signatures/qa-lead-maria.png") {
@@ -653,9 +624,6 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
     } else {
       sigBytes = await imageToPngBytes(data.qaSignatureUrl);
     }
-  }
-  if (!sigBytes) {
-    sigBytes = await getSignatureBytes();
   }
 
   if (sigBytes) {
@@ -680,7 +648,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
       console.warn("Could not embed signature in PDF:", err);
     }
   } else {
-    const verifiedText = "Digital QA Record Verified";
+    const verifiedText = CERTIFICATE_TEXT.noSignature;
     const vWidth = fontSansItalic.widthOfTextAtSize(verifiedText, 8.5);
     page.drawText(verifiedText, {
       x: leftColCenter - vWidth / 2,
@@ -736,7 +704,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   const sealH = 71.5;
   const sealX = rightColCenter - sealW / 2;
 
-  const authLabel = "AUTHORIZED & ISSUED BY:";
+  const authLabel = "ISSUED BY:";
   const authW = fontSansBold.widthOfTextAtSize(authLabel, 8.5);
   page.drawText(authLabel, {
     x: rightColCenter - authW / 2,
@@ -761,6 +729,10 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
     console.warn("Could not embed JAXIS seal in PDF:", err);
   }
 
+
+  // Footer: how to check it and who to ask
+  const footerText = `Certificate no. ${data.certificateId}  ·  Questions: ${CERTIFICATE_TEXT.contact}`;
+  drawCenteredText(footerText, 44, 7.5, fontSans, mutedGray);
 
   // ══════════════════════════════════════════════════════════════════════
   // 9. RETURN COMPILED PDF BYTES
