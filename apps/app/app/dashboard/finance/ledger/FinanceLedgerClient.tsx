@@ -186,7 +186,7 @@ export function FinanceLedgerClient({ initialData }: FinanceLedgerClientProps) {
                   <th className="py-3 px-4">Client</th>
                   <th className="py-3 px-4">Package</th>
                   <th className="py-3 px-4 text-right">Gross Revenue</th>
-                  <th className="py-3 px-4 text-right">Statistician</th>
+                  <th className="py-3 px-4 text-right">Statistical Analyst</th>
                   <th className="py-3 px-4 text-right">QA Lead</th>
                   <th className="py-3 px-4 text-right">Net Margin</th>
                   <th className="py-3 px-4 text-center">Margin %</th>

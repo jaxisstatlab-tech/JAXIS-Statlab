@@ -214,7 +214,7 @@ export function devWorkbench(projectId: string, user: User): Result<WorkbenchDat
         ? {
             id: `dev_assign_${p.id}`,
             statisticianId: p.assignment?.statisticianId ?? "",
-            statisticianName: p.assignment?.statistician?.fullName ?? "Statistician",
+            statisticianName: p.assignment?.statistician?.fullName ?? "Statistical Analyst",
             statisticianEmail: "stat@jaxis.dev",
             qaLeadId: p.assignment?.qaLeadId ?? "",
             qaLeadName: p.assignment?.qaLead?.fullName ?? "Reviewer",
@@ -251,7 +251,7 @@ export function devWorkbench(projectId: string, user: User): Result<WorkbenchDat
       })),
       activeScopeCreep: null,
       canUpload: w.isStatistician && upload.allowed,
-      uploadDisabledReason: w.isStatistician ? upload.reason : "Only the assigned statistician can upload analysis files.",
+      uploadDisabledReason: w.isStatistician ? upload.reason : "Only the assigned statistical analyst can upload analysis files.",
       isAssignedStatistician: w.isStatistician,
       isAssignedQaLead: w.isQaLead,
       isManagement: w.isManagement,
@@ -297,7 +297,7 @@ export function devQaDesk(projectId: string, user: User): Result<QaInspectionDes
       assignment: s
         ? {
             statisticianId: p.assignment?.statisticianId ?? "",
-            statisticianName: p.assignment?.statistician?.fullName ?? "Statistician",
+            statisticianName: p.assignment?.statistician?.fullName ?? "Statistical Analyst",
             statisticianEmail: "stat@jaxis.dev",
             qaLeadId: p.assignment?.qaLeadId ?? "",
             qaLeadName: p.assignment?.qaLead?.fullName ?? "Reviewer",
@@ -399,7 +399,7 @@ export function devAdminDeliverables(projectId: string, user: User): AdminDelive
       revisionWindowExpiresAt: revisionExpiry(d.project),
       client: { id: d.project.clientId, fullName: d.project.client?.fullName ?? "Client", email: d.project.client?.email ?? "" },
       assignedStatistician: d.project.assignment?.statisticianId
-        ? { id: d.project.assignment.statisticianId, fullName: d.project.assignment.statistician?.fullName ?? "Statistician" }
+        ? { id: d.project.assignment.statisticianId, fullName: d.project.assignment.statistician?.fullName ?? "Statistical Analyst" }
         : null,
       assignedQaLead: d.project.assignment?.qaLeadId
         ? { id: d.project.assignment.qaLeadId, fullName: d.project.assignment.qaLead?.fullName ?? "Reviewer" }
@@ -471,8 +471,8 @@ export function devClientDeliverables(projectId: string, user: User): ClientDeli
               month: "long",
               day: "numeric",
             }),
-            statisticianName: p.assignment?.statistician?.fullName ?? "Statistician",
-            statisticianTitle: "Lead Statistician",
+            statisticianName: p.assignment?.statistician?.fullName ?? "Statistical Analyst",
+            statisticianTitle: "Lead Statistical Analyst",
             statisticianSignatureUrl: null,
             qaLeadName: approved?.reviewerName ?? p.assignment?.qaLead?.fullName ?? "Reviewer",
             qaLeadTitle: "Reviewer",

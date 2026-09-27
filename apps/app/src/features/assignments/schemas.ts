@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const CreateAssignmentSchema = z.object({
   projectId: z.string().min(1, "Project ID is required."),
-  statisticianId: z.string().min(1, "Statistician selection is required."),
+  statisticianId: z.string().min(1, "Statistical analyst selection is required."),
   qaLeadId: z.string().min(1, "Senior QA Lead selection is required."),
   turnaroundDays: z.number().int().positive().optional(),
 });

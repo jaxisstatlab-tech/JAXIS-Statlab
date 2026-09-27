@@ -7,7 +7,7 @@ const ALERT_META: Record<string, { label: string; action: string }> = {
   NEW_INTAKE: { label: "New study request", action: "Open study" },
   PAYMENT_UPDATE: { label: "Payment update", action: "View payment" },
   COMMERCIAL_UPDATE: { label: "Price and agreement", action: "Review" },
-  ASSIGNMENT: { label: "Statistician assigned", action: "Open study" },
+  ASSIGNMENT: { label: "Statistical analyst assigned", action: "Open study" },
   QA_DECISION: { label: "Quality check", action: "Open study" },
   QA_SUBMISSION: { label: "Ready for quality check", action: "Open study" },
   DELIVERABLE_UPDATE: { label: "Your files are ready", action: "Get files" },

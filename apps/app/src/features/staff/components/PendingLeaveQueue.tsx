@@ -199,7 +199,7 @@ export function PendingLeaveQueue({
                       variant={item.role === "STATISTICIAN" ? "sky" : "emerald"}
                       className="text-[0.625rem] py-0 px-1.5 font-sans"
                     >
-                      {item.role === "STATISTICIAN" ? "Lead Statistician" : "Senior QA Lead"}
+                      {item.role === "STATISTICIAN" ? "Lead Statistical Analyst" : "Senior QA Lead"}
                     </Badge>
                     {durationDays && (
                       <span className="text-[0.688rem] font-mono font-semibold text-[#FF9433] bg-[#CC6600]/15 px-2 py-0.5 rounded-[2px] border border-[#CC6600]/30">

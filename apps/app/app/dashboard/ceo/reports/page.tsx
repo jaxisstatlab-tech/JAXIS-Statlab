@@ -608,7 +608,7 @@ export default function CeoReportsPage() {
                     {
                       key: "keepChatHistory",
                       label: "Study Messages & Communication Logs",
-                      desc: "Researcher-statistician message threads",
+                      desc: "Researcher-statistical analyst message threads",
                     },
                     {
                       key: "keepDeliverables",

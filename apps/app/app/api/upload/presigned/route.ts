@@ -79,6 +79,22 @@ export async function POST(req: NextRequest) {
     const storageKey = generateR2StorageKey(category, studyId, fileName);
     const contentType = fileType || "application/octet-stream";
 
+    // Offline dev only: no real storage. Send the upload to a sink that keeps nothing.
+    if (process.env.NODE_ENV !== "production" && process.env.JAXIS_OFFLINE === "1") {
+      return NextResponse.json({
+        success: true,
+        data: {
+          uploadUrl: "/api/dev/upload-sink",
+          storageKey: `offline/${storageKey}`,
+          publicUrl: `offline/${storageKey}`,
+          fileName,
+          fileSize,
+          fileCategory: category,
+          fileType: contentType,
+        },
+      });
+    }
+
     // Generate Cloudflare R2 Presigned PUT URL (5-minute expiration)
     const uploadUrl = await getR2UploadUrl(storageKey, contentType);
 

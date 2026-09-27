@@ -491,7 +491,7 @@ export function FinancePayrollClient({
 
                   const roleLabel =
                     ps.staffRole === "STATISTICIAN"
-                      ? "Statistician"
+                      ? "Statistical Analyst"
                       : ps.staffRole === "SENIOR_QA_LEAD"
                       ? "Senior QA Lead"
                       : ps.staffRole === "FINANCE_OFFICER"

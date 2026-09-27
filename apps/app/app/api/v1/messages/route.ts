@@ -132,7 +132,7 @@ export async function POST(
             success: false,
             error: {
               code: "THREAD_LOCKED",
-              message: "Consultation channel is locked until an administrator assigns your Lead Statistician and QA Lead.",
+              message: "Consultation channel is locked until an administrator assigns your Lead Statistical Analyst and QA Lead.",
             },
           },
           { status: 403 }

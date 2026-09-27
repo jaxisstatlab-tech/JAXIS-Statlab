@@ -538,7 +538,7 @@ export function QADashboardClient({
           variant="default"
           badge={assignments.some((a) => a.masterStatus === "QA_REVISION") ? "IN REVISION" : undefined}
           badgeColor="amber"
-          description="24-hr statistician correction"
+          description="24-hr statistical analyst correction"
         />
 
         <KpiCard
@@ -729,7 +729,7 @@ export function QADashboardClient({
           <div className="p-12 text-center text-white/50 text-sm font-sans flex flex-col items-center justify-center gap-2">
             <CheckCircle size={32} weight="fill" className="text-[#10B981]" />
             <span className="font-semibold text-white">No Studies Pending QA Review</span>
-            <span className="text-xs text-white/40">Studies assigned to your QA desk will appear here as soon as statisticians submit outputs for review.</span>
+            <span className="text-xs text-white/40">Studies assigned to your QA desk will appear here as soon as statistical analysts submit outputs for review.</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -767,7 +767,7 @@ export function QADashboardClient({
                       }}
                       className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
                     >
-                      <span>Research &amp; Statistician</span>
+                      <span>Research &amp; Statistical Analyst</span>
                       {sortBy === "title-asc" ? (
                         <CaretUp size={13} weight="fill" className="text-[#CC6600]" />
                       ) : sortBy === "title-desc" ? (
@@ -1090,7 +1090,7 @@ export function QADashboardClient({
             {/* Team Personnel Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-3.5 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
-                <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Assigned Statistician</span>
+                <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Assigned Statistical Analyst</span>
                 <span className="text-xs font-semibold text-white">{selectedStudy.statistician.fullName}</span>
                 <span className="text-[0.688rem] text-white/50">{selectedStudy.statistician.email}</span>
               </div>

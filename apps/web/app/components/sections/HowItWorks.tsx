@@ -32,7 +32,7 @@ const STEPS: { id: string; tag: string; time: string; title: string; body: strin
     tag: "Analysis",
     time: "3 to 7 days",
     title: "We run and recheck it",
-    body: "One statistician runs your tests, a second reruns them, and a senior reviewer signs off.",
+    body: "One statistical analyst runs your tests, a second reruns them, and a senior reviewer signs off.",
     shapes: STEP_RECHECK,
   },
   {

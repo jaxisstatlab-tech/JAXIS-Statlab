@@ -70,7 +70,7 @@ const LEAVE_REASON_TEMPLATES = [
   },
   {
     label: "Academic Defense / Institutional Duty",
-    text: "Serving as external statistician or defending dissertation panel. Unavailable for new assignment intake during this period.",
+    text: "Serving as external statistical analyst or defending dissertation panel. Unavailable for new assignment intake during this period.",
   },
   {
     label: "Research Fieldwork / Data Collection",
@@ -443,7 +443,7 @@ export function StatisticianDashboardClient({
     <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
       {/* Page Header */}
       <PageHeader
-        title="Statistician Workbench"
+        title="Statistical Analyst Workbench"
         description="View assigned research studies, run analysis, and submit results for QA review."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },

@@ -738,7 +738,7 @@ export async function getCeoEscalations(): Promise<QaActionResult<CeoEscalationI
         packageName: p.packageName,
         qaLeadName: latestEscalation?.reviewer.fullName || p.assignment?.qaLead.fullName || "Senior QA Lead",
         qaLeadEmail: latestEscalation?.reviewer.email || p.assignment?.qaLead.email || "",
-        statisticianName: p.assignment?.statistician.fullName || "Assigned Statistician",
+        statisticianName: p.assignment?.statistician.fullName || "Assigned Statistical Analyst",
         statisticianEmail: p.assignment?.statistician.email || "",
         comments: latestEscalation?.comments || "Ethical breach flagged during analytical quality inspection.",
         escalatedAt: latestEscalation?.reviewedAt.toISOString() || p.updatedAt.toISOString(),

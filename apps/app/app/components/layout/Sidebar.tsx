@@ -171,7 +171,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
       groupTitle: "STUDIES & DATA",
       items: [
         {
-          label: "Statistician Workbench",
+          label: "Statistical Analyst Workbench",
           href: "/dashboard/statistician",
           icon: Icons.Terminal,
         },
@@ -490,7 +490,7 @@ function getRoleDisplayLabel(role?: string): string {
     case "CLIENT":
       return "Client";
     case "STATISTICIAN":
-      return "Lead Statistician";
+      return "Statistical Analyst";
     case "SENIOR_QA_LEAD":
     case "QA":
       return "Senior QA Lead";

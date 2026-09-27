@@ -242,7 +242,7 @@ export function devSendMessage(
   if (isClient && !project.assignment?.statisticianId && !project.assignment?.qaLeadId) {
     return {
       success: false,
-      error: { code: "THREAD_LOCKED", message: "Chat opens once we assign your statistician." },
+      error: { code: "THREAD_LOCKED", message: "Chat opens once we assign your statistical analyst." },
     };
   }
   const firewall = runFirewall(content);

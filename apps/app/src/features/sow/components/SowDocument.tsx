@@ -240,7 +240,7 @@ export function SowDocument({
                     Required Escrow Downpayment
                   </td>
                   <td className="py-3 px-4 text-white/70 print:text-black/70 text-xs">
-                    Required prior to commencing analytical computation and statistician assignment.
+                    Required prior to commencing analytical computation and statistical analyst assignment.
                   </td>
                   <td className="py-3 pl-4 text-right font-mono font-bold text-[#FFA040] print:text-amber-800">
                     <MoneyDisplay amount={commercial.downpaymentRequired} />

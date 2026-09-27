@@ -26,7 +26,7 @@ export function ClientMessagesClient(props: ClientMessagesClientProps) {
       studyHref={(id) => `/dashboard/client/projects/${id}`}
       empty={{
         title: "No chats yet",
-        body: "Once you send a study and we assign your statistician, you can chat with them here.",
+        body: "Once you send a study and we assign your statistical analyst, you can chat with them here.",
         action: { label: "Send a Study", href: "/dashboard/client/projects/new" },
       }}
     />

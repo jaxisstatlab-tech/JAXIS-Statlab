@@ -9,7 +9,7 @@ import { LoadingState } from "@repo/ui";
 export const metadata: Metadata = {
   title: "Client Portal | JAXIS StatLab",
   description:
-    "Track your research progress, message your assigned statistician, and download defense-ready statistical packages.",
+    "Track your research progress, message your assigned statistical analyst, and download defense-ready statistical packages.",
 };
 
 export const dynamic = "force-dynamic";

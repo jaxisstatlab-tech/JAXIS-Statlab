@@ -43,7 +43,7 @@ const JOURNEY = [
   { step: "Price", body: "A fixed written price within 24 hours" },
   { step: "Agreement", body: "Sign your scope online" },
   { step: "Deposit", body: "Pay by GCash or bank transfer" },
-  { step: "Analysis", body: "Run, then checked by a second statistician" },
+  { step: "Analysis", body: "Run, then checked by a second statistical analyst" },
   { step: "Files", body: "Tables, write-up, and code" },
 ];
 
@@ -674,7 +674,7 @@ function DefenseLabPanel() {
       <PanelHeader title="Practice your defense" subtitle="DefenseLab mock panel" />
       <PanelBody className="flex flex-1 flex-col gap-4">
         <p className="text-[13px] leading-relaxed text-white/55">
-          A 1-on-1 video session with a senior statistician who asks the questions panels ask. You get the recording.
+          A 1-on-1 video session with a senior statistical analyst who asks the questions panels ask. You get the recording.
         </p>
         <div className="mt-auto flex items-center justify-between gap-3">
           <span className="font-mono text-sm font-bold text-white">

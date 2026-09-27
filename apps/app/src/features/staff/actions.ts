@@ -61,7 +61,7 @@ export async function provisionStaff(
         success: false,
         error: {
           code: "UNAUTHORIZED_ROLE",
-          message: "Managers can only create Statistician Expert and Senior QA Lead accounts.",
+          message: "Managers can only create Statistical Analyst and Senior QA Lead accounts.",
         },
       };
     }

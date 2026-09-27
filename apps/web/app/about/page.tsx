@@ -6,7 +6,7 @@ import FinalCTA from "../components/sections/FinalCTA";
 export const metadata: Metadata = {
   title: "About · JAXIS StatLab",
   description:
-    "JAXIS StatLab is a statistical consulting team in Maramag, Bukidnon. Every study is checked by two statisticians, explained in plain English, and kept private.",
+    "JAXIS StatLab is a statistical consulting team in Maramag, Bukidnon. Every study is checked by two statistical analysts, explained in plain English, and kept private.",
   alternates: { canonical: "/about" },
 };
 

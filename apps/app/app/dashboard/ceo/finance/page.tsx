@@ -92,7 +92,7 @@ export default function CeoFinancePage() {
     const parsedQaRate = parseFloat(newQaRate);
 
     if (isNaN(parsedRate) || parsedRate < 0 || parsedRate > 100) {
-      setErrorMsg("Please enter a valid Statistician commission rate between 0% and 100%.");
+      setErrorMsg("Please enter a valid statistical analyst commission rate between 0% and 100%.");
       return;
     }
     if (isNaN(parsedQaRate) || parsedQaRate < 0 || parsedQaRate > 100) {
@@ -187,7 +187,7 @@ export default function CeoFinancePage() {
         <KpiCard
           label="TOTAL DISBURSED"
           value={<><Peso />{overview.totalDisbursed.toLocaleString("en-US", { minimumFractionDigits: 2 })}</>}
-          description="Total funds disbursed to statisticians & QA"
+          description="Total funds disbursed to statistical analysts & QA"
         />
         <KpiCard
           label="ESCROW VAULT BALANCE"
@@ -327,7 +327,7 @@ export default function CeoFinancePage() {
           open={isEditModalOpen}
           onClose={() => !isSubmitting && setIsEditModalOpen(false)}
           title={`Edit Commission Rates: ${selectedConfig.packageName}`}
-          description="Adjust the percentage of study fees allocated to the Lead Statistician and Senior QA Reviewer."
+          description="Adjust the percentage of study fees allocated to the Lead Statistical Analyst and Senior QA Reviewer."
           size="sm"
           footer={
             <div className="flex items-center justify-end gap-3 w-full font-sans">
@@ -393,7 +393,7 @@ export default function CeoFinancePage() {
                 {/* Statistician Rate */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-white/80 font-semibold flex items-center justify-between">
-                    <span>Lead Research Statistician Commission *</span>
+                    <span>Lead Research Statistical Analyst Commission *</span>
                     <span className="text-white/40 font-mono text-[0.625rem]">Stat Share</span>
                   </label>
                   <div className="relative">
@@ -411,7 +411,7 @@ export default function CeoFinancePage() {
                     </span>
                   </div>
                   <span className="text-[0.688rem] text-white/40 leading-relaxed">
-                    Percentage of gross SOW fees disbursed to the Lead Statistician.
+                    Percentage of gross SOW fees disbursed to the Lead Statistical Analyst.
                   </span>
                 </div>
 
@@ -445,7 +445,7 @@ export default function CeoFinancePage() {
                 {/* Statistician Fixed Amount */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-white/80 font-semibold flex items-center justify-between">
-                    <span>Lead Statistician Flat Fee (₱) *</span>
+                    <span>Lead Statistical Analyst Flat Fee (₱) *</span>
                     <span className="text-white/40 font-mono text-[0.625rem]">Fixed Payout</span>
                   </label>
                   <div className="relative">

@@ -62,7 +62,7 @@ const CLIENT_ADDON_COPY: Record<string, { name: string; detail: string }> = {
   DEFENSELAB: {
     name: "DefenseLab practice session",
     detail:
-      "A 1-hour mock defense with a senior statistician. You get the recording.",
+      "A 1-hour mock defense with a senior statistical analyst. You get the recording.",
   },
   RUSH: {
     name: "Rush",
@@ -480,7 +480,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
               ) : null}
               <div className="grid grid-cols-1 gap-2 border-t border-white/[0.07] pt-4 text-[13px] text-white/60 sm:grid-cols-2">
                 {[
-                  "Checked by a second statistician",
+                  "Checked by a second statistical analyst",
                   "Explained in plain English",
                   "Free fixes within your scope",
                   "Files your adviser can open",

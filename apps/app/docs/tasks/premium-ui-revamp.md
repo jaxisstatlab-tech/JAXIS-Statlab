@@ -33,6 +33,7 @@ Order: **Client → Statistician → QA Lead → Admin → Finance → CEO → S
 - [x] Dashboard panel kit `src/components/dashboard/Panel.tsx` (Panel, PanelHeader, PanelBody, PanelFooterLink/Button, Meter); `KpiCard` gained `trend`, `meter`, `surface="neutral"`; alert title/time helpers shared in `features/notifications/alert-display.ts`; `jaxis:open-notifications` event opens the drawer
 - [x] **Surface sweep (approved 2026-09-27):** every navy shade in apps/app, apps/web and packages/ui mapped to a charcoal of matching relative depth (card `#01142B`→`#0A0A18`, hover `#011B38`→`#0F0F1D`, inset `#010D1F`→`#050513`, 40 shades / 154 files); `Card` and `KpiCard` flattened to the panel style (7% border, no shadow or top highlight); design rules (AGENTS.md, .agents, design-system docs, DESIGN.md) updated. Page ground `#010114` and orange `#CC6600` unchanged.
 - [x] **Security:** removed the hard-coded Supabase service-role key from `src/lib/supabase.ts` (it was in the browser bundle and the public repo). Key rotated in Supabase 2026-09-27 and set in local `.env` / `.env.local`; hosting env still needs the new key + redeploy.
+- [x] **Log out when you leave (2026-09-27):** closing the browser, or coming back after 30 minutes without activity, now ends the login; a login also ends 12 hours after signing in. How: a browser-only `jaxis_active` cookie (no expiry, shared by tabs) is updated on activity (`IdleSessionManager`) and page loads (middleware); `middleware.ts` checks it with `src/lib/session-activity.ts` and sends stale logins to `/session-ended`, which runs Auth.js `signOut` (the middleware can't delete the cookie itself; Auth.js re-sets it). New logins get a 2-minute grace. "Remember me" (30-day login) is now "Remember my email" (only the email is kept). Idle logout now counts activity from all tabs (before, one idle tab could log you out while you worked in another). Verified offline: login, active use past the grace period, browser closed → logged out with a message and login cookie removed, 30+ idle minutes → logged out, email kept and password empty. Note: everyone already logged in is asked to log in once after this ships.
 - [x] Offline login picker (2026-09-27): "Offline mode: sign in as" dropdown on /login fills a sample account's email and password (normal password check still runs). Double-gated: `NEXT_PUBLIC_JAXIS_OFFLINE` (always defined in `next.config.mjs`, empty outside offline mode, so production builds drop the code; verified 0 matches in a production build) and `/api/dev/accounts` answers only when `JAXIS_OFFLINE=1` and not production. Needs a restart of `npm run dev:offline` to appear.
 - [x] Toasts sit above modals and drawers (z 10000), so errors from a modal are readable
 - [~] Shared empty state + table + filter bar patterns — done so far: neutral `CopyButton` badge (was orange), `FilterToolbar` mobile layout (search row + filters/reset row), `ClientStageMeter`
@@ -53,6 +54,7 @@ Order: **Client → Statistician → QA Lead → Admin → Finance → CEO → S
 
 - [x] `client` — My studies home, v3 **client-friendly** (order-tracking pattern, like online shopping): To do list (incl. finish profile), tabs In progress / Needs you / Completed / All, one tracker card per study (stage, due, 5-step tracker, what's happening, payment, one button), Need help tiles. Detailed table lives on All Studies. (v2 analytics layout was replaced: too dashboard-y for students; keep that style for staff roles.)
 - [x] `client/projects` — All studies: stage tabs, needs-you-first sort, stage meter, mobile cards, quick view (fixed: status filter re-fetched from server and shrank the KPI counts)
+- [x] Client "How it works" guide (`HowToUseModal`, opened from My Studies) — 2026-09-27: rewritten to match the real flow and the website terms: 6 plain steps (Send your study → Get your price → Sign your agreement → Pay your deposit → We analyze your data → Get your files) tagged with the tracker names clients see on study pages; "Before you start: add your school" note when the profile is incomplete; 6 plain questions; one main button (Add Your School First / Send a Study). Removed misleading claims: "100% money-back escrow protection", "50% deposit", Maya, "Senior QA", named universities. Verified 8 checks incl. the school-form button, desktop + phone.
 - [ ] `client/projects/new` — Send a new study (intake form)
 - [ ] `client/projects/[id]` — Study detail
 - [x] `client/projects/[id]/quote` — "Your Price" as a checkout: status line, What you get, Delivery speed (radio incl. Standard), Extras (DefenseLab), note from our team; sticky Price summary with How you pay + Accept / Ask for changes; phone checkout bar; plain names for add-ons (catalog untouched for staff). Verified live totals, one-speed rule, accept + decline flows.
@@ -64,7 +66,7 @@ Order: **Client → Statistician → QA Lead → Admin → Finance → CEO → S
 - [x] `client/quotations` — "Quotes": tabs Waiting for you / Accepted / Being priced / Closed / All, search, one card per quote (state, good-until / accepted date, total + how it's paid, one button); new requests now listed as "Being priced"
 - [x] `client/messages` — Messenger-style inbox (see **Messaging** below)
 - [x] `client/defenselab` — DefenseLab practice: next session up top (date tile, countdown, Join Video Call / link-pending note, Reschedule, what you want to practice), Also booked, Your hours per study (meter, Book, disabled reason), Good to know rules, Past sessions with Watch Recording, How it works empty state. Book and Move modals keep all rules (hours left, max length, 12-hour late warning → "Move Anyway"). Study picker lists only studies with hours. Offline seed gives the analysis study 2 hours so booking can be tested.
-- [ ] `client/disputes` — Revisions & help / claims
+- [x] `client/disputes` — Revisions & help (2026-09-27): three ways to get help (Ask a question → Messages, Request changes → study Files, File a claim), delivered studies with plain claim-window status ("6 days left to file a claim" / window closed / claim status) and View Files / File a Claim / View Claim, claims as cards with a Sent → Being reviewed → Decision tracker, claim form on the shared `Modal` with plain reason cards (Wrong test or method / Wrong numbers / Late delivery), character count, https link check; claim details with "Our decision" in plain words. All rules kept (7-day window, one active claim, 20–3,000 characters). No jargon (Dispute / SOW / CEO). Offline claims store `src/features/disputes/dev-store.ts` + seeded past claim; filing works offline. Verified 18 checks incl. filing a claim end to end.
 - [ ] `client/profile` — School & profile
 
 ## 2. Statistician
@@ -72,7 +74,7 @@ Order: **Client → Statistician → QA Lead → Admin → Finance → CEO → S
 - [ ] `statistician` — Workbench dashboard
 - [ ] `statistician/projects/[id]/workbench` — Study workbench
 - [x] `statistician/projects/[id]/messages` — server-loaded chat, study breadcrumb, View Study → workbench
-- [x] `statistician/messages` — shared `MessagesInbox` (All / Unread / Finished tabs, client shown as a member, list refreshes every 30 s and on focus)
+- [x] `statistician/messages` — shared `MessagesInbox` (All / Unread / Finished tabs, client shown as a member, list refreshes every 30 s and on focus). **Re-verified 2026-09-27 (18 checks):** lists 3 assigned studies, members incl. client, search + no-match + Clear Filters, Finished tab, open another chat, View Study → workbench, instant send (~60 ms), client receives + staff sees reply without refresh (~0.5–2 s offline), other chat shows new preview + unread count after list refresh, Unread tab, phone list → chat → Back, no sideways scroll, no console errors.
 - [ ] `statistician/payouts`
 - [ ] `statistician/profile`
 
@@ -81,7 +83,7 @@ Order: **Client → Statistician → QA Lead → Admin → Finance → CEO → S
 - [ ] `qa` — Review desk
 - [ ] `qa/projects/[id]/review`
 - [ ] `qa/projects/[id]/files`
-- [x] `qa/messages` — shared `MessagesInbox`, View Study → review page
+- [x] `qa/messages` — shared `MessagesInbox`, View Study → review page. **Re-verified 2026-09-27 (19 checks):** same checks as statistician, plus the QA study header's Messages tab opens `/dashboard/qa/messages?projectId=…` with that study's chat.
 - [ ] `qa/payouts`
 - [ ] `qa/profile`
 
@@ -135,11 +137,34 @@ Order: **Client → Statistician → QA Lead → Admin → Finance → CEO → S
 - [ ] `staff/hr` (+ `payslips/[id]/print`)
 - [ ] `staff/attendance`
 
+## 8. Sign-in and system screens (all roles)
+
+- [x] `login` — Log in (redesigned earlier; has the offline-only "sign in as" picker and "Remember my email"). **Verified 2026-09-27:** plain wording, JAXIS logo, pointer on every clickable, every field labelled, friendly message on empty submit, phone fits, no console errors, lint clean.
+- [x] `register` — Create account (redesigned earlier). **Verified 2026-09-27:** same checks as login. Small polish for later: empty fields show the browser's own "Please fill out this field" bubble, while login shows its own friendly message; match them.
+- [ ] `forgot-password` — Forgot password
+- [ ] `reset-password` — Set a new password
+- [ ] `unauthorized` — No access
+- [ ] `not-found.tsx` — Page not found (logs a React `<script>` warning in the console; see notes)
+- [ ] `error.tsx` + `dashboard/error.tsx` + `global-error.tsx` — Something went wrong
+- [ ] `dashboard/loading.tsx` — Page loading
+
+Not listed on purpose: `/` and `/dashboard` only redirect (to login or the role's home), so there's nothing to design.
+Tracker coverage checked 2026-09-27: all 78 pages in `apps/app/app` are listed (study sub-pages and payslip print pages are listed inside their parent lines).
+
 ---
 
 ## Notes / open issues
 
+- Website About page (`apps/web/app/content/about.ts`, 2026-09-27): leadership now has 6 people in the Core team: Jerome (CEO & Founder), Barth (Chief Technology Officer & Co-founder, bio "BS Information Technology. Lead developer of JAXIS StatLab."), Bienuel (Chief Administrative Officer), Kim (Chief Finance Officer), Jobelle (Chief Quality Officer), Negie (Chief of Staff); Expert team is the other 5. Checked: all 11 photos load, phone has no sideways scroll. To confirm: Kim's middle name is spelled "Ric" on the site; the request said "Rick".
+
 - **Release check (2026-09-27):** production build passes with no warnings (built with fake offline settings into a throwaway folder); type check clean; changed files lint clean; no secrets in browser code; nothing sensitive in `git status`. Fixed during the check: the offline stores built file paths from a variable, which made the build bundle the whole project into the `/api/v1/presence` function (now fixed paths). Before deploying: (1) set the new Supabase service-role key in hosting, (2) set `DISABLE_DEV_LOGINS=true` in hosting (OFFLINE-DEV.md lists the sample passwords and the repo is public), (3) test live chat, typing and online dots with two accounts on staging.
+- Messages follow-ups (2026-09-27):
+  - Opening Messages loads the newest chat on the server and marks it read (`loadInbox` → `getProjectMessages`). Fine on desktop (that chat is on screen); on phones only the list shows, so the top chat is marked read unseen. Fix: don't mark read in the server preload; mark read when the chat is actually shown.
+  - Other chats in the list update every 30 s or when the tab regains focus (only the open chat is live). OK for now; could listen on all the user's study channels later.
+- Revisions & help follow-ups (2026-09-27): the "Request changes" card links to the newest delivered study's Files; with several delivered studies the per-study "View Files" buttons are the way in. The free-change window (3 working days) isn't shown per study on this page (it lives on each study's Files tab).
+- Old claims to fix elsewhere (2026-09-27): unused `ClientWelcomeBanner.tsx` still says "deposit stays locked safely in escrow until you inspect your results" and "PhD specialist" (delete or rewrite if it's ever used); admin `QuotationBuilderModal` labels the deposit "Initial Escrow Deposit (50%)" (the deposit isn't always 50%; align in the admin pass).
+- **Security (auth), fixed 2026-09-27:** the hard-coded fallback secret in `src/lib/auth.ts` and `src/lib/auth.config.ts` is now development-only; in production Auth.js stops with an error if `AUTH_SECRET` is missing. Vercel has `AUTH_SECRET` and `NEXTAUTH_SECRET` set (Production and Preview), so nothing changes live. Checked: production build passes, offline login works.
+- Hosting follow-ups (Vercel, seen 2026-09-27): `SUPABASE_SERVICE_ROLE_KEY` is still the old (deleted) key from Aug 30. Nothing in the code uses it any more (only `env.ts` requires it to exist), but paste the new key in to keep it current. `DISABLE_DEV_LOGINS=true` wasn't visible in the screenshot; add it if missing.
 - `npm run lint` for the whole app still fails on ~200 older warnings (e.g. 38 `any` in `defenselab/actions.ts`, unused `mode` in `CertificateModal.tsx`); not from this work.
 
 - Client pages use website package names, features and timelines from `src/features/projects/client-packages.ts` (mirror of `apps/web/app/content/pricing.ts`; keep in sync). Staff screens still use the price catalog names. Admin `assignments` still says "5-7 Days Standard" — align it in the admin pass.

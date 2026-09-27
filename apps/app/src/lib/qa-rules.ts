@@ -56,7 +56,7 @@ export function assertCanSubmitQaReview(
   if (projectStatus === "QA_REVISION") {
     return {
       allowed: false,
-      reason: "This study is currently undergoing revisions by the Lead Statistician.",
+      reason: "This study is currently undergoing revisions by the Lead Statistical Analyst.",
     };
   }
 
@@ -159,7 +159,7 @@ export const QA_DECISION_METADATA: Record<
   },
   QA_REJECTED: {
     label: "Require Revisions",
-    description: "Requires corrections by the Lead Statistician within 24 hours.",
+    description: "Requires corrections by the Lead Statistical Analyst within 24 hours.",
     badgeVariant: "warning",
   },
   ESCALATED_TO_CEO: {

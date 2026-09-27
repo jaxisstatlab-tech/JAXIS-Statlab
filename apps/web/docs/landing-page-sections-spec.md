@@ -98,7 +98,7 @@ graph TD
 - **Headlines**:
   - `Defend Your Thesis.` (`#FFFFFF`, bold sans, `text-5xl sm:text-7xl lg:text-8xl tracking-tight`)
   - `With Confidence.` (`#CC6600`, bold sans)
-- **Stats Ribbon**: 4-column balanced telemetry (`99.8% Accuracy rate`, `2 Statisticians per study`, `24h Quote turnaround`, `500+ Studies completed`).
+- **Stats Ribbon**: 4-column balanced telemetry (`99.8% Accuracy rate`, `2 Statistical Analysts per study`, `24h Quote turnaround`, `500+ Studies completed`).
 
 ---
 
@@ -170,7 +170,7 @@ const WORKFLOW_STEPS = [
     tag: "CALCULATE",
     duration: "2–5 DAYS",
     title: "We analyze & double-verify",
-    description: "Our statisticians run your models, followed by an independent Senior QA Lead calculation concordance check to guarantee 100% decimal accuracy.",
+    description: "Our statistical analysts run your models, followed by an independent Senior QA Lead calculation concordance check to guarantee 100% decimal accuracy.",
     imageSrc: "/images/how-it-works/step-3-validate.jpg",
     imageAlt: "3D isometric computational statistical engine",
   },

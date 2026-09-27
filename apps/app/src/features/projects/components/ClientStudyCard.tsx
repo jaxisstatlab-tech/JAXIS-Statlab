@@ -275,7 +275,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
               <span className="font-semibold text-white block mb-0.5">
                 Quotation Ready for Your Review
               </span>
-              Your customized statistical scope and deliverables breakdown are ready. Accept your quote to lock your assigned statistician.
+              Your customized statistical scope and deliverables breakdown are ready. Accept your quote to lock your assigned statistical analyst.
             </div>
           </div>
           <Link href={`/dashboard/client/projects/${study.id}/quote`} className="shrink-0">
@@ -301,7 +301,7 @@ export const ClientStudyCard: React.FC<ClientStudyCardProps> = ({
               className="font-sans text-xs font-semibold px-3.5 py-2 flex items-center gap-2 border-white/15 hover:bg-white/[0.06] text-white/90 active:scale-[0.97] transition-all rounded-[2px]"
             >
               <ChatCenteredText size={16} weight="fill" className="text-sky-400" />
-              <span>{hasAssignedSpecialist ? "Message Statistician" : "Message Desk"}</span>
+              <span>{hasAssignedSpecialist ? "Message Statistical Analyst" : "Message Desk"}</span>
             </Button>
           </Link>
 

@@ -42,7 +42,7 @@ export default function Hero() {
           style={{ ["--d" as string]: "160ms" }}
         >
           Generic templates won&apos;t pass your panel. We run your analysis for your exact study, checked by two
-          statisticians before delivery. Real numbers, plain explanations, zero shortcuts.
+          statistical analysts before delivery. Real numbers, plain explanations, zero shortcuts.
         </p>
 
         <div className="hero-in mt-9 flex flex-wrap items-center justify-center gap-6" style={{ ["--d" as string]: "240ms" }}>

@@ -43,7 +43,7 @@ export default async function AdminAnalysisPage({ params }: AdminAnalysisPagePro
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
       <StudySection
           title="Analysis files"
-          description="Every version the statistician uploaded, oldest first. Nothing here can be changed."
+          description="Every version the statistical analyst uploaded, oldest first. Nothing here can be changed."
         />
 
       {/* Scope Creep Audit Log (if present) */}

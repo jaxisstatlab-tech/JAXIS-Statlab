@@ -355,7 +355,7 @@ export function FinancePayoutsClient({
                           variant={p.recipientRole === "STATISTICIAN" ? "sky" : "emerald"}
                           className="text-[0.625rem] font-mono mt-1"
                         >
-                          {p.recipientRole === "STATISTICIAN" ? "Statistician" : "Senior QA Lead"}
+                          {p.recipientRole === "STATISTICIAN" ? "Statistical Analyst" : "Senior QA Lead"}
                         </Badge>
                       </td>
 

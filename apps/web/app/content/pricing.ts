@@ -105,7 +105,7 @@ export const ADDONS: AddOn[] = [
     unit: "per hour",
     group: "Practice",
     detail:
-      "A 1-on-1 practice defense with a senior statistician who asks the questions panels ask. You get the recording.",
+      "A 1-on-1 practice defense with a senior statistical analyst who asks the questions panels ask. You get the recording.",
   },
   {
     id: "rush",
@@ -131,7 +131,7 @@ export const ADDONS: AddOn[] = [
 ];
 
 export const INCLUDED = [
-  "Checked by 2 statisticians",
+  "Checked by 2 statistical analysts",
   "Fixed written price first",
   "Free fixes within scope",
   "Files your adviser can open",

@@ -199,7 +199,7 @@ export async function uploadDeliverable(rawInput: UploadDeliverableInput): Promi
 
   const access = await assertStudyAccess(input.projectId, session.user);
   if (!access.hasAccess || (!access.isManager && !access.isAssignedStatistician)) {
-    throw new Error("Unauthorized: Only administrators and assigned statisticians can upload deliverables.");
+    throw new Error("Unauthorized: Only administrators and assigned statistical analysts can upload deliverables.");
   }
 
   const deliverable = await db.deliverable.create({
@@ -263,7 +263,7 @@ export async function deleteDeliverable(deliverableId: string): Promise<{ succes
 
   const access = await assertStudyAccess(deliverable.projectId, session.user);
   if (!access.hasAccess || (!access.isManager && !access.isAssignedStatistician)) {
-    throw new Error("Unauthorized: Only administrators and assigned statisticians can remove deliverables.");
+    throw new Error("Unauthorized: Only administrators and assigned statistical analysts can remove deliverables.");
   }
 
   if (deliverable.isFinalReleased) {
@@ -625,10 +625,10 @@ export async function getClientDeliverables(projectId: string): Promise<ClientDe
       project.analysisFiles?.find((f) => f.statistician)?.statistician;
 
     const statisticianName =
-      assignedStatistician?.fullName || "Lead Consulting Statistician";
+      assignedStatistician?.fullName || "Lead Statistical Analyst";
     const statisticianTitle =
       assignedStatistician?.staffProfile?.bio ||
-      "Lead Consulting Statistician, Statistical Computing & Analytics";
+      "Lead Statistical Analyst, Statistical Computing & Analytics";
     const statisticianSignatureUrl =
       assignedStatistician?.staffProfile?.signatureUrl || null;
 

@@ -7,7 +7,7 @@ type DevAccount = { email: string; password: string; fullName: string; role: str
 
 const ROLE_LABEL: Record<string, string> = {
   CLIENT: "Client",
-  STATISTICIAN: "Statistician",
+  STATISTICIAN: "Statistical Analyst",
   SENIOR_QA_LEAD: "QA Lead",
   ADMIN: "Admin",
   CEO: "CEO",

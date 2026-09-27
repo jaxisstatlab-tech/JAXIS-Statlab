@@ -138,7 +138,7 @@ export function StatisticianPayoutsClient({ initialData }: StatisticianPayoutsCl
       <PageHeader
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
-          { label: "STATISTICIAN WORKBENCH", href: "/dashboard/statistician" },
+          { label: "STATISTICAL ANALYST WORKBENCH", href: "/dashboard/statistician" },
           { label: "MILESTONE PAYOUTS" },
         ]}
         title="My Milestone Payouts & Earnings"

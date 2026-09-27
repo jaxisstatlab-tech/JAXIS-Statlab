@@ -515,7 +515,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                   Executive Labor &amp; Duty Governance Controls
                 </span>
                 <p className="text-white/80 mt-1 leading-relaxed">
-                  These parameters apply company-wide to all internal employees (Statisticians, Senior QA Leads, Finance Officers, and Administrators). Changes take effect instantly upon saving.
+                  These parameters apply company-wide to all internal employees (Statistical Analysts, Senior QA Leads, Finance Officers, and Administrators). Changes take effect instantly upon saving.
                 </p>
               </div>
             </div>
@@ -597,7 +597,7 @@ export function CeoAttendanceAuditClient({ initialData }: CeoAttendanceAuditClie
                       )}
                     </span>
                     <p className="text-xs text-white/60 font-sans leading-relaxed">
-                      Statisticians and QA leads can work at any hour of the day or night to match project deliverable deadlines.
+                      Statistical analysts and QA leads can work at any hour of the day or night to match project deliverable deadlines.
                     </p>
                   </button>
 

@@ -144,7 +144,7 @@ export function getProjectDisplayStatus(
       status: "PENDING_ASSIGNMENT",
       label: "Pending Assignment",
       pulse: true,
-      description: "Payment confirmed. In queue for Lead Statistician and QA Lead assignment.",
+      description: "Payment confirmed. In queue for Lead Statistical Analyst and QA Lead assignment.",
     };
   }
 
@@ -209,7 +209,7 @@ export const MISSING_INFO_TEMPLATES: MissingInfoTemplate[] = [
     id: "survey-tool",
     label: "Survey Questionnaire / Form Used Missing",
     category: "Instrument",
-    text: "Please upload a copy of the survey questionnaire or tool you used (including the scoring guide or rating scale key, such as 1 to 5). This helps our statisticians verify your questions and tests.",
+    text: "Please upload a copy of the survey questionnaire or tool you used (including the scoring guide or rating scale key, such as 1 to 5). This helps our statistical analysts verify your questions and tests.",
   },
   {
     id: "variables-hypotheses",

@@ -8,7 +8,7 @@ export const FAQS: Faq[] = [
   },
   {
     q: "Is working with JAXIS allowed by my school?",
-    a: "JAXIS is a statistical consulting service, the same kind of help many universities offer through their own statistics centers. Your research questions, data, and conclusions stay yours. We run and explain the analysis so you understand it and can defend it. Check your school's rules, and let your adviser know you worked with a statistician.",
+    a: "JAXIS is a statistical consulting service, the same kind of help many universities offer through their own statistics centers. Your research questions, data, and conclusions stay yours. We run and explain the analysis so you understand it and can defend it. Check your school's rules, and let your adviser know you worked with a statistical analyst.",
   },
   {
     pricing: true,
@@ -17,7 +17,7 @@ export const FAQS: Faq[] = [
   },
   {
     q: "Is my data kept private?",
-    a: "Yes. We remove respondent names, emails, and student ID numbers from your dataset before anyone starts work. Every statistician signs a non-disclosure agreement, and your findings stay yours.",
+    a: "Yes. We remove respondent names, emails, and student ID numbers from your dataset before anyone starts work. Every statistical analyst signs a non-disclosure agreement, and your findings stay yours.",
   },
   {
     q: "What if my results are not significant?",

@@ -394,7 +394,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
           label="Total Expert Pool"
           value={kpis.totalSpecialists}
           variant="sky"
-          description="Lead Statisticians & Senior QA Leads"
+          description="Lead Statistical Analysts & Senior QA Leads"
         />
       </div>
 
@@ -435,7 +435,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
               Specialist Availability &amp; Leave Roster
             </h2>
             <p className="text-xs text-white/50 mt-0.5 font-sans">
-              Real-time directory of Lead Statisticians and Senior QA Leads with leave windows and assignment loads.
+              Real-time directory of Lead Statistical Analysts and Senior QA Leads with leave windows and assignment loads.
             </p>
           </div>
 
@@ -461,7 +461,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
                 className="bg-[#050513] border border-white/15 rounded-[2px] pl-2.5 pr-8 py-1.5 text-xs text-white/80 focus:border-[#CC6600] outline-none cursor-pointer font-sans appearance-none hover:border-white/25 transition-colors"
               >
                 <option value="ALL">All Roles</option>
-                <option value="STATISTICIAN">Statisticians</option>
+                <option value="STATISTICIAN">Statistical Analysts</option>
                 <option value="SENIOR_QA_LEAD">Senior QA Leads</option>
               </select>
               <IconChevronDown
@@ -561,7 +561,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
                           variant={isStat ? "sky" : "emerald"}
                           className="font-sans text-[0.688rem] py-0 px-2 font-medium"
                         >
-                          {isStat ? "Statistician" : "Senior QA Lead"}
+                          {isStat ? "Statistical Analyst" : "Senior QA Lead"}
                         </Badge>
                       </td>
 

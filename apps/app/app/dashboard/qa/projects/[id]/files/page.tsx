@@ -45,7 +45,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
       <StudySection
           title="Working files"
-          description="Every file the statistician uploaded for this study."
+          description="Every file the statistical analyst uploaded for this study."
           actions={
             <>
               {isReadyForQa && (
@@ -72,7 +72,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
           <div className="flex flex-col gap-0.5">
             <span className="font-semibold text-amber-300">Study Still In Progress (Draft Mode)</span>
             <p className="text-white/70 leading-relaxed">
-              The Lead Statistician is currently drafting statistical outputs. Once they finish and click{" "}
+              The Lead Statistical Analyst is currently drafting statistical outputs. Once they finish and click{" "}
               <strong className="text-white font-semibold">&ldquo;Submit for QA Review&rdquo;</strong> on their workbench,
               this study will advance to <span className="font-mono text-emerald-400 font-semibold">FOR_QA</span> and unlock the Evaluation Desk for your formal review and approval.
             </p>
@@ -87,7 +87,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
             <div className="flex flex-col gap-0.5">
               <span className="font-semibold text-emerald-300">Ready for Formal QA Evaluation</span>
               <p className="text-white/70 leading-relaxed">
-                The Lead Statistician has submitted these outputs. You can now open the QA Evaluation Desk to recalculate empirical models, verify APA 7th tables, and approve or request revisions.
+                The Lead Statistical Analyst has submitted these outputs. You can now open the QA Evaluation Desk to recalculate empirical models, verify APA 7th tables, and approve or request revisions.
               </p>
             </div>
           </div>
@@ -126,9 +126,9 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
       {/* Meta Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
-          <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Lead Statistician</span>
+          <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Lead Statistical Analyst</span>
           <span className="text-sm font-semibold text-white truncate">
-            {assignment?.statisticianName || "Assigned Statistician"}
+            {assignment?.statisticianName || "Assigned Statistical Analyst"}
           </span>
           <span className="text-[0.688rem] text-white/50">{assignment?.statisticianEmail || "stat@jaxis.dev"}</span>
         </div>
@@ -205,7 +205,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
             <div>
               <h2 className="text-base font-bold text-white">Statistical Outputs &amp; Scripts</h2>
               <p className="text-xs text-white/50 mt-0.5">
-                Current version analysis working files submitted by the Lead Statistician
+                Current version analysis working files submitted by the Lead Statistical Analyst
               </p>
             </div>
             <Badge variant="emerald" className="font-mono text-xs">
@@ -253,7 +253,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
                   {file.notes && (
                     <div className="p-3 bg-black/25 rounded-[2px] border border-white/5 text-xs text-slate-200 leading-relaxed">
                       <span className="text-[0.625rem] font-mono uppercase text-white/40 block mb-0.5">
-                        Statistician Notes:
+                        Statistical Analyst Notes:
                       </span>
                       <p>{file.notes}</p>
                     </div>

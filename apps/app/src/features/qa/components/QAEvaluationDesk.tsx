@@ -179,7 +179,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
             selectedDecision === QADecision.QA_APPROVED
               ? "Statistical outputs verified and cleared for deliverable release."
               : selectedDecision === QADecision.QA_REJECTED
-              ? "Lead Statistician notified with a 24-hour revision deadline."
+              ? "Lead Statistical Analyst notified with a 24-hour revision deadline."
               : "Project locked immediately. Chief Executive Officer alerted.",
           variant:
             selectedDecision === QADecision.QA_APPROVED
@@ -201,7 +201,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
       {/* Canonical Page Header */}
       <StudySection
           title="Review"
-          description="Check the statistician's files, then approve them or send them back with notes."
+          description="Check the statistical analyst's files, then approve them or send them back with notes."
         />
 
       {/* Ethical Breach Lockout Banner */}
@@ -228,7 +228,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-amber-300 block text-sm">
-                  Revisions Active: Lead Statistician Correcting Models
+                  Revisions Active: Lead Statistical Analyst Correcting Models
                 </span>
                 <Badge variant="amber" className="text-[0.625rem] font-mono">
                   {data.activeRevision.errorClassificationLabel || "REVISION_REQUIRED"}
@@ -257,11 +257,11 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
       {/* Top Status & SLA Ribbon */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
-          <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Lead Statistician</span>
+          <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Lead Statistical Analyst</span>
           <span className="text-sm font-semibold text-white truncate">
             {data.assignment?.statisticianName || "Unassigned"}
           </span>
-          <span className="text-[0.688rem] text-white/50">{data.assignment?.statisticianEmail || "statistician@jaxis.dev"}</span>
+          <span className="text-[0.688rem] text-white/50">{data.assignment?.statisticianEmail || "analyst@jaxis.dev"}</span>
         </div>
 
         <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
@@ -531,7 +531,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
                       {file.notes && (
                         <div className="p-2.5 bg-black/25 rounded-[2px] border border-white/5 text-xs text-slate-200 leading-relaxed">
                           <span className="text-[0.625rem] font-mono uppercase text-white/40 block mb-0.5">
-                            Statistician Notes:
+                            Statistical Analyst Notes:
                           </span>
                           <p>{file.notes}</p>
                         </div>
@@ -835,7 +835,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
               <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-[2px] text-amber-200 text-xs flex items-start gap-2">
                 <IconClock size={16} stroke={2} className="text-amber-400 shrink-0 mt-0.5" />
                 <span>
-                  The Lead Statistician will receive an immediate revision notice and a 24-hour turnaround timer.
+                  The Lead Statistical Analyst will receive an immediate revision notice and a 24-hour turnaround timer.
                 </span>
               </div>
             )}

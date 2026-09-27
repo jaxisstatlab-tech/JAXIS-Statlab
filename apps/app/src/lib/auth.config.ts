@@ -1,6 +1,7 @@
 import type { NextAuthConfig } from "next-auth";
 import NextAuth from "next-auth";
 import type { RoleName, UserStatus } from "@prisma/client";
+import { SESSION_MAX_AGE_S } from "@/lib/session-activity";
 
 const LEGACY_DEV_ID_MAP: Record<string, string> = {
   usr_dev_admin_001: "cmu99bmds0000lrow6sbc7luy",
@@ -31,12 +32,19 @@ if (process.env.VERCEL) {
 
 export const authConfig: NextAuthConfig = {
   trustHost: true,
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "dev_secret_key_minimum_32_characters_long_for_jaxis_statlab",
+  secret:
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    // Local development only. This key is public in the repo, so production never falls back to it:
+    // without AUTH_SECRET, Auth.js stops with a clear error instead of signing forgeable logins.
+    (process.env.NODE_ENV === "production" ? undefined : "dev_secret_key_minimum_32_characters_long_for_jaxis_statlab"),
   debug: process.env.NODE_ENV !== "production",
   providers: [],
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours
+    // Cookie lifetime. Auth.js renews it on each visit, so the hard 12-hour limit, the 30-minute
+    // idle limit and "closed the site" are enforced in middleware.ts (src/lib/session-activity.ts).
+    maxAge: SESSION_MAX_AGE_S,
   },
   pages: {
     signIn: "/login",
@@ -56,9 +64,10 @@ export const authConfig: NextAuthConfig = {
           token.pwdFp = (user as any).pwdFp;
         }
         if (user.rememberMe !== undefined) {
+          // "Remember my email" only keeps the email on this device; it no longer extends the login.
           token.rememberMe = user.rememberMe;
-          token.exp = Math.floor(Date.now() / 1000) + (user.rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60);
         }
+        token.loginAt = Date.now();
       } else if (token.id && typeof token.id === "string" && LEGACY_DEV_ID_MAP[token.id]) {
         token.id = LEGACY_DEV_ID_MAP[token.id];
       }
@@ -82,6 +91,9 @@ export const authConfig: NextAuthConfig = {
         }
         if (token.rememberMe !== undefined) {
           session.user.rememberMe = token.rememberMe as boolean;
+        }
+        if (typeof token.loginAt === "number") {
+          session.user.loginAt = token.loginAt;
         }
       }
       return session;

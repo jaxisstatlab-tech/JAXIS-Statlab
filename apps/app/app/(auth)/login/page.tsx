@@ -32,7 +32,8 @@ function LoginForm() {
   const [isRegistered] = useState(() => searchParams.get("registered") === "true");
   const [isResetSuccess] = useState(() => ["true", "success"].includes(searchParams.get("reset") ?? ""));
 
-  const isIdleTimeout = reason === "idle_timeout";
+  // Logged out for no activity, or because the site was closed / left (middleware).
+  const isIdleTimeout = reason === "idle_timeout" || reason === "session_ended";
   const isAccountSuspended = authError === "AccountSuspended";
   const isAccountTerminated = authError === "AccountTerminated";
   const isSessionRevoked = authError === "SessionRevoked";
@@ -53,7 +54,7 @@ function LoginForm() {
     }
   }, []);
 
-  // Load remembered email on mount if user previously checked "Remember me"
+  // Load the remembered email (only the email is kept on this device, never the password)
   React.useEffect(() => {
     try {
       const savedEmail = localStorage.getItem("jaxis_remember_email");
@@ -123,7 +124,7 @@ function LoginForm() {
 
       {isIdleTimeout && (
         <Alert variant="warning" title="You were logged out">
-          We log you out after 30 minutes of no activity to keep your data safe.
+          To keep your data safe, we log you out when you close the site or after 30 minutes without activity.
         </Alert>
       )}
       {isAccountSuspended && (
@@ -242,7 +243,7 @@ function LoginForm() {
                 className="pointer-events-none absolute left-[3px] top-[3px] scale-50 text-white opacity-0 transition-[opacity,transform] duration-150 ease-out peer-checked:scale-100 peer-checked:opacity-100"
               />
             </span>
-            Remember me
+            Remember my email
           </label>
           <Link href="/forgot-password" className={`${authTextLink} inline-flex items-center gap-2`}>
             Forgot password?

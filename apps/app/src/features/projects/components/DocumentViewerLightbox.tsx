@@ -89,7 +89,7 @@ function getDocContent(fileName: string, category: string): DocContentModel {
                 },
                 {
                   label: "Quality Gate Reviewer",
-                  text: "Conducts independent dual-statistician audits to verify mathematical accuracy and signs the official certification record.",
+                  text: "Conducts independent dual-analyst audits to verify mathematical accuracy and signs the official certification record.",
                 },
               ],
             },
@@ -494,7 +494,7 @@ function getDocContent(fileName: string, category: string): DocContentModel {
           {
             heading: "5. Statistical Software & Computational Engine",
             paragraphs: [
-              "All calculations are performed using IBM SPSS Statistics (v29.0) and custom Python scientific computing pipelines (NumPy, SciPy, Pandas). Results undergo dual-statistician verification to guarantee zero mathematical discrepancy prior to release.",
+              "All calculations are performed using IBM SPSS Statistics (v29.0) and custom Python scientific computing pipelines (NumPy, SciPy, Pandas). Results undergo dual-analyst verification to guarantee zero mathematical discrepancy prior to release.",
             ],
           },
         ],

@@ -32,7 +32,7 @@ export default async function StatisticianWorkbenchPage({
         <PageHeader
           breadcrumbs={[
             { label: "WORKSPACE", href: "/dashboard" },
-            { label: "STATISTICIAN", href: "/dashboard/statistician" },
+            { label: "STATISTICAL ANALYST", href: "/dashboard/statistician" },
             { label: "WORKBENCH" },
           ]}
           title="Access Restricted"
@@ -44,7 +44,7 @@ export default async function StatisticianWorkbenchPage({
           <div className="flex flex-col gap-1">
             <h2 className="text-base font-bold text-white">Workbench Authorization Error</h2>
             <p className="text-xs text-white/70 max-w-md">
-              {res.error.message || "Only the assigned Lead Statistician or Senior QA Lead can access this study workspace."}
+              {res.error.message || "Only the assigned Lead Statistical Analyst or Senior QA Lead can access this study workspace."}
             </p>
           </div>
           <Link href="/dashboard/statistician">

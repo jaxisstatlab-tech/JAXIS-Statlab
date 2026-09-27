@@ -34,6 +34,7 @@ import {
   sanitizeProjectForSpecialist,
 } from "@/lib/access-control";
 import { getDevUserByEmail } from "@/lib/mock-data/users.data";
+import { devProjectsEnabled, devCreateProject } from "./dev-projects-store";
 
 const DEV_PROJECTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
 const DEV_PAYMENTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), "dev_data", "payments.json");
@@ -348,6 +349,22 @@ export async function createProject(
       } catch (recoveryErr) {
         console.error("[createProject] Recovery retry failed:", recoveryErr);
       }
+    }
+
+    if (!project && devProjectsEnabled()) {
+      // Offline dev only: save to the local sample files instead of the database.
+      const row = devCreateProject(session.user, {
+        intakeId,
+        researchTitle: researchTitle.trim(),
+        researchQuestions: researchQuestions.trim(),
+        researchObjectives: researchObjectives.trim(),
+        hypotheses: hypotheses?.trim() || null,
+        deadlineRequested: deadlineDate,
+        chapters13: chapters13?.trim() || null,
+        questionnaire: questionnaire?.trim() || null,
+        files: files ?? [],
+      });
+      return { success: true, data: row as unknown as ProjectDetailItem };
     }
 
     if (!project) {

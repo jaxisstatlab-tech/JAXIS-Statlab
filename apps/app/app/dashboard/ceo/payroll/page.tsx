@@ -50,7 +50,7 @@ import { SpecialistOverrideModal } from "@/features/payroll/components/Specialis
 
 const ROLE_DISPLAY_NAMES: Record<string, { title: string; subtitle: string }> = {
   STATISTICIAN: {
-    title: "Lead Research Statistician",
+    title: "Lead Research Statistical Analyst",
     subtitle: "Data analysis, statistical modeling, and research deliverables.",
   },
   SENIOR_QA_LEAD: {

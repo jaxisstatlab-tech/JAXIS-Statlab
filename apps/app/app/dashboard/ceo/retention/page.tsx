@@ -544,7 +544,7 @@ export default function CeoStorageRetentionPage() {
     {
       key: "keepChatHistory",
       label: "Consultation Chat & Messages",
-      desc: "Researcher-statistician consultation transcripts.",
+      desc: "Researcher-statistical analyst consultation transcripts.",
       icon: ChatCenteredText,
     },
     {

@@ -90,7 +90,7 @@ export function QuickProfileModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Tell Us About Your University"
-      description="Tell us your school and degree program so your assigned statistician can format your tables to match your university's exact thesis guidelines."
+      description="Tell us your school and degree program so your assigned statistical analyst can format your tables to match your university's exact thesis guidelines."
       size="md"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 pt-2">
@@ -98,7 +98,7 @@ export function QuickProfileModal({
         <div className="p-3.5 bg-[#0A0A18] border border-sky-500/25 rounded-[2px] flex items-start gap-3 shadow-sm">
           <ShieldCheck size={18} weight="fill" className="text-[#38BDF8] flex-shrink-0 mt-0.5" />
           <div className="text-xs text-white/80 font-sans leading-relaxed">
-            Your university details ensure your assigned statistician follows your school&apos;s specific Chapter 4 table formatting and defense criteria.
+            Your university details ensure your assigned statistical analyst follows your school&apos;s specific Chapter 4 table formatting and defense criteria.
           </div>
         </div>
 

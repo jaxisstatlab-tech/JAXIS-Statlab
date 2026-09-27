@@ -99,7 +99,7 @@ export function WorkloadAnalyticsCard({
             }`}
           >
             <IconUserCheck size={14} stroke={2} />
-            <span>Statisticians ({statisticians.length})</span>
+            <span>Statistical Analysts ({statisticians.length})</span>
           </button>
           <button
             type="button"

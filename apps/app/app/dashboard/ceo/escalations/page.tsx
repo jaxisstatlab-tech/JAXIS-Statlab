@@ -146,7 +146,7 @@ export default async function CeoEscalationsPage() {
 
                   <div className="p-3 bg-black/25 rounded-[2px] border border-white/5">
                     <span className="text-[0.625rem] font-mono uppercase text-white/40 block mb-0.5">
-                      Assigned Lead Statistician:
+                      Assigned Lead Statistical Analyst:
                     </span>
                     <span className="font-semibold text-white">{item.statisticianName}</span>
                     <span className="text-white/50 text-[0.688rem] block">{item.statisticianEmail}</span>

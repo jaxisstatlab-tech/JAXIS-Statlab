@@ -22,7 +22,7 @@ export function QaMessagesClient(props: QaMessagesClientProps) {
         { label: "Messages" },
       ]}
       title="Messages"
-      description="Chat with clients and statisticians about the studies you're reviewing."
+      description="Chat with clients and statistical analysts about the studies you're reviewing."
       studyHref={(id) => `/dashboard/qa/projects/${id}/review`}
       empty={{
         title: "No chats yet",

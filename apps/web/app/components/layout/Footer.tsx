@@ -114,7 +114,7 @@ export default function Footer() {
             </span>
             <CookieSettingsButton className="underline decoration-white/20 underline-offset-4 transition-colors hover:text-white" />
           </span>
-          <span>Every study is checked by two statisticians.</span>
+          <span>Every study is checked by two statistical analysts.</span>
         </div>
       </div>
     </footer>

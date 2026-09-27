@@ -127,7 +127,7 @@ export async function assertStatisticianAssigned(
   });
 
   if (!assignment) {
-    throw new Error("NOT_ASSIGNED: You are not the actively assigned Lead Statistician for this study.");
+    throw new Error("NOT_ASSIGNED: You are not the actively assigned Lead Statistical Analyst for this study.");
   }
 }
 

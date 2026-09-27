@@ -169,7 +169,7 @@ From [globals.css](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/web
 - **CTA Button**:
   - `Get Started →` (links to `REGISTER_URL`)
 - **Phase 2 Scroll Statement (`INTRO_TEXT`)**:
-  - `"JAXIS helps students and researchers pass their thesis defense. We clean your survey data, calculate your statistical tests, format your APA tables, and double-check every number with two independent statisticians — so you walk into your panel defense with zero fear."`
+  - `"JAXIS helps students and researchers pass their thesis defense. We clean your survey data, calculate your statistical tests, format your APA tables, and double-check every number with two independent statistical analysts — so you walk into your panel defense with zero fear."`
 
 ---
 
@@ -226,9 +226,9 @@ From [globals.css](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/web
    - **Vector Art**: Dual Harmonic Waveform Traces showing primary methodologist trace overlaid with senior QA auditor trace matching phase (`DualPassQALineArt`).
    - **Badge**: `DELIVERABLE: DOUBLE-VERIFIED CALCULATIONS`
    - **Subtitle**: `ZERO CALCULATION ERROR GUARANTEE`
-   - **Description**: *"Your data is analyzed by one statistician and recalculated from scratch by a second senior reviewer. If a single decimal differs, we fix it before you receive your results."*
+   - **Description**: *"Your data is analyzed by one statistical analyst and recalculated from scratch by a second senior reviewer. If a single decimal differs, we fix it before you receive your results."*
    - **Specs**:
-     - `PRIMARY RUN`: `EXPERT STATISTICIAN`
+     - `PRIMARY RUN`: `EXPERT STATISTICAL ANALYST`
      - `SECOND AUDIT`: `SENIOR QA RE-CALCULATION` (Orange highlight)
      - `ERROR TOLERANCE`: `0.00% ZERO ERROR`
      - `TABLE FORMAT`: `APA 7TH EDITION` (Orange highlight)
@@ -292,9 +292,9 @@ From [globals.css](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/web
      - `COMPLEX MODELS`: Advanced Modeling (SEM) (`CFI = .98` / `EXCELLENT FIT`)
      - `APA FORMAT`: Ready-to-Paste APA Tables (`APA 7.0` / `CAMPUS COMPLIANT`)
 
-3. **Deliverable 03: Double-Checked by 2 Independent Statisticians**
+3. **Deliverable 03: Double-Checked by 2 Independent Statistical Analysts**
    - **ID**: `qa-verification`, Step: `03`, Badge: `DELIVERABLE 03 // QUALITY ASSURANCE`
-   - **Subtitle**: *"No guesswork or solo errors. Your analysis is independently calculated by two separate statisticians to ensure 100% accuracy before you receive it."*
+   - **Subtitle**: *"No guesswork or solo errors. Your analysis is independently calculated by two separate statistical analysts to ensure 100% accuracy before you receive it."*
    - **Pills**: `Double-Blind Recalculation`, `Zero Data Fabrication Policy`, `Full R / Python / SPSS Code Scripts`, `Senior Quality Assurance Stamp`.
    - **4 Features**:
      - `DOUBLE CHECK`: Independent Recalculation (`100%` / `REPRODUCIBLE`)
@@ -347,11 +347,11 @@ From [globals.css](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/web
 |---|---|---|---|---|---|---|
 | **DataCheck** | `PLAN 01 // SURVEY AUDIT` | Starts at | **₱1,000** | PHP // BY QUOTE | Survey spreadsheet cleanup & error checking | Survey data formatting, Normality check, Cronbach's Alpha, Adviser health sheet |
 | **Start Package** | `PLAN 02 // DEMOGRAPHICS & PROFILES` | Starts at | **₱1,500** | PHP // BY QUOTE | Demographic profiling & respondent cross-tabs | Frequencies, Percentages, Chi-Square, APA 7 tables, Chapter 4 writeup, SOW quote |
-| **Core Thesis Package ★** *(Featured)* | `PLAN 03 // COMPLETE HYPOTHESIS TESTING` | Starts at | **₱2,400** | PHP // BY QUOTE | Standard choice for College, Master's & Ph.D. theses | T-Tests, ANOVA, Regression, Effect sizes, 2-statistician check, .R/.py/.sps code |
+| **Core Thesis Package ★** *(Featured)* | `PLAN 03 // COMPLETE HYPOTHESIS TESTING` | Starts at | **₱2,400** | PHP // BY QUOTE | Standard choice for College, Master's & Ph.D. theses | T-Tests, ANOVA, Regression, Effect sizes, 2-analyst check, .R/.py/.sps code |
 | **Advanced Package** | `PLAN 04 // COMPLEX MODELING` | Starts at | **₱3,000+** | PHP // CUSTOM SCOPE | Graduate dissertations & multivariate models | SEM, Path Analysis, HLM, Lead Methodologist verification, Question guide, Free revisions |
 
 #### Upgrades & Add-ons
-- **DefenseLab Module**: `₱250/hr` — Live 1-on-1 mock panel defense with a Senior JAXIS Statistician.
+- **DefenseLab Module**: `₱250/hr` — Live 1-on-1 mock panel defense with a Senior JAXIS Statistical Analyst.
 - **JAXIS Rush**: `₱300` — 3-day guaranteed turnaround upgrade.
 - **JAXIS Express**: `₱600` — 48-hour expedited delivery upgrade.
 - **JAXIS Emergency**: `₱1,000` — 24-hour urgent overnight delivery.
@@ -391,7 +391,7 @@ From [globals.css](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/web
 
 3. **`SEC_03 // OWNERSHIP`: You Own 100% of Your Research & Code**
    - **Subtitle**: `STRICT NON-DISCLOSURE AGREEMENTS` | **Badge**: `100% YOUR PROPERTY`
-   - **Description**: *"Every JAXIS statistician signs a legally binding Non-Disclosure Agreement (NDA). Your data, analysis scripts, and findings belong 100% to you. We never publish or claim co-authorship."*
+   - **Description**: *"Every JAXIS statistical analyst signs a legally binding Non-Disclosure Agreement (NDA). Your data, analysis scripts, and findings belong 100% to you. We never publish or claim co-authorship."*
    - **Specs**: `NDA SIGNED`: `ALL STAFF LEGALLY BOUND` | `AUTHORSHIP`: `100% RETAINED BY YOU`.
 
 4. **`SEC_04 // ESCROW`: Safe Escrow Payment Protection**
@@ -430,10 +430,10 @@ From [globals.css](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/web
    - **Answer**: *"Standard thesis and survey packages (DataCheck, Start, Core) take 3 to 7 business days. Complex structural equation modeling (SEM) or medical dissertations take 2 to 3 weeks. If you are on a tight deadline, our 24-Hour and 48-Hour Rush delivery upgrades guarantee you submit on time."*
 2. **What if my thesis adviser or panel asks for revisions?**
    - **Category**: `FREE REVISION GUARANTEE`
-   - **Answer**: *"Revisions are 100% free. If your panel, adviser, or committee asks for changes, clarifications, or alternate tables within your study's original scope, our senior statisticians will revise your deliverables promptly at zero additional cost."*
+   - **Answer**: *"Revisions are 100% free. If your panel, adviser, or committee asks for changes, clarifications, or alternate tables within your study's original scope, our senior statistical analysts will revise your deliverables promptly at zero additional cost."*
 3. **Is my survey data and student identity kept confidential?**
    - **Category**: `PRIVACY & NDAS`
-   - **Answer**: *"Yes, completely. We scrub all respondent names, emails, and student ID numbers from your files before our analysts ever see them. Every statistician operates under legally binding NDAs, and your research findings remain 100% your own intellectual property."*
+   - **Answer**: *"Yes, completely. We scrub all respondent names, emails, and student ID numbers from your files before our analysts ever see them. Every statistical analyst operates under legally binding NDAs, and your research findings remain 100% your own intellectual property."*
 4. **What happens if my results are not statistically significant (p > .05)?**
    - **Category**: `ETHICAL INTEGRITY & P-VALUES`
    - **Answer**: *"Non-significant results are a normal part of real academic research! We never fake data or manipulate numbers. Instead, we provide rigorous theoretical explanations and sample justifications so you can defend your findings to your panel with complete academic credibility."*
@@ -479,7 +479,7 @@ From [globals.css](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/web
   - Line 1: `Stop worrying about defense.`
   - Line 2 (Sky Blue): `Start feeling confident.`
 - **Paragraph**:
-  - *"Send us your Chapter 1 or raw survey spreadsheet. Our senior statisticians will review your study and give you an exact, custom Scope of Work quote within 24 hours at zero charge."*
+  - *"Send us your Chapter 1 or raw survey spreadsheet. Our senior statistical analysts will review your study and give you an exact, custom Scope of Work quote within 24 hours at zero charge."*
 - **Button Text**: `Get Free Thesis Review`
 - **Legal Links**:
   - `Privacy Policy`

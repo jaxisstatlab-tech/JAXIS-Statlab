@@ -1,28 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Modal,
-  Button,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-  AnimateHeight,
-  cn,
-} from "@repo/ui";
-import {
-  GraduationCap,
-  CloudArrowUp,
-  Shield,
-  FileText,
-  ShieldCheck,
-  Sparkle,
-  ListChecks,
-  Question,
-  CaretDown,
-  ArrowRight,
-} from "@phosphor-icons/react";
+import { Modal, Button, Tabs, TabsList, TabsTrigger, TabsContent, AnimateHeight, cn } from "@repo/ui";
+import { ArrowRight, CaretDown, GraduationCap } from "@phosphor-icons/react";
+import { CLIENT_STEPS } from "@/features/projects/client-stage";
 
 export interface HowToUseModalProps {
   isOpen: boolean;
@@ -32,79 +13,67 @@ export interface HowToUseModalProps {
   isProfileComplete?: boolean;
 }
 
-interface StepItem {
-  number: string;
-  badge: string;
-  title: string;
-  icon: React.ReactNode;
-  summary: string;
-  highlight: string;
-}
-
-const STEPS: StepItem[] = [
+// Plain steps that match what clients see: "Send your study", then the same 5 steps as the
+// tracker on every study page (Price, Agreement, Deposit, Analysis, Files).
+const STEPS: Array<{ title: string; body: string; note?: string; tracker?: (typeof CLIENT_STEPS)[number] }> = [
   {
-    number: "01",
-    badge: "STEP 01",
-    title: "Save Your University & Degree",
-    icon: <GraduationCap size={20} weight="fill" className="text-[#FFA040]" />,
-    summary:
-      "Save your school name and degree program. Your assigned statistician formats all tables and statistical writeups to match your university's exact thesis guidelines (UST, UP, Ateneo, DLSU, etc.).",
-    highlight: "Takes only 30 seconds to complete",
+    title: "Send your study",
+    body: "Share your research questions, your Chapters 1–3 and your data file (Excel, CSV or SPSS). Add your questionnaire if you have one.",
+    note: "Messy data is fine. Cleaning it is included.",
   },
   {
-    number: "02",
-    badge: "STEP 02",
-    title: "Upload Your Survey & Raw Data",
-    icon: <CloudArrowUp size={20} weight="fill" className="text-[#FFA040]" />,
-    summary:
-      "Upload your survey questionnaire and raw survey responses in Excel, Google Sheets, CSV, or SPSS. Even if your spreadsheet is messy or has missing scores, our team cleans, recodes, and screens it for you.",
-    highlight: "Full data screening and cleaning included",
+    title: "Get your price",
+    body: "We read your study and send a fixed written price, usually within 24 hours. Review what's included, pick any extras, then accept it.",
+    tracker: "Price",
   },
   {
-    number: "03",
-    badge: "STEP 03",
-    title: "Review Quote & Safe Escrow Deposit",
-    icon: <Shield size={20} weight="fill" className="text-[#FFA040]" />,
-    summary:
-      "Receive a clear, transparent price quote. Pay an initial 50% deposit via GCash, Maya, or bank transfer. Your money remains locked safely in escrow until our Senior QA Lead audits and verifies your math.",
-    highlight: "100% money-back escrow protection",
+    title: "Sign your agreement",
+    body: "Your agreement lists your scope, your files, the price and the delivery date. Sign it by typing your full name.",
+    tracker: "Agreement",
   },
   {
-    number: "04",
-    badge: "STEP 04",
-    title: "Chat with Your Expert & Download Results",
-    icon: <FileText size={20} weight="fill" className="text-[#FFA040]" />,
-    summary:
-      "Chat directly with your assigned statistician for questions and defense tips. Once Senior QA approves the math, download your defense-ready Chapter 4 Word report with APA 7th tables and full interpretation.",
-    highlight: "Includes 3 days of free warranty revisions",
+    title: "Pay your deposit",
+    body: "Pay by GCash or bank transfer and upload your receipt. DataCheck and Start are paid in full; larger plans pay a deposit first and the rest on delivery.",
+    note: "Your deposit is held until your study passes our quality review.",
+    tracker: "Deposit",
+  },
+  {
+    title: "We analyze your data",
+    body: "Your statistical analyst runs the tests and writes up the results. Chat with them anytime in Messages.",
+    tracker: "Analysis",
+  },
+  {
+    title: "Get your files",
+    body: "Two statistical analysts check your tables, write-up and code before you get them. Download everything from your study's Files tab.",
+    note: "Free changes within your scope for 3 working days after delivery.",
+    tracker: "Files",
   },
 ];
 
 const FAQS = [
   {
-    question: "What files do I need to prepare before submitting a request?",
-    answer:
-      "You only need 2 simple files: (1) Your raw survey responses in Excel (.xlsx or .csv), and (2) Your survey questionnaire or Chapter 1–3 draft so your assigned analyst knows what specific questions and hypotheses need testing.",
+    q: "What do I need to send?",
+    a: "Your research questions, your Chapters 1–3 (PDF or Word) and your data file (Excel, CSV or SPSS). Using Google Sheets? Download it as Excel or CSV first. Your questionnaire is optional but helps.",
   },
   {
-    question: "What if my Excel data is messy, incomplete, or unorganized?",
-    answer:
-      "That is completely fine. Professional data cleaning, outlier screening, reverse-coding, and reliability testing (e.g. Cronbach's alpha) are included in our standard consultation. Upload what you have, and we clean it up.",
+    q: "My data is messy or has missing answers. Is that okay?",
+    a: "Yes. Cleaning your data, checking for problems and reliability tests are included. Send what you have.",
   },
   {
-    question: "How does the safe escrow deposit protect my payment?",
-    answer:
-      "Your initial 50% deposit stays safely locked in the JAXIS Escrow Vault while your statistician works. Funds are never released to the analyst until our Senior QA Lead verifies every calculation and you receive your verified results.",
+    q: "How does paying work?",
+    a: "You pay by GCash or bank transfer after you accept your price and sign your agreement. DataCheck and Start are paid in full. Larger plans pay a deposit first and the rest on delivery. Your deposit is held until your study passes our quality review.",
   },
   {
-    question: "What if my thesis panel or adviser asks for adjustments?",
-    answer:
-      "Every study includes a 3-Day Free Warranty Revision Window. If your thesis panel requests formatting tweaks, additional descriptive sub-groups, or interpretation adjustments within your original scope, we revise them free of charge.",
+    q: "What if my adviser or panel asks for changes?",
+    a: "Changes within your agreed scope are free for 3 working days after delivery. Open your study's Files tab and choose Request Changes.",
   },
   {
-    question: "Can I talk directly with the statistician working on my paper?",
-    answer:
-      "Yes. Every research study includes a private consultation chat desk where you can message your assigned statistician directly for quick questions, methodology explanations, and defense preparation tips.",
+    q: "What if something is wrong with my results?",
+    a: "File a claim within 7 days of delivery from Revisions & help. You get a full refund if we didn't follow the method in your agreement or made a math error you can check. If a Rush, Express or Emergency order is late, we refund the faster delivery fee.",
+  },
+  {
+    q: "Can I talk to the statistical analyst working on my study?",
+    a: "Yes. Once your statistical analyst is assigned, you can chat with them and your reviewer in Messages.",
   },
 ];
 
@@ -117,55 +86,40 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<"steps" | "faqs">("steps");
   const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
+  const needsProfile = !isProfileComplete && Boolean(onSetupProfile);
 
-  const modalFooter = (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
-      {/* Reassurance Badge */}
-      <div className="flex items-center gap-2 text-xs text-white/55 font-sans">
-        <ShieldCheck size={16} weight="fill" className="text-emerald-400 shrink-0" />
-        <span>Protected by JAXIS Escrow & Senior QA Review</span>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+  const footer = (
+    <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+      <Button variant="outline" size="sm" onClick={onClose} className="w-full sm:w-auto">
+        Close
+      </Button>
+      {needsProfile ? (
         <Button
-          variant="secondary"
+          variant="primary"
           size="sm"
-          onClick={onClose}
-          className="w-full sm:w-auto font-sans text-xs px-4 py-2 rounded-[2px] active:scale-[0.97] transition-transform"
+          onClick={() => {
+            onClose();
+            onSetupProfile?.();
+          }}
+          className="w-full gap-1.5 sm:w-auto"
         >
-          Close Guide
+          <GraduationCap size={15} weight="fill" />
+          Add Your School First
         </Button>
-
-        {!isProfileComplete && onSetupProfile ? (
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              onClose();
-              onSetupProfile();
-            }}
-            className="w-full sm:w-auto font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] active:scale-[0.97] transition-transform shadow-sm flex items-center justify-center gap-1.5"
-          >
-            <GraduationCap size={15} weight="fill" />
-            <span>Save School Profile First</span>
-            <ArrowRight size={14} weight="bold" />
-          </Button>
-        ) : onStartRequest ? (
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              onClose();
-              onStartRequest();
-            }}
-            className="w-full sm:w-auto font-sans text-xs font-semibold px-4 py-2 bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] active:scale-[0.97] transition-transform shadow-sm flex items-center justify-center gap-1.5"
-          >
-            <span>Start New Study Request</span>
-            <ArrowRight size={14} weight="bold" />
-          </Button>
-        ) : null}
-      </div>
+      ) : onStartRequest ? (
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => {
+            onClose();
+            onStartRequest();
+          }}
+          className="w-full gap-1.5 sm:w-auto"
+        >
+          Send a Study
+          <ArrowRight size={14} weight="fill" />
+        </Button>
+      ) : null}
     </div>
   );
 
@@ -173,144 +127,94 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={
-        <div className="flex items-center gap-2.5">
-          <span className="w-2 h-2 rounded-full bg-[#CC6600] shrink-0" />
-          <span className="text-base sm:text-lg font-bold text-white font-sans tracking-tight">
-            How JAXIS StatLab Works
-          </span>
-        </div>
-      }
-      description="A quick, simple guide to getting defense-ready statistical analysis for your thesis or research paper."
-      size="xl"
-      footer={modalFooter}
+      title="How it works"
+      description="From sending your study to getting your files."
+      size="lg"
+      footer={footer}
     >
-      <div className="flex flex-col gap-5 font-sans">
-        {/* Navigation Tabs */}
-        <Tabs
-          value={activeTab}
-          onValueChange={(val) => setActiveTab(val as "steps" | "faqs")}
-          className="w-full"
-        >
-          <TabsList className="bg-[#0A0A18] border border-white/10 p-1 rounded-[2px] w-full sm:w-auto">
-            <TabsTrigger value="steps" className="flex items-center gap-2">
-              <ListChecks size={14} weight="fill" />
-              <span>4 Simple Steps</span>
-            </TabsTrigger>
-            <TabsTrigger value="faqs" className="flex items-center gap-2">
-              <Question size={14} weight="fill" />
-              <span>Common Questions</span>
-            </TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "steps" | "faqs")} className="w-full font-sans">
+        <TabsList className="w-full rounded-[2px] border border-white/10 bg-[#050513] p-1 sm:w-auto">
+          <TabsTrigger value="steps">Steps</TabsTrigger>
+          <TabsTrigger value="faqs">Common questions</TabsTrigger>
+        </TabsList>
 
-          {/* ── Tab 1: 4 Simple Steps (Connected Vertical Timeline) ── */}
-          <TabsContent value="steps" className="mt-4 focus-visible:outline-none">
-            {/* 4-Stage Horizontal Pipeline Header */}
-            <div className="hidden sm:grid grid-cols-4 gap-2 mb-5 p-3 rounded-[2px] bg-[#0A0A18]/60 border border-white/[0.08]">
-              {STEPS.map((s, idx) => (
-                <div key={s.number} className="flex items-center gap-2 min-w-0">
-                  <span className="w-5 h-5 rounded-full bg-white/[0.06] border border-white/15 text-[10px] font-mono font-bold text-white/70 flex items-center justify-center shrink-0">
-                    {idx + 1}
-                  </span>
-                  <span className="text-xs font-sans text-white/70 truncate font-medium">
-                    {s.title.split("&")[0]?.trim()}
-                  </span>
-                </div>
-              ))}
-            </div>
+        <TabsContent value="steps" className="mt-5 focus-visible:outline-none">
+          {needsProfile ? (
+            <p className="mb-5 flex gap-2.5 rounded-[2px] border border-[#CC6600]/30 bg-[#CC6600]/[0.06] p-3 text-[13px] leading-relaxed text-white/80">
+              <GraduationCap size={16} weight="fill" className="mt-0.5 shrink-0 text-[#CC6600]" />
+              <span>
+                <span className="font-semibold text-white">Before you start:</span> add your school and program so we
+                format your tables the way your school asks. It takes about 30 seconds.
+              </span>
+            </p>
+          ) : null}
 
-            {/* Connected Vertical Timeline */}
-            <div className="relative pl-6 sm:pl-8 before:absolute before:left-[11px] sm:before:left-[15px] before:top-4 before:bottom-6 before:w-[2px] before:bg-gradient-to-b before:from-[#CC6600]/80 before:via-white/15 before:to-white/5 space-y-4">
-              {STEPS.map((step, idx) => (
-                <div
-                  key={step.number}
-                  className={`relative group animate-card-reveal stagger-${idx + 1}`}
-                >
-                  {/* Timeline Node Marker */}
-                  <div className="absolute -left-[24px] sm:-left-[32px] top-3.5 w-6 h-6 sm:w-7 sm:h-7 rounded-[2px] bg-[#0F0F1D] border border-white/20 group-hover:border-[#CC6600] flex items-center justify-center shadow-md transition-colors z-10">
-                    <span className="font-mono text-[10px] sm:text-[11px] font-bold text-[#FFA040]">
-                      {step.number}
-                    </span>
-                  </div>
-
-                  {/* Step Card */}
-                  <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18]/90 border border-white/10 hover:border-white/20 transition-all flex flex-col sm:flex-row items-start gap-4 shadow-sm">
-                    <div className="w-10 h-10 rounded-[2px] bg-white/[0.04] border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-white/[0.06] transition-colors">
-                      {step.icon}
-                    </div>
-
-                    <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-[10px] font-bold text-[#FFA040] bg-[#CC6600]/15 border border-[#CC6600]/30 px-1.5 py-0.5 rounded-[2px]">
-                          {step.badge}
-                        </span>
-                        <h3 className="text-sm sm:text-base font-bold text-white font-sans tracking-tight">
-                          {step.title}
-                        </h3>
-                      </div>
-
-                      <p className="text-xs sm:text-sm text-white/70 font-sans leading-relaxed">
-                        {step.summary}
-                      </p>
-
-                      <div className="inline-flex items-center gap-1.5 self-start px-2 py-0.5 rounded-[2px] bg-white/[0.03] border border-white/[0.08] text-white/65 text-[11px] font-sans mt-0.5">
-                        <Sparkle size={12} weight="fill" className="text-[#FFA040] shrink-0" />
-                        <span>{step.highlight}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* ── Tab 2: Common Questions (Smooth AnimateHeight Accordion) ── */}
-          <TabsContent value="faqs" className="mt-4 focus-visible:outline-none">
-            <div className="flex flex-col gap-2.5">
-              {FAQS.map((faq, idx) => {
-                const isExpanded = expandedFaq === idx;
-                return (
-                  <div
-                    key={faq.question}
-                    className={`rounded-[2px] border transition-colors shadow-sm overflow-hidden animate-card-reveal stagger-${idx + 1} ${
-                      isExpanded
-                        ? "bg-[#0F0F1D]/90 border-white/20"
-                        : "bg-[#0A0A18]/85 border-white/10 hover:border-white/15"
-                    }`}
+          <ol className="relative">
+            {STEPS.map((s, i) => {
+              const last = i === STEPS.length - 1;
+              return (
+                <li key={s.title} className="relative flex gap-4 pb-6 last:pb-0">
+                  {!last ? <span aria-hidden className="absolute left-[13px] top-8 bottom-1 w-px bg-white/10" /> : null}
+                  <span
+                    aria-hidden
+                    className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-[#0A0A18] font-mono text-xs font-semibold text-white/80"
                   >
-                    <button
-                      type="button"
-                      onClick={() => setExpandedFaq(isExpanded ? null : idx)}
-                      className="w-full p-3.5 sm:p-4 text-left flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors cursor-pointer select-none"
-                    >
-                      <span className="text-xs sm:text-sm font-semibold text-white font-sans leading-snug">
-                        {faq.question}
-                      </span>
-                      <CaretDown
-                        size={16}
-                        weight="bold"
-                        className={cn(
-                          "text-white/40 shrink-0 transition-transform duration-200",
-                          isExpanded && "rotate-180 text-[#FFA040]"
-                        )}
-                      />
-                    </button>
-
-                    <AnimateHeight duration={220}>
-                      {isExpanded && (
-                        <div className="px-3.5 pb-3.5 sm:px-4 sm:pb-4 pt-1 text-xs sm:text-sm text-white/70 font-sans leading-relaxed border-t border-white/[0.06]">
-                          {faq.answer}
-                        </div>
-                      )}
-                    </AnimateHeight>
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 pt-0.5">
+                    <p className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold text-white">{s.title}</span>
+                      {s.tracker ? (
+                        <span
+                          title="The name of this step on your study's tracker"
+                          className="rounded-[2px] border border-white/10 px-1.5 py-px text-[10px] font-medium text-white/45"
+                        >
+                          {s.tracker}
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-white/65">{s.body}</p>
+                    {s.note ? <p className="mt-1.5 text-xs text-white/45">{s.note}</p> : null}
                   </div>
-                );
-              })}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+                </li>
+              );
+            })}
+          </ol>
+
+          <p className="mt-6 border-t border-white/[0.07] pt-4 text-xs leading-relaxed text-white/45">
+            Every study page shows a tracker with these steps (Price, Agreement, Deposit, Analysis, Files), so you
+            always know where your study is.
+          </p>
+        </TabsContent>
+
+        <TabsContent value="faqs" className="mt-5 focus-visible:outline-none">
+          <div className="divide-y divide-white/[0.07] rounded-[2px] border border-white/10">
+            {FAQS.map((f, i) => {
+              const open = expandedFaq === i;
+              return (
+                <div key={f.q}>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedFaq(open ? null : i)}
+                    aria-expanded={open}
+                    className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/[0.02]"
+                  >
+                    <span className="text-sm font-medium text-white">{f.q}</span>
+                    <CaretDown
+                      size={15}
+                      weight="fill"
+                      className={cn("shrink-0 text-white/40 transition-transform duration-200", open && "rotate-180")}
+                    />
+                  </button>
+                  <AnimateHeight duration={200}>
+                    {open ? <p className="px-4 pb-4 text-[13px] leading-relaxed text-white/65">{f.a}</p> : null}
+                  </AnimateHeight>
+                </div>
+              );
+            })}
+          </div>
+        </TabsContent>
+      </Tabs>
     </Modal>
   );
 };
-

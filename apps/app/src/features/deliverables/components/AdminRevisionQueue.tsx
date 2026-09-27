@@ -135,7 +135,7 @@ export function AdminRevisionQueue({ revisions }: AdminRevisionQueueProps) {
           label="INCLUDED REVISIONS"
           value={String(includedCount)}
           unit="ACTIVE"
-          description="Routed to Lead Statisticians"
+          description="Routed to Lead Statistical Analysts"
           variant="sky"
         />
 
@@ -365,7 +365,7 @@ export function AdminRevisionQueue({ revisions }: AdminRevisionQueueProps) {
               <textarea
                 required
                 rows={3}
-                placeholder="Explain the classification decision and give clear instructions to the Lead Statistician or Client..."
+                placeholder="Explain the classification decision and give clear instructions to the Lead Statistical Analyst or Client..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full bg-[#010114] border border-white/10 rounded-[2px] p-3 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 leading-relaxed font-sans"

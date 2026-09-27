@@ -666,10 +666,10 @@ export function ClientProjectDetailClient({
             </div>
             <div className="space-y-0.5">
               <span className="text-xs font-sans text-sky-400 font-semibold uppercase tracking-wider block">
-                Payment Confirmed · Assigning Lead Statistician &amp; QA Lead
+                Payment Confirmed · Assigning Lead Statistical Analyst &amp; QA Lead
               </span>
               <p className="text-xs sm:text-sm text-white/75 font-sans leading-relaxed">
-                Your downpayment has been confirmed. Our team is assigning your Lead Statistician and Senior QA Lead to begin research analysis.
+                Your downpayment has been confirmed. Our team is assigning your Lead Statistical Analyst and Senior QA Lead to begin research analysis.
               </p>
             </div>
           </div>
@@ -786,7 +786,7 @@ export function ClientProjectDetailClient({
               <p className="text-xs text-white/75 font-sans leading-relaxed">
                 {project.masterStatus === "CLIENT_APPROVED"
                   ? "Your quote has been accepted. You will be notified when your formal Statement of Work contract is ready for digital signature."
-                  : "Our team has prepared your customized analytical scope and schedule. Review and accept your quote to assign your dedicated statistician."}
+                  : "Our team has prepared your customized analytical scope and schedule. Review and accept your quote to assign your dedicated statistical analyst."}
               </p>
               <div className="pt-1">
                 <Link href={`/dashboard/client/projects/${project.id}/quote`}>

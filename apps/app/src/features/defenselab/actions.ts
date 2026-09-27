@@ -414,7 +414,7 @@ export async function bookDefenseLabSession(
         success: false,
         error: {
           code: "NO_EXPERT_ASSIGNED",
-          message: "An expert statistician has not yet been assigned to this study. Please contact administration.",
+          message: "A statistical analyst has not yet been assigned to this study. Please contact administration.",
         },
       };
     }
