@@ -4,8 +4,8 @@ import { ClientProfileClient } from "./ClientProfileClient";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Lead Researcher Profile | JAXIS StatLab",
-  description: "Configure your university, academic program, and research contact details.",
+  title: "Your profile | JAXIS StatLab",
+  description: "Your school, contact details and password.",
 };
 
 export default async function ClientProfilePage() {
@@ -17,8 +17,8 @@ export default async function ClientProfilePage() {
       initialProfile={profile}
       sessionUser={{
         id: session?.user?.id || "",
-        fullName: session?.user?.name || "Lead Researcher",
-        email: session?.user?.email || "client@jaxis.dev",
+        fullName: (session?.user as { fullName?: string } | undefined)?.fullName || session?.user?.name || "",
+        email: session?.user?.email || "",
       }}
     />
   );

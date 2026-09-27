@@ -494,7 +494,7 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
 
   /* 1. When printing, completely hide all dashboard background content and UI chrome */
   body:has(.official-payslip-sheet) main:not(:has(.official-payslip-sheet)),
-  body:has([role="dialog"]) main,
+  body:has([role="dialog"]:not(.invisible)) main,
   body:has(.sow-print-container) main:not(:has(.sow-print-container)),
   body:has(.official-payslip-sheet) > div:not(:has(.official-payslip-sheet)):not([role="dialog"]),
   header,
@@ -513,8 +513,13 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
     display: none !important;
   }
 
+  /* Closed drawers stay in the page as hidden dialogs; never let them print or hide the page. */
+  [role="dialog"].invisible {
+    display: none !important;
+  }
+
   /* 2. Modal container transformation for clean document print */
-  [role="dialog"] {
+  [role="dialog"]:not(.invisible) {
     display: block !important;
     position: static !important;
     inset: auto !important;
@@ -564,7 +569,8 @@ input[type="month"]::-webkit-calendar-picker-indicator:hover {
 
   /* Target Official Payslip & SOW Document Containers */
   .official-payslip-sheet,
-  .sow-print-container {
+  .sow-print-container,
+  .print-sheet {
     background: #ffffff !important;
     color: #0D0D1B !important;
     border: none !important;

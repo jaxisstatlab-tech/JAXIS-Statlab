@@ -367,7 +367,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
 
   if (error || !project) {
     return (
-      <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-24 w-full animate-content-fade">
+      <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
         <PageHeader title="Your Price" breadcrumbs={breadcrumbs()} />
         <Panel>
           <PanelBody className="flex flex-col items-center gap-4 py-12 text-center">
@@ -391,7 +391,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
 
   if (!quotation) {
     return (
-      <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-24 w-full animate-content-fade">
+      <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
         <StudySection
           title="Your price"
         />
@@ -430,7 +430,7 @@ export default function ClientQuotationReviewPage({ params }: PageProps) {
   return (
     <div
       data-portal="client"
-      className="flex flex-col gap-6 max-w-6xl mx-auto pb-24 w-full animate-content-fade"
+      className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade"
     >
       <StudySection
           title="Your price"

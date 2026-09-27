@@ -353,7 +353,8 @@ The interface must scale seamlessly across all modern viewports without layout b
 │               │              │ • 4-column balanced KPI row             │
 │               │              │ • Expanded sidebar (260px)              │
 ├───────────────┼──────────────┼─────────────────────────────────────────┤
-│ Widescreen    │ 1280px+      │ • Constrained to `max-w-7xl mx-auto`    │
+│ Widescreen    │ 1280px+      │ • `max-w-7xl mx-auto` (= 1600px in the  │
+│               │              │   dashboard; the shell sets it)         │
 │               │              │ • Consistent grid rhythm (`gap-6` / 24px)│
 └───────────────┴──────────────┴─────────────────────────────────────────┘
 ```

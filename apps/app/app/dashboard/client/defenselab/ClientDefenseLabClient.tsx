@@ -326,7 +326,7 @@ export function ClientDefenseLabClient({
   return (
     <div
       data-portal="client"
-      className="flex flex-col gap-6 max-w-5xl mx-auto pb-24 w-full animate-content-fade font-sans"
+      className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans"
     >
       {toast && (
         <Toast

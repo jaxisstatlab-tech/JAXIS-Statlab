@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useSyncExternalStore } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PageHeader, Button, Toast, LoadingState, CopyButton } from "@repo/ui";
@@ -24,9 +24,9 @@ import { ClientStageTag, ClientStudyStepper } from "@/features/projects/componen
 import {
   clientStagePriority,
   getClientStage,
-  type ClientStage,
   type ClientStageTone,
 } from "@/features/projects/client-stage";
+import { useDueText } from "@/features/projects/due-text";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 import { Meter, Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 
@@ -35,7 +35,6 @@ import { Meter, Panel, PanelBody, PanelHeader } from "@/components/dashboard/Pan
 // The detailed table (search, sort, quick view) lives on the All Studies page.
 
 const STUDY_BASE = "/dashboard/client/projects";
-const DAY = 86_400_000;
 const CARDS_ON_HOME = 4;
 
 // What happens after a study is sent, shown to first-time clients.
@@ -57,32 +56,7 @@ const TABS: Array<{ value: TabValue; label: string }> = [
   { value: "ALL", label: "All" },
 ];
 
-const formatShortDate = (value: Date | string) =>
-  new Date(value).toLocaleDateString("en-PH", { month: "short", day: "numeric" });
 const money = (n: number) => Math.round(n).toLocaleString("en-PH");
-
-// "Now" only exists in the browser: the server renders without it, so hydration always matches.
-let pageLoadedAt = 0;
-const subscribeNever = () => () => {};
-const useClientNow = () =>
-  useSyncExternalStore(
-    subscribeNever,
-    () => (pageLoadedAt ||= Date.now()),
-    () => null
-  );
-
-/** "Due Oct 3 · 6 days left" (or just the date before the page has loaded in the browser). */
-function useDueText(due: string | Date, stage: ClientStage, deliveredAt?: string | Date | null) {
-  const now = useClientNow();
-  if (stage.tone === "done") return deliveredAt ? `Delivered ${formatShortDate(deliveredAt)}` : "Completed";
-  const date = `Due ${formatShortDate(due)}`;
-  if (now === null || stage.tone === "stopped") return date;
-  const days = Math.ceil((new Date(due).getTime() - now) / DAY);
-  if (days > 1) return `${date} · ${days} days left`;
-  if (days === 1) return `${date} · tomorrow`;
-  if (days === 0) return `${date} · today`;
-  return `${date} · ${Math.abs(days)} days past`;
-}
 
 interface ClientDashboardClientProps {
   userName?: string;
@@ -279,7 +253,7 @@ export function ClientDashboardClient({
   );
 
   return (
-    <div data-portal="client" className="flex flex-col gap-6 max-w-5xl mx-auto pb-24 w-full animate-content-fade">
+    <div data-portal="client" className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       <PageHeader
         title={firstName ? `Hi, ${firstName}` : "My Studies"}
         description={

@@ -3,32 +3,13 @@
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  PageHeader,
-  Card,
-  FormInput,
-  Button,
-  FormSelect,
-  Toast,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-  CopyButton,
-} from "@repo/ui";
-import {
-  UserCircle,
-  Key,
-  IdentificationCard,
-  GraduationCap,
-  Phone,
-  CheckCircle,
-  ShieldCheck,
-} from "@phosphor-icons/react";
+import { PageHeader, FormInput, Button, FormSelect, Toast, Tabs, TabsList, TabsTrigger, TabsContent, CopyButton } from "@repo/ui";
+import { GraduationCap, Phone } from "@phosphor-icons/react";
 import { ChangePasswordCard } from "@/features/auth/components/ChangePasswordCard";
 import { upsertClientProfile } from "@/features/client-profile/actions";
 import { ClientProfileFormData } from "@/features/client-profile/schemas";
 import { formatPhilippinePhoneNumber } from "@/lib/formatters";
+import { Panel } from "@/components/dashboard/Panel";
 
 const REGION_OPTIONS = [
   { value: "NCR", label: "National Capital Region (NCR / Metro Manila)" },
@@ -80,315 +61,182 @@ export function ClientProfileClient({ initialProfile, sessionUser }: ClientProfi
     contactNumber: formatPhilippinePhoneNumber(initialProfile?.contactNumber || ""),
     region: initialProfile?.region || "NCR",
   });
+  const isComplete = Boolean(initialProfile?.institutionSchool && initialProfile?.contactNumber);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFieldErrors({});
-
     startTransition(async () => {
       const res = await upsertClientProfile(formData);
       if (!res.success) {
-        const errorText = res.error.message || "Failed to update profile.";
-        if (res.error.fieldErrors) {
-          setFieldErrors(res.error.fieldErrors);
-        }
+        if (res.error.fieldErrors) setFieldErrors(res.error.fieldErrors);
         setToastMessage({
-          message: "Profile Update Failed",
-          description: errorText,
+          message: "Your changes weren't saved",
+          description: res.error.message || "Please check the fields and try again.",
           variant: "danger",
         });
         return;
       }
-
-      setToastMessage({
-        message: "Profile Saved Successfully",
-        description: "Your school and contact details have been updated.",
-        variant: "success",
-      });
-
-      setTimeout(() => {
-        router.push("/dashboard/client");
-      }, 1200);
+      setToastMessage({ message: "Profile saved", description: "Your school and contact details are updated.", variant: "success" });
+      setTimeout(() => router.push("/dashboard/client"), 1200);
     });
   };
 
-  const initials = sessionUser?.fullName
-    ? sessionUser.fullName
-        .split(" ")
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-    : "CL";
+  const name = sessionUser?.fullName || "Your account";
+  const initials =
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase() || "?";
 
   return (
-    <div
-      data-portal="client"
-      className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans"
-    >
-      {toastMessage && (
+    <div data-portal="client" className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-24 font-sans animate-content-fade">
+      {toastMessage ? (
         <Toast
           message={toastMessage.message}
           description={toastMessage.description}
           variant={toastMessage.variant}
           onClose={() => setToastMessage(null)}
         />
-      )}
+      ) : null}
 
       <PageHeader
-        title="Lead Researcher Profile & Academic Details"
-        description="Configure your university affiliation, degree program, and verified research contact details."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Client Portal", href: "/dashboard/client" },
-          { label: "Profile Settings" },
+          { label: "My Studies", href: "/dashboard/client" },
+          { label: "Profile" },
         ]}
-        actions={
-          <Link href="/dashboard/client">
-            <Button variant="outline" size="sm" className="rounded-[2px] font-sans">
-              Back to Portal
-            </Button>
-          </Link>
-        }
+        title="Your profile"
+        description="Your school, how we reach you, and your password."
       />
 
-      <Tabs defaultValue="profile" className="flex flex-col gap-6 w-full">
+      {/* Who's logged in */}
+      <Panel as="div">
+        <div className="flex flex-wrap items-center gap-4 px-5 py-5 sm:px-6">
+          <span
+            aria-hidden
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[2px] bg-white/[0.08] text-base font-semibold text-white/85"
+          >
+            {initials}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-base font-semibold text-white">{name}</p>
+            {sessionUser?.email ? (
+              <p className="mt-0.5 flex items-center gap-1.5 text-sm text-white/55">
+                <span className="truncate">{sessionUser.email}</span>
+                <CopyButton
+                  value={sessionUser.email}
+                  variant="ghost"
+                  className="shrink-0 p-0.5 text-white/40 hover:text-white"
+                  onCopy={() => setToastMessage({ message: "Email copied", description: `${sessionUser.email} is on your clipboard.`, variant: "info" })}
+                />
+              </p>
+            ) : null}
+          </div>
+          {!isComplete ? (
+            <span className="rounded-[2px] border border-[#CC6600]/40 bg-[#CC6600]/10 px-2 py-0.5 text-xs font-medium text-[#F08A2E]">
+              Add your school to send a study
+            </span>
+          ) : null}
+        </div>
+      </Panel>
+
+      <Tabs defaultValue="profile" className="flex w-full flex-col gap-6">
         <TabsList className="self-start">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
-            <UserCircle size={15} weight="fill" />
-            <span>Academic Profile</span>
-          </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Key size={15} weight="fill" />
-            <span>Account Security</span>
-          </TabsTrigger>
+          <TabsTrigger value="profile">School &amp; contact</TabsTrigger>
+          <TabsTrigger value="security">Password</TabsTrigger>
         </TabsList>
 
-        {/* ── TAB 1: ACADEMIC PROFILE ── */}
-        <TabsContent value="profile" className="flex flex-col gap-6 outline-none">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            {/* Researcher Identity Card */}
-            <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-6">
-              {/* Canonical Card Header (Rule 21) */}
-              <div className="border-b border-white/10 pb-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
-                    <IdentificationCard size={18} weight="fill" className="text-[#CC6600]" />
-                    <span>Lead Researcher Identity</span>
-                  </h3>
-                  <p className="text-xs text-white/60 font-sans mt-0.5">
-                    Credentials &amp; portal membership
-                  </p>
-                </div>
-                <span className="text-[10px] font-mono text-emerald-400 uppercase font-semibold px-2 py-0.5 rounded-[2px] bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Verified Client
-                </span>
-              </div>
-
-              {/* Profile Identity Banner Row */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[2px] bg-[#050513] border border-white/10">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-[2px] bg-[#0F0F1D] border border-white/15 flex items-center justify-center font-sans font-bold text-base text-white shadow-inner shrink-0">
-                    {initials}
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-base font-bold text-white font-sans truncate">
-                      {sessionUser?.fullName || "Lead Researcher"}
-                    </span>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] text-[10px] font-mono font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                        CLIENT
+        <TabsContent value="profile" className="outline-none">
+          <form onSubmit={handleSubmit}>
+            <Panel as="div">
+              <div className="flex flex-col gap-8 px-5 py-6 sm:px-6">
+                <div className="grid grid-cols-1 gap-8 2xl:grid-cols-2 2xl:gap-12">
+                  <fieldset className="flex flex-col gap-4">
+                    <legend className="mb-4 flex items-start gap-2.5">
+                      <GraduationCap size={18} weight="fill" className="mt-0.5 shrink-0 text-[#CC6600]" />
+                      <span>
+                        <span className="block text-base font-semibold text-white">Your school</span>
+                        <span className="mt-0.5 block text-[13px] text-white/55">
+                          We format your tables the way your school asks, and it appears on your certificate.
+                        </span>
                       </span>
-                      <span className="text-xs font-mono text-white/40">
-                        Principal Investigator
-                      </span>
+                    </legend>
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                      <FormInput
+                        label="School or university"
+                        required
+                        placeholder="e.g. University of the Philippines Diliman"
+                        value={formData.institutionSchool}
+                        onChange={(e) => setFormData({ ...formData, institutionSchool: e.target.value })}
+                        error={fieldErrors.institutionSchool?.[0]}
+                        disabled={isPending}
+                      />
+                      <FormInput
+                        label="Program"
+                        required
+                        placeholder="e.g. BS Psychology or MA in Education"
+                        value={formData.academicProgram}
+                        onChange={(e) => setFormData({ ...formData, academicProgram: e.target.value })}
+                        error={fieldErrors.academicProgram?.[0]}
+                        disabled={isPending}
+                      />
                     </div>
-                  </div>
-                </div>
-              </div>
+                  </fieldset>
 
-              {/* Key-Value Details Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
-                <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#050513]/50 border border-white/[0.06]">
-                  <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
-                    Email Address
-                  </span>
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-xs font-mono text-white/90 truncate">
-                      {sessionUser?.email || "client@jaxis.dev"}
-                    </span>
-                    <CopyButton
-                      value={sessionUser?.email || "client@jaxis.dev"}
-                      variant="ghost"
-                      className="p-0.5 text-white/40 hover:text-white shrink-0"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#050513]/50 border border-white/[0.06]">
-                  <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
-                    Institution / University
-                  </span>
-                  <span className="text-xs font-sans text-white/90 truncate">
-                    {formData.institutionSchool || "Academic Institution"}
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#050513]/50 border border-white/[0.06]">
-                  <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
-                    Academic Degree
-                  </span>
-                  <span className="text-xs font-sans text-sky-400 font-medium truncate">
-                    {formData.academicProgram || "Empirical Research"}
-                  </span>
+                  <div aria-hidden className="-my-1 border-t border-white/[0.07] 2xl:hidden" />
+                  <fieldset className="flex flex-col gap-4">
+                    <legend className="mb-4 flex items-start gap-2.5">
+                      <Phone size={18} weight="fill" className="mt-0.5 shrink-0 text-[#CC6600]" />
+                      <span>
+                        <span className="block text-base font-semibold text-white">How we reach you</span>
+                        <span className="mt-0.5 block text-[13px] text-white/55">
+                          For updates about your study, like reminders and quick questions from our team.
+                        </span>
+                      </span>
+                    </legend>
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                      <FormInput
+                        label="Mobile number"
+                        type="tel"
+                        required
+                        placeholder="09XX XXX XXXX"
+                        value={formData.contactNumber}
+                        onChange={(e) => setFormData({ ...formData, contactNumber: formatPhilippinePhoneNumber(e.target.value) })}
+                        error={fieldErrors.contactNumber?.[0]}
+                        disabled={isPending}
+                      />
+                      <FormSelect
+                        label="Region"
+                        value={formData.region}
+                        onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                        options={REGION_OPTIONS}
+                        disabled={isPending}
+                      />
+                    </div>
+                  </fieldset>
                 </div>
 
-                <div className="flex flex-col gap-1 p-3 rounded-[2px] bg-[#050513]/50 border border-white/[0.06]">
-                  <span className="text-[11px] font-mono text-white/50 uppercase tracking-wider">
-                    Client ID
-                  </span>
-                  <span className="text-xs font-mono text-white/70">
-                    {sessionUser?.id ? `CLI-${sessionUser.id.slice(-6).toUpperCase()}` : "CLI-001"}
-                  </span>
-                </div>
-              </div>
-            </Card>
-
-            {/* School & University Affiliation Card */}
-            <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-6">
-              {/* Canonical Card Header (Rule 21) */}
-              <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
-                    <GraduationCap size={18} weight="fill" className="text-[#CC6600]" />
-                    <span>Academic &amp; University Affiliation</span>
-                  </h3>
-                  <p className="text-xs text-white/60 font-sans mt-1">
-                    Used for official statistical certificates and research consultation records.
-                  </p>
-                </div>
-                <span className="text-xs font-mono text-white/70 uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-white/[0.06] border border-white/10 flex-shrink-0 self-start sm:self-auto">
-                  Primary Institution
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-                <FormInput
-                  label="School / University"
-                  required
-                  placeholder="e.g. University of the Philippines Diliman"
-                  value={formData.institutionSchool}
-                  onChange={(e) => setFormData({ ...formData, institutionSchool: e.target.value })}
-                  error={fieldErrors.institutionSchool?.[0]}
-                  disabled={isPending}
-                />
-
-                <FormInput
-                  label="Academic Program"
-                  required
-                  placeholder="e.g. MS in Data Science / Ph.D. in Education"
-                  value={formData.academicProgram}
-                  onChange={(e) => setFormData({ ...formData, academicProgram: e.target.value })}
-                  error={fieldErrors.academicProgram?.[0]}
-                  disabled={isPending}
-                />
-              </div>
-            </Card>
-
-            {/* Contact Details & Geographic Region Card */}
-            <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-6">
-              {/* Canonical Card Header (Rule 21) */}
-              <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
-                    <Phone size={18} weight="fill" className="text-[#CC6600]" />
-                    <span>Contact &amp; Regional Verification</span>
-                  </h3>
-                  <p className="text-xs text-white/60 font-sans mt-1">
-                    Used for urgent study milestones, SMS reminders, and coordinator consultations.
-                  </p>
-                </div>
-                <span className="text-xs font-mono text-[#FFA040] uppercase font-semibold px-2.5 py-1 rounded-[2px] bg-[#CC6600]/10 border border-[#CC6600]/30 flex-shrink-0 self-start sm:self-auto">
-                  Philippine Registry
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-                <FormInput
-                  label="Contact Number"
-                  type="tel"
-                  required
-                  placeholder="09XX XXX XXXX"
-                  value={formData.contactNumber}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      contactNumber: formatPhilippinePhoneNumber(e.target.value),
-                    })
-                  }
-                  error={fieldErrors.contactNumber?.[0]}
-                  disabled={isPending}
-                />
-
-                <FormSelect
-                  label="Region (Philippines)"
-                  value={formData.region}
-                  onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                  options={REGION_OPTIONS}
-                  disabled={isPending}
-                />
-              </div>
-            </Card>
-
-            {/* Save Action Bar */}
-            <Card className="p-4 sm:p-5 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-2 text-xs text-white/50 font-sans">
-                <CheckCircle size={15} weight="fill" className="text-emerald-400 shrink-0" />
-                <span>Your academic profile is attached to all study proposals and official certificates.</span>
-              </div>
-              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                <Link href="/dashboard/client">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={isPending}
-                    className="rounded-[2px] active:scale-[0.97] transition-transform font-sans"
-                  >
-                    Cancel
+                <div className="flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-5 sm:flex-row sm:justify-end">
+                  <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+                    <Link href="/dashboard/client">Cancel</Link>
                   </Button>
-                </Link>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="sm"
-                  loading={isPending}
-                  className="rounded-[2px] active:scale-[0.97] transition-transform font-sans font-semibold px-5"
-                >
-                  Save Academic Profile
-                </Button>
+                  <Button type="submit" variant="primary" size="sm" loading={isPending} className="w-full sm:w-auto">
+                    {isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
               </div>
-            </Card>
+            </Panel>
           </form>
         </TabsContent>
 
-        {/* ── TAB 2: ACCOUNT SECURITY ── */}
-        <TabsContent value="security" className="flex flex-col gap-6 outline-none">
-          {/* Security Overview Card */}
-          <Card className="p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col gap-3">
-            <div className="flex items-center gap-2.5">
-              <ShieldCheck size={20} weight="fill" className="text-[#CC6600]" />
-              <h3 className="text-base font-bold text-white font-sans">
-                Account Security &amp; Credentials
-              </h3>
-            </div>
-            <p className="text-xs text-white/60 font-sans leading-relaxed max-w-2xl">
-              Manage your client portal password to ensure security across your confidential research proposals and dataset uploads.
-            </p>
-          </Card>
-
+        <TabsContent value="security" className="flex max-w-3xl flex-col gap-4 outline-none">
+          <p className="text-[13px] leading-relaxed text-white/60">
+            Use a password you don&apos;t use anywhere else. After you change it, you&apos;ll be logged out on your other devices.
+          </p>
           <ChangePasswordCard />
         </TabsContent>
       </Tabs>

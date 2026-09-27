@@ -910,6 +910,10 @@ export async function getPaymentsByProject(
             totalAmount = Number(p.quotation.totalAmount) || totalAmount;
             downpaymentRequired = Number(p.quotation.downpaymentRequired) || downpaymentRequired;
             quotationId = p.quotation.id || null;
+          } else if (p.financialSummary) {
+            // Offline sample studies carry their totals here; use them so Payment matches Overview.
+            totalAmount = Number(p.financialSummary.totalAmount) || totalAmount;
+            downpaymentRequired = Number(p.financialSummary.downpaymentRequired) || downpaymentRequired;
           }
         }
       }

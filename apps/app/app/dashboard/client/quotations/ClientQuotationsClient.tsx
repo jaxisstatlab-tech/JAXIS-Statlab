@@ -142,7 +142,7 @@ export function ClientQuotationsClient({ initialEntries = [] }: ClientQuotations
   }
 
   return (
-    <div data-portal="client" className="flex flex-col gap-6 max-w-5xl mx-auto pb-24 w-full animate-content-fade">
+    <div data-portal="client" className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       <PageHeader
         title="Quotes"
         description={

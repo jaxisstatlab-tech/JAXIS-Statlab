@@ -55,6 +55,21 @@ export function ClientStudyHeader({ initial }: { initial: StudyHeaderData }) {
     };
   }, [pathname, initial.id]);
 
+  // A page on this study just changed its stage (signed, sent files...): refresh the tag and tracker now.
+  useEffect(() => {
+    const onUpdated = () => {
+      getProjectById(initial.id)
+        .then((res) => {
+          if (res.success && res.data) {
+            setStudy((s) => ({ ...s, title: res.data.researchTitle, status: res.data.masterStatus }));
+          }
+        })
+        .catch(() => {});
+    };
+    window.addEventListener("jaxis:study-updated", onUpdated);
+    return () => window.removeEventListener("jaxis:study-updated", onUpdated);
+  }, [initial.id]);
+
   const stage = getClientStage(study.status);
   const base = `/dashboard/client/projects/${study.id}`;
   const current = pathname.startsWith(base) ? pathname.slice(base.length).replace(/\/$/, "") : "";

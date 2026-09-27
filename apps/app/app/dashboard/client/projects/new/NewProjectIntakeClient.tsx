@@ -342,7 +342,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
   if (!isProfileLoaded) {
     return (
-      <div data-portal="client" className="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-24 animate-content-fade">
+      <div data-portal="client" className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-24 animate-content-fade">
         {header}
         <LoadingState variant="card" label="Loading..." />
       </div>
@@ -351,7 +351,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
   if (!isProfileComplete) {
     return (
-      <div data-portal="client" className="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-24 animate-content-fade">
+      <div data-portal="client" className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-24 animate-content-fade">
         {toast ? <Toast variant={toast.variant} message={toast.message} description={toast.description} onClose={() => setToast(null)} /> : null}
         {header}
         <Panel as="div">
@@ -391,7 +391,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
     : "";
 
   return (
-    <div data-portal="client" className="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-24 animate-content-fade">
+    <div data-portal="client" className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-24 animate-content-fade">
       {header}
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">

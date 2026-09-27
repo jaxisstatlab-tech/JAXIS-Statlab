@@ -4,8 +4,8 @@ import { ClientProjectsListClient } from "./ClientProjectsListClient";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "My Research Projects | JAXIS StatLab",
-  description: "Track statistical analysis, review deliverables, and communicate with assigned specialists.",
+  title: "All studies | JAXIS StatLab",
+  description: "Every study you've sent, where it stands, and what to do next.",
 };
 
 export default async function ClientProjectsListPage() {

@@ -1,34 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  ModalFooter,
-  Button,
-  FormInput,
-  FormSelect,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-  FileDropzone,
-} from "@repo/ui";
-import {
-  Receipt,
-  Bank,
-  DeviceMobile,
-  Copy,
-  Check,
-  CircleNotch,
-  WarningCircle,
-  QrCode,
-  Lock,
-} from "@phosphor-icons/react";
+import React, { useEffect, useState } from "react";
+import { Modal, Button, FileDropzone } from "@repo/ui";
+import { Peso } from "@repo/ui/MoneyDisplay";
+import { Bank, Check, Copy, DeviceMobile, WarningCircle } from "@phosphor-icons/react";
 import { uploadFileToR2 } from "@/lib/storage-client";
 import { submitPaymentProof, getPaymentChannels } from "../actions";
 import type { PaymentItem } from "../schemas";
 import { OFFICIAL_PAYMENT_CHANNELS, type PaymentChannelDetails } from "@/lib/payment-rules";
 import type { PaymentMethod, PaymentType } from "@prisma/client";
+
+// "Upload your receipt": 1) what you're paying (only what's actually due), 2) where to send it,
+// 3) the reference number and a screenshot. The amount is fixed to the agreement.
 
 interface PaymentProofUploadModalProps {
   open: boolean;
@@ -39,8 +22,14 @@ interface PaymentProofUploadModalProps {
   totalAmount?: number;
   downpaymentRequired: number;
   remainingBalance: number;
+  /** Once the deposit is confirmed, the only thing left to pay is the rest. */
+  isDownpaymentCleared?: boolean;
   onSuccess: (payment: PaymentItem) => void;
 }
+
+type Option = { type: PaymentType; label: string; hint: string; amount: number };
+
+const money = (n: number) => n.toLocaleString("en-PH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
 export function PaymentProofUploadModal({
   open,
@@ -51,131 +40,99 @@ export function PaymentProofUploadModal({
   totalAmount,
   downpaymentRequired,
   remainingBalance,
+  isDownpaymentCleared = false,
   onSuccess,
 }: PaymentProofUploadModalProps) {
-  const fullAmountValue = totalAmount && totalAmount > 0 ? totalAmount : remainingBalance;
-  const initialType: PaymentType = downpaymentRequired > 0 ? "DOWNPAYMENT" : "FULL";
+  const total = totalAmount && totalAmount > 0 ? totalAmount : remainingBalance;
+  const options: Option[] = isDownpaymentCleared
+    ? [{ type: "BALANCE", label: "The rest", hint: "What's left to pay on your agreement", amount: remainingBalance }]
+    : [
+        ...(downpaymentRequired > 0 && downpaymentRequired < total
+          ? [{ type: "DOWNPAYMENT" as PaymentType, label: "Deposit", hint: "Starts your analysis", amount: downpaymentRequired }]
+          : []),
+        { type: "FULL", label: "Pay in full", hint: "Nothing left to pay later", amount: total },
+      ];
 
   const [channels, setChannels] = useState<PaymentChannelDetails[]>(OFFICIAL_PAYMENT_CHANNELS);
   const [method, setMethod] = useState<PaymentMethod>("GCASH");
-  const [paymentType, setPaymentType] = useState<PaymentType>(initialType);
-  const [amount, setAmount] = useState<string>(
-    initialType === "DOWNPAYMENT" ? String(downpaymentRequired) : String(fullAmountValue)
-  );
+  const [choice, setChoice] = useState<PaymentType>(options[0]!.type);
   const [referenceNumber, setReferenceNumber] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
-  // Synchronize state and load payment channels when modal is opened
+  const selected = options.find((o) => o.type === choice) ?? options[0]!;
+
   useEffect(() => {
-    if (open) {
-      const nextType: PaymentType = downpaymentRequired > 0 ? "DOWNPAYMENT" : "FULL";
-      setPaymentType(nextType);
-      setAmount(nextType === "DOWNPAYMENT" ? String(downpaymentRequired) : String(fullAmountValue));
-      setReferenceNumber("");
-      setSelectedFile(null);
-      setPreviewUrl(null);
-      setErrorMessage(null);
+    if (!open) return;
+    let cancelled = false;
+    getPaymentChannels()
+      .then((res) => {
+        if (!cancelled && res.success && res.data && res.data.length > 0) setChannels(res.data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
-      getPaymentChannels()
-        .then((res) => {
-          if (res.success && res.data && res.data.length > 0) {
-            setChannels(res.data);
-          }
-        })
-        .catch(() => {
-          // fallback
-        });
-    }
-  }, [open, downpaymentRequired, fullAmountValue]);
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
-  const handlePaymentTypeChange = (newType: PaymentType) => {
-    setPaymentType(newType);
-    if (newType === "DOWNPAYMENT") {
-      setAmount(String(downpaymentRequired > 0 ? downpaymentRequired : remainingBalance));
-    } else {
-      setAmount(String(fullAmountValue));
-    }
+  const shown = channels.filter((c) => c.id === method && c.isEnabled !== false);
+
+  const copy = (text: string) => {
+    navigator.clipboard?.writeText(text).catch(() => {});
+    setCopied(text);
+    setTimeout(() => setCopied((c) => (c === text ? null : c)), 2000);
   };
 
-  const handleFileSelect = (file: File) => {
-    setSelectedFile(file);
-    if (file.type.startsWith("image/")) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    } else {
-      setPreviewUrl(null);
-    }
+  const pickFile = (f: File) => {
+    setFile(f);
+    setPreviewUrl(f.type.startsWith("image/") ? URL.createObjectURL(f) : null);
+    setError(null);
   };
 
-  const handleFileRemove = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setSelectedFile(null);
-    setPreviewUrl(null);
-  };
-
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedAccount(text);
-    setTimeout(() => setCopiedAccount(null), 2000);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
-
-    const numericAmount = parseFloat(amount);
-    if (isNaN(numericAmount) || numericAmount <= 0) {
-      setErrorMessage("Please specify a valid deposit amount greater than zero.");
+    setError(null);
+    if (!(selected.amount > 0)) {
+      setError("There's nothing left to pay on this study.");
       return;
     }
-
-    if (!referenceNumber.trim() || referenceNumber.trim().length < 3) {
-      setErrorMessage("Please enter the official transaction reference number from your receipt.");
+    if (referenceNumber.trim().length < 3) {
+      setError("Add the reference number from your GCash or bank confirmation.");
       return;
     }
-
-    if (!selectedFile) {
-      setErrorMessage("Please upload your official receipt screenshot or deposit slip (PDF, PNG, JPG).");
+    if (!file) {
+      setError("Add a screenshot or PDF of your receipt.");
       return;
     }
-
     setIsSubmitting(true);
-
     try {
-      // 1. Upload receipt to Cloudflare R2
-      const uploadRes = await uploadFileToR2(selectedFile, "PAYMENT_PROOF", projectIntakeId);
-      if (!uploadRes.success || !uploadRes.data) {
-        throw new Error(uploadRes.error?.message || "Failed to upload payment receipt to storage.");
-      }
-
-      // 2. Submit payment proof server action
+      const up = await uploadFileToR2(file, "PAYMENT_PROOF", projectIntakeId);
+      if (!up.success || !up.data) throw new Error(up.error?.message || "The upload didn't finish. Please try again.");
       const res = await submitPaymentProof({
         projectId,
         quotationId,
-        paymentType,
+        paymentType: selected.type,
         paymentMethod: method,
-        amountSubmitted: numericAmount,
+        amountSubmitted: selected.amount,
         referenceNumber: referenceNumber.trim(),
-        receiptFilePath: uploadRes.data.publicUrl,
-        receiptFileName: uploadRes.data.fileName,
-        receiptFileSize: uploadRes.data.fileSize,
+        receiptFilePath: up.data.publicUrl,
+        receiptFileName: up.data.fileName,
+        receiptFileSize: up.data.fileSize,
       });
-
-      if (!res.success) {
-        throw new Error(res.error.message || "Failed to register payment proof.");
-      }
-
+      if (!res.success) throw new Error(res.error.message || "We couldn't save your receipt. Please try again.");
       onSuccess(res.data);
       onClose();
     } catch (err) {
-      setErrorMessage((err as Error).message || "An unexpected error occurred during submission.");
+      setError((err as Error).message || "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -184,319 +141,169 @@ export function PaymentProofUploadModal({
   return (
     <Modal
       open={open}
-      onClose={onClose}
-      title="Submit Milestone Payment Deposit"
-      description={`Submit your verified payment proof for study ${projectIntakeId}. Once verified by our finance desk, your research assignment activates.`}
+      onClose={() => {
+        if (!isSubmitting) onClose();
+      }}
+      title="Upload your receipt"
+      description={`Send the payment, then upload the receipt here. We'll confirm it within one working day.`}
       size="xl"
-    >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full font-sans">
-        {/* ── Official Payment Channels (Tabs) ── */}
-        <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs text-white/60 uppercase tracking-wider font-semibold">
-            1. Select Payment Method
-          </label>
-
-          <Tabs
-            defaultValue="GCASH"
-            onValueChange={(val) => setMethod(val as PaymentMethod)}
-            className="w-full"
-          >
-            <TabsList className="w-full grid grid-cols-2">
-              <TabsTrigger value="GCASH" className="gap-2">
-                <DeviceMobile size={16} weight="fill" />
-                <span>GCash (QR Ph)</span>
-              </TabsTrigger>
-              <TabsTrigger value="BANK_TRANSFER" className="gap-2">
-                <Bank size={16} weight="fill" />
-                <span>Bank Deposit</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="GCASH" className="mt-3">
-              {channels.filter((c) => c.id === "GCASH").map((channel, i) => (
-                <div
-                  key={i}
-                  className="p-4 rounded-[2px] border border-white/10 bg-[#0A0A18] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                >
-                  <div className="flex flex-col flex-1">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="font-sans text-xs font-semibold text-white">
-                        {channel.accountName}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-[2px] bg-sky-500/10 border border-sky-500/30 text-sky-400 font-sans text-[0.688rem] font-semibold whitespace-nowrap">
-                        {channel.badge}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="font-mono text-sm sm:text-base font-bold text-[#FFA040]">
-                        {channel.accountNumber}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(channel.accountNumber)}
-                        className="text-white/40 hover:text-white transition-colors cursor-pointer p-1"
-                        title="Copy Account Number"
-                      >
-                        {copiedAccount === channel.accountNumber ? (
-                          <Check size={14} weight="bold" className="text-emerald-400" />
-                        ) : (
-                          <Copy size={14} weight="bold" />
-                        )}
-                      </button>
-                    </div>
-
-                    <p className="font-sans text-[0.688rem] text-white/50 mt-1 max-w-sm">
-                      {channel.notes}
-                    </p>
-
-                    <div className="flex items-center gap-1.5 mt-2.5 text-[0.688rem] text-white/40 font-mono">
-                      <QrCode size={14} weight="fill" className="text-[#CC6600]" />
-                      <span>Scan with GCash or any QR Ph app</span>
-                    </div>
-                  </div>
-
-                  {/* QR Code Placeholder / Custom Uploaded QR */}
-                  <div className="flex flex-col items-center justify-center p-2.5 bg-white rounded-[2px] shadow-sm border border-white/20 shrink-0 self-center sm:self-auto">
-                    {channel.qrImageUrl ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={channel.qrImageUrl}
-                        alt="GCash QR Code"
-                        className="w-20 h-20 sm:w-24 sm:h-24 object-contain rounded-[2px]"
-                      />
-                    ) : (
-                      <svg
-                        viewBox="0 0 100 100"
-                        className="w-20 h-20 sm:w-24 sm:h-24 text-slate-900"
-                        fill="currentColor"
-                        aria-label="GCash QR Code"
-                      >
-                        {/* Top-left position pattern */}
-                        <rect x="8" y="8" width="28" height="28" rx="2" fill="#0D0D1B" />
-                        <rect x="14" y="14" width="16" height="16" fill="#ffffff" />
-                        <rect x="18" y="18" width="8" height="8" rx="1" fill="#0D0D1B" />
-
-                        {/* Top-right position pattern */}
-                        <rect x="64" y="8" width="28" height="28" rx="2" fill="#0D0D1B" />
-                        <rect x="70" y="14" width="16" height="16" fill="#ffffff" />
-                        <rect x="74" y="18" width="8" height="8" rx="1" fill="#0D0D1B" />
-
-                        {/* Bottom-left position pattern */}
-                        <rect x="8" y="64" width="28" height="28" rx="2" fill="#0D0D1B" />
-                        <rect x="14" y="70" width="16" height="16" fill="#ffffff" />
-                        <rect x="18" y="74" width="8" height="8" rx="1" fill="#0D0D1B" />
-
-                        {/* Alignment block */}
-                        <rect x="70" y="70" width="16" height="16" rx="2" fill="#0D0D1B" />
-                        <rect x="74" y="74" width="8" height="8" fill="#ffffff" />
-                        <rect x="76" y="76" width="4" height="4" fill="#0D0D1B" />
-
-                        {/* Timing Patterns */}
-                        <rect x="40" y="12" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="48" y="12" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="56" y="12" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="12" y="40" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="12" y="48" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="12" y="56" width="4" height="4" fill="#0D0D1B" />
-
-                        {/* Matrix data cells */}
-                        <rect x="40" y="20" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="48" y="24" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="56" y="20" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="44" y="28" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="52" y="32" width="4" height="4" fill="#0D0D1B" />
-
-                        <rect x="20" y="40" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="28" y="44" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="24" y="52" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="32" y="56" width="4" height="4" fill="#0D0D1B" />
-
-                        {/* Center branded badge node */}
-                        <rect x="40" y="40" width="20" height="20" rx="3" fill="#005CEE" />
-                        <text
-                          x="50"
-                          y="54"
-                          textAnchor="middle"
-                          fill="#ffffff"
-                          fontSize="11"
-                          fontWeight="bold"
-                          fontFamily="sans-serif"
-                        >
-                          G
-                        </text>
-
-                        {/* Lower matrix data cells */}
-                        <rect x="64" y="40" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="72" y="44" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="80" y="40" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="88" y="44" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="68" y="52" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="76" y="56" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="84" y="52" width="4" height="4" fill="#0D0D1B" />
-
-                        <rect x="40" y="64" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="48" y="68" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="56" y="64" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="44" y="76" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="52" y="80" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="40" y="84" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="48" y="88" width="4" height="4" fill="#0D0D1B" />
-                        <rect x="56" y="84" width="4" height="4" fill="#0D0D1B" />
-                      </svg>
-                    )}
-
-                    <span className="font-mono text-[9px] font-bold text-slate-800 tracking-wider uppercase mt-1">
-                      SCAN WITH GCASH
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </TabsContent>
-
-            <TabsContent value="BANK_TRANSFER" className="mt-3 flex flex-col gap-2.5">
-              {channels.filter((c) => c.id === "BANK_TRANSFER").map((channel, i) => (
-                <div
-                  key={i}
-                  className="p-4 rounded-[2px] border border-white/10 bg-[#0A0A18] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-sans text-xs font-semibold text-white">
-                      {channel.name} — {channel.branchOrProvider}
-                    </span>
-                    <span className="font-sans text-xs text-white/60 mt-0.5">
-                      Account: {channel.accountName}
-                    </span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="font-mono text-sm font-bold text-[#FFA040]">
-                        {channel.accountNumber}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(channel.accountNumber)}
-                        className="text-white/40 hover:text-white transition-colors cursor-pointer p-1"
-                        title="Copy Account Number"
-                      >
-                        {copiedAccount === channel.accountNumber ? (
-                          <Check size={14} weight="bold" className="text-emerald-400" />
-                        ) : (
-                          <Copy size={14} weight="bold" />
-                        )}
-                      </button>
-                    </div>
-                    <p className="font-sans text-[0.688rem] text-white/50 mt-1">
-                      {channel.notes}
-                    </p>
-                  </div>
-
-                  <span className="self-start sm:self-auto px-2 py-0.5 rounded-[2px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-sans text-[0.688rem] font-semibold whitespace-nowrap">
-                    {channel.badge}
-                  </span>
-                </div>
-              ))}
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* ── Transaction Details ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormSelect
-            label="Payment Milestone Type"
-            value={paymentType}
-            onChange={(e) => handlePaymentTypeChange(e.target.value as PaymentType)}
-            options={[
-              { value: "DOWNPAYMENT", label: "Required Downpayment" },
-              { value: "FULL", label: "Full 100% Payment" },
-            ]}
-            helper="Choose whether to remit downpayment or full payment."
-          />
-
-          <FormInput
-            label="Amount Transferred (PHP)"
-            type="number"
-            step="0.01"
-            min="1"
-            required
-            readOnly
-            value={amount}
-            rightIcon={<Lock size={15} weight="fill" className="text-white/40" />}
-            className="bg-white/[0.04] text-white/70 border-white/10 cursor-not-allowed font-mono font-bold select-none focus:border-white/10 focus:ring-0"
-            helper="Locked to the exact milestone amount required by your contract."
-          />
-        </div>
-
-        <FormInput
-          label="Transaction / Reference Number"
-          placeholder="e.g. 1002 9841 8291 or BDO-TXN-20260811"
-          required
-          value={referenceNumber}
-          onChange={(e) => setReferenceNumber(e.target.value)}
-          helper="Unique reference code from your bank or GCash SMS/email confirmation."
-        />
-
-        {/* ── File Upload Dropzone ── */}
-        <div className="flex flex-col gap-2">
-          <label className="font-mono text-xs text-white/60 uppercase tracking-wider flex items-center justify-between">
-            <span>2. Upload Official Transaction Receipt</span>
-            <span className="text-white/40 text-[0.688rem]">PDF, PNG, JPG up to 10MB</span>
-          </label>
-
-          <FileDropzone
-            onFileSelect={handleFileSelect}
-            onRemove={handleFileRemove}
-            maxSizeMB={10}
-            accept=".pdf,.png,.jpg,.jpeg"
-            title="Drop payment receipt image or PDF here, or browse files"
-            uploadedFile={
-              selectedFile
-                ? {
-                    name: selectedFile.name,
-                    size: selectedFile.size,
-                    previewUrl: previewUrl,
-                  }
-                : null
-            }
-          />
-        </div>
-
-        {errorMessage && (
-          <div className="p-3.5 rounded-[2px] bg-red-500/10 border border-red-500/30 flex items-center gap-2.5 text-red-400 font-sans text-xs">
-            <WarningCircle size={16} weight="fill" className="flex-shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        <ModalFooter>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="rounded-[2px] active:scale-[0.97] transition-transform text-xs font-sans"
-          >
+      footer={
+        <div className="flex w-full items-center justify-end gap-3">
+          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            size="sm"
-            disabled={isSubmitting}
-            className="gap-2 rounded-[2px] active:scale-[0.97] transition-transform text-xs font-semibold bg-[#CC6600] hover:bg-[#E67300] text-white shadow-md"
-          >
-            {isSubmitting ? (
-              <>
-                <CircleNotch size={16} className="animate-spin text-white/90" />
-                <span>Uploading & Submitting...</span>
-              </>
-            ) : (
-              <>
-                <Receipt size={16} weight="fill" />
-                <span>Submit Deposit Proof →</span>
-              </>
-            )}
+          <Button type="submit" form="payment-proof-form" variant="primary" size="sm" loading={isSubmitting} disabled={isSubmitting}>
+            {isSubmitting ? "Sending..." : "Send Receipt"}
           </Button>
-        </ModalFooter>
+        </div>
+      }
+    >
+      <form id="payment-proof-form" onSubmit={submit} className="flex flex-col gap-6 font-sans">
+        {/* 1. What you're paying */}
+        <fieldset>
+          <legend className="text-xs font-medium text-white/55">1. What are you paying?</legend>
+          <div className={`mt-2 grid grid-cols-1 gap-2 ${options.length > 1 ? "sm:grid-cols-2" : ""}`}>
+            {options.map((o) => {
+              const on = o.type === selected.type;
+              return (
+                <label
+                  key={o.type}
+                  className={`flex cursor-pointer items-start justify-between gap-3 rounded-[2px] border px-3.5 py-3 transition-colors ${
+                    on ? "border-[#CC6600]/70 bg-[#CC6600]/[0.06]" : "border-white/[0.08] hover:border-white/20"
+                  }`}
+                >
+                  <span className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="pay-what"
+                      value={o.type}
+                      checked={on}
+                      onChange={() => setChoice(o.type)}
+                      className="mt-0.5 accent-[#CC6600]"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium text-white">{o.label}</span>
+                      <span className="block text-xs text-white/50">{o.hint}</span>
+                    </span>
+                  </span>
+                  <span className="font-mono text-sm font-semibold text-white">
+                    <Peso />
+                    {money(o.amount)}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        {/* 2. Where to send it */}
+        <div>
+          <p className="text-xs font-medium text-white/55">
+            2. Send{" "}
+            <span className="font-mono text-white">
+              <Peso />
+              {money(selected.amount)}
+            </span>{" "}
+            to one of these
+          </p>
+          <div role="tablist" aria-label="Payment method" className="mt-2 inline-flex rounded-[2px] border border-white/10 p-0.5">
+            {(
+              [
+                { id: "GCASH", label: "GCash", icon: <DeviceMobile size={14} weight="fill" /> },
+                { id: "BANK_TRANSFER", label: "Bank transfer", icon: <Bank size={14} weight="fill" /> },
+              ] as const
+            ).map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                role="tab"
+                aria-selected={method === m.id}
+                onClick={() => setMethod(m.id)}
+                className={`inline-flex items-center gap-1.5 rounded-[2px] px-3 py-1.5 text-[13px] transition-colors ${
+                  method === m.id ? "bg-white/[0.1] font-medium text-white" : "text-white/55 hover:text-white"
+                }`}
+              >
+                {m.icon}
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          <ul className="mt-3 flex flex-col gap-2">
+            {shown.length === 0 ? (
+              <li className="rounded-[2px] border border-white/[0.08] px-4 py-3 text-[13px] text-white/55">
+                This option isn&apos;t available right now. Please use the other one.
+              </li>
+            ) : (
+              shown.map((c) => (
+                <li key={`${c.id}-${c.accountNumber}`} className="flex flex-col gap-3 rounded-[2px] border border-white/[0.08] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-xs text-white/50">{method === "GCASH" ? "GCash" : c.institution || c.name}</p>
+                    <p className="mt-0.5 text-[13px] font-medium text-white">{c.accountName}</p>
+                    <p className="mt-1 flex items-center gap-2">
+                      <span className="font-mono text-base font-semibold text-white">{c.accountNumber}</span>
+                      <button
+                        type="button"
+                        onClick={() => copy(c.accountNumber)}
+                        className="inline-flex items-center gap-1 rounded-[2px] px-1.5 py-0.5 text-xs text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white"
+                        aria-label={`Copy account number ${c.accountNumber}`}
+                      >
+                        {copied === c.accountNumber ? <Check size={13} weight="bold" /> : <Copy size={13} weight="bold" />}
+                        {copied === c.accountNumber ? "Copied" : "Copy"}
+                      </button>
+                    </p>
+                    <p className="mt-1 text-xs text-white/45">Put your study ID ({projectIntakeId}) in the message so we can match it.</p>
+                  </div>
+                  {c.qrImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.qrImageUrl} alt={`QR code for ${c.accountName}`} className="h-24 w-24 shrink-0 rounded-[2px] bg-white object-contain p-1.5" />
+                  ) : null}
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+
+        {/* 3. Proof */}
+        <div className="flex flex-col gap-4">
+          <p className="text-xs font-medium text-white/55">3. Tell us about the payment</p>
+          <div>
+            <label htmlFor="pay-ref" className="text-[13px] text-white/75">
+              Reference number
+            </label>
+            <input
+              id="pay-ref"
+              value={referenceNumber}
+              onChange={(e) => setReferenceNumber(e.target.value)}
+              placeholder="e.g. 1002 984 182 91"
+              className="mt-1.5 h-10 w-full rounded-[2px] border border-white/15 bg-white/[0.03] px-3 font-mono text-base text-white placeholder:text-white/25 focus:border-white/35 focus:outline-none sm:text-sm"
+            />
+            <p className="mt-1 text-xs text-white/45">It&apos;s in your GCash or bank confirmation (text, email or the app).</p>
+          </div>
+          <div>
+            <p className="text-[13px] text-white/75">Receipt screenshot or PDF</p>
+            <FileDropzone
+              className="mt-1.5"
+              onFileSelect={pickFile}
+              onRemove={() => {
+                setFile(null);
+                setPreviewUrl(null);
+              }}
+              maxSizeMB={10}
+              accept=".pdf,.png,.jpg,.jpeg"
+              title="Choose a file or drop it here"
+              hint="PDF, PNG or JPG, up to 10 MB"
+              uploadedFile={file ? { name: file.name, size: file.size, previewUrl } : null}
+            />
+          </div>
+        </div>
+
+        {error ? (
+          <p role="alert" className="flex items-start gap-1.5 text-[13px] text-[#FFA040]">
+            <WarningCircle size={15} weight="fill" className="mt-0.5 shrink-0" />
+            {error}
+          </p>
+        ) : null}
       </form>
     </Modal>
   );

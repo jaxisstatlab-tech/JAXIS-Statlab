@@ -1390,7 +1390,9 @@ export async function deleteProjectFile(
 
     if (pIndex !== -1) {
       const devProj = devProjects[pIndex]!;
-      const isOwner = devProj.clientId === session.user.id;
+      // Offline session ids can differ from the sample account ids, so match those too.
+      const devId = session.user.email ? getDevUserByEmail(session.user.email)?.id : undefined;
+      const isOwner = devProj.clientId === session.user.id || (!!devId && devProj.clientId === devId);
       const isManager = session.user.role === "ADMIN" || session.user.role === "CEO";
       if (!isOwner && !isManager) {
         return {

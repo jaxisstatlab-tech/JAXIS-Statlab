@@ -1,35 +1,37 @@
 "use client";
 
-import React, { useState, useTransition, useEffect } from "react";
+import React, { useEffect, useState, useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  PageHeader,
-  Button,
-  Card,
-  Alert,
-  Toast,
-  LoadingState,
-  EmptyState,
-  FormInput,
-  FormCheckbox,
-  ConfirmDialog,
-} from "@repo/ui";
-import {
-  FileText,
-  ShieldCheck,
-  Lock,
-  Check,
-  Warning,
-  CreditCard,
-  ChatCircleDots,
-} from "@phosphor-icons/react";
+import { Button, Toast, LoadingState, ConfirmDialog } from "@repo/ui";
+import { Peso } from "@repo/ui/MoneyDisplay";
+import { ArrowRight, ChatCenteredText, Check, CheckCircle, FileText, WarningCircle } from "@phosphor-icons/react";
 import { getSOWByProject, signSOW } from "@/features/sow/actions";
 import { getProjectById } from "@/features/projects/actions";
 import { SowDocument } from "@/features/sow/components/SowDocument";
+import { StudySection } from "@/features/projects/components/StudySection";
+import { getClientStage } from "@/features/projects/client-stage";
+import { Panel, PanelHeader } from "@/components/dashboard/Panel";
+import { SITE_TERMS_URL } from "@/lib/site";
 import type { SOWDetailItem } from "@/features/sow/schemas";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
-import { StudySection } from "@/features/projects/components/StudySection";
+
+// The Agreement tab: the agreement as a printable sheet, with a signing panel beside it
+// (like a checkout). Signing = typing the account name exactly + ticking the box.
+
+const money = (n: number) => Math.round(n).toLocaleString("en-PH");
+
+function dateTime(value?: string | null) {
+  if (!value) return "";
+  return new Date(value).toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 export default function ClientSowPage() {
   const params = useParams();
@@ -38,340 +40,318 @@ export default function ClientSowPage() {
 
   const [project, setProject] = useState<ProjectDetailItem | null>(null);
   const [sow, setSow] = useState<SOWDetailItem | null>(null);
-  const [registeredName, setRegisteredName] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Digital Signature Form State
   const [typedName, setTypedName] = useState("");
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-
-  const [toastMessage, setToastMessage] = useState<{
-    message: string;
-    description?: string;
-    variant: "info" | "success" | "warning" | "danger";
-  } | null>(null);
+  const [toast, setToast] = useState<{ message: string; description?: string; variant: "success" | "danger" } | null>(null);
 
   useEffect(() => {
-    async function loadData() {
+    if (!projectId) return;
+    let cancelled = false;
+    (async () => {
       setIsLoading(true);
       setError(null);
-
       try {
-        const [projRes, sowRes] = await Promise.all([
-          getProjectById(projectId),
-          getSOWByProject(projectId),
-        ]);
-
+        const [projRes, sowRes] = await Promise.all([getProjectById(projectId), getSOWByProject(projectId)]);
+        if (cancelled) return;
         if (!projRes.success) {
           setError(projRes.error.message);
-          setIsLoading(false);
           return;
         }
-
         setProject(projRes.data);
-
-        if (sowRes.success && sowRes.data) {
-          setSow(sowRes.data);
-        }
-
-        // signSOW checks the typed name against the account name on the study, so match that here.
-        setRegisteredName(projRes.data.client?.fullName || "");
+        if (sowRes.success && sowRes.data) setSow(sowRes.data);
       } catch (err) {
-        setError((err as Error).message || "An unexpected error occurred.");
+        if (!cancelled) setError((err as Error).message || "Something went wrong.");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
-    }
-
-    if (projectId) {
-      loadData();
-    }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [projectId]);
 
-  const isNameMatch =
-    typedName.trim().length > 0 &&
-    registeredName.trim().length > 0 &&
-    typedName.trim().toLowerCase() === registeredName.trim().toLowerCase();
-
-  const canSign = isNameMatch && agreedToTerms && sow && !sow.isLocked;
+  // signSOW checks the typed name against the account name on the study, so match that here.
+  const registeredName = project?.client?.fullName?.trim() ?? "";
+  const typed = typedName.trim();
+  const nameMatches = typed.length > 0 && registeredName.length > 0 && typed.toLowerCase() === registeredName.toLowerCase();
+  const canSign = Boolean(sow && !sow.isLocked && nameMatches && agreed);
 
   const handleConfirmSign = () => {
     if (!canSign || !sow) return;
-
     setSignError(null);
     startTransition(async () => {
-      const res = await signSOW({
-        sowId: sow.id,
-        typedFullName: typedName.trim(),
-        agreedToTerms: true,
-      });
-
+      const res = await signSOW({ sowId: sow.id, typedFullName: typed, agreedToTerms: true });
+      setIsConfirmOpen(false);
       if (res.success && res.data) {
         setSow(res.data);
-        setIsConfirmModalOpen(false);
-        setToastMessage({
-          message: "Statement of Work Signed",
-          description: "Your scope is officially locked. You may now proceed to initial installment payment.",
-          variant: "success",
-        });
+        const fresh = await getProjectById(projectId);
+        if (fresh.success) setProject(fresh.data);
+        window.dispatchEvent(new Event("jaxis:study-updated"));
+        setToast({ message: "Agreement signed", description: "Next, pay your deposit so we can assign your statistical analyst.", variant: "success" });
         router.refresh();
       } else {
-        setSignError(!res.success ? res.error.message : "Failed to execute digital signature.");
-        setIsConfirmModalOpen(false);
+        setSignError(!res.success ? res.error.message : "The signature didn't go through. Please try again.");
       }
     });
   };
 
   if (isLoading) {
     return (
-      <div className="flex-1 w-full min-h-full flex items-center justify-center animate-content-fade my-auto">
-        <LoadingState
-          variant="page"
-          label="Retrieving Statement of Work contract..."
-          description="Please wait a moment while we load your agreement"
-        />
+      <div className="flex flex-1 items-center justify-center py-24">
+        <LoadingState variant="page" label="Loading your agreement..." />
       </div>
     );
   }
 
   if (error || !project) {
     return (
-      <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
-        <PageHeader
-          title="Contract Execution Error"
-          breadcrumbs={[
-            { label: "WORKSPACE", href: "/dashboard" },
-            { label: "Projects", href: "/dashboard/client/projects" },
-            { label: "SOW Agreement" },
-          ]}
-        />
-        <Alert variant="danger">
-          {error || "The requested contract or research study could not be loaded."}
-        </Alert>
-        <Link href="/dashboard/client/projects">
-          <Button variant="secondary" size="md">
-            ← Return to Studies Desk
+      <Panel as="div">
+        <div className="flex flex-col items-center px-6 py-14 text-center">
+          <WarningCircle size={28} weight="fill" className="text-white/30" />
+          <p className="mt-4 text-sm font-medium text-white">We couldn&apos;t open your agreement</p>
+          <p className="mt-1 max-w-md text-[13px] text-white/55">{error || "Please try again in a moment."}</p>
+          <Button asChild variant="outline" size="sm" className="mt-5">
+            <Link href={`/dashboard/client/projects/${projectId}`}>Back to Overview</Link>
           </Button>
-        </Link>
-      </div>
+        </div>
+      </Panel>
     );
   }
 
+  const base = `/dashboard/client/projects/${project.id}`;
+
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade print:p-0 print:m-0 print:max-w-none print:pb-0 print:animate-none">
-      {/* ── Page Header (hidden in print) ── */}
+    <div className="flex flex-col gap-6 pb-24 print:gap-0 print:pb-0">
+      {toast ? (
+        <Toast message={toast.message} description={toast.description} variant={toast.variant} onClose={() => setToast(null)} />
+      ) : null}
+
       <div className="print:hidden">
         <StudySection
           title="Your agreement"
-          description="Your scope, files, price and delivery date. Sign by typing your full name."
+          description={
+            sow?.isLocked
+              ? "Your signed agreement. You can print it or save it as a PDF anytime."
+              : "Your scope, price and delivery date. Read it, then sign by typing your full name."
+          }
         />
       </div>
 
-      {toastMessage && (
-        <div className="print:hidden">
-          <Toast
-            message={toastMessage.message}
-            description={toastMessage.description}
-            variant={toastMessage.variant}
-            onClose={() => setToastMessage(null)}
-          />
-        </div>
-      )}
-
-      {/* ── Case 1: SOW Not Yet Generated by Admin ── */}
       {!sow ? (
-        <Card className="p-10 sm:p-14 text-center flex flex-col items-center gap-6 bg-[#0A0A18]/90 border border-white/10 rounded-[2px] shadow-2xl">
-          <EmptyState
-            icon={FileText}
-            title="Statement of Work In Preparation"
-            description="Our administrative officers are drafting your official Statement of Work contract based on your accepted quotation. You will be notified as soon as it is ready for your signature."
-          />
-          <div className="flex items-center gap-4 mt-2">
-            <Link href={`/dashboard/client/projects/${project.id}`}>
-              <Button variant="secondary" size="md">
-                ← Back to Study Details
-              </Button>
-            </Link>
-            <Link href={`/dashboard/client/projects/${project.id}/quote`}>
-              <Button variant="outline" size="md">
-                View Accepted Quote
-              </Button>
-            </Link>
+        <Panel as="div" className="print:hidden">
+          <div className="flex flex-col items-center px-6 py-14 text-center">
+            <FileText size={28} weight="fill" className="text-white/30" />
+            <p className="mt-4 text-sm font-medium text-white">We&apos;re preparing your agreement</p>
+            <p className="mt-1 max-w-md text-[13px] leading-relaxed text-white/55">
+              We&apos;re writing it from the price you accepted: the exact scope, files, price and delivery date. We&apos;ll
+              let you know as soon as it&apos;s ready to sign.
+            </p>
+            <Button asChild variant="outline" size="sm" className="mt-5">
+              <Link href={`${base}/quote`}>View Your Price</Link>
+            </Button>
           </div>
-        </Card>
+        </Panel>
       ) : (
-        <>
-          {/* ── Case 2: SOW Exists — Render Document ── */}
-          <SowDocument sow={sow} />
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12 print:block">
+          <div className="min-w-0 lg:col-span-8">
+            <SowDocument sow={sow} />
+          </div>
 
-          {/* ── Post-Sign Status Banner (if signed) ── */}
-          {sow.isLocked ? (
-            <Card className="p-8 bg-emerald-950/20 border border-emerald-500/30 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-6 print:hidden shadow-xl">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-[2px] bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
-                  <ShieldCheck size={26} weight="fill" className="text-emerald-400" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-base text-white font-sans">
-                    Contract Executed & Scope Locked
-                  </h3>
-                  <p className="text-sm font-sans text-emerald-300/80 mt-1">
-                    Digitally signed by <strong className="text-white">{sow.signedByName}</strong> on {new Date(sow.signedAt || "").toLocaleString("en-US", { month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}.
-                  </p>
-                </div>
-              </div>
+          <div className="flex flex-col gap-6 lg:sticky lg:top-0 lg:col-span-4 print:hidden">
+            {sow.isLocked ? (
+              <SignedPanel sow={sow} project={project} />
+            ) : (
+              <Panel aria-label="Sign your agreement" className="border-[#CC6600]/35">
+                <PanelHeader title="Sign your agreement" subtitle="Signing locks your scope, price and delivery date." />
+                <div className="flex flex-col gap-5 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
+                  <Summary sow={sow} />
 
-              <Link href={`/dashboard/client/projects/${project.id}`}>
-                <Button variant="primary" size="md" className="font-sans font-bold text-xs tracking-wider bg-[#CC6600] hover:bg-[#FFA040] text-white whitespace-nowrap px-6 py-3 rounded-[2px]">
-                  <CreditCard size={18} weight="fill" className="mr-2" />
-                  <span>PROCEED TO PAYMENT STAGE →</span>
-                </Button>
-              </Link>
-            </Card>
-          ) : (
-            /* ── Digital Signature Execution Form (if awaiting signature) ── */
-            <Card className="p-8 sm:p-10 bg-[#0A0A18]/95 border border-amber-500/40 rounded-[2px] flex flex-col gap-6 print:hidden shadow-2xl">
-              <div className="flex items-start gap-4 border-b border-white/10 pb-6">
-                <div className="h-12 w-12 rounded-[2px] bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
-                  <Lock size={24} weight="fill" className="text-amber-400" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-white font-sans">
-                    Execute Contract & Lock Scope
-                  </h3>
-                  <p className="text-sm text-white/70 font-sans leading-relaxed">
-                    To execute this legally-binding agreement, type your full legal name exactly as registered in your account profile. Once executed, the scope, timeline, and pricing are permanently locked.
-                  </p>
-                </div>
-              </div>
-
-              {signError && <Alert variant="danger">{signError}</Alert>}
-
-              <div className="flex flex-col gap-6">
-                {/* Typed Full Name Input */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between text-xs font-sans">
-                    <span className="text-white/90 uppercase font-bold tracking-wider">
-                      Full Legal Name Signature
-                    </span>
-                    <span className="text-white/50">
-                      Must match: <strong className="text-amber-400 font-mono text-xs">{registeredName}</strong>
-                    </span>
-                  </div>
-
-                  <FormInput
-                    placeholder={`Type "${registeredName}" to sign`}
-                    value={typedName}
-                    onChange={(e) => setTypedName(e.target.value)}
-                    className="font-sans text-sm h-12"
-                  />
-
-                  {typedName.trim().length > 0 && (
-                    <div className="flex flex-col gap-2 mt-1">
-                      <div className="p-4 rounded-[4px] bg-[#030311] border border-white/10 flex flex-col gap-1">
-                        <span className="text-[0.688rem] font-mono uppercase tracking-wider text-white/40">
-                          Digital Signature Calligraphy Preview
-                        </span>
-                        <p className="font-signature text-3xl sm:text-4xl text-emerald-400 select-none leading-none py-1">
-                          {typedName}
+                  <div>
+                    <label htmlFor="sign-name" className="text-xs font-medium text-white/60">
+                      Type your full name
+                    </label>
+                    <input
+                      id="sign-name"
+                      value={typedName}
+                      onChange={(e) => setTypedName(e.target.value)}
+                      autoComplete="name"
+                      placeholder={registeredName}
+                      className="mt-1.5 h-11 w-full rounded-[2px] border border-white/15 bg-white/[0.03] px-3 font-sans text-base text-white placeholder:text-white/25 focus:border-white/35 focus:outline-none sm:text-sm"
+                    />
+                    <p className="mt-1.5 text-xs text-white/45">
+                      Type it exactly as on your account: <span className="text-white/80">{registeredName}</span>
+                    </p>
+                    {typed.length > 0 ? (
+                      <div className="mt-3 rounded-[2px] border border-white/[0.08] bg-white/[0.02] px-4 py-3">
+                        <p className="text-[11px] text-white/40">Your signature</p>
+                        <p className="font-signature select-none truncate py-1 text-[34px] leading-none text-white">{typed}</p>
+                        <p className={`mt-1 flex items-center gap-1.5 text-xs ${nameMatches ? "text-white/70" : "text-[#FFA040]"}`}>
+                          {nameMatches ? (
+                            <>
+                              <Check size={13} weight="bold" /> Matches your account name
+                            </>
+                          ) : (
+                            <>
+                              <WarningCircle size={13} weight="fill" /> Doesn&apos;t match your account name yet
+                            </>
+                          )}
                         </p>
                       </div>
+                    ) : null}
+                  </div>
 
-                      <div className="flex items-center gap-2 text-xs font-sans">
-                        {isNameMatch ? (
-                          <span className="text-emerald-400 flex items-center gap-1.5 font-medium">
-                            <Check size={16} weight="fill" />
-                            Signature name matches your verified registered account profile.
-                          </span>
-                        ) : (
-                          <span className="text-amber-400 flex items-center gap-1.5 font-medium">
-                            <Warning size={16} weight="fill" />
-                            Name does not match yet. Please type exactly: &ldquo;{registeredName}&rdquo;
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-[2px] border border-white/[0.08] px-3.5 py-3">
+                    <input
+                      type="checkbox"
+                      checked={agreed}
+                      onChange={(e) => setAgreed(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-[#CC6600]"
+                    />
+                    <span className="text-[13px] leading-relaxed text-white/75">
+                      I&apos;ve read the whole agreement, including the price, payments and terms. I agree that once I sign,
+                      the scope is locked and this agreement is binding under the{" "}
+                      <a
+                        href={SITE_TERMS_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-white underline decoration-white/30 underline-offset-4 hover:decoration-white"
+                      >
+                        JAXIS Terms of Service
+                      </a>
+                      .
+                    </span>
+                  </label>
 
-                {/* Legal Agreement Checkbox */}
-                <div className="pt-2 pb-2 bg-white/[0.02] p-4 rounded-[2px] border border-white/[0.06]">
-                  <FormCheckbox
-                    id="agree-sow"
-                    checked={agreedToTerms}
-                    onChange={(e) => setAgreedToTerms(e.target.checked)}
-                    label={
-                      <span className="text-xs sm:text-sm text-white/80 font-sans leading-relaxed">
-                        I confirm that I have thoroughly reviewed the research objectives, turnaround timeline, deliverables schedule, and milestone payment terms. I agree that upon signing, the scope of work is permanently locked and legally binding under JAXIS Terms of Service.
-                      </span>
-                    }
-                  />
-                </div>
+                  {signError ? (
+                    <p role="alert" className="flex items-start gap-1.5 text-[13px] text-[#FFA040]">
+                      <WarningCircle size={15} weight="fill" className="mt-0.5 shrink-0" />
+                      {signError}
+                    </p>
+                  ) : null}
 
-                {/* Scope Revision Note */}
-                <div className="p-3.5 rounded-[2px] bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans text-white/70">
-                  <span>Need to add coaching, accelerate turnaround, or adjust research scope before signing?</span>
-                  <Link
-                    href={`/dashboard/client/projects/${project.id}/messages`}
-                    className="text-[#FFA040] hover:text-[#FFB060] font-semibold underline underline-offset-2 flex-shrink-0 flex items-center gap-1.5"
-                  >
-                    <ChatCircleDots size={15} weight="fill" />
-                    <span>Message Team to Revise Scope →</span>
-                  </Link>
-                </div>
-
-                {/* Action Trigger */}
-                <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <Link href={`/dashboard/client/projects/${project.id}/messages`}>
-                    <Button variant="outline" size="md" className="rounded-[2px] text-white/75 hover:text-white flex items-center gap-2 text-xs font-sans">
-                      <ChatCircleDots size={15} weight="fill" />
-                      <span>Request Scope Revision</span>
-                    </Button>
-                  </Link>
-
-                  <div className="flex items-center gap-3 self-end sm:self-auto">
-                    <Link href={`/dashboard/client/projects/${project.id}`}>
-                      <Button variant="secondary" size="md" className="rounded-[2px]">
-                        Cancel
-                      </Button>
-                    </Link>
-
+                  <div>
                     <Button
                       variant="primary"
                       size="md"
+                      className="w-full"
                       disabled={!canSign || isPending}
                       loading={isPending}
-                      onClick={() => setIsConfirmModalOpen(true)}
-                      className="font-sans font-bold text-xs sm:text-sm tracking-wider bg-[#CC6600] hover:bg-[#FFA040] text-white px-6 py-3 flex items-center gap-2 rounded-[2px]"
+                      onClick={() => setIsConfirmOpen(true)}
                     >
-                      <ShieldCheck size={18} weight="fill" />
-                      <span>Sign Statement of Work</span>
+                      Sign Agreement
                     </Button>
+                    {!canSign ? (
+                      <p className="mt-2 text-center text-xs text-white/40">
+                        {!nameMatches ? "Type your full name to sign." : "Tick the box to sign."}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="border-t border-white/[0.06] pt-4 text-[13px] text-white/55">
+                    Want to change something first?{" "}
+                    <Link
+                      href={`${base}/messages`}
+                      className="inline-flex items-center gap-1 text-white underline decoration-white/30 underline-offset-4 hover:decoration-white"
+                    >
+                      <ChatCenteredText size={13} weight="fill" />
+                      Message your team
+                    </Link>
                   </div>
                 </div>
-              </div>
-            </Card>
-          )}
-
-          {/* ── Signature Confirmation Modal ── */}
-          {isConfirmModalOpen && (
-            <ConfirmDialog
-              open={isConfirmModalOpen}
-              onCancel={() => setIsConfirmModalOpen(false)}
-              title="Sign Statement of Work"
-              description={`You are digitally signing this Statement of Work as "${typedName.trim()}". Once signed, your scope of work will be confirmed and you can proceed to the deposit desk. Do you want to proceed?`}
-              confirmLabel="Confirm & Sign Agreement"
-              confirmVariant="default"
-              loading={isPending}
-              onConfirm={handleConfirmSign}
-            />
-          )}
-        </>
+              </Panel>
+            )}
+          </div>
+        </div>
       )}
+
+      {isConfirmOpen ? (
+        <ConfirmDialog
+          open
+          onCancel={() => setIsConfirmOpen(false)}
+          title="Sign this agreement?"
+          description={`You're signing as "${typed}". Your scope, price and delivery date will be locked, and next you'll pay your deposit.`}
+          confirmLabel="Sign Agreement"
+          confirmVariant="default"
+          loading={isPending}
+          onConfirm={handleConfirmSign}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function Summary({ sow }: { sow: SOWDetailItem }) {
+  const c = sow.contentSnapshot.commercial;
+  const rows = [
+    { label: "Total price", value: c.totalAmount, money: true, strong: true },
+    { label: "Deposit to start", value: c.downpaymentRequired, money: true },
+    { label: "Delivery", value: `${sow.contentSnapshot.delivery.turnaroundDays} working days`, money: false },
+  ];
+  return (
+    <dl className="flex flex-col divide-y divide-white/[0.06] rounded-[2px] border border-white/[0.08] px-3.5">
+      {rows.map((r) => (
+        <div key={r.label} className="flex items-baseline justify-between gap-3 py-2.5">
+          <dt className="text-[13px] text-white/50">{r.label}</dt>
+          <dd className={`text-[13px] ${r.strong ? "font-mono font-semibold text-white" : r.money ? "font-mono text-white/85" : "text-white/85"}`}>
+            {r.money ? (
+              <>
+                <Peso />
+                {money(Number(r.value))}
+              </>
+            ) : (
+              r.value
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function SignedPanel({ sow, project }: { sow: SOWDetailItem; project: ProjectDetailItem }) {
+  const stage = getClientStage(project.masterStatus);
+  const base = `/dashboard/client/projects/${project.id}`;
+  const payNext = stage.tone === "action" && stage.action?.path === "/payment";
+  return (
+    <Panel aria-label="Signed">
+      <div className="flex flex-col gap-4 px-5 py-5 sm:px-6 sm:py-6">
+        <div className="flex items-start gap-3">
+          <CheckCircle size={22} weight="fill" className="mt-0.5 shrink-0 text-white/70" />
+          <div>
+            <p className="text-[15px] font-semibold text-white">You signed this agreement</p>
+            <p className="mt-0.5 text-[13px] leading-relaxed text-white/55">
+              Signed by <span className="text-white/85">{sow.signedByName}</span>
+              {sow.signedAt ? ` on ${dateTime(sow.signedAt)}` : ""}. Your scope, price and delivery date are locked.
+            </p>
+          </div>
+        </div>
+        {payNext ? (
+          <div className="border-t border-white/[0.06] pt-4">
+            <p className="text-[13px] text-white/60">
+              <span className="text-white/85">Next: </span>
+              {stage.now}
+            </p>
+            <Button asChild variant="primary" size="sm" className="mt-3 w-full gap-1.5">
+              <Link href={`${base}/payment`}>
+                Pay Deposit
+                <ArrowRight size={13} weight="bold" />
+              </Link>
+            </Button>
+          </div>
+        ) : null}
+        <p className="border-t border-white/[0.06] pt-4 text-[13px] text-white/55">
+          Questions about your agreement?{" "}
+          <Link href={`${base}/messages`} className="text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">
+            Message your team
+          </Link>
+        </p>
+      </div>
+    </Panel>
   );
 }

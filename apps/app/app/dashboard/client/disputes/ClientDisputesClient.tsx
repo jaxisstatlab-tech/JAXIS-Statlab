@@ -184,7 +184,7 @@ export function ClientDisputesClient({ initialData }: ClientDisputesClientProps)
   }
 
   return (
-    <div data-portal="client" className="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-24 font-sans animate-content-fade">
+    <div data-portal="client" className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-24 font-sans animate-content-fade">
       <PageHeader
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },

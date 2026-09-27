@@ -89,7 +89,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
 
   if (!isReleased || !revisionWindow.isActive) {
     return (
-      <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-24 w-full animate-content-fade">
+      <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
         <StudySection
           title="Request changes"
           description="The 3-day window for free changes has ended."
@@ -130,7 +130,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
 
   if (hasPendingRevision) {
     return (
-      <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-24 w-full animate-content-fade">
+      <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
         <StudySection
           title="Request changes"
           description="You already sent a change request. We're reviewing it."
@@ -162,7 +162,7 @@ export function ClientRevisionForm({ data }: ClientRevisionFormProps) {
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-24 w-full animate-content-fade font-sans">
+    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
       {/* Header */}
       <StudySection
           title="Request changes"
