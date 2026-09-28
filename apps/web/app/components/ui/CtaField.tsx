@@ -132,6 +132,7 @@ export default function CtaField() {
       draw();
     });
     resize.observe(section);
+    if (horizon) resize.observe(horizon);
 
     const io = new IntersectionObserver(([entry]) => {
       visible = Boolean(entry?.isIntersecting);
