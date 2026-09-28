@@ -17,10 +17,9 @@ export default function HorizonTracker() {
       const w = section.getBoundingClientRect().width || window.innerWidth;
       const isLg = window.matchMedia("(min-width: 1024px)").matches;
       // Peak height of the arch above the bottom edge of the section
-      const peakH = isLg ? 144 : 112; // 9rem on lg, 7rem on mobile
+      const peakH = isLg ? 220 : 170; // elevated so the arch curve completes gracefully above the floor
       // Desired height of the arch at the left/right screen edges (above bottom edge)
-      // Exiting slightly above the bottom creates a continuous, unbroken planetary horizon
-      const edgeH = isLg ? 24 : 16;
+      const edgeH = isLg ? 90 : 60;
       const s = Math.max(20, peakH - edgeH); // sagitta (drop from center to edge)
 
       // Radius of circle passing through (0, edgeH), (w/2, peakH), (w, edgeH):
