@@ -79,17 +79,17 @@ export default function Hero() {
           style={{ ["--d" as string]: "300ms" }}
         >
           <span className="flex items-center gap-1.5">
-            <CheckCircle size={14} weight="fill" className="text-emerald-400 shrink-0" />
+            <CheckCircle size={14} weight="fill" className="text-white/50 shrink-0" />
             <span>Two analysts per study</span>
           </span>
           <span className="hidden sm:inline text-white/15">·</span>
           <span className="flex items-center gap-1.5">
-            <Clock size={14} weight="fill" className="text-[#FFA040] shrink-0" />
+            <Clock size={14} weight="fill" className="text-white/50 shrink-0" />
             <span>24h formal quote</span>
           </span>
           <span className="hidden sm:inline text-white/15">·</span>
           <span className="flex items-center gap-1.5">
-            <ShieldCheck size={14} weight="fill" className="text-sky-400 shrink-0" />
+            <ShieldCheck size={14} weight="fill" className="text-white/50 shrink-0" />
             <span>Panel defense support</span>
           </span>
         </div>
