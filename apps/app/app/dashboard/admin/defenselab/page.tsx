@@ -379,7 +379,7 @@ export default function AdminDefenseLabPage() {
 
               <input
                 type="text"
-                placeholder="Search by Intake ID, Study, Client, or Statistician..."
+                placeholder="Search by Intake ID, Study, Client, or Statistical Analyst..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-1.5 text-xs text-white font-mono placeholder-white/40 outline-none focus:border-[#CC6600] w-full md:w-80"

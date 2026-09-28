@@ -151,7 +151,7 @@ export function ProjectAssignmentCard({
         <div className="p-4 bg-[#0F0F1D] border border-white/10 rounded-[2px] flex flex-col gap-1.5">
           <span className="text-[0.688rem] font-sans font-semibold uppercase tracking-wider text-white/40 flex items-center gap-1.5">
             <IconUserCheck size={14} stroke={2} className="text-[#38BDF8]" />
-            <span>Lead Statistician</span>
+            <span>Lead Statistical Analyst</span>
           </span>
           <p className="font-semibold text-white text-sm truncate">
             {assignment.statistician.fullName}

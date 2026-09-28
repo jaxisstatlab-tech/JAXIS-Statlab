@@ -66,7 +66,7 @@ communicator when multiple people are associated with a project.
 Experts may not bypass JAXIS for direct client payment or side
 contracts.
 
-### Senior Statiscian (QA Statiscian)
+### Senior QA Lead (QA Statistical Analyst)
 
 -   Review work in the QA queue.
 -   Approve/reject deliverables.

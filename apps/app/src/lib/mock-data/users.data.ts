@@ -56,7 +56,7 @@ export const DEV_USERS: Record<string, MockUser> = {
     password: "JaxisStat2026!",
     status: "ACTIVE",
     staffProfile: {
-      bio: "Senior PhD statistician specializing in multivariate quantitative models, structural equation modeling, and APA-compliant statistical reporting.",
+      bio: "Senior PhD statistical analyst specializing in multivariate quantitative models, structural equation modeling, and APA-compliant statistical reporting.",
       specializations: ["Regression", "ANOVA", "SEM", "Factor Analysis", "Time Series"],
       joinedAt: "2026-01-10T08:00:00.000Z",
     },

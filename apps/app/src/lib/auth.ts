@@ -35,7 +35,12 @@ if (process.env.VERCEL) {
 export const authConfig: NextAuthConfig = {
   ...baseAuthConfig,
   trustHost: true,
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "dev_secret_key_minimum_32_characters_long_for_jaxis_statlab",
+  secret:
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    // Local development only. This key is public in the repo, so production never falls back to it:
+    // without AUTH_SECRET, Auth.js stops with a clear error instead of signing forgeable logins.
+    (process.env.NODE_ENV === "production" ? undefined : "dev_secret_key_minimum_32_characters_long_for_jaxis_statlab"),
   debug: process.env.NODE_ENV !== "production",
   providers: [
     ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET

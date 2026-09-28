@@ -3,32 +3,13 @@
 import React, { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  PageHeader,
-  Card,
-  FormInput,
-  FormTextarea,
-  Button,
-  FormFooter,
-  Stepper,
-  Toast,
-  LoadingState,
-} from "@repo/ui";
-import {
-  Check,
-  Lock,
-  FileText,
-  Database,
-  ListChecks,
-  CloudArrowUp,
-  ShieldCheck,
-  ArrowRight,
-  CalendarBlank,
-} from "@phosphor-icons/react";
+import { PageHeader, FormInput, FormTextarea, Button, Toast, LoadingState } from "@repo/ui";
+import { ArrowLeft, ArrowRight, Check, CloudArrowUp, Database, FileText, GraduationCap, ListChecks } from "@phosphor-icons/react";
 import { createProject } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { QuickProfileModal } from "@/features/client-profile/components/QuickProfileModal";
 import { uploadFileToR2 } from "@/lib/storage-client";
+import { Panel } from "@/components/dashboard/Panel";
 import type { FileCategory } from "@prisma/client";
 
 interface UploadedFileItem {
@@ -46,8 +27,6 @@ interface UploadProgressState {
   progress: number;
   formattedSize: string;
 }
-
-
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 Bytes";
@@ -68,58 +47,100 @@ interface NewProjectIntakeClientProps {
   initialProfile?: InitialProfileData | null;
 }
 
+type Step = 1 | 2 | 3;
+const STEPS: Array<{ n: Step; label: string }> = [
+  { n: 1, label: "About your study" },
+  { n: 2, label: "Your files" },
+  { n: 3, label: "Check and send" },
+];
+
+// The three file slots. Chapters 1–3 and the data file are required; the questionnaire is optional.
+const SLOTS: Array<{
+  category: FileCategory;
+  title: string;
+  body: string;
+  required: boolean;
+  extensions: string[];
+  formats: string;
+  icon: React.ReactNode;
+}> = [
+  {
+    category: "RESEARCH_DOCUMENT",
+    title: "Chapters 1–3",
+    body: "Your proposal or draft chapters, so we know your research questions and methods.",
+    required: true,
+    extensions: [".pdf", ".docx", ".doc"],
+    formats: "PDF or Word",
+    icon: <FileText size={18} weight="fill" />,
+  },
+  {
+    category: "DATASET",
+    title: "Data file",
+    body: "Your survey answers or data table. Messy data is fine; cleaning it is included.",
+    required: true,
+    extensions: [".xlsx", ".xls", ".csv", ".sav", ".dta", ".tsv"],
+    formats: "Excel, CSV, SPSS or Stata",
+    icon: <Database size={18} weight="fill" />,
+  },
+  {
+    category: "QUESTIONNAIRE",
+    title: "Questionnaire",
+    body: "Your survey form, interview guide or rating scale, if you have one.",
+    required: false,
+    extensions: [".pdf", ".docx", ".doc", ".xlsx", ".csv"],
+    formats: "PDF, Word, Excel or CSV",
+    icon: <ListChecks size={18} weight="fill" />,
+  },
+];
+const MAX_BYTES = 15 * 1024 * 1024;
+
 export function NewProjectIntakeClient({ initialProfile = null }: NewProjectIntakeClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [currentStep, setCurrentStep] = useState<Step>(1);
+  // Furthest step reached with valid details, so the step bar can't skip ahead.
+  const [maxStep, setMaxStep] = useState<Step>(1);
 
-  // Wizard Step (1: Info, 2: Files, 3: Review)
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-
-  // Client Profile state
   const [profile, setProfile] = useState<{
     institutionSchool: string;
     academicProgram: string;
     contactNumber: string;
     region: string;
-  } | null>(() => {
-    if (initialProfile) {
-      return {
-        institutionSchool: initialProfile.institutionSchool || "",
-        academicProgram: initialProfile.academicProgram || "",
-        contactNumber: initialProfile.contactNumber || "",
-        region: initialProfile.region || "",
-      };
-    }
-    return null;
-  });
+  } | null>(() =>
+    initialProfile
+      ? {
+          institutionSchool: initialProfile.institutionSchool || "",
+          academicProgram: initialProfile.academicProgram || "",
+          contactNumber: initialProfile.contactNumber || "",
+          region: initialProfile.region || "",
+        }
+      : null
+  );
   const [isProfileLoaded, setIsProfileLoaded] = useState(Boolean(initialProfile !== undefined));
 
-  // Step 1: Research Information
   const [researchTitle, setResearchTitle] = useState("");
   const [researchQuestions, setResearchQuestions] = useState("");
   const [researchObjectives, setResearchObjectives] = useState("");
   const [hypotheses, setHypotheses] = useState("");
   const [deadlineRequested, setDeadlineRequested] = useState("");
 
-  // Step 2: Uploaded Files & Uploading Progress
   const [filesList, setFilesList] = useState<UploadedFileItem[]>([]);
   const [uploadingState, setUploadingState] = useState<Partial<Record<FileCategory, UploadProgressState | null>>>({});
+  const [dragActiveCategory, setDragActiveCategory] = useState<FileCategory | null>(null);
 
-  // Step 3: Integrity declaration
   const [integrityAgreed, setIntegrityAgreed] = useState(false);
-
-  // General errors & submission feedback
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [toast, setToast] = useState<{
     variant: "success" | "danger" | "warning" | "info";
     message: string;
     description?: string;
   } | null>(null);
+  const [isQuickModalOpen, setIsQuickModalOpen] = useState(false);
 
-  // Load client profile if not provided from server
+  // Load the profile if the server didn't pass it.
   useEffect(() => {
     if (initialProfile === undefined) {
-      async function loadProfile() {
+      (async () => {
         const p = await getClientProfile();
         if (p) {
           setProfile({
@@ -130,16 +151,11 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
           });
         }
         setIsProfileLoaded(true);
-      }
-      loadProfile();
+      })();
     }
   }, [initialProfile]);
 
-  const [isQuickModalOpen, setIsQuickModalOpen] = useState(false);
-
-  const isProfileComplete = Boolean(
-    profile && profile.institutionSchool && profile.contactNumber
-  );
+  const isProfileComplete = Boolean(profile && profile.institutionSchool && profile.contactNumber);
 
   const handleProfileSuccess = async () => {
     const p = await getClientProfile();
@@ -151,79 +167,42 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
         region: p.region || "",
       });
     }
-    setToast({
-      variant: "success",
-      message: "School Affiliation Verified",
-      description: "Your academic details have been saved. Intake desk unlocked.",
-    });
+    setToast({ variant: "success", message: "School saved", description: "You can now send your study." });
   };
 
-  // Drag & drop active category tracking
-  const [dragActiveCategory, setDragActiveCategory] = useState<FileCategory | null>(null);
-
-  const CATEGORY_FILE_CONFIG: Partial<
-    Record<
-      FileCategory,
-      { extensions: string[]; label: string; maxBytes: number }
-    >
-  > = {
-    RESEARCH_DOCUMENT: {
-      extensions: [".pdf", ".docx", ".doc"],
-      label: "PDF, DOCX (Max 15MB)",
-      maxBytes: 15 * 1024 * 1024,
-    },
-    DATASET: {
-      extensions: [".xlsx", ".xls", ".csv", ".sav", ".dta", ".tsv"],
-      label: "CSV, XLSX, XLS, SPSS (Max 15MB)",
-      maxBytes: 15 * 1024 * 1024,
-    },
-    QUESTIONNAIRE: {
-      extensions: [".pdf", ".docx", ".doc", ".xlsx", ".csv"],
-      label: "PDF, DOCX, XLSX, CSV (Max 15MB)",
-      maxBytes: 15 * 1024 * 1024,
-    },
+  const goTo = (step: Step) => {
+    setCurrentStep(step);
+    setMaxStep((m) => (step > m ? step : m));
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Core File Processing Logic with strict format checker and animated progress bar
+  // ── Files ────────────────────────────────────────────────────────────────────
   const processFile = (file: File, category: FileCategory) => {
-    const config = CATEGORY_FILE_CONFIG[category];
-    if (!config) return;
-
-    // Check slot-specific file extension
-    const fileNameLower = file.name.toLowerCase();
-    const lastDotIndex = fileNameLower.lastIndexOf(".");
-    const fileExt = lastDotIndex !== -1 ? fileNameLower.substring(lastDotIndex) : "";
-
-    const isAllowed = config.extensions.some((ext) => fileNameLower.endsWith(ext));
-
-    if (!isAllowed) {
+    const slot = SLOTS.find((s) => s.category === category);
+    if (!slot) return;
+    const lower = file.name.toLowerCase();
+    const dot = lower.lastIndexOf(".");
+    const ext = dot !== -1 ? lower.substring(dot) : "";
+    if (!slot.extensions.some((e) => lower.endsWith(e))) {
       setToast({
         variant: "danger",
-        message: "Upload Rejected",
-        description: `Invalid file format "${fileExt || "unknown"}". This slot only accepts: ${config.label.split(" (Max")[0]}.`,
+        message: "That file type isn't accepted here",
+        description: `"${ext || "unknown"}" files can't be added as ${slot.title}. Use ${slot.formats}.`,
+      });
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      setToast({
+        variant: "danger",
+        message: "File is too large",
+        description: `"${file.name}" is ${formatBytes(file.size)}. The limit is 15 MB; try compressing it.`,
       });
       return;
     }
 
-    // Check file size
-    if (file.size > config.maxBytes) {
-      setToast({
-        variant: "danger",
-        message: "File Limit Exceeded",
-        description: `File "${file.name}" exceeds the 15MB limit (${formatBytes(file.size)}). Please compress your file.`,
-      });
-      return;
-    }
-
-    // Start upload progress state
     setUploadingState((prev) => ({
       ...prev,
-      [category]: {
-        fileName: file.name,
-        category,
-        progress: 30,
-        formattedSize: formatBytes(file.size),
-      },
+      [category]: { fileName: file.name, category, progress: 30, formattedSize: formatBytes(file.size) },
     }));
 
     (async () => {
@@ -233,196 +212,91 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
           setUploadingState((prev) => ({ ...prev, [category]: null }));
           setToast({
             variant: "danger",
-            message: "Upload Failed",
-            description: uploadRes.error?.message || "Failed to upload file. Please try again.",
+            message: "Upload didn't finish",
+            description: uploadRes.error?.message || "Please try again.",
           });
           return;
         }
-
         const storageUrl = uploadRes.data.publicUrl;
-
         setUploadingState((prev) => ({
           ...prev,
-          [category]: {
-            fileName: file.name,
-            category,
-            progress: 100,
-            formattedSize: formatBytes(file.size),
-          },
+          [category]: { fileName: file.name, category, progress: 100, formattedSize: formatBytes(file.size) },
         }));
-
         setTimeout(() => {
-          const newFileItem: UploadedFileItem = {
-            name: file.name,
-            size: file.size,
-            type: file.type || "application/octet-stream",
-            category,
-            formattedSize: formatBytes(file.size),
-            storageUrl,
-          };
-
           setFilesList((prev) => [
             ...prev.filter((f) => f.category !== category),
-            newFileItem,
+            {
+              name: file.name,
+              size: file.size,
+              type: file.type || "application/octet-stream",
+              category,
+              formattedSize: formatBytes(file.size),
+              storageUrl,
+            },
           ]);
-
-          setUploadingState((prev) => ({
-            ...prev,
-            [category]: null,
-          }));
-
-          setToast({
-            variant: "success",
-            message: "File Uploaded",
-            description: `"${file.name}" has been uploaded and attached to your study.`,
-          });
+          setUploadingState((prev) => ({ ...prev, [category]: null }));
+          setToast({ variant: "success", message: "File added", description: `"${file.name}" is attached to your study.` });
         }, 250);
       } catch (err) {
         setUploadingState((prev) => ({ ...prev, [category]: null }));
         setToast({
           variant: "danger",
-          message: "Upload Error",
-          description: (err as Error).message || "An unexpected error occurred while uploading.",
+          message: "Upload didn't finish",
+          description: (err as Error).message || "Please check your connection and try again.",
         });
       }
     })();
   };
 
-  // File Input Change Handler
-  const handleFileInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    category: FileCategory
-  ) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      processFile(files[0]!, category);
-    }
-    e.target.value = "";
-  };
-
-  // Drag & Drop Event Handlers
-  const handleDragEnter = (e: React.DragEvent, category: FileCategory) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActiveCategory(category);
-  };
-
-  const handleDragOver = (e: React.DragEvent, category: FileCategory) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (dragActiveCategory !== category) {
-      setDragActiveCategory(category);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent, category: FileCategory) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-    if (dragActiveCategory === category) {
-      setDragActiveCategory(null);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent, category: FileCategory) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActiveCategory(null);
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      processFile(files[0]!, category);
-    }
-  };
-
   const removeFile = (category: FileCategory) => {
-    const fileToRemove = filesList.find((f) => f.category === category);
-    setFilesList((prev) => prev.filter((f) => f.category !== category));
-    if (fileToRemove) {
-      setToast({
-        variant: "info",
-        message: "File Removed",
-        description: `"${fileToRemove.name}" was detached.`,
-      });
-    }
+    const f = filesList.find((x) => x.category === category);
+    setFilesList((prev) => prev.filter((x) => x.category !== category));
+    if (f) setToast({ variant: "info", message: "File removed", description: `"${f.name}" was removed.` });
   };
 
-  // Step 1 Validation
-  const handleProceedToStep2 = (e: React.FormEvent) => {
-    e.preventDefault();
+  // ── Steps ────────────────────────────────────────────────────────────────────
+  const handleProceedToStep2 = (e?: React.FormEvent) => {
+    e?.preventDefault();
     setFieldErrors({});
-
     const errors: Record<string, string[]> = {};
-    if (!researchTitle.trim() || researchTitle.trim().length < 3) {
-      errors.researchTitle = ["Research title must be at least 3 characters."];
-    }
-    if (!researchQuestions.trim() || researchQuestions.trim().length < 5) {
-      errors.researchQuestions = ["Please specify research questions (min 5 characters)."];
-    }
-    if (!researchObjectives.trim() || researchObjectives.trim().length < 5) {
-      errors.researchObjectives = ["Please specify research objectives (min 5 characters)."];
-    }
+    if (!researchTitle.trim() || researchTitle.trim().length < 3) errors.researchTitle = ["Add a title (at least 3 characters)."];
+    if (!researchQuestions.trim() || researchQuestions.trim().length < 5) errors.researchQuestions = ["Add your research questions."];
+    if (!researchObjectives.trim() || researchObjectives.trim().length < 5) errors.researchObjectives = ["Add your research objectives."];
     if (!deadlineRequested) {
-      errors.deadlineRequested = ["Target completion deadline is required."];
+      errors.deadlineRequested = ["Pick the date you need it by."];
     } else {
       const selected = new Date(deadlineRequested);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      if (selected <= today) {
-        errors.deadlineRequested = ["Target deadline must be in the future."];
-      }
+      if (selected <= today) errors.deadlineRequested = ["Pick a date after today."];
     }
-
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      setToast({
-        variant: "danger",
-        message: "Form Validation Incomplete",
-        description: "Please fill out all required research fields before proceeding.",
-      });
+      setToast({ variant: "danger", message: "Some details are missing", description: "Check the highlighted fields." });
       return;
     }
-
-    setCurrentStep(2);
+    goTo(2);
   };
 
-  // Step 2 Proceed
   const handleProceedToStep3 = () => {
-    const hasResearchDoc = filesList.some((f) => f.category === "RESEARCH_DOCUMENT");
-    const hasDataset = filesList.some((f) => f.category === "DATASET");
-
-    if (!hasResearchDoc) {
+    const missing = SLOTS.filter((s) => s.required && !filesList.some((f) => f.category === s.category));
+    if (missing.length > 0) {
       setToast({
         variant: "warning",
-        message: "Missing Manuscript Draft",
-        description: "Please attach your Draft Manuscript (Chapters 1–3) to proceed.",
+        message: `Add your ${missing.map((m) => m.title).join(" and ")}`,
+        description: "We need these to price your study.",
       });
       return;
     }
-    if (!hasDataset) {
-      setToast({
-        variant: "warning",
-        message: "Missing Dataset File",
-        description: "Please attach your Data File (Excel / CSV / SPSS) to proceed.",
-      });
-      return;
-    }
-
-    setCurrentStep(3);
+    goTo(3);
   };
 
-  // Step 3 Final Submission
   const handleFinalSubmit = () => {
     if (isPending) return;
     if (!integrityAgreed) {
-      const covenantMsg = "You must agree to the academic authorship & confidentiality statement before submitting.";
-      setToast({
-        variant: "warning",
-        message: "Academic Covenant Required",
-        description: covenantMsg,
-      });
+      setToast({ variant: "warning", message: "Please tick the confirmation", description: "It's just above the Send button." });
       return;
     }
-
     startTransition(async () => {
       const payload = {
         researchTitle: researchTitle.trim(),
@@ -439,110 +313,69 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
           fileCategory: f.category,
         })),
       };
-
       const res = await createProject(payload);
-
       if (!res.success) {
-        const errorMsg = res.error.message || "Failed to submit project intake. Please review form entries.";
-        if (res.error.fieldErrors) {
-          setFieldErrors(res.error.fieldErrors);
-        }
+        if (res.error.fieldErrors) setFieldErrors(res.error.fieldErrors);
         setToast({
           variant: "danger",
-          message: "Intake Submission Failed",
-          description: errorMsg,
+          message: "Your study wasn't sent",
+          description: res.error.message || "Please check your details and try again.",
         });
         return;
       }
-
-      const assignedId = res.data.intakeId;
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("jaxis:study-updated"));
-      }
-      router.push(`/dashboard/client?created=true&intakeId=${encodeURIComponent(assignedId)}`);
+      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("jaxis:study-updated"));
+      router.push(`/dashboard/client?created=true&intakeId=${encodeURIComponent(res.data.intakeId)}`);
     });
   };
 
-  // Prevent Flash of Unverified Content while profile verification is resolving
+  const header = (
+    <PageHeader
+      breadcrumbs={[
+        { label: "WORKSPACE", href: "/dashboard" },
+        { label: "My Studies", href: "/dashboard/client" },
+        { label: "Send a study" },
+      ]}
+      title="Send a new study"
+      description="Tell us about your study and add your files. We'll send you a fixed price, usually within 24 hours."
+    />
+  );
+
   if (!isProfileLoaded) {
     return (
-      <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
-        <PageHeader
-          title="New Research Project Intake"
-          description="Formal submission desk for academic theses and quantitative dissertations."
-          breadcrumbs={[
-            { label: "WORKSPACE", href: "/dashboard" },
-            { label: "Client Portal", href: "/dashboard/client" },
-            { label: "New Project" },
-          ]}
-        />
-        <Card
-          className="p-8 border-l-4 border-l-[#CC6600]/60 min-h-[220px] bg-[#0F0F1D]/40 border-white/[0.08]"
-          contentClassName="items-center justify-center h-full"
-        >
-          <LoadingState
-            variant="card"
-            label="Verifying profile..."
-            description="Checking your academic affiliation details"
-            className="min-h-0 p-0 h-full justify-center"
-          />
-        </Card>
+      <div data-portal="client" className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-24 animate-content-fade">
+        {header}
+        <LoadingState variant="card" label="Loading..." />
       </div>
     );
   }
 
   if (!isProfileComplete) {
     return (
-      <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
-        {toast && (
-          <Toast
-            variant={toast.variant}
-            message={toast.message}
-            description={toast.description}
-            onClose={() => setToast(null)}
-          />
-        )}
-
-        <PageHeader
-          title="New Research Project Intake"
-          description="Formal submission desk for academic theses and quantitative dissertations."
-          breadcrumbs={[
-            { label: "WORKSPACE", href: "/dashboard" },
-            { label: "Client Portal", href: "/dashboard/client" },
-            { label: "New Project" },
-          ]}
-        />
-
-        <Card className="p-8 border-l-4 border-l-[#CC6600] flex flex-col justify-between min-h-[220px] gap-5 bg-[#0F0F1D]/40 border-white/[0.08] animate-card-reveal stagger-1">
-          <div className="flex flex-col gap-3">
-            <h2 className="text-base font-bold text-white uppercase tracking-wider font-sans">
-              School Profile Verification Required
-            </h2>
-            <p className="text-sm text-white/70 leading-relaxed font-sans max-w-2xl">
-              Please complete your school affiliation details (university, academic program, contact number, and region) before submitting a new research study.
-            </p>
+      <div data-portal="client" className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-24 animate-content-fade">
+        {toast ? <Toast variant={toast.variant} message={toast.message} description={toast.description} onClose={() => setToast(null)} /> : null}
+        {header}
+        <Panel as="div">
+          <div className="flex flex-col gap-4 px-6 py-8 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-3">
+              <GraduationCap size={22} weight="fill" className="mt-0.5 shrink-0 text-[#CC6600]" />
+              <div>
+                <p className="text-base font-semibold text-white">First, tell us about your school</p>
+                <p className="mt-1 max-w-xl text-sm leading-relaxed text-white/60">
+                  We format your tables the way your school asks, and we need a contact number in case something about
+                  your files is unclear. It takes about 30 seconds.
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-3">
+              <Button variant="primary" size="sm" onClick={() => setIsQuickModalOpen(true)}>
+                Add Your School
+              </Button>
+              <Link href="/dashboard/client/profile" className="text-sm text-white/60 underline-offset-4 hover:text-white hover:underline">
+                Open full profile
+              </Link>
+            </div>
           </div>
-          <div className="pt-2 flex flex-wrap items-center gap-4">
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={() => setIsQuickModalOpen(true)}
-              className="font-sans text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
-            >
-              Complete Profile →
-            </Button>
-            <Link
-              href="/dashboard/client/profile"
-              className="inline-flex items-center gap-1.5 text-xs text-white/60 hover:text-white transition-colors font-sans py-1.5"
-            >
-              <span>Full Profile Settings</span>
-              <ArrowRight size={13} weight="fill" />
-            </Link>
-          </div>
-        </Card>
-
-        {/* Quick Setup Modal */}
+        </Panel>
         <QuickProfileModal
           isOpen={isQuickModalOpen}
           onClose={() => setIsQuickModalOpen(false)}
@@ -553,885 +386,389 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
     );
   }
 
+  const deadlineLabel = deadlineRequested
+    ? new Date(`${deadlineRequested}T00:00:00`).toLocaleDateString("en-PH", { weekday: "short", month: "long", day: "numeric", year: "numeric" })
+    : "";
+
   return (
-    <div
-      data-portal="client"
-      className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade"
-    >
-      <PageHeader
-        title="New Research Project Intake"
-        description="Submit your thesis or research study for review, statistical planning, and pricing."
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Client Portal", href: "/dashboard/client" },
-          { label: "New Intake" },
-        ]}
-      />
+    <div data-portal="client" className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-24 animate-content-fade">
+      {header}
 
-      {/* ── Stepper Navigation ── */}
-      <Stepper
-        currentStep={currentStep}
-        onStepClick={(step) => {
-          if (step === 1 || step === 2 || step === 3) {
-            setCurrentStep(step);
-          }
-        }}
-        steps={[
-          {
-            id: "scope",
-            title: "01. Scope & Details",
-            shortTitle: "Scope",
-            subtitle: "Study title, research questions, objectives, and target deadline",
-          },
-          {
-            id: "uploads",
-            title: "02. Document Uploads",
-            shortTitle: "Uploads",
-            subtitle: "Draft chapters, raw datasets, and survey questionnaires",
-          },
-          {
-            id: "review",
-            title: "03. Review & Submit",
-            shortTitle: "Review",
-            subtitle: "Summary check and final submission",
-          },
-        ]}
-      />
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
+        <div className="flex min-w-0 flex-col gap-6">
+          {/* Step bar: go back freely; forward only through the Next buttons */}
+          <ol className="grid grid-cols-3 gap-2" aria-label="Steps">
+            {STEPS.map((s) => {
+              const current = s.n === currentStep;
+              const done = s.n < currentStep || (s.n <= maxStep && s.n !== currentStep);
+              const reachable = s.n <= maxStep && !current;
+              return (
+                <li key={s.n}>
+                  <button
+                    type="button"
+                    disabled={!reachable}
+                    onClick={() => reachable && setCurrentStep(s.n)}
+                    aria-current={current ? "step" : undefined}
+                    className="flex w-full flex-col gap-2 text-left disabled:cursor-default"
+                  >
+                    <span className={`h-1 rounded-[1px] ${current ? "bg-[#CC6600]" : done ? "bg-white/45" : "bg-white/[0.08]"}`} />
+                    <span
+                      className={`flex items-center gap-1.5 text-xs sm:text-sm ${
+                        current ? "font-semibold text-white" : done ? "text-white/70 hover:text-white" : "text-white/35"
+                      }`}
+                    >
+                      {done ? <Check size={12} weight="bold" className="hidden shrink-0 sm:block" /> : null}
+                      <span className="truncate">{s.label}</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
 
-      {/* ── STEP 1: Research Information ── */}
-      {currentStep === 1 && (
-        <Card className="p-8 md:p-10 animate-card-reveal stagger-1" style={{ padding: "2rem", display: "flex", flexDirection: "column" }}>
-          <form onSubmit={handleProceedToStep2} className="flex flex-col gap-8">
-            <div className="border-b border-white/[0.08] pb-5">
-              <h2 className="text-base font-bold text-white font-sans">
-                Research Project Specifications
-              </h2>
-              <p className="text-xs text-white/50 mt-1 font-sans leading-relaxed">
-                Provide the basic details about your thesis or research study so we can understand your statistical needs.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-7">
-              <FormInput
-                label="Research Study Title"
-                required
-                placeholder="e.g. Social Media Use and Academic Performance of Students"
-                value={researchTitle}
-                onChange={(e) => setResearchTitle(e.target.value)}
-                error={fieldErrors.researchTitle?.[0]}
-              />
-
-              <FormTextarea
-                label="Statement of the Problem / Key Research Questions"
-                required
-                rows={4}
-                placeholder="1. What is the profile of the respondents?&#10;2. Is there a significant relationship between study habits and exam scores?"
-                value={researchQuestions}
-                onChange={(e) => setResearchQuestions(e.target.value)}
-                error={fieldErrors.researchQuestions?.[0]}
-              />
-
-              <FormTextarea
-                label="Core Research Objectives"
-                required
-                rows={3}
-                placeholder="Briefly describe what you want to achieve or find out in this study..."
-                value={researchObjectives}
-                onChange={(e) => setResearchObjectives(e.target.value)}
-                error={fieldErrors.researchObjectives?.[0]}
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-7 items-start">
-                <FormTextarea
-                  label="Theoretical Hypotheses (Optional)"
-                  rows={4}
-                  placeholder="e.g. There is no significant relationship between study habits and exam scores (optional)..."
-                  value={hypotheses}
-                  onChange={(e) => setHypotheses(e.target.value)}
-                  className="min-h-[110px]"
+          {/* Step 1 */}
+          {currentStep === 1 ? (
+            <Panel as="div">
+              <form onSubmit={handleProceedToStep2} className="flex flex-col gap-6 px-5 py-6 sm:px-6" noValidate>
+                <div>
+                  <h2 className="text-base font-semibold text-white">About your study</h2>
+                  <p className="mt-1 text-[13px] text-white/55">Copy these from your Chapter 1 if you have it.</p>
+                </div>
+                <FormInput
+                  label="Study title"
+                  required
+                  placeholder="e.g. Social media use and academic performance of Grade 12 students"
+                  value={researchTitle}
+                  onChange={(e) => setResearchTitle(e.target.value)}
+                  error={fieldErrors.researchTitle?.[0]}
                 />
-
-                <div className="flex flex-col gap-2.5">
-                  <FormInput
-                    label="Target Completion / Defense Deadline"
-                    type="date"
-                    min={new Date().toISOString().split("T")[0]}
-                    required
-                    value={deadlineRequested}
-                    onChange={(e) => setDeadlineRequested(e.target.value)}
-                    error={fieldErrors.deadlineRequested?.[0]}
+                <FormTextarea
+                  label="Research questions"
+                  required
+                  rows={4}
+                  placeholder={"1. What is the profile of the respondents?\n2. Is there a significant relationship between study habits and exam scores?"}
+                  value={researchQuestions}
+                  onChange={(e) => setResearchQuestions(e.target.value)}
+                  error={fieldErrors.researchQuestions?.[0]}
+                />
+                <FormTextarea
+                  label="Research objectives"
+                  required
+                  rows={3}
+                  placeholder="What do you want to find out?"
+                  value={researchObjectives}
+                  onChange={(e) => setResearchObjectives(e.target.value)}
+                  error={fieldErrors.researchObjectives?.[0]}
+                />
+                <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
+                  <FormTextarea
+                    label="Hypotheses (optional)"
+                    rows={3}
+                    placeholder="e.g. There is no significant relationship between study habits and exam scores."
+                    value={hypotheses}
+                    onChange={(e) => setHypotheses(e.target.value)}
                   />
-                  <div className="p-3.5 rounded-[2px] bg-white/[0.03] border border-white/10 text-xs text-white/60 font-sans leading-relaxed flex items-start gap-2.5">
-                    <CalendarBlank size={16} weight="fill" className="text-[#CC6600] shrink-0 mt-0.5" />
-                    <span>
-                      Helps our team make sure your statistical analysis is completed on time for your defense.
-                    </span>
+                  <div className="flex flex-col gap-2">
+                    <FormInput
+                      label="When do you need it?"
+                      type="date"
+                      min={new Date().toISOString().split("T")[0]}
+                      required
+                      value={deadlineRequested}
+                      onChange={(e) => setDeadlineRequested(e.target.value)}
+                      error={fieldErrors.deadlineRequested?.[0]}
+                    />
+                    <p className="text-xs leading-relaxed text-white/45">
+                      Your defense or submission date, so we can plan your analysis to finish on time.
+                    </p>
                   </div>
+                </div>
+                <div className="flex justify-end border-t border-white/[0.07] pt-5">
+                  <Button type="submit" variant="primary" size="sm" className="w-full gap-1.5 sm:w-auto">
+                    Next: Your Files <ArrowRight size={14} weight="fill" />
+                  </Button>
+                </div>
+              </form>
+            </Panel>
+          ) : null}
+
+          {/* Step 2 */}
+          {currentStep === 2 ? (
+            <Panel as="div">
+              <div className="flex flex-col gap-5 px-5 py-6 sm:px-6">
+                <div>
+                  <h2 className="text-base font-semibold text-white">Your files</h2>
+                  <p className="mt-1 text-[13px] text-white/55">Up to 15 MB each. Only our team working on your study can open them.</p>
+                </div>
+                {SLOTS.map((slot) => (
+                  <FileSlot
+                    key={slot.category}
+                    slot={slot}
+                    file={filesList.find((f) => f.category === slot.category) ?? null}
+                    uploading={uploadingState[slot.category] ?? null}
+                    dragActive={dragActiveCategory === slot.category}
+                    onDrag={(on) => setDragActiveCategory(on ? slot.category : null)}
+                    onPick={(f) => processFile(f, slot.category)}
+                    onRemove={() => removeFile(slot.category)}
+                  />
+                ))}
+                <div className="flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-5 sm:flex-row sm:justify-between">
+                  <Button variant="outline" size="sm" onClick={() => setCurrentStep(1)} className="w-full gap-1.5 sm:w-auto">
+                    <ArrowLeft size={14} weight="fill" /> Back
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleProceedToStep3} className="w-full gap-1.5 sm:w-auto">
+                    Next: Check and Send <ArrowRight size={14} weight="fill" />
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Panel>
+          ) : null}
 
-            <FormFooter className="mt-8 pt-6">
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                className="w-full sm:w-auto font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
-              >
-                Proceed to Attachments →
-              </Button>
-            </FormFooter>
-          </form>
-        </Card>
-      )}
-
-      {/* ── STEP 2: Document Attachments ── */}
-      {currentStep === 2 && (
-        <Card className="p-8 md:p-10 flex flex-col gap-8 animate-card-reveal stagger-1" style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
-          <div className="border-b border-white/[0.08] pb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h2 className="text-base font-bold text-white font-sans">
-                Attach Research Documents & Datasets
-              </h2>
-              <p className="text-xs text-white/50 mt-1 font-sans leading-relaxed">
-                Provide draft chapters, survey instruments, or raw dataset files for statistical evaluation.
-              </p>
-            </div>
-
-            {/* Confidentiality Pill */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-[2px] bg-white/[0.03] border border-white/[0.08] text-white/60 text-xs self-start sm:self-auto flex-shrink-0">
-              <Lock size={14} className="text-[#CC6600]" weight="fill" />
-              <span className="font-mono text-[0.688rem] uppercase tracking-wider">NDA Encrypted</span>
-            </div>
-          </div>
-
-          <div
-            className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6"
-            style={{
-              marginTop: "1.5rem",
-              display: "grid",
-              gap: "1.5rem",
-            }}
-          >
-            {/* ── Slot 1: Chapters 1-3 ── */}
-            <div
-              onDragEnter={(e) => handleDragEnter(e, "RESEARCH_DOCUMENT")}
-              onDragOver={(e) => handleDragOver(e, "RESEARCH_DOCUMENT")}
-              onDragLeave={(e) => handleDragLeave(e, "RESEARCH_DOCUMENT")}
-              onDrop={(e) => handleDrop(e, "RESEARCH_DOCUMENT")}
-              className={`p-6 rounded-[2px] border bg-[#0A0A18]/85 flex flex-col justify-between gap-5 transition-all min-h-[300px] ${
-                dragActiveCategory === "RESEARCH_DOCUMENT"
-                  ? "border-[#CC6600] bg-[#CC6600]/5 ring-1 ring-[#CC6600]/40"
-                  : "border-white/[0.09]"
-              }`}
-              style={{
-                padding: "1.5rem",
-                borderRadius: "2px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                gap: "1.25rem",
-                minHeight: "300px",
-                boxSizing: "border-box",
-              }}
-            >
-              {/* Header */}
-              <div className="flex flex-col gap-3 min-h-[72px]" style={{ display: "flex", flexDirection: "column", gap: "0.75rem", minHeight: "72px" }}>
-                <div className="flex items-center justify-between" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div
-                    className="w-8 h-8 rounded-[2px] bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-sky-400"
-                    style={{ width: "2rem", height: "2rem", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "2px" }}
-                  >
-                    <FileText size={18} weight="fill" />
-                  </div>
-                  <span
-                    className="text-[0.625rem] font-mono font-bold uppercase px-2 py-0.5 rounded-[2px] bg-sky-500/10 text-sky-300 border border-sky-500/20"
-                    style={{ padding: "0.125rem 0.5rem", borderRadius: "2px" }}
-                  >
-                    Required
-                  </span>
+          {/* Step 3 */}
+          {currentStep === 3 ? (
+            <Panel as="div">
+              <div className="flex flex-col gap-5 px-5 py-6 sm:px-6">
+                <div>
+                  <h2 className="text-base font-semibold text-white">Check and send</h2>
+                  <p className="mt-1 text-[13px] text-white/55">Make sure everything looks right. You can go back and change anything.</p>
                 </div>
 
-                <div className="flex flex-col gap-1" style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                  <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider">
-                    Draft Manuscript (Chapters 1–3)
-                  </h3>
-                  <p className="text-xs text-white/50 leading-relaxed font-sans" style={{ fontSize: "0.75rem", lineHeight: 1.5 }}>
-                    Your thesis proposal, introduction, or research methodology paper.
-                  </p>
-                </div>
-              </div>
+                <dl className="divide-y divide-white/[0.07] rounded-[2px] border border-white/[0.08]">
+                  <Summary label="Study title" onEdit={() => setCurrentStep(1)}>
+                    <span className="font-semibold text-white">{researchTitle}</span>
+                  </Summary>
+                  <Summary label="Needed by" onEdit={() => setCurrentStep(1)}>
+                    {deadlineLabel}
+                  </Summary>
+                  <Summary label="Research questions" onEdit={() => setCurrentStep(1)}>
+                    <span className="whitespace-pre-wrap">{researchQuestions}</span>
+                  </Summary>
+                  <Summary label="Research objectives" onEdit={() => setCurrentStep(1)}>
+                    <span className="whitespace-pre-wrap">{researchObjectives}</span>
+                  </Summary>
+                  {hypotheses ? (
+                    <Summary label="Hypotheses" onEdit={() => setCurrentStep(1)}>
+                      <span className="whitespace-pre-wrap">{hypotheses}</span>
+                    </Summary>
+                  ) : null}
+                  <Summary label="Files" onEdit={() => setCurrentStep(2)}>
+                    <ul className="flex flex-col gap-1">
+                      {SLOTS.map((s) => {
+                        const f = filesList.find((x) => x.category === s.category);
+                        return (
+                          <li key={s.category} className="flex flex-wrap gap-x-2">
+                            <span className="text-white/50">{s.title}:</span>
+                            <span className={f ? "text-white/85" : "text-white/35"}>{f ? f.name : "Not added"}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </Summary>
+                </dl>
 
-              {/* Upload Zone / State */}
-              {uploadingState.RESEARCH_DOCUMENT ? (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0 animate-pulse">
-                        <CloudArrowUp size={16} weight="fill" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-mono text-xs font-bold text-white truncate">
-                          {uploadingState.RESEARCH_DOCUMENT.fileName}
-                        </span>
-                        <span className="text-[0.625rem] font-mono text-white/50">
-                          {uploadingState.RESEARCH_DOCUMENT.formattedSize}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/35 text-[#FFA040] font-mono text-xs font-bold tracking-wider flex-shrink-0">
-                      {uploadingState.RESEARCH_DOCUMENT.progress}%
-                    </span>
-                  </div>
-
-                  {/* Bottom Group: Progress Bar + Status Footer */}
-                  <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
-                      <div
-                        className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-150"
-                        style={{ width: `${uploadingState.RESEARCH_DOCUMENT.progress}%` }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <div className="flex items-center gap-1.5 text-amber-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                        <span className="font-medium text-amber-300 text-[0.6875rem]">Uploading file...</span>
-                      </div>
-                      <span className="text-[0.6875rem] font-mono text-white/40">Please wait</span>
-                    </div>
-                  </div>
-                </div>
-              ) : filesList.some((f) => f.category === "RESEARCH_DOCUMENT") ? (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0">
-                        <FileText size={16} weight="fill" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-mono text-xs font-bold text-white truncate" title={filesList.find((f) => f.category === "RESEARCH_DOCUMENT")?.name}>
-                          {filesList.find((f) => f.category === "RESEARCH_DOCUMENT")?.name}
-                        </span>
-                        <span className="text-[0.625rem] font-mono text-white/50">
-                          {filesList.find((f) => f.category === "RESEARCH_DOCUMENT")?.formattedSize}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/35 text-[#FFA040] font-mono text-xs font-bold tracking-wider flex-shrink-0">
-                      100%
-                    </span>
-                  </div>
-
-                  {/* Bottom Group: Progress Bar + Status Footer */}
-                  <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
-                      <div className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-300 w-full" />
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <div className="flex items-center gap-1.5 text-emerald-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        <span className="font-semibold text-emerald-300 text-[0.6875rem]">Ready for submission</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeFile("RESEARCH_DOCUMENT")}
-                        className="px-2.5 py-0.5 rounded-[2px] text-[0.6875rem] font-mono font-bold text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 transition-all cursor-pointer"
-                      >
-                        Change
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
                 <label
-                  className={`group cursor-pointer border border-dashed rounded-[2px] p-6 text-center transition-all flex flex-col items-center justify-center gap-2.5 min-h-[140px] ${
-                    dragActiveCategory === "RESEARCH_DOCUMENT"
-                      ? "border-[#CC6600] bg-[#CC6600]/10 ring-2 ring-[#CC6600]/40 scale-[1.01]"
-                      : "border-white/15 hover:border-white/40 bg-white/[0.01] hover:bg-white/[0.03]"
+                  className={`flex cursor-pointer gap-3 rounded-[2px] border p-4 transition-colors ${
+                    integrityAgreed ? "border-[#CC6600]/50 bg-[#CC6600]/[0.06]" : "border-white/12 hover:border-white/25"
                   }`}
                 >
                   <input
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.docx,.doc"
-                    onChange={(e) => handleFileInputChange(e, "RESEARCH_DOCUMENT")}
+                    type="checkbox"
+                    checked={integrityAgreed}
+                    onChange={(e) => setIntegrityAgreed(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#CC6600]"
                   />
-                  <div className="w-8 h-8 rounded-full bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-white/40 group-hover:text-[#FFA040] group-hover:border-[#CC6600]/40 transition-colors">
-                    <CloudArrowUp size={18} weight="fill" />
-                  </div>
-                  <div className="flex flex-col gap-0.5 text-center">
-                    <span className="text-xs font-mono font-semibold text-white/80 group-hover:text-white transition-colors">
-                      Click to browse or drop file
-                    </span>
-                    <span className="text-[0.688rem] text-white/40 font-mono">
-                      PDF, DOCX (Max 15MB)
-                    </span>
-                  </div>
-                </label>
-              )}
-            </div>
-
-            {/* ── Slot 2: Raw Dataset ── */}
-            <div
-              onDragEnter={(e) => handleDragEnter(e, "DATASET")}
-              onDragOver={(e) => handleDragOver(e, "DATASET")}
-              onDragLeave={(e) => handleDragLeave(e, "DATASET")}
-              onDrop={(e) => handleDrop(e, "DATASET")}
-              className={`p-6 rounded-[2px] border bg-[#0A0A18]/85 flex flex-col justify-between gap-5 transition-all min-h-[300px] ${
-                dragActiveCategory === "DATASET"
-                  ? "border-[#CC6600] bg-[#CC6600]/5 ring-1 ring-[#CC6600]/40"
-                  : "border-white/[0.09]"
-              }`}
-              style={{
-                padding: "1.5rem",
-                borderRadius: "2px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                gap: "1.25rem",
-                minHeight: "300px",
-                boxSizing: "border-box",
-              }}
-            >
-              {/* Header */}
-              <div className="flex flex-col gap-3 min-h-[72px]" style={{ display: "flex", flexDirection: "column", gap: "0.75rem", minHeight: "72px" }}>
-                <div className="flex items-center justify-between" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div
-                    className="w-8 h-8 rounded-[2px] bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-emerald-400"
-                    style={{ width: "2rem", height: "2rem", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "2px" }}
-                  >
-                    <Database size={18} weight="fill" />
-                  </div>
-                  <span
-                    className="text-[0.625rem] font-mono font-bold uppercase px-2 py-0.5 rounded-[2px] bg-sky-500/10 text-sky-300 border border-sky-500/20"
-                    style={{ padding: "0.125rem 0.5rem", borderRadius: "2px" }}
-                  >
-                    Required
+                  <span className="text-[13px] leading-relaxed text-white/80">
+                    I confirm these files are from my own thesis or research project, and I understand JAXIS StatLab keeps them
+                    confidential.
                   </span>
-                </div>
-
-                <div className="flex flex-col gap-1" style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                  <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider">
-                    Data File (Excel / CSV / SPSS)
-                  </h3>
-                  <p className="text-xs text-white/50 leading-relaxed font-sans" style={{ fontSize: "0.75rem", lineHeight: 1.5 }}>
-                    Your survey answers spreadsheet, data table, or experiment records.
-                  </p>
-                </div>
-              </div>
-
-              {/* Upload Zone / State */}
-              {uploadingState.DATASET ? (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0 animate-pulse">
-                        <CloudArrowUp size={16} weight="fill" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-mono text-xs font-bold text-white truncate">
-                          {uploadingState.DATASET.fileName}
-                        </span>
-                        <span className="text-[0.625rem] font-mono text-white/50">
-                          {uploadingState.DATASET.formattedSize}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/35 text-[#FFA040] font-mono text-xs font-bold tracking-wider flex-shrink-0">
-                      {uploadingState.DATASET.progress}%
-                    </span>
-                  </div>
-
-                  {/* Bottom Group: Progress Bar + Status Footer */}
-                  <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
-                      <div
-                        className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-150"
-                        style={{ width: `${uploadingState.DATASET.progress}%` }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <div className="flex items-center gap-1.5 text-amber-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                        <span className="font-medium text-amber-300 text-[0.6875rem]">Uploading dataset...</span>
-                      </div>
-                      <span className="text-[0.6875rem] font-mono text-white/40">Please wait</span>
-                    </div>
-                  </div>
-                </div>
-              ) : filesList.some((f) => f.category === "DATASET") ? (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0">
-                        <Database size={16} weight="fill" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-mono text-xs font-bold text-white truncate" title={filesList.find((f) => f.category === "DATASET")?.name}>
-                          {filesList.find((f) => f.category === "DATASET")?.name}
-                        </span>
-                        <span className="text-[0.625rem] font-mono text-white/50">
-                          {filesList.find((f) => f.category === "DATASET")?.formattedSize}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/35 text-[#FFA040] font-mono text-xs font-bold tracking-wider flex-shrink-0">
-                      100%
-                    </span>
-                  </div>
-
-                  {/* Bottom Group: Progress Bar + Status Footer */}
-                  <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
-                      <div className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-300 w-full" />
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <div className="flex items-center gap-1.5 text-emerald-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        <span className="font-semibold text-emerald-300 text-[0.6875rem]">Ready for submission</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeFile("DATASET")}
-                        className="px-2.5 py-0.5 rounded-[2px] text-[0.6875rem] font-mono font-bold text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 transition-all cursor-pointer"
-                      >
-                        Change
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <label
-                  className={`group cursor-pointer border border-dashed rounded-[2px] p-6 text-center transition-all flex flex-col items-center justify-center gap-2.5 min-h-[140px] ${
-                    dragActiveCategory === "DATASET"
-                      ? "border-[#CC6600] bg-[#CC6600]/10 ring-2 ring-[#CC6600]/40 scale-[1.01]"
-                      : "border-white/15 hover:border-white/40 bg-white/[0.01] hover:bg-white/[0.03]"
-                  }`}
-                >
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".xlsx,.xls,.csv,.sav,.dta,.tsv"
-                    onChange={(e) => handleFileInputChange(e, "DATASET")}
-                  />
-                  <div className="w-8 h-8 rounded-full bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-white/40 group-hover:text-[#FFA040] group-hover:border-[#CC6600]/40 transition-colors">
-                    <CloudArrowUp size={18} weight="fill" />
-                  </div>
-                  <div className="flex flex-col gap-0.5 text-center">
-                    <span className="text-xs font-mono font-semibold text-white/80 group-hover:text-white transition-colors">
-                      Click to browse or drop file
-                    </span>
-                    <span className="text-[0.688rem] text-white/40 font-mono">
-                      CSV, XLSX, XLS, SPSS (Max 15MB)
-                    </span>
-                  </div>
                 </label>
-              )}
-            </div>
 
-            {/* ── Slot 3: Survey Questionnaire ── */}
-            <div
-              onDragEnter={(e) => handleDragEnter(e, "QUESTIONNAIRE")}
-              onDragOver={(e) => handleDragOver(e, "QUESTIONNAIRE")}
-              onDragLeave={(e) => handleDragLeave(e, "QUESTIONNAIRE")}
-              onDrop={(e) => handleDrop(e, "QUESTIONNAIRE")}
-              className={`p-6 rounded-[2px] border bg-[#0A0A18]/85 flex flex-col justify-between gap-5 transition-all min-h-[300px] ${
-                dragActiveCategory === "QUESTIONNAIRE"
-                  ? "border-[#CC6600] bg-[#CC6600]/5 ring-1 ring-[#CC6600]/40"
-                  : "border-white/[0.09]"
-              }`}
-              style={{
-                padding: "1.5rem",
-                borderRadius: "2px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                gap: "1.25rem",
-                minHeight: "300px",
-                boxSizing: "border-box",
-              }}
-            >
-              {/* Header */}
-              <div className="flex flex-col gap-3 min-h-[72px]" style={{ display: "flex", flexDirection: "column", gap: "0.75rem", minHeight: "72px" }}>
-                <div className="flex items-center justify-between" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div
-                    className="w-8 h-8 rounded-[2px] bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-amber-400"
-                    style={{ width: "2rem", height: "2rem", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "2px" }}
+                <div className="flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-5 sm:flex-row sm:justify-between">
+                  <Button variant="outline" size="sm" onClick={() => setCurrentStep(2)} disabled={isPending} className="w-full gap-1.5 sm:w-auto">
+                    <ArrowLeft size={14} weight="fill" /> Back
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleFinalSubmit}
+                    loading={isPending}
+                    disabled={!integrityAgreed || isPending}
+                    className="w-full gap-1.5 sm:w-auto"
                   >
-                    <ListChecks size={18} weight="fill" />
-                  </div>
-                  <span
-                    className="text-[0.625rem] font-mono uppercase px-2 py-0.5 rounded-[2px] bg-white/[0.04] text-white/40 border border-white/[0.08]"
-                    style={{ padding: "0.125rem 0.5rem", borderRadius: "2px" }}
-                  >
-                    Optional
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-1" style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                  <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider">
-                    Survey Questionnaire / Tool (Optional)
-                  </h3>
-                  <p className="text-xs text-white/50 leading-relaxed font-sans" style={{ fontSize: "0.75rem", lineHeight: 1.5 }}>
-                    Copy of your survey questionnaire, interview guide, or rating scale.
-                  </p>
+                    {isPending ? "Sending..." : "Send My Study"}
+                  </Button>
                 </div>
               </div>
+            </Panel>
+          ) : null}
+        </div>
 
-              {/* Upload Zone / State */}
-              {uploadingState.QUESTIONNAIRE ? (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0 animate-pulse">
-                        <CloudArrowUp size={16} weight="fill" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-mono text-xs font-bold text-white truncate">
-                          {uploadingState.QUESTIONNAIRE.fileName}
-                        </span>
-                        <span className="text-[0.625rem] font-mono text-white/50">
-                          {uploadingState.QUESTIONNAIRE.formattedSize}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/35 text-[#FFA040] font-mono text-xs font-bold tracking-wider flex-shrink-0">
-                      {uploadingState.QUESTIONNAIRE.progress}%
-                    </span>
-                  </div>
-
-                  {/* Bottom Group: Progress Bar + Status Footer */}
-                  <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
-                      <div
-                        className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-150"
-                        style={{ width: `${uploadingState.QUESTIONNAIRE.progress}%` }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <div className="flex items-center gap-1.5 text-amber-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                        <span className="font-medium text-amber-300 text-[0.6875rem]">Uploading tool...</span>
-                      </div>
-                      <span className="text-[0.6875rem] font-mono text-white/40">Please wait</span>
-                    </div>
-                  </div>
-                </div>
-              ) : filesList.some((f) => f.category === "QUESTIONNAIRE") ? (
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0">
-                        <ListChecks size={16} weight="fill" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-mono text-xs font-bold text-white truncate" title={filesList.find((f) => f.category === "QUESTIONNAIRE")?.name}>
-                          {filesList.find((f) => f.category === "QUESTIONNAIRE")?.name}
-                        </span>
-                        <span className="text-[0.625rem] font-mono text-white/50">
-                          {filesList.find((f) => f.category === "QUESTIONNAIRE")?.formattedSize}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/35 text-[#FFA040] font-mono text-xs font-bold tracking-wider flex-shrink-0">
-                      100%
-                    </span>
-                  </div>
-
-                  {/* Bottom Group: Progress Bar + Status Footer */}
-                  <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
-                      <div className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-300 w-full" />
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <div className="flex items-center gap-1.5 text-emerald-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        <span className="font-semibold text-emerald-300 text-[0.6875rem]">Ready for submission</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeFile("QUESTIONNAIRE")}
-                        className="px-2.5 py-0.5 rounded-[2px] text-[0.6875rem] font-mono font-bold text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 transition-all cursor-pointer"
-                      >
-                        Change
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <label
-                  className={`group cursor-pointer border border-dashed rounded-[2px] p-6 text-center transition-all flex flex-col items-center justify-center gap-2.5 min-h-[140px] ${
-                    dragActiveCategory === "QUESTIONNAIRE"
-                      ? "border-[#CC6600] bg-[#CC6600]/10 ring-2 ring-[#CC6600]/40 scale-[1.01]"
-                      : "border-white/15 hover:border-white/40 bg-white/[0.01] hover:bg-white/[0.03]"
-                  }`}
-                >
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.docx,.doc,.xlsx,.csv"
-                    onChange={(e) => handleFileInputChange(e, "QUESTIONNAIRE")}
-                  />
-                  <div className="w-8 h-8 rounded-full bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-white/40 group-hover:text-[#FFA040] group-hover:border-[#CC6600]/40 transition-colors">
-                    <CloudArrowUp size={18} weight="fill" />
-                  </div>
-                  <div className="flex flex-col gap-0.5 text-center">
-                    <span className="text-xs font-mono font-semibold text-white/80 group-hover:text-white transition-colors">
-                      Click to browse or drop file
-                    </span>
-                    <span className="text-[0.688rem] text-white/40 font-mono">
-                      PDF, DOCX (Max 15MB)
-                    </span>
-                  </div>
-                </label>
-              )}
+        {/* Side: what happens next + school */}
+        <aside className="flex flex-col gap-6 lg:sticky lg:top-6">
+          <Panel as="div">
+            <div className="px-5 py-5">
+              <p className="text-sm font-semibold text-white">What happens next</p>
+              <ol className="mt-3 flex flex-col gap-3 text-[13px] leading-relaxed text-white/60">
+                <li className="flex gap-2.5">
+                  <span className="font-mono text-xs text-white/40">1</span>
+                  We read your study and files.
+                </li>
+                <li className="flex gap-2.5">
+                  <span className="font-mono text-xs text-white/40">2</span>
+                  You get a fixed written price, usually within 24 hours.
+                </li>
+                <li className="flex gap-2.5">
+                  <span className="font-mono text-xs text-white/40">3</span>
+                  Nothing to pay until you accept the price and sign your agreement.
+                </li>
+              </ol>
             </div>
-          </div>
-
-          <FormFooter align="between" className="mt-8 pt-6">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setCurrentStep(1)}
-              className="w-full sm:w-auto font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
-            >
-              ← Back to Scope
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={handleProceedToStep3}
-              className="w-full sm:w-auto font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
-            >
-              Proceed to Review →
-            </Button>
-          </FormFooter>
-        </Card>
-      )}
-
-      {/* ── STEP 3: Review & Submit ── */}
-      {currentStep === 3 && (
-        <Card className="p-8 md:p-10 flex flex-col gap-8 animate-card-reveal stagger-1" style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "2rem" }}>
-          <div className="border-b border-white/[0.08] pb-5" style={{ paddingBottom: "1.25rem", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-            <h2 className="text-base font-bold text-white font-sans">
-              Summary Review & Submission
-            </h2>
-            <p className="text-xs text-white/50 mt-1 font-sans leading-relaxed">
-              Inspect your study specifications before sending them to the Admin Triage Queue for statistical pricing.
-            </p>
-          </div>
-
-          {/* School Affiliation Verification */}
-          {profile && (
-            <div
-              className="p-5 md:p-6 rounded-[2px] bg-[#10101E] border border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5"
-              style={{ marginTop: "1.5rem", padding: "1.25rem 1.5rem", borderRadius: "2px", boxSizing: "border-box" }}
-            >
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-mono uppercase text-sky-400 font-bold tracking-wider">
-                  Verified School Profile
-                </span>
-                <span className="text-sm font-semibold text-white">
-                  {profile.institutionSchool} · {profile.academicProgram}
-                </span>
-                <span className="text-xs text-white/50 font-mono mt-0.5">
-                  Region: {profile.region} | Contact: {profile.contactNumber}
-                </span>
-              </div>
-              <Link
-                href="/dashboard/client/profile"
-                className="text-xs font-mono text-[#CC6600] hover:underline whitespace-nowrap font-medium"
-              >
-                Edit Profile →
-              </Link>
-            </div>
-          )}
-
-          {/* Research Summary Card */}
-          <div
-            className="flex flex-col gap-6 border border-white/[0.08] rounded-[2px] p-6 md:p-8 bg-white/[0.015]"
-            style={{
-              marginTop: "1.5rem",
-              padding: "1.75rem",
-              borderRadius: "2px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "1.5rem",
-              boxSizing: "border-box",
-            }}
-          >
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-mono text-white/40 uppercase tracking-wider font-bold">Research Title</span>
-              <span className="text-base font-bold text-white leading-snug">{researchTitle}</span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/[0.06]">
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-mono text-white/40 uppercase tracking-wider font-bold">Target Deadline</span>
-                <span className="text-sm font-mono text-amber-400 font-bold">
-                  {new Date(deadlineRequested).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-mono text-white/40 uppercase tracking-wider font-bold">Attached Files</span>
-                <span className="text-sm font-mono text-emerald-400 font-bold">
-                  {filesList.length} documents uploaded
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 pt-4 border-t border-white/[0.06]">
-              <span className="text-xs font-mono text-white/40 uppercase tracking-wider font-bold">Statement of the Problem / Research Questions</span>
-              <p className="text-xs text-slate-300 font-sans leading-relaxed whitespace-pre-wrap">
-                {researchQuestions}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 pt-4 border-t border-white/[0.06]">
-              <span className="text-xs font-mono text-white/40 uppercase tracking-wider font-bold">Core Research Objectives</span>
-              <p className="text-xs text-slate-300 font-sans leading-relaxed whitespace-pre-wrap">
-                {researchObjectives}
-              </p>
-            </div>
-
-            {hypotheses && (
-              <div className="flex flex-col gap-2 pt-4 border-t border-white/[0.06]">
-                <span className="text-xs font-mono text-white/40 uppercase tracking-wider font-bold">Theoretical Hypotheses</span>
-                <p className="text-xs text-slate-300 font-sans leading-relaxed whitespace-pre-wrap">
-                  {hypotheses}
+          </Panel>
+          {profile ? (
+            <Panel as="div">
+              <div className="px-5 py-5">
+                <p className="flex items-center justify-between gap-2 text-sm font-semibold text-white">
+                  Your school
+                  <Link href="/dashboard/client/profile" className="text-xs font-normal text-white/55 underline-offset-4 hover:text-white hover:underline">
+                    Edit
+                  </Link>
                 </p>
+                <p className="mt-2 text-[13px] text-white/80">{profile.institutionSchool}</p>
+                {profile.academicProgram ? <p className="text-[13px] text-white/55">{profile.academicProgram}</p> : null}
               </div>
-            )}
-          </div>
+            </Panel>
+          ) : null}
+        </aside>
+      </div>
 
-          {/* Academic Integrity Covenant Card */}
-          <div
-            onClick={() => setIntegrityAgreed(!integrityAgreed)}
-            className={`rounded-[2px] transition-all cursor-pointer select-none border ${
-              integrityAgreed
-                ? "bg-[#CC6600]/10 border-[#CC6600]/50 ring-1 ring-[#CC6600]/30"
-                : "bg-[#0A0A18]/85 border-white/[0.12] hover:border-white/25"
-            }`}
-            style={{
-              marginTop: "1.5rem",
-              padding: "1.5rem 1.75rem",
-              borderRadius: "2px",
-              border: integrityAgreed ? "1px solid rgba(204, 102, 0, 0.5)" : "1px solid rgba(255, 255, 255, 0.12)",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "1.25rem",
-              boxSizing: "border-box",
-            }}
-          >
-            {/* Custom Styled Checkmark Box */}
-            <div
-              className={`w-5 h-5 rounded-[2px] border flex items-center justify-center transition-all mt-0.5 flex-shrink-0 ${
-                integrityAgreed
-                  ? "bg-[#CC6600] border-[#CC6600] text-white"
-                  : "bg-[#10101E] border-white/30 text-transparent hover:border-[#CC6600]/70"
-              }`}
-              style={{
-                width: "1.375rem",
-                height: "1.375rem",
-                borderRadius: "2px",
-                backgroundColor: integrityAgreed ? "#CC6600" : "#10101E",
-                borderColor: integrityAgreed ? "#CC6600" : "rgba(255, 255, 255, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              {integrityAgreed && <Check size={15} weight="fill" style={{ color: "#FFFFFF" }} />}
-            </div>
-
-            <div
-              className="flex flex-col gap-1.5 flex-1 min-w-0"
-              style={{ display: "flex", flexDirection: "column", gap: "0.375rem", flex: 1, minWidth: 0 }}
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className="text-[0.625rem] font-mono font-bold uppercase px-2 py-0.5 rounded-[2px] bg-[#CC6600]/20 text-[#CC6600] border border-[#CC6600]/30 tracking-wider"
-                  style={{ padding: "0.125rem 0.5rem", borderRadius: "2px" }}
-                >
-                  Academic Integrity Covenant
-                </span>
-              </div>
-              <h4 className="font-sans text-sm font-bold text-white tracking-wide">
-                Statement of Academic Authorship & Confidentiality
-              </h4>
-              <p
-                className="text-xs text-white/75 font-sans leading-relaxed"
-                style={{ fontSize: "0.8125rem", lineHeight: 1.55, color: "rgba(255, 255, 255, 0.75)" }}
-              >
-                I confirm that the submitted questionnaire and dataset belong to my academic thesis or research project. I understand JAXIS StatLab operates under strict peer review and non-disclosure standards.
-              </p>
-              <div
-                className="flex items-center gap-1.5 text-[0.688rem] font-mono text-emerald-400/90 pt-1"
-                style={{ display: "flex", alignItems: "center", gap: "0.375rem", paddingTop: "0.25rem", color: "#34D399" }}
-              >
-                <ShieldCheck size={14} weight="fill" />
-                <span>NDA & Non-Disclosure Protected · Peer Review Standard</span>
-              </div>
-            </div>
-          </div>
-
-          <FormFooter
-            align="between"
-            className="mt-8 pt-6"
-            style={{
-              marginTop: "2rem",
-              paddingTop: "1.5rem",
-              borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-            }}
-          >
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setCurrentStep(2)}
-              disabled={isPending}
-              className="w-full sm:w-auto font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
-            >
-              ← Back to Attachments
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={handleFinalSubmit}
-              loading={isPending}
-              disabled={!integrityAgreed || isPending}
-              className="w-full sm:w-auto font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform"
-            >
-              Submit Study Request →
-            </Button>
-          </FormFooter>
-        </Card>
-      )}
-
-      {/* ── Floating Responsive Toast Notification ── */}
-      {toast && (
-        <Toast
-          variant={toast.variant}
-          message={toast.message}
-          description={toast.description}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast ? <Toast variant={toast.variant} message={toast.message} description={toast.description} onClose={() => setToast(null)} /> : null}
     </div>
+  );
+}
+
+// ─── Pieces ─────────────────────────────────────────────────────────────────────
+
+function Summary({ label, onEdit, children }: { label: string; onEdit: () => void; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:gap-4">
+      <dt className="w-36 shrink-0 text-xs font-medium text-white/45 sm:pt-0.5">{label}</dt>
+      <dd className="min-w-0 flex-1 text-[13px] leading-relaxed text-white/75">{children}</dd>
+      <button type="button" onClick={onEdit} className="self-start text-xs text-white/55 underline-offset-4 hover:text-white hover:underline">
+        Edit
+      </button>
+    </div>
+  );
+}
+
+function FileSlot({
+  slot,
+  file,
+  uploading,
+  dragActive,
+  onDrag,
+  onPick,
+  onRemove,
+}: {
+  slot: (typeof SLOTS)[number];
+  file: UploadedFileItem | null;
+  uploading: UploadProgressState | null;
+  dragActive: boolean;
+  onDrag: (on: boolean) => void;
+  onPick: (file: File) => void;
+  onRemove: () => void;
+}) {
+  const accept = slot.extensions.join(",");
+  const pickFromInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) onPick(f);
+    e.target.value = "";
+  };
+  return (
+    <section
+      aria-label={slot.title}
+      onDragEnter={(e) => {
+        e.preventDefault();
+        onDrag(true);
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        if (!dragActive) onDrag(true);
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) onDrag(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrag(false);
+        const f = e.dataTransfer.files?.[0];
+        if (f) onPick(f);
+      }}
+      className={`rounded-[2px] border p-4 transition-colors ${
+        dragActive ? "border-[#CC6600] bg-[#CC6600]/[0.05]" : "border-white/[0.08]"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 text-white/45">{slot.icon}</span>
+        <div className="min-w-0 flex-1">
+          <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-white">
+            {slot.title}
+            <span className="rounded-[2px] border border-white/10 px-1.5 py-px text-[10px] font-medium text-white/50">
+              {slot.required ? "Required" : "Optional"}
+            </span>
+          </p>
+          <p className="mt-0.5 text-[13px] leading-relaxed text-white/55">{slot.body}</p>
+        </div>
+      </div>
+
+      <div className="mt-3 pl-0 sm:pl-[30px]">
+        {uploading ? (
+          <div className="rounded-[2px] border border-white/10 bg-white/[0.02] p-3">
+            <p className="flex items-center justify-between gap-3 text-[13px]">
+              <span className="truncate text-white/85">{uploading.fileName}</span>
+              <span className="shrink-0 font-mono text-xs text-white/50">{uploading.progress}%</span>
+            </p>
+            <div className="mt-2 h-1 overflow-hidden rounded-[1px] bg-white/[0.08]">
+              <div className="h-full bg-[#CC6600] transition-[width] duration-200" style={{ width: `${uploading.progress}%` }} />
+            </div>
+            <p className="mt-1.5 text-xs text-white/45">Uploading...</p>
+          </div>
+        ) : file ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[2px] border border-white/10 bg-white/[0.02] p-3">
+            <span className="flex min-w-0 items-center gap-2.5">
+              <Check size={15} weight="bold" className="shrink-0 text-[#CC6600]" />
+              <span className="min-w-0">
+                <span className="block truncate text-[13px] text-white" title={file.name}>
+                  {file.name}
+                </span>
+                <span className="text-xs text-white/45">{file.formattedSize}</span>
+              </span>
+            </span>
+            <span className="flex shrink-0 items-center gap-3 text-xs">
+              <label className="cursor-pointer text-white/70 underline-offset-4 hover:text-white hover:underline">
+                Replace
+                <input type="file" accept={accept} className="hidden" onChange={pickFromInput} />
+              </label>
+              <button type="button" onClick={onRemove} className="text-white/55 underline-offset-4 hover:text-white hover:underline">
+                Remove
+              </button>
+            </span>
+          </div>
+        ) : (
+          <label
+            className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[2px] border border-dashed px-4 py-5 text-center transition-colors ${
+              dragActive ? "border-[#CC6600] bg-[#CC6600]/[0.06]" : "border-white/15 hover:border-white/35 hover:bg-white/[0.02]"
+            }`}
+          >
+            <input type="file" accept={accept} className="hidden" onChange={pickFromInput} aria-label={`Choose your ${slot.title}`} />
+            <CloudArrowUp size={20} weight="fill" className="text-white/40" />
+            <span className="text-[13px] text-white/80">
+              <span className="font-medium text-white underline underline-offset-4">Choose a file</span> or drop it here
+            </span>
+            <span className="text-xs text-white/40">{slot.formats}</span>
+          </label>
+        )}
+      </div>
+    </section>
   );
 }

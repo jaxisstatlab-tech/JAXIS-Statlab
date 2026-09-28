@@ -102,10 +102,10 @@ export default function Contact() {
         <Reveal className="max-w-3xl">
           <div className={kicker}>Contact</div>
           <h1 className="font-sans text-4xl font-medium tracking-[-0.04em] text-white sm:text-5xl lg:text-[3.5rem] lg:leading-[1.05]">
-            Talk to a statistician
+            Talk to a statistical analyst
           </h1>
           <p className="mt-4 max-w-xl font-mono text-xs leading-relaxed text-white/60 sm:text-sm">
-            Ask about your study, a payment, or anything else. Send a message below and a statistician will reply by email.
+            Ask about your study, a payment, or anything else. Send a message below and a statistical analyst will reply by email.
           </p>
         </Reveal>
 

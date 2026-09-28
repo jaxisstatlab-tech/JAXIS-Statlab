@@ -11,11 +11,11 @@ const COPY: Record<"login" | "register" | "recovery", Copy> = {
   login: {
     kicker: "Welcome back",
     headline: "Pick up where you left off",
-    subtitle: "Check your study's progress, read messages from your statistician, and download your files.",
+    subtitle: "Check your study's progress, read messages from your statistical analyst, and download your files.",
   },
   register: {
     kicker: "Free account",
-    headline: "Get your study checked by two statisticians",
+    headline: "Get your study checked by two statistical analysts",
     subtitle: "Send your study, get a fixed written price within 24 hours, and pay only when you're ready.",
   },
   recovery: {

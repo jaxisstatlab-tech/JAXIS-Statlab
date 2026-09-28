@@ -96,7 +96,7 @@ export default function Services() {
                   </h3>
                   <p className="mt-2 max-w-md font-sans text-[15px] leading-relaxed text-white/65">
                     The right test for your questions, assumptions checked first, and effect sizes reported, not just
-                    p-values. Every result is rerun by a second statistician.
+                    p-values. Every result is rerun by a second statistical analyst.
                   </p>
                   <div className="mt-5 flex flex-wrap gap-1.5">
                     {TESTS.map((t) => (

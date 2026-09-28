@@ -31,29 +31,40 @@ function tabsFor(step: number): Tab[] {
 /**
  * The same top section on every page of one study: title, study ID, stage, the 5-step tracker,
  * and tabs to move between the study's pages. Lives in the study layout, so it stays put while
- * switching tabs and refreshes its stage on each switch.
+ * switching tabs and refreshes its stage when a page reports a change.
  */
 export function ClientStudyHeader({ initial }: { initial: StudyHeaderData }) {
   const pathname = usePathname() ?? "";
   const [study, setStudy] = useState(initial);
   const [copied, setCopied] = useState<string | null>(null);
-  const firstPath = useRef(pathname);
+  const tabsRef = useRef<HTMLElement>(null);
 
-  // After an action on one tab (accept a price, sign, pay) the stage may have moved on.
+  // On phones the tab row scrolls sideways; keep the current tab in view.
   useEffect(() => {
-    if (pathname === firstPath.current) return;
-    let cancelled = false;
-    getProjectById(initial.id)
-      .then((res) => {
-        if (!cancelled && res.success && res.data) {
-          setStudy((s) => ({ ...s, title: res.data.researchTitle, status: res.data.masterStatus }));
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
+    const nav = tabsRef.current;
+    const on = nav?.querySelector<HTMLElement>("[aria-current=\"page\"]");
+    if (!nav || !on) return;
+    const left = on.offsetLeft - (nav.clientWidth - on.offsetWidth) / 2;
+    nav.scrollLeft = Math.max(0, left);
+  }, [pathname]);
+
+  // No refetch on every tab switch: that was an extra server call per click, queued ahead of the
+  // page's own. Pages that change the stage (accept a price, sign, pay, send files or a change
+  // request) fire "jaxis:study-updated", and live notifications do too.
+  // A page on this study just changed its stage (signed, sent files...): refresh the tag and tracker now.
+  useEffect(() => {
+    const onUpdated = () => {
+      getProjectById(initial.id)
+        .then((res) => {
+          if (res.success && res.data) {
+            setStudy((s) => ({ ...s, title: res.data.researchTitle, status: res.data.masterStatus }));
+          }
+        })
+        .catch(() => {});
     };
-  }, [pathname, initial.id]);
+    window.addEventListener("jaxis:study-updated", onUpdated);
+    return () => window.removeEventListener("jaxis:study-updated", onUpdated);
+  }, [initial.id]);
 
   const stage = getClientStage(study.status);
   const base = `/dashboard/client/projects/${study.id}`;
@@ -95,7 +106,7 @@ export function ClientStudyHeader({ initial }: { initial: StudyHeaderData }) {
       {/* The chat needs the room, so the tracker hides on the Messages tab. */}
       {active === "/messages" ? null : <ClientStudyStepper stage={stage} className="mt-5" />}
 
-      <nav aria-label="Study pages" className="-mx-1 mt-5 overflow-x-auto border-b border-white/[0.08] px-1">
+      <nav ref={tabsRef} aria-label="Study pages" className="-mx-1 mt-5 overflow-x-auto border-b border-white/[0.08] px-1">
         <ul className="flex min-w-max gap-1">
           {tabs.map((t) => {
             const on = t.path === active;

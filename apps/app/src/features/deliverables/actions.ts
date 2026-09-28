@@ -31,7 +31,8 @@ import {
 } from "./schemas";
 import { Deliverable, RevisionRequest, RoleName, DeliverableCategory } from "@prisma/client";
 import { assertStudyAccess } from "@/lib/access-control";
-import { devStudyDataEnabled, devAdminDeliverables, devClientDeliverables } from "@/features/projects/dev-study-store";
+import { clientPackageName } from "@/features/projects/client-packages";
+import { devStudyDataEnabled, devAdminDeliverables, devClientDeliverables, devDeliverableDownload, devSubmitRevision } from "@/features/projects/dev-study-store";
 
 /**
  * Maps Deliverable Prisma record to DeliverableDTO
@@ -199,7 +200,7 @@ export async function uploadDeliverable(rawInput: UploadDeliverableInput): Promi
 
   const access = await assertStudyAccess(input.projectId, session.user);
   if (!access.hasAccess || (!access.isManager && !access.isAssignedStatistician)) {
-    throw new Error("Unauthorized: Only administrators and assigned statisticians can upload deliverables.");
+    throw new Error("Unauthorized: Only administrators and assigned statistical analysts can upload deliverables.");
   }
 
   const deliverable = await db.deliverable.create({
@@ -263,7 +264,7 @@ export async function deleteDeliverable(deliverableId: string): Promise<{ succes
 
   const access = await assertStudyAccess(deliverable.projectId, session.user);
   if (!access.hasAccess || (!access.isManager && !access.isAssignedStatistician)) {
-    throw new Error("Unauthorized: Only administrators and assigned statisticians can remove deliverables.");
+    throw new Error("Unauthorized: Only administrators and assigned statistical analysts can remove deliverables.");
   }
 
   if (deliverable.isFinalReleased) {
@@ -625,17 +626,16 @@ export async function getClientDeliverables(projectId: string): Promise<ClientDe
       project.analysisFiles?.find((f) => f.statistician)?.statistician;
 
     const statisticianName =
-      assignedStatistician?.fullName || "Lead Consulting Statistician";
-    const statisticianTitle =
-      assignedStatistician?.staffProfile?.bio ||
-      "Lead Consulting Statistician, Statistical Computing & Analytics";
+      assignedStatistician?.fullName || "Lead Statistical Analyst";
+    // A plain job title (a profile bio is a paragraph, not a title).
+    const statisticianTitle = "Statistical Analyst";
     const statisticianSignatureUrl =
       assignedStatistician?.staffProfile?.signatureUrl || null;
 
     const approvedReview = project.qaReviews?.[0];
     const qaUser = approvedReview?.reviewer || project.assignment?.qaLead;
-    const qaLeadName = qaUser?.fullName || "Senior QA Review Lead";
-    const qaLeadTitle = qaUser?.staffProfile?.bio || "Statistical Review Editor, Quality Assurance";
+    const qaLeadName = qaUser?.fullName || "JAXIS StatLab review team";
+    const qaLeadTitle = "Reviewing Statistical Analyst";
     const qaSignatureUrl = qaUser?.staffProfile?.signatureUrl || null;
 
     const cleanIntakeNum = project.intakeId.replace(/^JAXIS-?/i, "");
@@ -650,11 +650,12 @@ export async function getClientDeliverables(projectId: string): Promise<ClientDe
     const qaCertificate: QaCertificateDTO = {
       certificateId,
       researchTitle: project.researchTitle,
-      clientName: project.client?.fullName || "Lead Researcher",
+      clientName: project.client?.fullName || "",
       clientEmail: project.client?.email || "",
-      institution: project.client?.clientProfile?.institutionSchool || "Higher Education Institution",
-      program: project.client?.clientProfile?.academicProgram || "Graduate & Doctoral Research",
-      tierExecuted: formatTierExecuted(project.packageName),
+      // Left empty when missing (the certificate hides empty rows) instead of placeholder text.
+      institution: project.client?.clientProfile?.institutionSchool || "",
+      program: project.client?.clientProfile?.academicProgram || "",
+      tierExecuted: clientPackageName(project.packageName) || formatTierExecuted(project.packageName),
       completionDate,
       statisticianName,
       statisticianTitle,
@@ -721,6 +722,8 @@ export async function getDeliverableDownloadUrl(
   if (!session?.user?.id) {
     throw new Error("Authentication required.");
   }
+  // Offline dev only: sample files have no real storage, so hand back a small placeholder.
+  if (devStudyDataEnabled()) return devDeliverableDownload(deliverableId, session.user);
 
   const deliverable = await db.deliverable.findUnique({
     where: { id: deliverableId },
@@ -766,6 +769,8 @@ export async function submitClientRevision(rawInput: SubmitRevisionRequestInput)
   }
 
   const input = SubmitRevisionRequestSchema.parse(rawInput);
+  // Offline dev only: saved to .dev-revisions.json with the same rules.
+  if (devStudyDataEnabled()) return devSubmitRevision(input, session.user);
 
   const project = await db.project.findUnique({
     where: { id: input.projectId },

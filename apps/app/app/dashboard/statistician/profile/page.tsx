@@ -147,11 +147,11 @@ export default function StatisticianProfilePage() {
       )}
 
       <PageHeader
-        title="Statistician Profile & Specializations"
+        title="Statistical Analyst Profile & Specializations"
         description="Configure your research bio, certified statistical methodologies, and analytical tools."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Statistician Lab", href: "/dashboard/statistician" },
+          { label: "Statistical Analyst Lab", href: "/dashboard/statistician" },
           { label: "Profile Settings" },
         ]}
         actions={
@@ -307,7 +307,7 @@ export default function StatisticianProfilePage() {
                     </span>
                   </div>
                   <textarea
-                    placeholder="e.g., Senior PhD statistician specializing in multivariate quantitative models, structural equation modeling (SEM), and APA-compliant statistical reporting. 8+ years executing computational workflows in R, Python, and SPSS."
+                    placeholder="e.g., Senior PhD statistical analyst specializing in multivariate quantitative models, structural equation modeling (SEM), and APA-compliant statistical reporting. 8+ years executing computational workflows in R, Python, and SPSS."
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     rows={4}

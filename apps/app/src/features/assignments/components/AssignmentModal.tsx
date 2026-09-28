@@ -122,7 +122,7 @@ export function AssignmentModal({
 
   const handleSubmit = () => {
     if (!selectedStatId) {
-      setError("Please select a Lead Statistician.");
+      setError("Please select a Lead Statistical Analyst.");
       return;
     }
     if (!selectedQaId) {
@@ -130,7 +130,7 @@ export function AssignmentModal({
       return;
     }
     if (selectedStat?.isOnLeave) {
-      setError("The selected Lead Statistician is currently on leave and unavailable for assignment.");
+      setError("The selected Lead Statistical Analyst is currently on leave and unavailable for assignment.");
       return;
     }
     if (selectedQa?.isOnLeave) {
@@ -316,7 +316,7 @@ export function AssignmentModal({
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-white/80 flex items-center gap-1.5">
                   <IconUserCheck size={16} stroke={2} className="text-[#38BDF8]" />
-                  <span>Lead Statistician</span>
+                  <span>Lead Statistical Analyst</span>
                 </label>
                 <span className="text-[0.688rem] text-white/40">
                   {statisticians.filter((s) => !s.isOnLeave).length} available specialist{statisticians.filter((s) => !s.isOnLeave).length === 1 ? "" : "s"}

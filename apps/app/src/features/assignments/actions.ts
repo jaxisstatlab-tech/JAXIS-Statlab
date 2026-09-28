@@ -83,7 +83,7 @@ export async function assignExperts(
           ]);
 
           if (statUser?.status === "ON_LEAVE") {
-            throw new Error("CONFLICT: Selected Lead Statistician is currently on leave and unavailable for assignments.");
+            throw new Error("CONFLICT: Selected Lead Statistical Analyst is currently on leave and unavailable for assignments.");
           }
           if (qaUser?.status === "ON_LEAVE") {
             throw new Error("CONFLICT: Selected Senior QA Lead is currently on leave and unavailable for assignments.");
@@ -266,7 +266,7 @@ export async function reassignExperts(
           ]);
 
           if (statUser?.status === "ON_LEAVE") {
-            throw new Error("CONFLICT: Target Lead Statistician is currently on leave and unavailable for assignments.");
+            throw new Error("CONFLICT: Target Lead Statistical Analyst is currently on leave and unavailable for assignments.");
           }
           if (qaUser?.status === "ON_LEAVE") {
             throw new Error("CONFLICT: Target Senior QA Lead is currently on leave and unavailable for assignments.");
@@ -928,7 +928,7 @@ export async function getStatisticianWorkload(): Promise<ActionResponse<Assignme
   }
 
   if (session.user.role !== "STATISTICIAN" && session.user.role !== "ADMIN" && session.user.role !== "CEO") {
-    return { success: false, error: { code: "FORBIDDEN", message: "Only Lead Statisticians can access this workload." } };
+    return { success: false, error: { code: "FORBIDDEN", message: "Only Lead Statistical Analysts can access this workload." } };
   }
 
   try {

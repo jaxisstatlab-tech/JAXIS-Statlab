@@ -155,7 +155,7 @@ export function ErrorPage({
           <span>
             © 2026 <span className="text-white/85">JAXIS StatLab</span>
           </span>
-          <span>Every study is checked by two statisticians.</span>
+          <span>Every study is checked by two statistical analysts.</span>
         </div>
       </footer>
     </div>

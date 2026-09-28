@@ -12,6 +12,8 @@
 # next.js
 /.next/
 /.next-offline/
+# any other build folder (check servers, release-check builds); Tailwind skips ignored files
+/.next-*/
 /out/
 
 # production
@@ -45,4 +47,6 @@ next-env.d.ts
 /.dev-messages.json
 /.dev-analysis.json
 /.dev-deliverables.json
+/.dev-disputes.json
+/.dev-revisions.json
 /dev_data/payments.json

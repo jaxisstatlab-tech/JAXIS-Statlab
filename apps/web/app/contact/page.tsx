@@ -9,7 +9,7 @@ import { FAQS } from "../content/site";
 export const metadata: Metadata = {
   title: "Contact · JAXIS StatLab",
   description:
-    "Questions about your study, pricing, or DefenseLab? Message a JAXIS StatLab statistician, or search answers to common questions.",
+    "Questions about your study, pricing, or DefenseLab? Message a JAXIS StatLab statistical analyst, or search answers to common questions.",
   alternates: { canonical: "/contact" },
 };
 

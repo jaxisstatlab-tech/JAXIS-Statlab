@@ -236,7 +236,7 @@ export function ClientDefenseLabClient({
         setToast({
           message: "Session booked",
           description:
-            "Your statistician has your time. We'll add the video link before the session.",
+            "Your statistical analyst has your time. We'll add the video link before the session.",
           variant: "success",
         });
         setIsBookModalOpen(false);
@@ -326,7 +326,7 @@ export function ClientDefenseLabClient({
   return (
     <div
       data-portal="client"
-      className="flex flex-col gap-6 max-w-5xl mx-auto pb-24 w-full animate-content-fade font-sans"
+      className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans"
     >
       {toast && (
         <Toast
@@ -339,7 +339,7 @@ export function ClientDefenseLabClient({
 
       <PageHeader
         title="DefenseLab Practice"
-        description="Practice your defense 1-on-1 with a senior statistician who asks the questions panels ask."
+        description="Practice your defense 1-on-1 with a senior statistical analyst who asks the questions panels ask."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "My Studies", href: "/dashboard/client" },
@@ -390,8 +390,8 @@ export function ClientDefenseLabClient({
                     </p>
                     <p className="mt-0.5 text-[13px] text-white/55">
                       {bookable.length > 0
-                        ? "Pick a time that works for you. Your statistician gets it right away."
-                        : "You can book once your statistician is assigned and your deposit is confirmed."}
+                        ? "Pick a time that works for you. Your statistical analyst gets it right away."
+                        : "You can book once your statistical analyst is assigned and your deposit is confirmed."}
                     </p>
                   </div>
                 </div>
@@ -503,7 +503,7 @@ export function ClientDefenseLabClient({
                                   className="text-white/35"
                                 />
                                 {ent.expertAssignedName ??
-                                  "Statistician not assigned yet"}
+                                  "Statistical analyst not assigned yet"}
                               </span>
                             </div>
                           </div>
@@ -517,7 +517,7 @@ export function ClientDefenseLabClient({
                                 ? undefined
                                 : ent.remainingHours <= 0
                                   ? "No hours left on this study"
-                                  : "You can book once your statistician is assigned"
+                                  : "You can book once your statistical analyst is assigned"
                             }
                             className="shrink-0"
                           >
@@ -685,7 +685,7 @@ export function ClientDefenseLabClient({
           open={isBookModalOpen}
           onClose={() => !isSubmittingBook && setIsBookModalOpen(false)}
           title="Book a practice session"
-          description="Pick a time. Your statistician gets it right away."
+          description="Pick a time. Your statistical analyst gets it right away."
           size="md"
           footer={
             <div className="flex w-full items-center justify-end gap-3">
@@ -744,7 +744,7 @@ export function ClientDefenseLabClient({
                 <p className="text-xs text-white/50">
                   With{" "}
                   {selectedEntitlement.expertAssignedName ??
-                    "your statistician"}{" "}
+                    "your statistical analyst"}{" "}
                   · {hoursLabel(selectedEntitlement.remainingHours)} left
                 </p>
               ) : null}
@@ -816,7 +816,7 @@ export function ClientDefenseLabClient({
           open={Boolean(rescheduleSession)}
           onClose={() => !isSubmittingReschedule && setRescheduleSession(null)}
           title="Move this session"
-          description="Pick a new time and tell your statistician why."
+          description="Pick a new time and tell your statistical analyst why."
           size="md"
           footer={
             <div className="flex w-full items-center justify-end gap-3">
@@ -884,7 +884,7 @@ export function ClientDefenseLabClient({
 
             <Field label="Why do you need to move it?">
               <textarea
-                placeholder="A short note for your statistician."
+                placeholder="A short note for your statistical analyst."
                 value={rescheduleReason}
                 onChange={(e) => setRescheduleReason(e.target.value)}
                 rows={3}
@@ -1034,7 +1034,7 @@ function HowItWorks() {
     },
     {
       title: "Book a time",
-      body: "Once your statistician is assigned, pick a time that works for you.",
+      body: "Once your statistical analyst is assigned, pick a time that works for you.",
     },
     {
       title: "Practice and rewatch",

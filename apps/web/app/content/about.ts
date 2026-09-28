@@ -7,7 +7,7 @@ export const NUMBERS: {
   suffix?: string;
   label: string;
 }[] = [
-  { to: 2, label: "Statisticians check every study" },
+  { to: 2, label: "Statistical analysts check every study" },
   { to: 6, label: "Quality checks before delivery" },
   { to: 24, prefix: "< ", suffix: "h", label: "To your fixed written price" },
   { to: 7, suffix: " days", label: "To raise any issue after delivery" },
@@ -28,7 +28,7 @@ export const VALUES: Value[] = [
   {
     icon: "twice",
     title: "Two sets of eyes",
-    body: "One statistician runs your tests. A second reruns everything from scratch before anything reaches you.",
+    body: "One statistical analyst runs your tests. A second reruns everything from scratch before anything reaches you.",
   },
   {
     icon: "plain",
@@ -38,7 +38,7 @@ export const VALUES: Value[] = [
   {
     icon: "private",
     title: "Your data stays private",
-    body: "Respondent names, emails, and student IDs are removed before work starts. Every statistician signs a non-disclosure agreement.",
+    body: "Respondent names, emails, and student IDs are removed before work starts. Every statistical analyst signs a non-disclosure agreement.",
   },
   {
     icon: "fair",
@@ -48,7 +48,7 @@ export const VALUES: Value[] = [
   {
     icon: "time",
     title: "Room to do it right",
-    body: "Each statistician works on only a few studies at a time, so yours gets real attention instead of a rushed template.",
+    body: "Each statistical analyst works on only a few studies at a time, so yours gets real attention instead of a rushed template.",
   },
 ];
 
@@ -78,37 +78,37 @@ export const CORE_TEAM: TeamMember[] = [
   },
   {
     name: "Barth Bryan D. Sercena",
-    role: "Chief Technological Officer & Co-founder",
-    bio: "Leads technology and product at JAXIS StatLab, overseeing platform architecture, data security, and the systems that support every study from request to delivery.",
+    role: "Chief Technology Officer & Co-founder",
+    bio: "BS Information Technology. Lead developer of JAXIS StatLab.",
     photo: "/team/Barth.jpg",
   },
-];
-
-export const EXPERT_TEAM: TeamMember[] = [
   {
-    name: "Jobelle S. Sorino-Simblante",
-    role: "Statistical Review Editor",
-    bio: "BS Statistics and MS Statistics graduate, currently pursuing a doctoral degree in Statistics.",
-    photo: "/team/Jobelle.jpg",
+    name: "Bienuel Esmeralda",
+    role: "Chief Administrative Officer",
+    bio: "BS Mathematics graduate with a minor in Statistics.",
+    photo: "/team/Bienuel.jpg",
   },
   {
     name: "Kim Lenard Ric T. Claro",
-    role: "Fellow Statistical Analyst",
+    role: "Chief Finance Officer",
     bio: "BS Mathematics graduate with a minor in Statistics.",
     photo: "/team/Kim.jpg",
   },
   {
+    name: "Jobelle S. Sorino-Simblante",
+    role: "Chief Quality Officer",
+    bio: "BS Statistics and MS Statistics graduate, currently pursuing a doctoral degree in Statistics.",
+    photo: "/team/Jobelle.jpg",
+  },
+  {
     name: "Negie C. Sudario",
-    role: "Fellow Statistical Analyst",
+    role: "Chief of Staff",
     bio: "BS Mathematics graduate with a minor in Statistics, currently pursuing a Master of Science in Mathematics.",
     photo: "/team/Negie.jpg",
   },
-  {
-    name: "Bienuel Esmeralda",
-    role: "Fellow Statistical Analyst",
-    bio: "BS Mathematics graduate with a minor in Statistics.",
-    photo: "/team/Bienuel.jpg",
-  },
+];
+
+export const EXPERT_TEAM: TeamMember[] = [
   {
     name: "Karla Giselle R. Santos",
     role: "Associate Statistical Analyst",

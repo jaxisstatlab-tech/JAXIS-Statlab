@@ -28,8 +28,14 @@ export async function GET(req: NextRequest) {
   try {
     const deliverablesData = await getClientDeliverables(studyId);
     if (!deliverablesData.qaCertificate) {
-      return new NextResponse("Certificate of Statistical Audit not available for this study.", {
+      return new NextResponse("There's no certificate for this study yet.", {
         status: 404,
+      });
+    }
+    // Clients get the certificate with their files: only once they're released (i.e. paid and checked).
+    if (session.user.role === "CLIENT" && !deliverablesData.isReleased) {
+      return new NextResponse("Your certificate is available once your files are released.", {
+        status: 403,
       });
     }
 
@@ -49,9 +55,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: unknown) {
     console.error("Failed to generate certificate PDF on server:", err);
-    return new NextResponse(
-      err instanceof Error ? err.message : "Failed to generate certificate PDF",
-      { status: 500 }
-    );
+    // Details stay in the server log; the person gets a plain line.
+    return new NextResponse("We couldn't make your certificate right now. Please try again in a moment.", {
+      status: 500,
+    });
   }
 }

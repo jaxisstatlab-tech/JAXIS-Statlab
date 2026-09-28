@@ -113,7 +113,7 @@ export function AssignmentsClient({
       {/* Page Header */}
       <PageHeader
         title="Specialist Assignments &amp; Workload"
-        description="Assign lead statisticians and QA leads to active studies and manage team capacity."
+        description="Assign lead statistical analysts and QA leads to active studies and manage team capacity."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "Admin Command", href: "/dashboard/admin" },
@@ -146,7 +146,7 @@ export function AssignmentsClient({
               description={unassignedProjects.length > 0 ? "Studies ready for staffing" : "All studies staffed"}
             />
             <KpiCard
-              label="Statisticians"
+              label="Statistical Analysts"
               value={statisticians.length}
               variant="sky"
               description={`${statisticians.filter((s) => !s.isOnLeave).length} available for studies`}
@@ -185,7 +185,7 @@ export function AssignmentsClient({
                 )}
               </h2>
               <p className="text-sm text-white/60 mt-1 font-sans leading-relaxed">
-                Downpayment cleared and contract signed. Assign a statistician and QA lead to start work.
+                Downpayment cleared and contract signed. Assign a statistical analyst and QA lead to start work.
               </p>
             </div>
           </div>
@@ -284,7 +284,7 @@ export function AssignmentsClient({
                   <div className="p-1.5 bg-sky-500/10 border border-sky-500/20 rounded-[2px] text-sky-400">
                     <IconUserCheck size={16} stroke={2} />
                   </div>
-                  <h3 className="font-semibold text-white text-sm font-sans">Lead Statisticians</h3>
+                  <h3 className="font-semibold text-white text-sm font-sans">Lead Statistical Analysts</h3>
                 </div>
                 <span className="text-xs font-mono text-white/40">
                   {statisticians.length} {statisticians.length === 1 ? "specialist" : "specialists"}
@@ -571,7 +571,7 @@ export function AssignmentsClient({
             loadData();
             setToastMessage({
               message: "Specialists Assigned Successfully",
-              description: `Lead Statistician and QA Lead have been assigned to ${selectedProjectForAssign.intakeId}. SLA clock is now active.`,
+              description: `Lead Statistical Analyst and QA Lead have been assigned to ${selectedProjectForAssign.intakeId}. SLA clock is now active.`,
               variant: "success",
             });
           }}

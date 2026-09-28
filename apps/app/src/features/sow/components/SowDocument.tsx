@@ -1,15 +1,51 @@
 "use client";
 
 import React from "react";
-import { Button, Badge, MoneyDisplay } from "@repo/ui";
-import {
-  Printer,
-  Clock,
-  Check,
-} from "@phosphor-icons/react";
+import Image from "next/image";
+import { Button } from "@repo/ui";
+import { Peso } from "@repo/ui/MoneyDisplay";
+import { CheckCircle, Clock, Printer } from "@phosphor-icons/react";
 import type { SOWDetailItem } from "../schemas";
 import { ADDONS_CATALOG } from "@/lib/pricing-rules";
 import type { AddOnName } from "@prisma/client";
+import { clientPackageName } from "@/features/projects/client-packages";
+
+// The agreement as a sheet of paper: dark ink on white, sized like A4, so what you see on screen is
+// what prints and what "Save as PDF" produces. The words inside the snapshot (terms, policies) are
+// shown exactly as saved, because that is what the client signs; only headings and labels are ours.
+
+// Plain names for add-ons, matching the client's Price page.
+const ADDON_NAMES: Record<string, string> = {
+  DEFENSELAB: "DefenseLab practice session",
+  RUSH: "Rush delivery",
+  EXPRESS: "Express delivery",
+  EMERGENCY: "Emergency delivery",
+};
+
+const CONTACT_EMAIL = "consult@jaxisstatlab.com";
+
+const money = (n: number) => Math.round(n).toLocaleString("en-PH");
+
+function longDate(value?: string | null) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "long", day: "numeric", year: "numeric" });
+}
+
+function dateTime(value?: string | null) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 export interface SowDocumentProps {
   sow: SOWDetailItem;
@@ -17,361 +53,324 @@ export interface SowDocumentProps {
   showPrintAction?: boolean;
 }
 
-export function SowDocument({
-  sow,
-  className = "",
-  showPrintAction = true,
-}: SowDocumentProps) {
-  const { contentSnapshot } = sow;
-  const { client, project, commercial, delivery, terms } = contentSnapshot;
+export function SowDocument({ sow, className = "", showPrintAction = true }: SowDocumentProps) {
+  const { client, project, commercial, delivery, terms } = sow.contentSnapshot;
+  const ref = `JAXIS-SOW-${sow.id.replace(/[^a-z0-9]/gi, "").slice(-8).toUpperCase()}`;
+  const addOns = commercial.addOns ?? [];
+  const balance = commercial.balanceDue ?? Math.max(0, commercial.totalAmount - commercial.downpaymentRequired);
 
+  // The snapshot keeps the package price and the total, not each add-on's price (catalog prices can
+  // differ from what was quoted). So extras are shown as one line worth the difference; the table adds up.
+  const extrasAmount = Math.max(0, commercial.totalAmount - commercial.basePrice);
+  const addOnNames = addOns.map((code) => ADDON_NAMES[code] ?? ADDONS_CATALOG[code as AddOnName]?.name ?? code);
+  const extras =
+    extrasAmount <= 0 && addOns.length === 0
+      ? null
+      : addOns.length === 1
+        ? { name: addOnNames[0]!, detail: ADDONS_CATALOG[addOns[0] as AddOnName]?.tagline ?? "", amount: extrasAmount }
+        : addOns.length > 1
+          ? { name: "Extras", detail: addOnNames.join(", "), amount: extrasAmount }
+          : { name: "Other charges", detail: "", amount: extrasAmount };
+
+  // The browser uses the page title as the PDF's file name.
   const handlePrint = () => {
+    const previous = document.title;
+    document.title = `JAXIS Agreement ${project.intakeId}`;
+    const restore = () => {
+      document.title = previous;
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
     window.print();
   };
 
-  const contractRef = `JAXIS-SOW-${sow.id.slice(-8).toUpperCase()}`;
+  const terms4: Array<{ title: string; body?: string | null }> = [
+    {
+      title: "Delivery time",
+      body: `Your analysis will be delivered within ${delivery.turnaroundDays} working days. ${delivery.slaStartTrigger ?? ""}`.trim(),
+    },
+    { title: "Changes after delivery", body: terms.revisionPolicy },
+    { title: "Refunds and cancellation", body: terms.refundPolicy },
+    { title: "How we talk to each other", body: terms.communicationPolicy },
+    { title: "Authorship and responsibility", body: terms.liabilityBoundary },
+  ];
+  if (terms.customTerms) terms4.push({ title: "Special terms for this study", body: terms.customTerms });
 
   return (
-    <div className={`flex flex-col gap-6 w-full max-w-5xl mx-auto print:max-w-none print:w-full print:m-0 print:p-0 ${className}`}>
-      {/* ── Document Control Toolbar (hidden in print) ── */}
-      {showPrintAction && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2 print:hidden">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-sans text-white/50 tracking-wider">
-                Document Ref:
-              </span>
-              <code className="text-xs font-mono font-semibold text-sky-400 bg-sky-500/10 px-2.5 py-1 rounded-[2px] border border-sky-500/30">
-                {contractRef}
-              </code>
-            </div>
-
+    <div className={`flex w-full flex-col gap-4 print:gap-0 ${className}`}>
+      {showPrintAction ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-white/60">
             {sow.isLocked ? (
-              <Badge variant="emerald" className="font-mono text-xs px-2.5 py-1">
-                <Check size={13} weight="bold" className="mr-1.5" />
-                SIGNED &amp; LEGALLY LOCKED
-              </Badge>
+              <span className="inline-flex items-center gap-1.5 rounded-[2px] border border-white/15 bg-white/[0.06] px-2 py-0.5 text-xs font-medium text-white">
+                <CheckCircle size={13} weight="fill" />
+                Signed
+              </span>
             ) : (
-              <Badge variant="amber" className="font-mono text-xs px-2.5 py-1">
-                <Clock size={13} weight="fill" className="mr-1.5" />
-                AWAITING SIGNATURE
-              </Badge>
+              <span className="inline-flex items-center gap-1.5 rounded-[2px] border border-white/10 bg-white/[0.04] px-2 py-0.5 text-xs font-medium text-white/75">
+                <Clock size={13} weight="fill" />
+                Waiting for signature
+              </span>
             )}
+            <span className="font-mono text-xs text-white/45">{ref}</span>
           </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            size="md"
-            onClick={handlePrint}
-            className="text-xs font-sans font-semibold tracking-wider flex items-center gap-2 bg-white/[0.05] hover:bg-white/[0.10] px-4 py-2 rounded-[2px]"
-          >
-            <Printer size={16} weight="fill" />
-            <span>Print / Save PDF</span>
+          <Button type="button" variant="outline" size="sm" onClick={handlePrint} className="gap-1.5">
+            <Printer size={15} weight="fill" />
+            Print or Save as PDF
           </Button>
         </div>
-      )}
+      ) : null}
 
-      {/* ── Pure Document Sheet ── */}
-      <div className="sow-print-container bg-[#080816] border border-white/[0.12] rounded-[2px] p-8 sm:p-12 lg:p-16 text-white shadow-2xl relative print:bg-white print:text-black print:border-none print:p-0 print:shadow-none font-sans">
-        
-        {/* ── Document Header ── */}
-        <div className="border-b-2 border-white/20 print:border-black/30 pb-6 mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div>
-              <span className="text-[0.688rem] font-mono font-bold tracking-[0.2em] text-[#FFA040] print:text-amber-800 uppercase block mb-1">
-                Academic Statistical Consulting Agreement
+      <article
+        aria-label="Service agreement"
+        className="sow-print-container mx-auto w-full max-w-[210mm] rounded-[2px] bg-white px-6 py-8 font-sans text-[13px] leading-relaxed text-[#1c1c28] shadow-[0_1px_0_rgba(255,255,255,0.06),0_20px_50px_rgba(0,0,0,0.45)] sm:px-12 sm:py-12 print:max-w-none print:rounded-none print:px-0 print:py-0 print:text-[10pt] print:shadow-none"
+      >
+        {/* Letterhead */}
+        <div className="flex flex-col gap-5 border-b-2 border-[#1c1c28] pb-5 sm:flex-row sm:items-end sm:justify-between print:flex-row print:items-end print:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Image src="/jaxislogo.png" alt="" width={28} height={28} priority className="h-7 w-7" />
+              <span className="text-[15px] font-bold tracking-[-0.01em] text-[#1c1c28]">
+                JAXIS <span className="font-normal">StatLab</span>
               </span>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white print:text-black uppercase">
-                Statement of Work
-              </h1>
-              <p className="text-xs font-mono text-white/60 print:text-black/60 mt-1">
-                Contract Reference: <strong className="text-white print:text-black">{contractRef}</strong> · Intake ID: <strong className="text-white print:text-black">{project.intakeId}</strong>
-              </p>
             </div>
-
-            <div className="text-left sm:text-right font-sans text-xs text-white/70 print:text-black/70 space-y-1">
-              <div><span className="text-white/40 print:text-black/50">Execution Date:</span> <strong className="text-white print:text-black font-mono">{new Date(sow.generatedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</strong></div>
-              <div><span className="text-white/40 print:text-black/50">Contract Type:</span> <strong className="text-white print:text-black">{sow.sowType === "PRIMARY" ? "Primary Research SOW" : "Supplemental SOW"}</strong></div>
-              <div><span className="text-white/40 print:text-black/50">Turnaround SLA:</span> <strong className="text-white print:text-black font-mono">{delivery.turnaroundDays} Business Days</strong></div>
-            </div>
+            <h1 className="mt-4 text-[26px] font-bold leading-tight tracking-[-0.02em] text-[#111118]">
+              {sow.sowType === "PRIMARY" ? "Service Agreement" : "Add-on Agreement"}
+            </h1>
+            <p className="mt-0.5 text-[13px] text-[#55556a]">Statistical analysis for your research</p>
           </div>
+          <dl className="grid grid-cols-[auto_auto] gap-x-4 gap-y-0.5 text-[12px] sm:text-right print:text-right">
+            <dt className="text-[#6b6b80]">Agreement no.</dt>
+            <dd className="font-mono font-semibold text-[#111118]">{ref}</dd>
+            <dt className="text-[#6b6b80]">Study ID</dt>
+            <dd className="font-mono font-semibold text-[#111118]">{project.intakeId}</dd>
+            <dt className="text-[#6b6b80]">Prepared on</dt>
+            <dd className="text-[#111118]">{longDate(sow.generatedAt)}</dd>
+          </dl>
         </div>
 
-        {/* ── Section 1: Parties to the Agreement ── */}
-        <div className="mb-8 sow-print-section print-avoid-break">
-          <h2 className="text-xs font-mono font-bold tracking-wider text-[#FFA040] print:text-amber-800 uppercase border-b border-white/10 print:border-black/20 pb-1.5 mb-4">
-            1. Parties to the Agreement
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-8 text-xs sm:text-sm leading-relaxed">
-            <div className="space-y-1">
-              <span className="font-mono text-[0.688rem] uppercase tracking-wider text-sky-400 print:text-sky-700 font-semibold block">
-                Client / Lead Researcher
-              </span>
-              <p className="font-bold text-white print:text-black text-sm sm:text-base">
-                {client.fullName}
-              </p>
-              <p className="text-white/70 print:text-black/70">
-                {client.academicProgram || "Academic Degree Program"}
-              </p>
-              <p className="text-white/70 print:text-black/70">
-                {client.institution || "Institutional Affiliate"}
-              </p>
-              <p className="font-mono text-white/50 print:text-black/50 text-xs pt-1">
-                {client.email} · {client.contactNumber || "On File"}
-              </p>
-            </div>
-
-            <div className="space-y-1">
-              <span className="font-mono text-[0.688rem] uppercase tracking-wider text-[#FFA040] print:text-amber-800 font-semibold block">
-                Service Provider
-              </span>
-              <p className="font-bold text-white print:text-black text-sm sm:text-base">
-                JAXIS STATLAB CONSULTANCY
-              </p>
-              <p className="text-white/70 print:text-black/70">
-                Division of Advanced Statistical Computing
-              </p>
-              <p className="text-white/70 print:text-black/70">
-                Academic Research &amp; Psychometrics Division
-              </p>
-              <p className="font-mono text-white/50 print:text-black/50 text-xs pt-1">
-                ops@jaxis.dev · Manila, Philippines
-              </p>
-            </div>
+        {/* 1. Parties */}
+        <DocSection n={1} title="Who this agreement is between">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 print:grid-cols-2">
+            <Party
+              role="Client"
+              name={client.fullName}
+              lines={[client.academicProgram, client.institution]}
+              contact={[client.email, client.contactNumber && client.contactNumber !== "On File" ? client.contactNumber : null]}
+            />
+            <Party
+              role="Service provider"
+              name="JAXIS StatLab"
+              lines={["Statistical analysis for student and academic research"]}
+              contact={[CONTACT_EMAIL, "Manila, Philippines"]}
+            />
           </div>
-        </div>
+        </DocSection>
 
-        {/* ── Section 2: Research Study Objectives & Empirical Scope ── */}
-        <div className="mb-8 sow-print-section print-avoid-break">
-          <h2 className="text-xs font-mono font-bold tracking-wider text-[#FFA040] print:text-amber-800 uppercase border-b border-white/10 print:border-black/20 pb-1.5 mb-4">
-            2. Research Study Objectives &amp; Empirical Scope
-          </h2>
+        {/* 2. Study */}
+        <DocSection n={2} title="Your study">
+          <Field label="Title">
+            <span className="font-semibold text-[#111118]">{project.researchTitle}</span>
+          </Field>
+          <Field label="Objectives">{project.researchObjectives}</Field>
+          {project.researchQuestions ? <Field label="Research questions">{project.researchQuestions}</Field> : null}
+          {project.hypotheses ? <Field label="Hypotheses">{project.hypotheses}</Field> : null}
+        </DocSection>
 
-          <div className="space-y-4 text-xs sm:text-sm leading-relaxed text-white/90 print:text-black/90">
-            <div>
-              <span className="font-mono text-[0.688rem] uppercase tracking-wider text-white/50 print:text-black/50 block mb-0.5">
-                Research Study Title
-              </span>
-              <p className="font-semibold text-white print:text-black text-sm sm:text-base">
-                {project.researchTitle}
-              </p>
-            </div>
-
-            <div>
-              <span className="font-mono text-[0.688rem] uppercase tracking-wider text-white/50 print:text-black/50 block mb-0.5">
-                Statement of Research Objectives
-              </span>
-              <p className="text-white/80 print:text-black/80 whitespace-pre-line leading-relaxed">
-                {project.researchObjectives}
-              </p>
-            </div>
-
-            {project.researchQuestions && (
-              <div>
-                <span className="font-mono text-[0.688rem] uppercase tracking-wider text-white/50 print:text-black/50 block mb-0.5">
-                  Primary Research Questions / Hypotheses
-                </span>
-                <p className="text-white/80 print:text-black/80 whitespace-pre-line leading-relaxed">
-                  {project.researchQuestions}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── Section 3: Commercial Terms & Payment Schedule ── */}
-        <div className="mb-8 sow-print-section print-avoid-break">
-          <h2 className="text-xs font-mono font-bold tracking-wider text-[#FFA040] print:text-amber-800 uppercase border-b border-white/10 print:border-black/20 pb-1.5 mb-4">
-            3. Commercial Terms &amp; Milestone Payment Schedule
-          </h2>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs sm:text-sm">
-              <thead>
-                <tr className="border-b border-white/15 print:border-black/20 text-white/50 print:text-black/50 font-mono text-[0.688rem] uppercase">
-                  <th className="py-2.5 pr-4">Milestone Item</th>
-                  <th className="py-2.5 px-4">Description / Conditions</th>
-                  <th className="py-2.5 pl-4 text-right">Amount (PHP)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/10 print:divide-black/10 text-white/90 print:text-black/90">
+        {/* 3. Price */}
+        <DocSection n={3} title="Price and payments">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-[#1c1c28]/25 text-[11px] uppercase tracking-wider text-[#6b6b80]">
+                <th scope="col" className="py-2 pr-4 font-semibold">What you get</th>
+                <th scope="col" className="py-2 pl-4 text-right font-semibold">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#1c1c28]/10">
+              <tr>
+                <td className="py-2.5 pr-4">
+                  <span className="font-semibold text-[#111118]">{clientPackageName(commercial.packageName) ?? commercial.packageLabel}</span>
+                  <span className="block text-[12px] text-[#55556a]">Statistical analysis, a check of the methods, and a summary report.</span>
+                </td>
+                <td className="py-2.5 pl-4 text-right font-mono text-[#111118]">
+                  <Money amount={commercial.basePrice} />
+                </td>
+              </tr>
+              {extras ? (
                 <tr>
-                  <td className="py-3 pr-4 font-semibold text-white print:text-black">
-                    Agreed Package: {commercial.packageLabel}
+                  <td className="py-2.5 pr-4">
+                    <span className="font-semibold text-[#111118]">{extras.name}</span>
+                    {extras.detail ? <span className="block text-[12px] text-[#55556a]">{extras.detail}</span> : null}
                   </td>
-                  <td className="py-3 px-4 text-white/70 print:text-black/70 text-xs">
-                    Comprehensive statistical analysis, methodology verification, and summary report.
-                  </td>
-                  <td className="py-3 pl-4 text-right font-mono font-semibold text-white print:text-black">
-                    <MoneyDisplay amount={commercial.basePrice} />
+                  <td className="py-2.5 pl-4 text-right font-mono text-[#111118]">
+                    <Money amount={extras.amount} />
                   </td>
                 </tr>
-                {commercial.addOns && commercial.addOns.length > 0 && commercial.addOns.map((addonCode) => {
-                  const def = ADDONS_CATALOG[addonCode as AddOnName];
-                  return (
-                    <tr key={addonCode}>
-                      <td className="py-3 pr-4 font-semibold text-white print:text-black">
-                        Add-On: {def?.name || addonCode}
-                      </td>
-                      <td className="py-3 px-4 text-white/70 print:text-black/70 text-xs">
-                        {def?.tagline || "Optional priority research scope add-on."}
-                      </td>
-                      <td className="py-3 pl-4 text-right font-mono font-semibold text-white print:text-black">
-                        <MoneyDisplay amount={def?.defaultPrice || 0} />
-                      </td>
-                    </tr>
-                  );
-                })}
-                <tr className="border-t-2 border-white/20 print:border-black/30 font-bold">
-                  <td className="py-3 pr-4 text-white print:text-black uppercase font-mono text-xs">
-                    Total Contract Consideration
-                  </td>
-                  <td className="py-3 px-4 text-xs font-sans font-normal text-white/50 print:text-black/50">
-                    {commercial.addOns && commercial.addOns.length > 0 ? `Includes base tier + ${commercial.addOns.length} add-on${commercial.addOns.length > 1 ? "s" : ""}` : "All deliverables included"}
-                  </td>
-                  <td className="py-3 pl-4 text-right font-mono text-base text-white print:text-black">
-                    <MoneyDisplay amount={commercial.totalAmount} />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-3 pr-4 font-semibold text-[#FFA040] print:text-amber-800">
-                    Required Escrow Downpayment
-                  </td>
-                  <td className="py-3 px-4 text-white/70 print:text-black/70 text-xs">
-                    Required prior to commencing analytical computation and statistician assignment.
-                  </td>
-                  <td className="py-3 pl-4 text-right font-mono font-bold text-[#FFA040] print:text-amber-800">
-                    <MoneyDisplay amount={commercial.downpaymentRequired} />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-3 pr-4 font-semibold text-emerald-400 print:text-emerald-700">
-                    Final Release Balance
-                  </td>
-                  <td className="py-3 px-4 text-white/70 print:text-black/70 text-xs">
-                    Payable only after you inspect and accept the final statistical findings.
-                  </td>
-                  <td className="py-3 pl-4 text-right font-mono font-bold text-emerald-400 print:text-emerald-700">
-                    <MoneyDisplay amount={commercial.balanceDue} />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+              ) : null}
+              <tr className="border-t-2 border-[#1c1c28]">
+                <td className="py-2.5 pr-4 font-bold text-[#111118]">Total price</td>
+                <td className="py-2.5 pl-4 text-right font-mono text-[15px] font-bold text-[#111118]">
+                  <Money amount={commercial.totalAmount} />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 className="mt-5 text-[11px] font-semibold uppercase tracking-wider text-[#6b6b80]">How you pay</h3>
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 print:grid-cols-2">
+            <PayStep
+              title="Deposit"
+              amount={commercial.downpaymentRequired}
+              body="Paid before work starts and before your statistical analyst is assigned."
+            />
+            <PayStep title="Final balance" amount={balance} body="Paid after you review and accept the final results." />
           </div>
-        </div>
+          {commercial.paymentMethod ? (
+            <p className="mt-3 text-[12px] text-[#55556a]">Payment method: {commercial.paymentMethod}</p>
+          ) : null}
+        </DocSection>
 
-        {/* ── Section 4: Terms of Service & Legal Boundaries ── */}
-        <div className="mb-10 sow-print-section print-avoid-break">
-          <h2 className="text-xs font-mono font-bold tracking-wider text-[#FFA040] print:text-amber-800 uppercase border-b border-white/10 print:border-black/20 pb-1.5 mb-4">
-            4. Terms of Service &amp; Legal Boundaries
-          </h2>
+        {/* 4. Terms */}
+        <DocSection n={4} title="Terms">
+          <ol className="flex flex-col gap-3">
+            {terms4.map((t, i) => (
+              <li key={t.title} className="print-avoid-break">
+                <p className="font-semibold text-[#111118]">
+                  4.{i + 1} {t.title}
+                </p>
+                <p className="mt-0.5 whitespace-pre-line text-[#33334a]">{t.body}</p>
+              </li>
+            ))}
+          </ol>
+        </DocSection>
 
-          <div className="space-y-3.5 text-xs sm:text-sm text-white/80 print:text-black/80 leading-relaxed font-sans">
-            <div>
-              <strong className="text-white print:text-black font-semibold">4.1 Turnaround &amp; Service Level Agreement: </strong>
-              <span>
-                Standard turnaround for the execution of this analysis is{" "}
-                <strong className="text-white print:text-black font-mono font-bold">{delivery.turnaroundDays} business days</strong>. {delivery.slaStartTrigger}
-              </span>
-            </div>
-
-            <div>
-              <strong className="text-white print:text-black font-semibold">4.2 Revisions Policy: </strong>
-              <span>{terms.revisionPolicy}</span>
-            </div>
-
-            <div>
-              <strong className="text-white print:text-black font-semibold">4.3 Communication Firewall: </strong>
-              <span>{terms.communicationPolicy}</span>
-            </div>
-
-            <div>
-              <strong className="text-white print:text-black font-semibold">4.4 Authorship &amp; Academic Responsibility: </strong>
-              <span>{terms.liabilityBoundary}</span>
-            </div>
-
-            {terms.customTerms && (
-              <div className="pt-2">
-                <strong className="text-[#FFA040] print:text-amber-800 font-semibold block text-xs font-mono uppercase tracking-wider mb-1">
-                  4.5 Special Project Clauses:
-                </strong>
-                <p className="text-white/90 print:text-black/90 whitespace-pre-line">{terms.customTerms}</p>
-              </div>
-            )}
+        {/* 5. Signatures */}
+        <section className="print-avoid-break mt-8 border-t-2 border-[#1c1c28] pt-5">
+          <h2 className="text-[13px] font-bold uppercase tracking-wider text-[#111118]">5. Signatures</h2>
+          <div className="mt-6 grid grid-cols-1 gap-10 sm:grid-cols-2 print:grid-cols-2">
+            <SignatureBlock
+              role="Client"
+              signature={sow.isLocked && sow.signedByName ? sow.signedByName : null}
+              name={client.fullName}
+              lines={[
+                sow.signedAt ? `Signed ${dateTime(sow.signedAt)}` : "Not signed yet",
+                sow.signedByUserId ? `Signer ID ${sow.signedByUserId.slice(-8).toUpperCase()}` : null,
+              ]}
+            />
+            <SignatureBlock
+              role="For JAXIS StatLab"
+              signature="JAXIS StatLab"
+              name="Authorized representative"
+              lines={[`Prepared ${longDate(sow.generatedAt)}`]}
+            />
           </div>
-        </div>
-
-        {/* ── Section 5: Contract Execution & Signatures ── */}
-        <div className="pt-6 border-t-2 border-white/20 print:border-black/30 sow-print-section print-avoid-break">
-          <h2 className="text-xs font-mono font-bold tracking-wider text-[#FFA040] print:text-amber-800 uppercase mb-8">
-            5. Contract Execution &amp; Certified Signatures
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-12 sm:gap-16">
-            {/* Client Signature Block */}
-            <div className="flex flex-col justify-end space-y-2">
-              <span className="text-[0.688rem] font-mono uppercase tracking-wider text-white/50 print:text-black/50 block mb-1">
-                Lead Researcher (Client)
-              </span>
-
-              {sow.isLocked && sow.signedByName ? (
-                <div className="min-h-[64px] flex flex-col justify-end">
-                  <p className="font-signature text-4xl sm:text-5xl text-emerald-400 print:text-emerald-900 leading-none select-none tracking-normal py-1">
-                    {sow.signedByName}
-                  </p>
-                </div>
-              ) : (
-                <div className="min-h-[64px] flex items-center">
-                  <p className="text-xs text-amber-400/90 print:text-amber-700 font-mono italic">
-                    [Awaiting Client Digital Signature]
-                  </p>
-                </div>
-              )}
-
-              {/* Ruled Signature Line */}
-              <div className="border-b border-white/40 print:border-black/50 w-full" />
-
-              <div className="text-xs font-sans space-y-0.5 pt-1 text-white/70 print:text-black/70">
-                <p className="font-semibold text-white print:text-black">{client.fullName}</p>
-                <p className="font-mono text-[0.688rem] text-white/50 print:text-black/50">
-                  Date: {sow.signedAt ? new Date(sow.signedAt).toLocaleString("en-US") : "Pending Execution"}
-                </p>
-                <p className="font-mono text-[0.688rem] text-white/50 print:text-black/50">
-                  Digital Verification ID: {sow.signedByUserId?.slice(-8).toUpperCase() || "PENDING"}
-                </p>
-              </div>
-            </div>
-
-            {/* Provider Signature Block */}
-            <div className="flex flex-col justify-end space-y-2">
-              <span className="text-[0.688rem] font-mono uppercase tracking-wider text-white/50 print:text-black/50 block mb-1">
-                For JAXIS StatLab Consultancy
-              </span>
-
-              <div className="min-h-[64px] flex flex-col justify-end">
-                <p className="font-signature text-3xl sm:text-4xl text-sky-400 print:text-sky-900 leading-none select-none tracking-normal py-1">
-                  Jaxis StatLab Governance
-                </p>
-              </div>
-
-              {/* Ruled Signature Line */}
-              <div className="border-b border-white/40 print:border-black/50 w-full" />
-
-              <div className="text-xs font-sans space-y-0.5 pt-1 text-white/70 print:text-black/70">
-                <p className="font-semibold text-white print:text-black">Authorized Commercial Officer</p>
-                <p className="font-mono text-[0.688rem] text-white/50 print:text-black/50">
-                  Date Generated: {new Date(sow.generatedAt).toLocaleDateString("en-US")}
-                </p>
-                <p className="font-mono text-[0.688rem] text-white/50 print:text-black/50">
-                  Status: {sow.isLocked ? "EXECUTION_COMPLETE" : "GENERATED_PENDING_CLIENT"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+          <p className="mt-8 border-t border-[#1c1c28]/15 pt-3 text-[11px] text-[#6b6b80]">
+            Signed online by typing the client&apos;s full name. Agreement {ref} for study {project.intakeId}.
+          </p>
+        </section>
+      </article>
     </div>
+  );
+}
+
+// ─── Pieces ──────────────────────────────────────────────────────────────────
+
+function DocSection({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <section className="sow-print-section mt-7">
+      <h2 className="border-b border-[#1c1c28]/20 pb-1.5 text-[13px] font-bold uppercase tracking-wider text-[#111118] [break-after:avoid]">
+        {n}. {title}
+      </h2>
+      <div className="mt-3 flex flex-col gap-3">{children}</div>
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="print-avoid-break">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6b6b80]">{label}</p>
+      <div className="mt-0.5 whitespace-pre-line text-[#33334a]">{children}</div>
+    </div>
+  );
+}
+
+function Party({
+  role,
+  name,
+  lines,
+  contact,
+}: {
+  role: string;
+  name: string;
+  lines: Array<string | null | undefined>;
+  contact: Array<string | null | undefined>;
+}) {
+  return (
+    <div className="print-avoid-break">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6b6b80]">{role}</p>
+      <p className="mt-1 text-[15px] font-bold text-[#111118]">{name}</p>
+      {lines.filter(Boolean).map((l) => (
+        <p key={l as string} className="text-[#33334a]">
+          {l}
+        </p>
+      ))}
+      <p className="mt-1 text-[12px] text-[#55556a]">{contact.filter(Boolean).join(" · ")}</p>
+    </div>
+  );
+}
+
+function PayStep({ title, amount, body }: { title: string; amount: number; body: string }) {
+  return (
+    <div className="print-avoid-break rounded-[2px] border border-[#1c1c28]/15 px-3.5 py-3">
+      <p className="flex items-baseline justify-between gap-3">
+        <span className="font-semibold text-[#111118]">{title}</span>
+        <span className="font-mono font-bold text-[#111118]">
+          <Money amount={amount} />
+        </span>
+      </p>
+      <p className="mt-1 text-[12px] text-[#55556a]">{body}</p>
+    </div>
+  );
+}
+
+function SignatureBlock({
+  role,
+  signature,
+  name,
+  lines,
+}: {
+  role: string;
+  signature: string | null;
+  name: string;
+  lines: Array<string | null>;
+}) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6b6b80]">{role}</p>
+      <div className="flex min-h-[64px] items-end">
+        {signature ? (
+          <p className="font-signature select-none py-1 text-[40px] leading-none text-[#1a2b6b]">{signature}</p>
+        ) : (
+          <p className="pb-2 text-[12px] italic text-[#8a8aa0]">Waiting for signature</p>
+        )}
+      </div>
+      <div className="border-b border-[#1c1c28]/60" />
+      <p className="mt-1.5 font-semibold text-[#111118]">{name}</p>
+      {lines.filter(Boolean).map((l) => (
+        <p key={l as string} className="text-[12px] text-[#55556a]">
+          {l}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function Money({ amount }: { amount: number }) {
+  return (
+    <>
+      <Peso className="opacity-100" />
+      {money(amount)}
+    </>
   );
 }

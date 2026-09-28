@@ -145,7 +145,7 @@ export function buildSOWSnapshot(params: {
       turnaroundDays: delivery.turnaroundDays,
       slaStartTrigger:
         delivery.slaStartTrigger ||
-        "SLA timeline commences immediately upon Lead Statistician assignment and verified downpayment receipt.",
+        "SLA timeline commences immediately upon Lead Statistical Analyst assignment and verified downpayment receipt.",
     },
     terms: {
       revisionPolicy: DEFAULT_REVISION_POLICY,

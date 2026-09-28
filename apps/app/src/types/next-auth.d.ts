@@ -10,6 +10,8 @@ declare module "next-auth" {
       status: UserStatus;
       pwdFp?: string;
       rememberMe?: boolean;
+      /** When this login started (ms). */
+      loginAt?: number;
     } & DefaultSession["user"];
   }
 
@@ -20,6 +22,7 @@ declare module "next-auth" {
     status: UserStatus;
     pwdFp?: string;
     rememberMe?: boolean;
+    loginAt?: number;
   }
 }
 
@@ -31,5 +34,6 @@ declare module "next-auth/jwt" {
     status?: UserStatus;
     pwdFp?: string;
     rememberMe?: boolean;
+    loginAt?: number;
   }
 }

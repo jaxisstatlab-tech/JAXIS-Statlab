@@ -46,7 +46,7 @@ const linkClass = "font-sans text-[13px] text-white/60 transition-colors hover:t
 
 export default function Footer() {
   return (
-    <footer className="relative border-t border-white/[0.08] bg-[#010114] pb-10 pt-16">
+    <footer className="relative bg-[#010114] pb-10 pt-16">
       <div className={container}>
         <div className="grid grid-cols-2 gap-10 md:grid-cols-12">
           <div className="col-span-2 md:col-span-4">
@@ -114,7 +114,7 @@ export default function Footer() {
             </span>
             <CookieSettingsButton className="underline decoration-white/20 underline-offset-4 transition-colors hover:text-white" />
           </span>
-          <span>Every study is checked by two statisticians.</span>
+          <span>Every study is checked by two statistical analysts.</span>
         </div>
       </div>
     </footer>

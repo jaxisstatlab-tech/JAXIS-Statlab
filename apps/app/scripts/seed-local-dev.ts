@@ -1,7 +1,8 @@
 /**
  * LOCAL DEV DATA ONLY. Writes sample studies for a test client into the offline JSON stores
  * (.dev-projects.json, .dev-quotations.json, .dev-sows.json, dev_data/payments.json, .dev-alerts.json,
- * .dev-defenselab.json, .dev-messages.json, .dev-analysis.json, .dev-deliverables.json).
+ * .dev-defenselab.json, .dev-messages.json, .dev-analysis.json, .dev-deliverables.json, .dev-disputes.json,
+ * .dev-revisions.json).
  *
  * It never connects to the database or file storage. The app only reads these files when the
  * database is unreachable, so view them with `npm run dev:offline`.
@@ -410,7 +411,7 @@ const alerts = [
   alert("quote", "COMMERCIAL_UPDATE", "quote", `Your price for ${intake("quote")} is ready. Review what's included and accept it to continue.`, "/quote", 0.2),
   alert("info", "STATUS_UPDATE", "info", "We need your final questionnaire before we can price your study.", "", 3),
   alert("sign", "COMMERCIAL_UPDATE", "sign", `Your agreement for ${intake("sign")} is ready to sign.`, "/sow", 5),
-  alert("message", "MESSAGE_ALERT", "analysis", "Your statistician sent you a message about your sleep-quality scale.", "/messages", 26),
+  alert("message", "MESSAGE_ALERT", "analysis", "Your statistical analyst sent you a message about your sleep-quality scale.", "/messages", 26),
   alert("deposit", "PAYMENT_UPDATE", "analysis", "We confirmed your deposit of ₱1,375. Your analysis has started.", "/payment", 30, true),
   alert("files", "DELIVERABLE_UPDATE", "delivered", "Your tables, write-up and code are ready to download.", "/deliverables", 28, true),
   alert("welcome", "SYSTEM_ALERT", null, "Welcome to JAXIS StatLab. Send your first study and we'll reply with a fixed price within 24 hours.", "/dashboard/client", 24 * 20, true),
@@ -487,7 +488,7 @@ const msg = (projectKey: string, who: typeof STAT, content: string, ageMinutes: 
 const H = 60;
 const D = 24 * H;
 const messages = [
-  msg("analysis", STAT, "Hi Ana! I'm Juan, your statistician for this study. I've gone through your questionnaire and data file.", 3 * D),
+  msg("analysis", STAT, "Hi Ana! I'm Juan, your statistical analyst for this study. I've gone through your questionnaire and data file.", 3 * D),
   msg("analysis", ME, "Hi Dr. Reyes, thank you! Is the data file okay?", 3 * D - 20),
   msg("analysis", STAT, "Mostly yes. 12 respondents skipped the sleep-quality items, so I'll leave them out of that test only. Everything else stays in.", 3 * D - 35),
   msg("analysis", ME, "Okay, that works. Will that change my results a lot?", 3 * D - 40),
@@ -578,6 +579,50 @@ const deliverables = [
   finalFile("delivered", 1, "PDF_REPORT", "0017_chapter4_results.pdf", 26),
   finalFile("delivered", 2, "STATISTICAL_OUTPUT", "0017_apa_tables.xlsx", 26),
   finalFile("delivered", 3, "RAW_DATA_CLEANED", "0017_cleaned_data.csv", 26),
+  finalFile("closed", 1, "PDF_REPORT", "0009_chapter4_results.pdf", 42 * 24),
+  finalFile("closed", 2, "STATISTICAL_OUTPUT", "0009_apa_tables.xlsx", 42 * 24),
+];
+
+// ── Study claims (Revisions & help): one past claim, reviewed with no refund ─────────────
+const claimDay = (d: number) => new Date(now - d * 24 * 60 * 60 * 1000).toISOString();
+const disputes = [
+  {
+    id: "seed_claim_closed",
+    projectId: "seed_proj_closed",
+    clientId,
+    grounds: "MATHEMATICAL_ERROR",
+    description:
+      "The percentages in Table 2 don't add up to 100% for the reading-level groups. I think one group was counted twice.",
+    evidenceFilePaths: [],
+    status: "RESOLVED_NO_REFUND",
+    resolutionType: "NO_REFUND",
+    resolutionNotes:
+      "We re-ran the table from your data. The percentages are rounded to one decimal, so they add up to 99.9%. No group was counted twice. We added a note under Table 2 explaining the rounding.",
+    resolvedAt: claimDay(38),
+    disputeWindowExpiresAt: claimDay(35),
+    createdAt: claimDay(40),
+    updatedAt: claimDay(38),
+  },
+];
+
+// ── Change requests (Request changes): one finished free change on the closed study ──────
+const revisions = [
+  {
+    id: "seed_rev_closed",
+    projectId: "seed_proj_closed",
+    clientId,
+    description:
+      "Please add the effect size next to each t-test in Table 4, and write the results in past tense like my adviser asked.",
+    requestedSections: "Table 4, Chapter 4 section 4.3",
+    status: "RESOLVED",
+    classification: "INCLUDED",
+    classificationNotes:
+      "This is within your agreed scope, so it's free. We added Cohen's d to Table 4 and changed the write-up to past tense. The updated files replaced the old ones.",
+    classifiedAt: claimDay(41),
+    resolvedAt: claimDay(40),
+    createdAt: claimDay(41.5),
+    updatedAt: claimDay(40),
+  },
 ];
 
 // ── Write (keep any non-seed records already in each file) ─────────────────────
@@ -590,6 +635,8 @@ write(file(".dev-defenselab.json"), [...defenseLabSessions, ...keepUnseeded(read
 write(file(".dev-messages.json"), [...messages, ...keepUnseeded(read(file(".dev-messages.json")))]);
 write(file(".dev-analysis.json"), [...analysis, ...keepUnseeded(read(file(".dev-analysis.json")))]);
 write(file(".dev-deliverables.json"), [...deliverables, ...keepUnseeded(read(file(".dev-deliverables.json")))]);
+write(file(".dev-disputes.json"), [...disputes, ...keepUnseeded(read(file(".dev-disputes.json")))]);
+write(file(".dev-revisions.json"), [...revisions, ...keepUnseeded(read(file(".dev-revisions.json")))]);
 
 console.log(
   `Seeded ${projects.length} studies, ${quotations.length} quotes, ${sows.length} agreements, ${payments.length} payments, ${alerts.length} notifications, ${defenseLabSessions.length} DefenseLab sessions, ${messages.length} chat messages, ${deliverables.length} delivered files for ${clientEmail}.`

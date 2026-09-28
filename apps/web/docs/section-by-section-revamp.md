@@ -136,7 +136,7 @@ graph TD
   - `01 · DATA AUDIT`: "Raw survey data validated · Zero missing entries"
   - `02 · TEST SELECTION`: "Matched to research questions · Methodology locked"
   - `03 · APA TABLES`: "APA 7th Edition formatted · Copy-paste ready"
-  - `04 · VERIFICATION`: "Double-checked by 2 statisticians · Ready for defense"
+  - `04 · VERIFICATION`: "Double-checked by 2 statistical analysts · Ready for defense"
 - **Headline**: "Defend Your Thesis. With Confidence."
 - **Lead Text**: "We analyze your survey data, format publication-ready APA 7th Edition tables, and give you the exact speaking script to defend your results with zero fear."
 
@@ -203,7 +203,7 @@ graph TD
 #### 3. Copywriting Plan
 - Deliverable 01: `Spreadsheet Cleaning & Data Health Checks` (Data cleanup, Outlier checks, Reliability test, Missing data handling).
 - Deliverable 02: `Accurate Calculations & Ready APA 7th Tables` (Demographics, Hypothesis testing, Advanced SEM modeling, Ready APA tables).
-- Deliverable 03: `Double-Checked by 2 Independent Statisticians` (Double-blind check, Zero p-hacking, Complete R/Python/SPSS code, Senior QA sign-off).
+- Deliverable 03: `Double-Checked by 2 Independent Statistical Analysts` (Double-blind check, Zero p-hacking, Complete R/Python/SPSS code, Senior QA sign-off).
 - Deliverable 04: `Plain-English Speaking Scripts & Mock Defense` (1-on-1 mock panel defense, 20+ defense questions script, null-result defense, free revisions).
 
 ---
@@ -329,7 +329,7 @@ graph TD
 #### 3. Copywriting Plan
 - Eyebrow: `GET YOUR FREE STATISTICAL CONSULTATION`
 - Headline: `Stop worrying about defense. Start feeling confident.`
-- Paragraph: "Send us your Chapter 1 or raw survey spreadsheet. Our senior statisticians will review your study and give you an exact, custom Scope of Work quote within 24 hours at zero charge."
+- Paragraph: "Send us your Chapter 1 or raw survey spreadsheet. Our senior statistical analysts will review your study and give you an exact, custom Scope of Work quote within 24 hours at zero charge."
 - CTA Button: `Get Free Thesis Review`
 - Links: `Privacy Policy` · `Terms of Service` · `Academic Ethics & Anti-P-Hacking` · `Escrow Security`
 

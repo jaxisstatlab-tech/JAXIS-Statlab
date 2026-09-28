@@ -266,7 +266,7 @@ export async function getAnalysisWorkbenchData(
     const uploadCheck = assertCanUploadAnalysis(project.masterStatus);
     const canUpload = isAssignedStatistician && uploadCheck.allowed;
     const uploadDisabledReason = !isAssignedStatistician
-      ? "Only the assigned Lead Statistician can upload analysis output files."
+      ? "Only the assigned Lead Statistical Analyst can upload analysis output files."
       : uploadCheck.reason;
 
     return {
@@ -481,7 +481,7 @@ export async function uploadAnalysisFile(
         eventType: "OUTPUT_UPDATE",
         projectId: result.projectId,
         title: "Analysis Deliverable Uploaded",
-        message: `Statistician ${result.statistician.fullName} uploaded "${result.fileName}" (v${result.version}).`,
+        message: `Statistical Analyst ${result.statistician.fullName} uploaded "${result.fileName}" (v${result.version}).`,
         targetRoles: ["ADMIN", "SENIOR_QA_LEAD"],
         includeProjectParties: true,
       });
@@ -841,7 +841,7 @@ export async function submitForQA(
         projectId: project.id,
         intakeId: project.intakeId,
         title: "Study Submitted for QA Inspection",
-        message: `Study ${project.intakeId} has been submitted for QA verification by the statistician.`,
+        message: `Study ${project.intakeId} has been submitted for QA verification by the statistical analyst.`,
         targetRoles: ["ADMIN", "SENIOR_QA_LEAD"],
         includeProjectParties: true,
       });

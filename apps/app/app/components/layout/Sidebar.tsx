@@ -6,7 +6,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import type { RoleName } from "@prisma/client";
-import { getUnreadMessagesCount } from "@/features/messaging/actions";
 import { DutyClockWidget } from "@/features/attendance/components/DutyClockWidget";
 import type { ActiveShiftStatus } from "@/features/attendance/schemas";
 import { NotificationDrawer } from "../notifications/NotificationDrawer";
@@ -171,7 +170,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
       groupTitle: "STUDIES & DATA",
       items: [
         {
-          label: "Statistician Workbench",
+          label: "Statistical Analyst Workbench",
           href: "/dashboard/statistician",
           icon: Icons.Terminal,
         },
@@ -490,7 +489,7 @@ function getRoleDisplayLabel(role?: string): string {
     case "CLIENT":
       return "Client";
     case "STATISTICIAN":
-      return "Lead Statistician";
+      return "Statistical Analyst";
     case "SENIOR_QA_LEAD":
     case "QA":
       return "Senior QA Lead";
@@ -564,11 +563,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [initialUnreadMessagesCount]);
 
-  // Client-side fetcher to refresh unread messages count
+  // Client-side fetcher to refresh unread messages count. A plain GET (not a server action), so a
+  // background refresh never holds up a sidebar click in the router's action queue.
   const refreshUnreadCount = useCallback(async () => {
     try {
-      const count = await getUnreadMessagesCount();
-      setUnreadMessagesCount(count);
+      const res = await fetch("/api/v1/messages/unread", { cache: "no-store" });
+      if (!res.ok) return;
+      const body = (await res.json()) as { count?: number };
+      if (typeof body.count === "number") setUnreadMessagesCount(body.count);
     } catch {
       // silent fallback
     }
@@ -606,8 +608,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     };
     document.addEventListener("visibilitychange", handleVisibility);
 
-    // Periodic 25-second background refresh
-    const interval = setInterval(refreshUnreadCount, 25000);
+    // Periodic 25-second background refresh (skipped while the tab is hidden)
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") refreshUnreadCount();
+    }, 25000);
 
     return () => {
       window.removeEventListener("jaxis:unread-count-updated", handleUnreadUpdate);

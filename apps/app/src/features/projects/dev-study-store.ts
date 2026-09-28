@@ -1,13 +1,14 @@
 import fs from "fs";
 import path from "path";
 import type { RoleName, AnalysisFileCategory, DeliverableCategory } from "@prisma/client";
-import { getDevUserByEmail } from "@/lib/mock-data/users.data";
+import { getDevUserByEmail, getDevUsers } from "@/lib/mock-data/users.data";
+import { clientPackageName } from "@/features/projects/client-packages";
 import { ANALYSIS_CATEGORY_METADATA, assertCanUploadAnalysis } from "@/lib/analysis-rules";
 import { QA_DECISION_METADATA, ERROR_CLASSIFICATION_METADATA, assertCanSubmitQaReview } from "@/lib/qa-rules";
-import { DELIVERABLE_CATEGORY_METADATA, getRevisionWindowCountdown } from "@/lib/delivery-rules";
+import { DELIVERABLE_CATEGORY_METADATA, REVISION_CLASSIFICATION_METADATA, getRevisionWindowCountdown, isRevisionWindowActive } from "@/lib/delivery-rules";
 import type { WorkbenchDataDTO } from "@/features/analysis/schemas";
 import type { QaInspectionDeskDTO, QaReviewDTO } from "@/features/qa/schemas";
-import type { AdminDeliverablesDeskDTO, ClientDeliverablesDTO, DeliverableDTO } from "@/features/deliverables/schemas";
+import type { AdminDeliverablesDeskDTO, ClientDeliverablesDTO, DeliverableDTO, RevisionRequestDTO } from "@/features/deliverables/schemas";
 
 /**
  * Offline dev only (`npm run dev:offline`): the statistician workbench, QA review and files desks
@@ -93,6 +94,7 @@ const FILES = {
   deliverables: path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-deliverables.json"),
   sows: path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-sows.json"),
   payments: path.join(/*turbopackIgnore: true*/ process.cwd(), "dev_data", "payments.json"),
+  revisions: path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-revisions.json"),
 };
 function readJson<T>(full: string): T[] {
   try {
@@ -214,7 +216,7 @@ export function devWorkbench(projectId: string, user: User): Result<WorkbenchDat
         ? {
             id: `dev_assign_${p.id}`,
             statisticianId: p.assignment?.statisticianId ?? "",
-            statisticianName: p.assignment?.statistician?.fullName ?? "Statistician",
+            statisticianName: p.assignment?.statistician?.fullName ?? "Statistical Analyst",
             statisticianEmail: "stat@jaxis.dev",
             qaLeadId: p.assignment?.qaLeadId ?? "",
             qaLeadName: p.assignment?.qaLead?.fullName ?? "Reviewer",
@@ -251,7 +253,7 @@ export function devWorkbench(projectId: string, user: User): Result<WorkbenchDat
       })),
       activeScopeCreep: null,
       canUpload: w.isStatistician && upload.allowed,
-      uploadDisabledReason: w.isStatistician ? upload.reason : "Only the assigned statistician can upload analysis files.",
+      uploadDisabledReason: w.isStatistician ? upload.reason : "Only the assigned statistical analyst can upload analysis files.",
       isAssignedStatistician: w.isStatistician,
       isAssignedQaLead: w.isQaLead,
       isManagement: w.isManagement,
@@ -297,7 +299,7 @@ export function devQaDesk(projectId: string, user: User): Result<QaInspectionDes
       assignment: s
         ? {
             statisticianId: p.assignment?.statisticianId ?? "",
-            statisticianName: p.assignment?.statistician?.fullName ?? "Statistician",
+            statisticianName: p.assignment?.statistician?.fullName ?? "Statistical Analyst",
             statisticianEmail: "stat@jaxis.dev",
             qaLeadId: p.assignment?.qaLeadId ?? "",
             qaLeadName: p.assignment?.qaLead?.fullName ?? "Reviewer",
@@ -361,6 +363,13 @@ function deliverableDTO(x: DevDeliverable): DeliverableDTO {
   };
 }
 
+/** A staff member's saved signature (offline sample users), or null. Never someone else's. */
+function staffSignature(userId?: string | null): string | null {
+  if (!userId) return null;
+  const u = Object.values(getDevUsers()).find((x) => x.id === userId);
+  return u?.staffProfile?.signatureUrl || null;
+}
+
 function money(d: NonNullable<ReturnType<typeof load>>) {
   const totalAmount = Number(d.project.financialSummary?.totalAmount ?? 0);
   const totalPaid = d.payments
@@ -399,7 +408,7 @@ export function devAdminDeliverables(projectId: string, user: User): AdminDelive
       revisionWindowExpiresAt: revisionExpiry(d.project),
       client: { id: d.project.clientId, fullName: d.project.client?.fullName ?? "Client", email: d.project.client?.email ?? "" },
       assignedStatistician: d.project.assignment?.statisticianId
-        ? { id: d.project.assignment.statisticianId, fullName: d.project.assignment.statistician?.fullName ?? "Statistician" }
+        ? { id: d.project.assignment.statisticianId, fullName: d.project.assignment.statistician?.fullName ?? "Statistical Analyst" }
         : null,
       assignedQaLead: d.project.assignment?.qaLeadId
         ? { id: d.project.assignment.qaLeadId, fullName: d.project.assignment.qaLead?.fullName ?? "Reviewer" }
@@ -434,6 +443,7 @@ export function devClientDeliverables(projectId: string, user: User): ClientDeli
   const expires = revisionExpiry(p);
   const qaApproved = p.qaApproved ?? d.reviews.some((r) => r.decision === "QA_APPROVED");
   const approved = d.reviews.find((r) => r.decision === "QA_APPROVED");
+  const revisions = readRevisions(p.id);
   return {
     project: {
       id: p.id,
@@ -454,8 +464,8 @@ export function devClientDeliverables(projectId: string, user: User): ClientDeli
         : null,
     },
     deliverables: shown.map(deliverableDTO),
-    revisions: [],
-    hasPendingRevision: false,
+    revisions: revisions.map((r) => revisionDTO(r, p)),
+    hasPendingRevision: revisions.some((r) => r.status === "PENDING_REVIEW" || r.status === "INCLUDED"),
     qaCertificate:
       isReleased || qaApproved || p.masterStatus === "DELIVERED"
         ? {
@@ -465,19 +475,117 @@ export function devClientDeliverables(projectId: string, user: User): ClientDeli
             clientEmail: p.client?.email ?? "",
             institution: p.client?.clientProfile?.institutionSchool ?? "",
             program: p.client?.clientProfile?.academicProgram ?? "",
-            tierExecuted: p.packageName ?? "",
+            tierExecuted: clientPackageName(p.packageName) ?? "",
             completionDate: new Date(p.deliveredAt ?? approved?.reviewedAt ?? Date.now()).toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
               day: "numeric",
             }),
-            statisticianName: p.assignment?.statistician?.fullName ?? "Statistician",
-            statisticianTitle: "Lead Statistician",
-            statisticianSignatureUrl: null,
-            qaLeadName: approved?.reviewerName ?? p.assignment?.qaLead?.fullName ?? "Reviewer",
-            qaLeadTitle: "Reviewer",
-            qaSignatureUrl: null,
+            statisticianName: p.assignment?.statistician?.fullName ?? "Statistical Analyst",
+            statisticianTitle: "Statistical Analyst",
+            statisticianSignatureUrl: staffSignature(p.assignment?.statisticianId),
+            qaLeadName: approved?.reviewerName ?? p.assignment?.qaLead?.fullName ?? "JAXIS StatLab review team",
+            qaLeadTitle: "Reviewing Statistical Analyst",
+            // The approver's own signature from their profile (saved in .dev-users.json offline).
+            qaSignatureUrl: staffSignature(approved?.reviewerId ?? p.assignment?.qaLeadId),
           }
         : null,
   };
+}
+
+/** Offline stand-in for a file download: a small placeholder (sample files have no real storage). */
+export function devDeliverableDownload(deliverableId: string, user: User): { url: string; fileName: string } {
+  const item = readJson<DevDeliverable>(FILES.deliverables).find((x) => x.id === deliverableId);
+  if (!item) throw new Error("File not found.");
+  const d = load(item.projectId);
+  if (!d) throw new Error("File not found.");
+  const isClient = (user.role ?? "CLIENT") === "CLIENT";
+  if (isClient && (!who(user, d.project).isClient || !item.isFinalReleased)) throw new Error("This file isn't available to you yet.");
+  const text = `Offline sample file: ${item.fileName}\nReal files are only available in the live app.\n`;
+  return { url: `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`, fileName: item.fileName };
+}
+
+// ── Change requests (offline) ────────────────────────────────────────────────
+
+type DevRevision = {
+  id: string;
+  projectId: string;
+  clientId: string;
+  description: string;
+  requestedSections?: string | null;
+  status: RevisionRequestDTO["status"];
+  classification?: RevisionRequestDTO["classification"];
+  classificationNotes?: string | null;
+  classifiedAt?: string | null;
+  resolvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const readRevisions = (projectId: string) =>
+  readJson<DevRevision>(FILES.revisions)
+    .filter((r) => r.projectId === projectId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+function revisionDTO(r: DevRevision, p: DevProject): RevisionRequestDTO {
+  return {
+    id: r.id,
+    projectId: r.projectId,
+    projectTitle: p.researchTitle,
+    intakeId: p.intakeId,
+    clientId: r.clientId,
+    clientName: p.client?.fullName ?? "Client",
+    clientEmail: p.client?.email ?? "",
+    description: r.description,
+    requestedSections: r.requestedSections ?? null,
+    status: r.status,
+    classification: r.classification ?? null,
+    classificationLabel: r.classification ? REVISION_CLASSIFICATION_METADATA[r.classification]?.label ?? null : null,
+    classificationNotes: r.classificationNotes ?? null,
+    classifiedBy: null,
+    classifierName: null,
+    classifiedAt: r.classifiedAt ?? null,
+    supplementalQuotationId: null,
+    supplementalSowId: null,
+    resolvedAt: r.resolvedAt ?? null,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+  };
+}
+
+/** Offline stand-in for submitClientRevision: same rules (owner, open window, one active request). */
+export function devSubmitRevision(
+  input: { projectId: string; description: string; requestedSections?: string },
+  user: User
+): RevisionRequestDTO {
+  const d = load(input.projectId);
+  if (!d) throw new Error("Study not found.");
+  const p = d.project;
+  if (!who(user, p).isClient) throw new Error("Only the client who sent this study can ask for changes.");
+  if (!isRevisionWindowActive(revisionExpiry(p))) throw new Error("The free-change window for this study has closed.");
+  const all = readJson<DevRevision>(FILES.revisions);
+  if (all.some((r) => r.projectId === p.id && (r.status === "PENDING_REVIEW" || r.status === "INCLUDED"))) {
+    throw new Error("You already sent a change request for this study.");
+  }
+  const now = new Date().toISOString();
+  const rev: DevRevision = {
+    id: `dev_rev_${Date.now()}`,
+    projectId: p.id,
+    clientId: p.clientId,
+    description: input.description,
+    requestedSections: input.requestedSections || null,
+    status: "PENDING_REVIEW",
+    classification: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  fs.writeFileSync(FILES.revisions, JSON.stringify([rev, ...all], null, 2), "utf-8");
+  // Same as the real action: the study moves to "making your changes".
+  const projects = readJson<DevProject>(FILES.projects);
+  const i = projects.findIndex((x) => x.id === p.id);
+  if (i >= 0) {
+    projects[i] = { ...projects[i]!, masterStatus: "REVISION_REQUESTED" };
+    fs.writeFileSync(FILES.projects, JSON.stringify(projects, null, 2), "utf-8");
+  }
+  return revisionDTO(rev, p);
 }

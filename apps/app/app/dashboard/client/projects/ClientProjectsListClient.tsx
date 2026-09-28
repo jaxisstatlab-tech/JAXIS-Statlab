@@ -1,35 +1,34 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
-import {
-  PageHeader,
-  Card,
-  Button,
-  KpiCard,
-  FilterToolbar,
-  Modal,
-  Toast,
-  LoadingState,
-  EmptyState,
-  Pagination,
-  CopyButton,
-} from "@repo/ui";
+import { PageHeader, Button, Modal, Toast, LoadingState, Pagination, CopyButton } from "@repo/ui";
+import { Peso } from "@repo/ui/MoneyDisplay";
 import {
   ArrowRight,
+  CaretDown,
+  ChatCenteredText,
   DownloadSimple,
   Eye,
   FolderDashed,
   MagnifyingGlass,
   Plus,
+  Trash,
+  X,
 } from "@phosphor-icons/react";
 import { getProjects } from "@/features/projects/actions";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { QuickProfileModal } from "@/features/client-profile/components/QuickProfileModal";
+import { RequestStudyDeletionModal } from "@/features/projects/components/RequestStudyDeletionModal";
 import { getClientStage, clientStagePriority, type ClientStage, type ClientStageTone } from "@/features/projects/client-stage";
-import { ClientStageMeter, ClientStageTag } from "@/features/projects/components/ClientStudyStepper";
+import { ClientStageTag, ClientStudyStepper } from "@/features/projects/components/ClientStudyStepper";
+import { formatShortDate, useDueText } from "@/features/projects/due-text";
 import { getFileMeta, formatFileCategory, triggerFileDownload } from "@/lib/file-utils";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
+import { Panel } from "@/components/dashboard/Panel";
+
+// Every study the client has sent, listed like orders in a shopping app: tabs by stage, then one
+// card per study with its status, the 5 steps, and the one thing to do next.
 
 export interface ClientProjectsListClientProps {
   initialProjects: ProjectDetailItem[];
@@ -42,30 +41,25 @@ const STAGE_TABS: Array<{ value: StageFilter; label: string }> = [
   { value: "ALL", label: "All" },
   { value: "action", label: "Needs you" },
   { value: "wait", label: "In progress" },
-  { value: "done", label: "Done" },
+  { value: "done", label: "Completed" },
   { value: "stopped", label: "Stopped" },
 ];
 
+const SORT_OPTIONS = [
+  { value: "priority", label: "Needs you first" },
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+  { value: "deadline", label: "Closest due date" },
+];
+
 const studyHref = (p: ProjectDetailItem, path = "") => `/dashboard/client/projects/${p.id}${path}`;
+const money = (n: number) => Math.round(n).toLocaleString("en-PH");
 
 function formatDate(value: string | Date | null | undefined) {
   if (!value) return "—";
   const d = new Date(value);
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
-}
-
-/** "in 6 days", "today", "3 days ago" relative to now. */
-function relativeDays(value: string | Date | null | undefined) {
-  if (!value) return "";
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return "";
-  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-  const days = Math.round((startOf(d) - startOf(new Date())) / 86_400_000);
-  if (days === 0) return "today";
-  if (days === 1) return "tomorrow";
-  if (days === -1) return "yesterday";
-  return days > 0 ? `in ${days} days` : `${Math.abs(days)} days ago`;
 }
 
 export function ClientProjectsListClient({
@@ -79,6 +73,7 @@ export function ClientProjectsListClient({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [selectedStudyForInspect, setSelectedStudyForInspect] = useState<ProjectDetailItem | null>(null);
+  const [studyToRequestDeletion, setStudyToRequestDeletion] = useState<{ id: string; intakeId: string; title: string } | null>(null);
   const [isProfileComplete, setIsProfileComplete] = useState<boolean | null>(initialProfileComplete);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<{
@@ -174,7 +169,7 @@ export function ClientProjectsListClient({
 
   const newStudyAction =
     isProfileComplete === null ? (
-      <Button variant="primary" size="sm" disabled className="opacity-50 cursor-wait pointer-events-none">
+      <Button variant="outline" size="sm" disabled className="opacity-50 cursor-wait pointer-events-none">
         <LoadingState variant="inline" label="Loading..." />
       </Button>
     ) : isProfileComplete === false ? (
@@ -183,7 +178,7 @@ export function ClientProjectsListClient({
         <ArrowRight size={14} weight="bold" />
       </Button>
     ) : (
-      <Button asChild variant="primary" size="sm">
+      <Button asChild variant="outline" size="sm">
         <Link href="/dashboard/client/projects/new">
           <Plus size={14} weight="bold" />
           Send a New Study
@@ -191,171 +186,156 @@ export function ClientProjectsListClient({
       </Button>
     );
 
+  const summary =
+    counts.ALL === 0
+      ? "Every study you send shows up here."
+      : counts.action > 0
+        ? `${counts.action} of your ${counts.ALL} studies ${counts.action === 1 ? "needs" : "need"} something from you.`
+        : `You have ${counts.ALL} ${counts.ALL === 1 ? "study" : "studies"}. Nothing needs you right now.`;
+
   return (
     <div data-portal="client" className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       <PageHeader
-        title="All Studies"
-        description="Every study you've sent, where it stands, and what to do next."
+        title="All studies"
+        description={summary}
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "My Studies", href: "/dashboard/client" },
-          { label: "All Studies" },
+          { label: "All studies" },
         ]}
         actions={newStudyAction}
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <KpiCard label="All studies" value={counts.ALL} description="Since you joined" />
-        <KpiCard
-          label="Needs you"
-          value={counts.action}
-          variant={counts.action > 0 ? "orange" : "default"}
-          description={counts.action > 0 ? "Waiting on you" : "Nothing waiting"}
-        />
-        <KpiCard label="In progress" value={counts.wait} description="We're on it" />
-        <KpiCard label="Done" value={counts.done} description="All finished" />
-      </div>
+      <section className="flex flex-col gap-4" aria-label="Your studies">
+        {/* Tabs, then search and sort on one line */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div
+            className="-mx-1 flex items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none]"
+            role="tablist"
+            aria-label="Filter by stage"
+          >
+            {STAGE_TABS.filter((t) => t.value !== "stopped" || counts.stopped > 0).map((t) => {
+              const active = stageFilter === t.value;
+              return (
+                <button
+                  key={t.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => {
+                    setStageFilter(t.value);
+                    setCurrentPage(1);
+                  }}
+                  className={`inline-flex shrink-0 items-center gap-2 rounded-[2px] px-3 py-1.5 font-sans text-[13px] transition-colors ${
+                    active ? "bg-white/[0.08] font-medium text-white" : "text-white/55 hover:text-white"
+                  }`}
+                >
+                  {t.value === "action" && counts.action > 0 ? (
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#CC6600]" aria-hidden="true" />
+                  ) : null}
+                  {t.label}
+                  <span className={`font-mono text-[11px] ${active ? "text-white/60" : "text-white/35"}`}>
+                    {counts[t.value]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-      <Card className="p-0 overflow-hidden">
-        {/* Stage tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto border-b border-white/[0.08] px-4 py-3 [scrollbar-width:none]" role="tablist" aria-label="Filter by stage">
-          {STAGE_TABS.filter((t) => t.value !== "stopped" || counts.stopped > 0).map((t) => {
-            const active = stageFilter === t.value;
-            return (
-              <button
-                key={t.value}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => {
-                  setStageFilter(t.value);
+          <div className="flex items-center gap-2">
+            <SearchBox
+              value={searchQuery}
+              onChange={(q) => {
+                setSearchQuery(q);
+                setCurrentPage(1);
+              }}
+            />
+            <label className="relative shrink-0">
+              <span className="sr-only">Sort studies</span>
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
                   setCurrentPage(1);
                 }}
-                className={`inline-flex shrink-0 items-center gap-2 rounded-[2px] px-3 py-1.5 font-sans text-[13px] transition-colors ${
-                  active ? "bg-white/[0.08] font-medium text-white" : "text-white/55 hover:text-white"
-                }`}
+                className="h-9 cursor-pointer appearance-none rounded-[2px] border border-white/10 bg-white/[0.03] pl-3 pr-8 font-sans text-[13px] text-white/80 transition-colors hover:border-white/20 focus:border-white/30 focus:outline-none"
               >
-                {t.value === "action" && counts.action > 0 && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#CC6600]" aria-hidden="true" />
-                )}
-                {t.label}
-                <span className={`font-mono text-[11px] ${active ? "text-white/60" : "text-white/35"}`}>
-                  {counts[t.value]}
-                </span>
-              </button>
-            );
-          })}
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value} className="bg-[#0A0A18]">
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <CaretDown
+                size={12}
+                weight="fill"
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40"
+              />
+            </label>
+          </div>
         </div>
 
-        <FilterToolbar
-          searchQuery={searchQuery}
-          onSearchChange={(q) => {
-            setSearchQuery(q);
-            setCurrentPage(1);
-          }}
-          searchPlaceholder="Search by title, study ID, or objectives..."
-          filters={[
-            {
-              key: "sort",
-              label: "SORT",
-              value: sortBy,
-              defaultValue: "priority",
-              options: [
-                { value: "priority", label: "Needs you first" },
-                { value: "newest", label: "Newest first" },
-                { value: "oldest", label: "Oldest first" },
-                { value: "deadline", label: "Closest due date" },
-              ],
-            },
-          ]}
-          onFilterChange={(key, value) => {
-            if (key === "sort") {
-              setSortBy(value);
-              setCurrentPage(1);
-            }
-          }}
-          onClear={clearFilters}
-        />
-
         {visibleProjects.length === 0 ? (
-          <div className="border-t border-white/[0.08] py-16">
-            <EmptyState
-              icon={isFiltered ? MagnifyingGlass : FolderDashed}
-              title={isFiltered ? "No studies match" : "No studies yet"}
-              description={
-                isFiltered
-                  ? "Try another tab or search, or clear your filters."
-                  : "Send your first study and we'll reply with a fixed price within 24 hours."
-              }
-              action={
-                isFiltered ? (
+          <Panel as="div">
+            <div className="flex flex-col items-center px-6 py-14 text-center">
+              {isFiltered ? (
+                <MagnifyingGlass size={28} weight="fill" className="text-white/25" />
+              ) : (
+                <FolderDashed size={28} weight="fill" className="text-white/25" />
+              )}
+              <p className="mt-4 text-sm font-medium text-white">{isFiltered ? "No studies match" : "No studies yet"}</p>
+              <p className="mt-1 max-w-sm text-[13px] text-white/55">
+                {isFiltered
+                  ? "Try another tab or search word, or clear your filters."
+                  : "Send your first study and we'll reply with a fixed price within 24 hours."}
+              </p>
+              <div className="mt-5">
+                {isFiltered ? (
                   <Button variant="outline" size="sm" onClick={clearFilters}>
                     Clear Filters
                   </Button>
                 ) : (
                   newStudyAction
-                )
-              }
-            />
-          </div>
+                )}
+              </div>
+            </div>
+          </Panel>
         ) : (
           <>
-            {/* Desktop table */}
-            <div className="hidden md:block overflow-x-auto border-t border-white/[0.08]">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/[0.08]">
-                    {["Study", "Where it stands", "Due", ""].map((h, i) => (
-                      <th
-                        key={h || i}
-                        scope="col"
-                        className={`px-5 py-3 font-mono text-[11px] font-medium uppercase tracking-wider text-white/40 ${
-                          i === 3 ? "text-right" : ""
-                        }`}
-                      >
-                        {h || <span className="sr-only">Actions</span>}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.06]">
-                  {paginatedProjects.map((p) => (
-                    <StudyRow
-                      key={p.id}
-                      project={p}
-                      stage={stageOf(p)}
-                      onInspect={() => setSelectedStudyForInspect(p)}
-                      onCopy={copyToast}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile cards */}
-            <ul className="md:hidden divide-y divide-white/[0.06] border-t border-white/[0.08]">
+            <ul className="flex flex-col gap-4">
               {paginatedProjects.map((p) => (
-                <StudyCard
-                  key={p.id}
-                  project={p}
-                  stage={stageOf(p)}
-                  onInspect={() => setSelectedStudyForInspect(p)}
-                  onCopy={copyToast}
-                />
+                <li key={p.id}>
+                  <StudyOrderCard
+                    project={p}
+                    stage={stageOf(p)}
+                    onInspect={() => setSelectedStudyForInspect(p)}
+                    onCopy={copyToast}
+                    onRequestDeletion={() =>
+                      setStudyToRequestDeletion({ id: p.id, intakeId: p.intakeId, title: p.researchTitle })
+                    }
+                  />
+                </li>
               ))}
             </ul>
 
-            <Pagination
-              currentPage={currentPage}
-              totalItems={visibleProjects.length}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
-              itemLabel="studies"
-            />
+            {visibleProjects.length > pageSize || pageSize !== 10 ? (
+              <Panel as="div" className="overflow-hidden">
+                <Pagination
+                  currentPage={currentPage}
+                  totalItems={visibleProjects.length}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setCurrentPage(1);
+                  }}
+                  itemLabel="studies"
+                />
+              </Panel>
+            ) : null}
           </>
         )}
-      </Card>
+      </section>
 
       {selectedStudyForInspect && (
         <StudyQuickView
@@ -375,6 +355,15 @@ export function ClientProjectsListClient({
         onSuccess={handleProfileSuccess}
       />
 
+      <RequestStudyDeletionModal
+        open={!!studyToRequestDeletion}
+        onClose={() => setStudyToRequestDeletion(null)}
+        study={studyToRequestDeletion}
+        onRequested={() => {
+          refresh();
+        }}
+      />
+
       {toastMessage && (
         <Toast
           message={toastMessage.message}
@@ -389,123 +378,180 @@ export function ClientProjectsListClient({
 
 // ─── Pieces ──────────────────────────────────────────────────────────────────
 
-interface StudyItemProps {
+/** Search with the `/` shortcut to jump in and Esc to clear. */
+function SearchBox({ value, onChange }: { value: string; onChange: (q: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      e.preventDefault();
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  return (
+    <div className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[2px] border border-white/10 bg-white/[0.03] px-3 transition-colors focus-within:border-white/30 lg:w-72 lg:flex-none">
+      <MagnifyingGlass size={14} weight="bold" className="shrink-0 text-white/35" />
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            onChange("");
+            e.currentTarget.blur();
+          }
+        }}
+        placeholder="Search studies"
+        aria-label="Search your studies"
+        className="min-w-0 flex-1 border-0 bg-transparent p-0 font-sans text-base text-white placeholder:text-white/35 focus:outline-none focus:ring-0 sm:text-[13px]"
+      />
+      {value ? (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          aria-label="Clear search"
+          className="shrink-0 text-white/40 transition-colors hover:text-white"
+        >
+          <X size={12} weight="bold" />
+        </button>
+      ) : (
+        <kbd className="hidden shrink-0 select-none rounded-[2px] border border-white/10 bg-white/[0.05] px-1.5 font-mono text-[10px] leading-4 text-white/40 sm:inline">
+          /
+        </kbd>
+      )}
+    </div>
+  );
+}
+
+const ICON_BUTTON =
+  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] text-white/40 transition-colors hover:bg-white/[0.06] hover:text-white";
+
+/** One study, read like an order: status and due date, title, the 5 steps, then one clear button. */
+function StudyOrderCard({
+  project: p,
+  stage,
+  onInspect,
+  onCopy,
+  onRequestDeletion,
+}: {
   project: ProjectDetailItem;
   stage: ClientStage;
   onInspect: () => void;
   onCopy: (id: string) => void;
-}
+  onRequestDeletion: () => void;
+}) {
+  const due = useDueText(p.deadlineRequested, stage, p.deliveredAt);
+  const f = p.financialSummary;
+  const needsYou = stage.tone === "action";
+  const fileCount = p.files.length;
 
-/** One line under the title: our note when we need something, otherwise ID + files + sent date. */
-function StudyMeta({ project: p, onCopy }: Pick<StudyItemProps, "project" | "onCopy">) {
   return (
-    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-white/45">
-      <CopyButton variant="ghost" value={p.intakeId} label={p.intakeId} onCopy={() => onCopy(p.intakeId)} className="-ml-2 text-[11px]" />
-      <span aria-hidden="true">·</span>
-      <span>{p.files.length} {p.files.length === 1 ? "file" : "files"}</span>
-      <span aria-hidden="true">·</span>
-      <span>Sent {formatDate(p.createdAt)}</span>
-    </div>
-  );
-}
-
-function MissingInfoNote({ project: p }: { project: ProjectDetailItem }) {
-  if (p.masterStatus !== "AWAITING_INFORMATION" || !p.missingInfoReason) return null;
-  return (
-    <p className="mt-2 border-l-2 border-[#CC6600]/60 pl-3 text-[13px] leading-relaxed text-white/70 line-clamp-2">
-      <span className="text-white/45">Our note: </span>
-      {p.missingInfoReason}
-    </p>
-  );
-}
-
-// Row buttons stay outlined: the orange "needs you" tag already marks rows that need action,
-// and the page keeps a single orange button (the header action).
-function StudyActions({ project: p, stage, onInspect, fill = false }: Omit<StudyItemProps, "onCopy"> & { fill?: boolean }) {
-  return (
-    <div className={`flex items-center gap-2 ${fill ? "w-full" : "justify-end"}`}>
-      <button
-        type="button"
-        onClick={onInspect}
-        className="h-9 w-9 shrink-0 rounded-[2px] flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.06] transition-colors"
-        aria-label={`Quick view of ${p.intakeId}`}
-        title="Quick view"
-      >
-        <Eye size={16} weight="fill" />
-      </button>
-      <Button asChild variant="outline" size="sm" className={`whitespace-nowrap ${fill ? "flex-1" : "min-w-[7.5rem]"}`}>
-        <Link href={studyHref(p, stage.action?.path ?? "")} prefetch>
-          {stage.action?.label ?? "Open"}
-          {stage.tone === "action" && <ArrowRight size={13} weight="bold" />}
-        </Link>
-      </Button>
-    </div>
-  );
-}
-
-function DueDate({ project: p, stage }: { project: ProjectDetailItem; stage: ClientStage }) {
-  const rel = relativeDays(p.deadlineRequested);
-  const late = rel.endsWith("ago") && stage.tone !== "done" && stage.tone !== "stopped";
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[13px] text-white/85 whitespace-nowrap">{formatDate(p.deadlineRequested)}</span>
-      {rel && <span className={`font-mono text-[11px] ${late ? "text-white/70" : "text-white/40"}`}>{late ? `${rel.replace(" ago", "")} late` : rel}</span>}
-    </div>
-  );
-}
-
-function StudyRow({ project: p, stage, onInspect, onCopy }: StudyItemProps) {
-  return (
-    <tr className="group align-top transition-colors hover:bg-white/[0.02]">
-      <td className="px-5 py-4 min-w-0 max-w-[30rem]">
-        <Link
-          href={studyHref(p)}
-          prefetch
-          className="font-sans text-sm font-medium leading-snug text-white line-clamp-2 decoration-white/30 underline-offset-4 hover:underline"
-          title={p.researchTitle}
-        >
-          {p.researchTitle}
-        </Link>
-        <div className="mt-1.5">
-          <StudyMeta project={p} onCopy={onCopy} />
+    <Panel as="article" aria-label={p.researchTitle} className={needsYou ? "border-[#CC6600]/25" : ""}>
+      {/* Top strip: study ID and sent date, status on the right */}
+      <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-2.5 sm:px-6">
+        <div className="flex min-w-0 items-center gap-2 text-xs text-white/45">
+          <CopyButton
+            variant="ghost"
+            value={p.intakeId}
+            label={p.intakeId}
+            onCopy={() => onCopy(p.intakeId)}
+            className="-ml-2 shrink-0 text-[11px]"
+          />
+          <span aria-hidden="true" className="hidden sm:inline">·</span>
+          <span className="hidden truncate sm:inline">{"Sent " + formatShortDate(p.createdAt)}</span>
         </div>
-        <MissingInfoNote project={p} />
-      </td>
-      <td className="px-5 py-4">
-        <div className="flex flex-col items-start gap-2">
-          <ClientStageTag stage={stage} />
-          <ClientStageMeter stage={stage} />
-        </div>
-      </td>
-      <td className="px-5 py-4">
-        <DueDate project={p} stage={stage} />
-      </td>
-      <td className="px-5 py-4">
-        <StudyActions project={p} stage={stage} onInspect={onInspect} />
-      </td>
-    </tr>
-  );
-}
+        <ClientStageTag stage={stage} className="shrink-0" />
+      </div>
 
-function StudyCard({ project: p, stage, onInspect, onCopy }: StudyItemProps) {
-  return (
-    <li className="px-4 py-5">
-      <div className="flex items-start justify-between gap-3">
-        <ClientStageTag stage={stage} />
-        <DueDate project={p} stage={stage} />
+      <div className="flex flex-col gap-5 px-5 py-5 sm:px-6 lg:flex-row lg:items-start lg:gap-10">
+        <div className="min-w-0 lg:flex-1">
+          <Link
+            href={studyHref(p)}
+            prefetch
+            className="block font-sans text-base font-semibold leading-snug text-white decoration-white/30 underline-offset-4 hover:underline"
+          >
+            {p.researchTitle}
+          </Link>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">{stage.now}</p>
+          {p.masterStatus === "AWAITING_INFORMATION" && p.missingInfoReason ? (
+            <p className="mt-3 border-l-2 border-[#CC6600]/60 pl-3 text-[13px] leading-relaxed text-white/75">
+              <span className="text-white/45">Our note: </span>
+              {p.missingInfoReason}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex flex-col gap-2 lg:w-[27rem] lg:shrink-0">
+          <ClientStudyStepper stage={stage} />
+          <p className="font-mono text-[11px] text-white/45">{due}</p>
+        </div>
       </div>
-      <Link href={studyHref(p)} prefetch className="mt-3 block font-sans text-[15px] font-medium leading-snug text-white">
-        {p.researchTitle}
-      </Link>
-      <div className="mt-1.5">
-        <StudyMeta project={p} onCopy={onCopy} />
+
+      {/* Bottom strip: small facts and the actions */}
+      <div className="flex flex-col gap-3 border-t border-white/[0.06] px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-white/50">
+          <span>{fileCount + (fileCount === 1 ? " file" : " files")}</span>
+          {f && f.totalAmount > 0 ? (
+            <span className="inline-flex items-baseline gap-1">
+              {f.isFullyPaid ? "Paid in full" : f.verifiedPaid > 0 ? "Paid" : "Price"}
+              <span className="font-mono text-white/75">
+                <Peso />
+                {money(f.verifiedPaid > 0 || f.isFullyPaid ? f.verifiedPaid : f.totalAmount)}
+              </span>
+              {f.isFullyPaid || f.verifiedPaid <= 0 ? null : (
+                <>
+                  <span>of</span>
+                  <span className="font-mono text-white/75">
+                    <Peso />
+                    {money(f.totalAmount)}
+                  </span>
+                </>
+              )}
+            </span>
+          ) : null}
+          <Link
+            href={`/dashboard/client/messages?projectId=${p.id}`}
+            className="inline-flex items-center gap-1.5 text-white/60 transition-colors hover:text-white"
+          >
+            <ChatCenteredText size={14} weight="fill" className="text-white/40" />
+            Message
+          </Link>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={onInspect} className={ICON_BUTTON} aria-label={`Quick view of ${p.intakeId}`} title="Quick view">
+            <Eye size={16} weight="fill" />
+          </button>
+          <button
+            type="button"
+            onClick={onRequestDeletion}
+            className={ICON_BUTTON}
+            aria-label={`Ask to delete ${p.intakeId}`}
+            title="Ask to delete this study"
+          >
+            <Trash size={15} weight="fill" />
+          </button>
+          <Button
+            asChild
+            variant={needsYou ? "primary" : "outline"}
+            size="sm"
+            className="ml-2 flex-1 gap-1.5 whitespace-nowrap sm:flex-none"
+          >
+            <Link href={studyHref(p, stage.action?.path ?? "")} prefetch>
+              {stage.action?.label ?? "View Study"}
+              <ArrowRight size={13} weight="bold" />
+            </Link>
+          </Button>
+        </div>
       </div>
-      <MissingInfoNote project={p} />
-      <ClientStageMeter stage={stage} className="mt-3" />
-      <div className="mt-4">
-        <StudyActions project={p} stage={stage} onInspect={onInspect} fill />
-      </div>
-    </li>
+    </Panel>
   );
 }
 
@@ -550,23 +596,23 @@ function StudyQuickView({
       }
     >
       <div className="flex flex-col gap-6 font-sans">
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-white/[0.08] pb-5">
-          <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4 border-b border-white/[0.08] pb-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <ClientStageTag stage={stage} />
-            <ClientStageMeter stage={stage} />
+            <dl className="flex gap-6 text-xs">
+              <div>
+                <dt className="font-mono text-[11px] uppercase tracking-wider text-white/40">Study ID</dt>
+                <dd className="mt-1">
+                  <CopyButton variant="badge" value={p.intakeId} label={p.intakeId} onCopy={() => onCopy(p.intakeId)} />
+                </dd>
+              </div>
+              <div>
+                <dt className="font-mono text-[11px] uppercase tracking-wider text-white/40">Due</dt>
+                <dd className="mt-1.5 text-[13px] text-white/85">{formatDate(p.deadlineRequested)}</dd>
+              </div>
+            </dl>
           </div>
-          <dl className="flex gap-6 text-xs">
-            <div>
-              <dt className="font-mono text-[11px] uppercase tracking-wider text-white/40">Study ID</dt>
-              <dd className="mt-1">
-                <CopyButton variant="badge" value={p.intakeId} label={p.intakeId} onCopy={() => onCopy(p.intakeId)} />
-              </dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[11px] uppercase tracking-wider text-white/40">Due</dt>
-              <dd className="mt-1.5 text-[13px] text-white/85">{formatDate(p.deadlineRequested)}</dd>
-            </div>
-          </dl>
+          <ClientStudyStepper stage={stage} />
         </div>
 
         <p className="text-[13px] leading-relaxed text-white/70">

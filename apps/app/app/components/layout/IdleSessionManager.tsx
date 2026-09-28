@@ -3,9 +3,9 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { signOut } from "next-auth/react";
 import { Clock, ShieldWarning } from "@phosphor-icons/react";
+import { IDLE_LIMIT_MS, clearActive, markActive, readLastActive } from "@/lib/session-activity";
 
-// Timing configurations
-const IDLE_LIMIT_MS = 30 * 60 * 1000; // 30 minutes total session idle threshold
+// Timing configurations (IDLE_LIMIT_MS is shared with the middleware: 30 minutes)
 const WARNING_THRESHOLD_MS = 25 * 60 * 1000; // Trigger warning at 25 minutes (5 minute buffer)
 const THROTTLE_INTERVAL_MS = 5000; // Update activity timestamp at most every 5 seconds
 
@@ -21,11 +21,13 @@ export function IdleSessionManager() {
     if (isLoggingOutRef.current) return;
     isLoggingOutRef.current = true;
     setShowWarning(false);
+    clearActive();
     signOut({ callbackUrl: "/login?reason=idle_timeout" });
   }, []);
 
   const resetActivity = useCallback(() => {
     lastActiveRef.current = Date.now();
+    markActive(lastActiveRef.current);
     if (showWarning) {
       setShowWarning(false);
       setSecondsRemaining(300);
@@ -39,8 +41,13 @@ export function IdleSessionManager() {
       if (now - lastThrottleRef.current > THROTTLE_INTERVAL_MS) {
         lastThrottleRef.current = now;
         lastActiveRef.current = now;
+        // Shared with other tabs and read by the server (logs out when the site was left or closed).
+        markActive(now);
       }
     };
+
+    // Opening the page counts as activity.
+    markActive();
 
     const events = ["mousedown", "keydown", "scroll", "touchstart"];
     events.forEach((evt) => {
@@ -58,7 +65,7 @@ export function IdleSessionManager() {
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
-      const idleTime = now - lastActiveRef.current;
+      const idleTime = now - Math.max(lastActiveRef.current, readLastActive() ?? 0);
 
       if (idleTime >= IDLE_LIMIT_MS) {
         performLogout();
@@ -80,7 +87,7 @@ export function IdleSessionManager() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         const now = Date.now();
-        const idleTime = now - lastActiveRef.current;
+        const idleTime = now - Math.max(lastActiveRef.current, readLastActive() ?? 0);
         if (idleTime >= IDLE_LIMIT_MS) {
           performLogout();
         } else if (idleTime >= WARNING_THRESHOLD_MS) {

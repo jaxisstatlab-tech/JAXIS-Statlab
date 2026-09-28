@@ -395,7 +395,7 @@ export async function ensureProjectLifecycleNotifications(
           recipientRole: "CLIENT",
           alertType: "ASSIGNMENT",
           projectId: p.id,
-          message: `Research team assigned to ${p.intakeId}: Lead Statistician Dr. Juan Reyes and Senior QA Lead Maria. Statistical modeling active.`,
+          message: `Research team assigned to ${p.intakeId}: Lead Statistical Analyst Dr. Juan Reyes and Senior QA Lead Maria. Statistical modeling active.`,
           linkUrl: `/dashboard/client/projects/${p.id}`,
           isRead: stageIdx > 3,
           createdAt: hoursAgo(24),

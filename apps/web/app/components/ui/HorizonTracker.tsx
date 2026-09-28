@@ -10,18 +10,58 @@ export default function HorizonTracker() {
     const el = ref.current;
     const section = el?.parentElement;
     if (!el || !section) return;
-    if (!window.matchMedia("(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)").matches) return;
+
+    // Dynamically calculate the circle geometry so that the horizon arc spans
+    // edge-to-edge across the entire section width without cutting off or leaving flat bottom corners.
+    const updateGeometry = () => {
+      const w = section.getBoundingClientRect().width || window.innerWidth;
+      const isLg = window.matchMedia("(min-width: 1024px)").matches;
+      // Peak height of the arch above the bottom edge of the section
+      const peakH = isLg ? 144 : 112; // 9rem on lg, 7rem on mobile
+      // Desired height of the arch at the left/right screen edges (above bottom edge)
+      // Exiting slightly above the bottom creates a continuous, unbroken planetary horizon
+      const edgeH = isLg ? 24 : 16;
+      const s = Math.max(20, peakH - edgeH); // sagitta (drop from center to edge)
+
+      // Radius of circle passing through (0, edgeH), (w/2, peakH), (w, edgeH):
+      // (w/2)^2 + (R - s)^2 = R^2 => R = (w^2 / (8 * s)) + (s / 2)
+      const r = (w * w) / (8 * s) + s / 2;
+      const d = Math.round(2 * r);
+      const bottom = Math.round(peakH - d);
+
+      // Desired glint linear width ~280px along the circumference
+      const glintDeg = Math.max(1.5, Math.min(12, (280 / r) * (180 / Math.PI)));
+
+      el.style.setProperty("--horizon-d", `${d}px`);
+      el.style.setProperty("--horizon-bottom", `${bottom}px`);
+      el.style.setProperty("--glint-angle", `${glintDeg.toFixed(2)}deg`);
+    };
+
+    updateGeometry();
+
+    const ro = new ResizeObserver(() => {
+      updateGeometry();
+    });
+    ro.observe(section);
+
+    if (!window.matchMedia("(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)").matches) {
+      return () => ro.disconnect();
+    }
 
     const move = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
       const radius = r.width / 2;
+      if (radius <= 0) return;
       const dx = Math.max(-radius, Math.min(radius, e.clientX - (r.left + radius)));
       el.style.setProperty("--ha", `${((Math.asin(dx / radius) * 180) / Math.PI).toFixed(2)}deg`);
     };
     const leave = () => el.style.removeProperty("--ha");
+
     section.addEventListener("pointermove", move);
     section.addEventListener("pointerleave", leave);
+
     return () => {
+      ro.disconnect();
       section.removeEventListener("pointermove", move);
       section.removeEventListener("pointerleave", leave);
     };
@@ -29,3 +69,4 @@ export default function HorizonTracker() {
 
   return <div ref={ref} aria-hidden="true" className="horizon pointer-events-none absolute left-1/2 -translate-x-1/2" />;
 }
+

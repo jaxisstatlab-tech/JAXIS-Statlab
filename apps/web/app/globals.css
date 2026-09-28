@@ -571,9 +571,12 @@ html[data-intro="done"] .intro {
 
 /* Final CTA horizon */
 .horizon {
-  bottom: calc(-2400px + 7rem);
-  width: 2400px;
-  height: 2400px;
+  --horizon-d: 7800px;
+  --horizon-bottom: calc(-7800px + 7rem);
+  --glint-angle: 4deg;
+  bottom: var(--horizon-bottom);
+  width: var(--horizon-d);
+  height: var(--horizon-d);
   border-radius: 50%;
   background: var(--bg);
   box-shadow:
@@ -596,10 +599,10 @@ html[data-intro="done"] .intro {
   border-radius: 50%;
   padding: 2px;
   background: conic-gradient(
-    from calc(var(--ha) - 11deg),
+    from calc(var(--ha) - var(--glint-angle)),
     transparent 0deg,
-    #ffd2a1 11deg,
-    transparent 22deg,
+    #ffd2a1 var(--glint-angle),
+    transparent calc(var(--glint-angle) * 2),
     transparent 360deg
   );
   -webkit-mask:
@@ -613,7 +616,7 @@ html[data-intro="done"] .intro {
 }
 @media (min-width: 1024px) {
   .horizon {
-    bottom: calc(-2400px + 9rem);
+    --horizon-bottom: calc(-7800px + 9rem);
   }
 }
 

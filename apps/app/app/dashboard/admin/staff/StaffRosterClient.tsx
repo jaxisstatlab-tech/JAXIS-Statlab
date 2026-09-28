@@ -203,7 +203,7 @@ export function StaffRosterClient({
         },
         {
           value: "STATISTICIAN",
-          label: "Statistician (Data Analysis & Modeling)",
+          label: "Statistical Analyst (Data Analysis & Modeling)",
         },
       ];
     }
@@ -212,7 +212,7 @@ export function StaffRosterClient({
     return [
       {
         value: "STATISTICIAN",
-        label: "Statistician (Data Analysis & Modeling)",
+        label: "Statistical Analyst (Data Analysis & Modeling)",
       },
       {
         value: "SENIOR_QA_LEAD",
@@ -794,7 +794,7 @@ export function StaffRosterClient({
         />
 
         <KpiCard
-          label="Statisticians"
+          label="Statistical Analysts"
           value={kpis.stats}
           variant="sky"
           description="Data analysis & modeling"
@@ -863,7 +863,7 @@ export function StaffRosterClient({
               options: [
                 { value: "ALL", label: "All Roles" },
                 { value: "ADMIN", label: "Manager" },
-                { value: "STATISTICIAN", label: "Statistician" },
+                { value: "STATISTICIAN", label: "Statistical Analyst" },
                 { value: "SENIOR_QA_LEAD", label: "QA Lead" },
                 { value: "FINANCE_OFFICER", label: "Finance" },
               ],
@@ -1234,7 +1234,7 @@ export function StaffRosterClient({
         title="Add New Staff Member"
         description={
           currentUserRole === "CEO"
-            ? "Create an account for a Manager, Finance Officer, QA Lead, or Statistician."
+            ? "Create an account for a Manager, Finance Officer, QA Lead, or Statistical Analyst."
             : "Create an account for a Finance Officer or Senior QA Lead."
         }
         size="2xl"
@@ -1291,8 +1291,8 @@ export function StaffRosterClient({
                 />
                 <span className="text-[0.688rem] text-white/50 font-sans">
                   {currentUserRole === "CEO"
-                    ? "CEO access: You can create Managers, Finance, QA, and Statisticians."
-                    : "Manager access: You can create Statistician and QA staff."}
+                    ? "CEO access: You can create Managers, Finance, QA, and Statistical Analysts."
+                    : "Manager access: You can create Statistical Analyst and QA staff."}
                 </span>
               </div>
 

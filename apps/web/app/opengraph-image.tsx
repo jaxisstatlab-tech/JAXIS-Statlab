@@ -42,7 +42,7 @@ export default async function OpengraphImage() {
               you can defend.
             </div>
             <div style={{ marginTop: 28, fontSize: 26, color: "rgba(255,255,255,0.7)" }}>
-              Checked by two statisticians. Explained in plain English.
+              Checked by two statistical analysts. Explained in plain English.
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 260 }}>

@@ -592,7 +592,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   const people = (
     [
       { id: project?.clientId, name: project?.clientName, role: "Client" },
-      { id: project?.statisticianId, name: project?.statisticianName, role: "Statistician" },
+      { id: project?.statisticianId, name: project?.statisticianName, role: "Statistical Analyst" },
       { id: project?.qaLeadId, name: project?.qaLeadName, role: "Reviewer" },
     ] as Array<{ id?: string | null; name?: string | null; role: string }>
   ).filter(
@@ -720,7 +720,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
         {locked ? (
           <EmptyState
             icon={<Lock size={18} weight="fill" />}
-            title="Chat opens once we assign your statistician"
+            title="Chat opens once we assign your statistical analyst"
             body="This happens right after we confirm your deposit. We'll send you a notification when your team is ready."
           />
         ) : messages.length === 0 ? (
@@ -729,7 +729,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             title={`Say hi to ${greetNames}`}
             body={
               viewer === "client"
-                ? "Ask anything about your study. Your statistician and reviewer both see this chat."
+                ? "Ask anything about your study. Your statistical analyst and reviewer both see this chat."
                 : "No messages yet. Everyone on this study sees this chat."
             }
           >
@@ -827,7 +827,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
           onSendMessage={handleSend}
           onTyping={handleTyping}
           disabled={locked}
-          disabledReason={locked ? "You can send messages once your statistician is assigned." : undefined}
+          disabledReason={locked ? "You can send messages once your statistical analyst is assigned." : undefined}
           externalText={preset}
           onExternalTextConsumed={() => setPreset("")}
         />

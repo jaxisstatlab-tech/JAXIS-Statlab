@@ -4,7 +4,7 @@ import { AssignmentsClient } from "./AssignmentsClient";
 
 export const metadata = {
   title: "Expert Assignments & Workload | JAXIS StatLab",
-  description: "Assign Lead Statisticians and QA Leads to paid studies and manage workload.",
+  description: "Assign Lead Statistical Analysts and QA Leads to paid studies and manage workload.",
 };
 
 export const dynamic = "force-dynamic";

@@ -2,6 +2,18 @@ import { auth } from "@/lib/auth.config";
 import { NextResponse } from "next/server";
 import { ROLE_HOME } from "@/features/auth/schemas";
 import type { RoleName } from "@prisma/client";
+import { ACTIVE_COOKIE, isSessionStale } from "@/lib/session-activity";
+
+/**
+ * Ends the login. Auth.js re-sets its session cookie on every middleware response, so we can't
+ * delete it here; /session-ended runs Auth.js's own signOut, then shows the login page.
+ */
+function endSession(req: Parameters<Parameters<typeof auth>[0]>[0]) {
+  const { nextUrl } = req;
+  const url = new URL("/session-ended", nextUrl);
+  if (nextUrl.pathname.startsWith("/dashboard")) url.searchParams.set("callbackUrl", nextUrl.pathname);
+  return NextResponse.redirect(url);
+}
 
 export default auth((req) => {
   const { nextUrl } = req;
@@ -21,6 +33,16 @@ export default auth((req) => {
 
   const isLoggedIn = !!req.auth;
   const userRole = req.auth?.user?.role as RoleName | undefined;
+
+  // Log out when the site was closed (activity cookie gone) or left alone for 30 minutes.
+  if (isLoggedIn) {
+    const lastActive = Number(req.cookies.get(ACTIVE_COOKIE)?.value) || null;
+    const loginAt = req.auth?.user?.loginAt ?? null;
+    if (isSessionStale(lastActive, loginAt)) {
+      // Sessions from before this rule have no login time; treat them the same (log in again once).
+      return endSession(req);
+    }
+  }
 
   // 0. If visiting root "/" or exactly "/dashboard" -> redirect to role dashboard if logged in
   if (nextUrl.pathname === "/" || nextUrl.pathname === "/dashboard") {
@@ -94,7 +116,16 @@ export default auth((req) => {
     }
   }
 
-  return NextResponse.next();
+  const res = NextResponse.next();
+  // Opening a page counts as activity. Session cookie: no expiry, so it's gone when the browser closes.
+  if (isLoggedIn) {
+    res.cookies.set(ACTIVE_COOKIE, String(Date.now()), {
+      path: "/",
+      sameSite: "lax",
+      secure: nextUrl.protocol === "https:",
+    });
+  }
+  return res;
 });
 
 export const config = {

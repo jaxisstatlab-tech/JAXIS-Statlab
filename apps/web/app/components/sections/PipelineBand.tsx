@@ -7,7 +7,7 @@ import { btnInk, container } from "../ui/styles";
 
 const FEATURES: { icon: Icon; title: string; body: string }[] = [
   { icon: ListChecks, title: "5-stage tracker", body: "Always know where your study is." },
-  { icon: ShieldCheck, title: "Two-statistician checks", body: "Every result rerun before release." },
+  { icon: ShieldCheck, title: "Two-analyst checks", body: "Every result rerun before release." },
   { icon: ChatCircleText, title: "Chat inside your study", body: "No more random group chats." },
   { icon: FolderSimple, title: "Every file in one place", body: "Download anytime you need it." },
 ];

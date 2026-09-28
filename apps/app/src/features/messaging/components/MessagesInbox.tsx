@@ -37,7 +37,7 @@ export interface MessagesInboxProps {
 function teamFor(t: ProjectThreadSummaryDTO, role: InboxRole) {
   return [
     { key: "CLIENT", id: t.clientId, name: t.clientName, label: "client" },
-    { key: "STATISTICIAN", id: t.statisticianId, name: t.statisticianName, label: "statistician" },
+    { key: "STATISTICIAN", id: t.statisticianId, name: t.statisticianName, label: "statistical analyst" },
     { key: "SENIOR_QA_LEAD", id: t.qaLeadId, name: t.qaLeadName, label: "reviewer" },
   ].filter((p) => p.name && p.key !== role);
 }
@@ -308,7 +308,7 @@ export function MessagesInbox({
               {waiting.length > 0 ? (
                 <>
                   <p className="px-4 pb-1.5 pt-5 text-[0.688rem] font-medium text-white/40">
-                    Opens once your statistician is assigned
+                    Opens once your statistical analyst is assigned
                   </p>
                   {waiting.map((t) => (
                     <ChatRow

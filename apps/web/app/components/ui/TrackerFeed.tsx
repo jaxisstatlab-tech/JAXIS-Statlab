@@ -21,8 +21,8 @@ const EVENTS: { icon: Icon; title: string; meta: ReactNode; stage: number }[] = 
     stage: 1,
   },
   { icon: Wallet, title: "Deposit confirmed", meta: "GCash · work starts today", stage: 2 },
-  { icon: ChatCircleText, title: "Message from your statistician", meta: "Assumption checks passed", stage: 3 },
-  { icon: ShieldCheck, title: "Rerun matched", meta: "Second statistician · 6 of 6 checks", stage: 3 },
+  { icon: ChatCircleText, title: "Message from your statistical analyst", meta: "Assumption checks passed", stage: 3 },
+  { icon: ShieldCheck, title: "Rerun matched", meta: "Second statistical analyst · 6 of 6 checks", stage: 3 },
   { icon: FolderSimple, title: "Files delivered", meta: "Tables, write-up, data, code, script", stage: 4 },
 ];
 

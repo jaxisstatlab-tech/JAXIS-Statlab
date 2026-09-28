@@ -1,17 +1,17 @@
 import { getProjects } from "@/features/projects/actions";
-import { getClientProfile } from "@/features/client-profile/actions";
+import { getClientProfileOnce } from "@/features/client-profile/profile-cache";
 import { ClientProjectsListClient } from "./ClientProjectsListClient";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "My Research Projects | JAXIS StatLab",
-  description: "Track statistical analysis, review deliverables, and communicate with assigned specialists.",
+  title: "All studies | JAXIS StatLab",
+  description: "Every study you've sent, where it stands, and what to do next.",
 };
 
 export default async function ClientProjectsListPage() {
   const [projectsRes, profile] = await Promise.all([
     getProjects({ status: "ALL", search: "" }),
-    getClientProfile(),
+    getClientProfileOnce(),
   ]);
 
   const initialProjects = projectsRes.success ? projectsRes.data : [];

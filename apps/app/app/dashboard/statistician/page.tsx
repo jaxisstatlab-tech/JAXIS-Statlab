@@ -6,7 +6,7 @@ import { StatisticianDashboardClient } from "./StatisticianDashboardClient";
 import { LoadingState } from "@repo/ui";
 
 export const metadata: Metadata = {
-  title: "Statistician Workbench | JAXIS StatLab",
+  title: "Statistical Analyst Workbench | JAXIS StatLab",
   description:
     "View assigned research studies, run statistical analysis, and submit defense-ready statistical packages for QA review.",
 };

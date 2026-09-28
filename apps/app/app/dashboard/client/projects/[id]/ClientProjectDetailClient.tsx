@@ -1,127 +1,112 @@
 "use client";
 
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import { Button, Modal, Toast, ConfirmDialog, LoadingState } from "@repo/ui";
+import { Peso } from "@repo/ui/MoneyDisplay";
 import {
-  Card,
-  Button,
-  Alert,
-  Modal,
-  Toast,
-  ConfirmDialog,
-  LoadingState,
-  Peso,
-} from "@repo/ui";
-import {
+  ArrowRight,
+  ChatCenteredText,
   Check,
-  UploadSimple,
   CloudArrowUp,
-  FileText,
-  Database,
-  ClipboardText,
-  Receipt,
-  Clock,
-  ShieldCheck,
-  Certificate,
   DownloadSimple,
+  Eye,
+  Lock,
+  Plus,
   Trash,
+  WarningCircle,
 } from "@phosphor-icons/react";
 import { getProjectById, deleteProjectFile, resolveMissingInfo, addProjectFile } from "@/features/projects/actions";
 import { uploadFileToR2 } from "@/lib/storage-client";
-import { ProjectFilesCard } from "@/features/projects/components/ProjectFilesCard";
+import { getFileMeta, triggerFileDownload } from "@/lib/file-utils";
 import { RequestStudyDeletionModal } from "@/features/projects/components/RequestStudyDeletionModal";
-import { getClientStage } from "@/features/projects/client-stage";
+import { getClientStage, type ClientStage } from "@/features/projects/client-stage";
+import { clientPackageName } from "@/features/projects/client-packages";
+import { useDueText } from "@/features/projects/due-text";
 import type { ProjectDetailItem, ProjectFileItem } from "@/features/projects/schemas";
 import type { FileCategory } from "@prisma/client";
+import { Meter, Panel, PanelHeader } from "@/components/dashboard/Panel";
 
+// The study's Overview tab, written for students: what's happening and the one thing to do next,
+// then what they sent us (questions and files), with dates, payment and help on the side.
+// The title, study ID, stage and 5-step tracker live in the shared study header above this page.
 
-const CATEGORY_OPTIONS: {
-  id: string;
-  label: string;
-  value: FileCategory;
-  desc: string;
-  accept: string;
-  formatLabel: string;
-}[] = [
+const DocumentViewerLightbox = dynamic(
+  () => import("@/features/projects/components/DocumentViewerLightbox").then((m) => m.DocumentViewerLightbox),
+  { ssr: false }
+);
+
+const MAX_BYTES = 15 * 1024 * 1024;
+
+// What a client can add before the agreement is signed. Extensions match what addProjectFile accepts.
+const FILE_TYPES: Array<{ id: string; category: FileCategory; label: string; hint: string; extensions: string[]; formats: string }> = [
   {
-    id: "PROPOSAL",
-    label: "Research Proposal",
-    value: "RESEARCH_DOCUMENT",
-    desc: "Chapters 1-3 manuscript (.pdf, .docx)",
-    accept: ".pdf,.docx,.doc",
-    formatLabel: "PDF, DOCX (Max 15MB)",
+    id: "chapters",
+    category: "RESEARCH_DOCUMENT",
+    label: "Chapters 1–3",
+    hint: "Your proposal or draft chapters",
+    extensions: [".pdf", ".docx", ".doc"],
+    formats: "PDF or Word",
   },
   {
-    id: "DATASET",
-    label: "Raw Dataset",
-    value: "DATASET",
-    desc: "Excel (.xlsx), CSV, or SPSS data file",
-    accept: ".xlsx,.xls,.csv,.sav,.dta",
-    formatLabel: "XLSX, CSV, SPSS (.SAV) (Max 15MB)",
+    id: "data",
+    category: "DATASET",
+    label: "Data file",
+    hint: "Your survey answers or data table",
+    extensions: [".xlsx", ".xls", ".csv", ".sav", ".dta", ".tsv"],
+    formats: "Excel, CSV, SPSS or Stata",
   },
   {
-    id: "QUESTIONNAIRE",
-    label: "Survey Questionnaire",
-    value: "QUESTIONNAIRE",
-    desc: "Survey instruments or interview guides",
-    accept: ".pdf,.docx,.doc,.xlsx,.csv",
-    formatLabel: "PDF, DOCX, XLSX (Max 15MB)",
+    id: "questionnaire",
+    category: "QUESTIONNAIRE",
+    label: "Questionnaire",
+    hint: "Survey form, interview guide or rating scale",
+    extensions: [".pdf", ".docx", ".doc", ".xlsx", ".csv"],
+    formats: "PDF, Word, Excel or CSV",
   },
   {
-    id: "SUPPLEMENTARY",
-    label: "Supplementary Materials",
-    value: "RESEARCH_DOCUMENT",
-    desc: "Adviser notes, ethics approvals, or reference papers",
-    accept: ".pdf,.docx,.doc,.xlsx,.csv,.zip",
-    formatLabel: "PDF, DOCX, XLSX, ZIP (Max 15MB)",
+    id: "other",
+    category: "RESEARCH_DOCUMENT",
+    label: "Something else",
+    hint: "Adviser notes, ethics approval or a reference paper",
+    extensions: [".pdf", ".docx", ".doc", ".zip"],
+    formats: "PDF, Word or ZIP",
   },
 ];
 
-function formatRegion(regionCode?: string | null): string {
-  if (!regionCode) return "Not Specified";
-  const map: Record<string, string> = {
-    NCR: "National Capital Region (NCR)",
-    CAR: "Cordillera Administrative Region (CAR)",
-    REGION_1: "Region I – Ilocos Region",
-    REGION_2: "Region II – Cagayan Valley",
-    REGION_3: "Region III – Central Luzon",
-    REGION_4A: "Region IV-A – CALABARZON",
-    REGION_4B: "Region IV-B – MIMAROPA",
-    REGION_5: "Region V – Bicol Region",
-    REGION_6: "Region VI – Western Visayas",
-    REGION_7: "Region VII – Central Visayas",
-    REGION_8: "Region VIII – Eastern Visayas",
-    REGION_9: "Region IX – Zamboanga Peninsula",
-    REGION_10: "Region X – Northern Mindanao",
-    REGION_11: "Region XI – Davao Region",
-    REGION_12: "Region XII – SOCCSKSARGEN",
-    REGION_13: "Region XIII – Caraga",
-    BARMM: "BARMM – Bangsamoro",
-  };
-  return map[regionCode] || regionCode.replace(/_/g, " ");
+const CATEGORY_LABEL: Partial<Record<FileCategory, string>> = {
+  RESEARCH_DOCUMENT: "Document",
+  DATASET: "Data file",
+  QUESTIONNAIRE: "Questionnaire",
+};
+
+// Files can be added or removed until the agreement is signed.
+const EDITABLE_STATUSES = new Set([
+  "NEW_REQUEST",
+  "AWAITING_INFORMATION",
+  "UNDER_EVALUATION",
+  "QUOTE_SENT",
+  "CLIENT_APPROVED",
+  "SOW_PENDING",
+]);
+
+const money = (n: number) => n.toLocaleString("en-PH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+function formatDate(value: string | Date | null | undefined) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric" });
 }
 
-function getCategoryIcon(category: string) {
-  switch (category) {
-    case "DATASET":
-      return {
-        icon: <Database size={16} weight="fill" className="text-white/70" />,
-        tagLabel: "RAW DATASET",
-      };
-    case "QUESTIONNAIRE":
-      return {
-        icon: <ClipboardText size={16} weight="fill" className="text-white/70" />,
-        tagLabel: "SURVEY INSTRUMENT",
-      };
-    default:
-      return {
-        icon: <FileText size={16} weight="fill" className="text-white/70" />,
-        tagLabel: "RESEARCH DOCUMENT",
-      };
-  }
+function formatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-
+type ToastState = { message: string; description?: string; variant: "success" | "danger" | "info" } | null;
 
 export interface ClientProjectDetailClientProps {
   projectId: string;
@@ -129,1105 +114,761 @@ export interface ClientProjectDetailClientProps {
   initialError?: string | null;
 }
 
-export function ClientProjectDetailClient({
-  projectId,
-  initialProject,
-  initialError = null,
-}: ClientProjectDetailClientProps) {
+export function ClientProjectDetailClient({ projectId, initialProject, initialError = null }: ClientProjectDetailClientProps) {
   const [project, setProject] = useState<ProjectDetailItem | null>(initialProject);
   const [isLoading, setIsLoading] = useState(!initialProject && !initialError);
-  const [error, setError] = useState<string | null>(initialError);
+  const [loadError, setLoadError] = useState<string | null>(initialError);
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<{
-    message: string;
-    description?: string;
-    variant: "success" | "danger" | "info";
-  } | null>(null);
-
-  // File deletion & resolution state
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<ProjectFileItem | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
   const [isResolving, startResolveTransition] = useTransition();
-
-  // File Upload State
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [selectedUploadFile, setSelectedUploadFile] = useState<File | null>(null);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("PROPOSAL");
-  const [uploadCategory, setUploadCategory] = useState<FileCategory>("RESEARCH_DOCUMENT");
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, startUploadTransition] = useTransition();
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [toast, setToast] = useState<ToastState>(null);
 
   useEffect(() => {
-    // If preloaded by Server Component, skip initial client-side network round-trip!
-    if (initialProject && (initialProject.id === projectId || initialProject.intakeId === projectId)) {
-      return;
-    }
-    async function loadProject() {
+    // Preloaded by the server component: no second fetch.
+    if (initialProject && (initialProject.id === projectId || initialProject.intakeId === projectId)) return;
+    let cancelled = false;
+    (async () => {
       setIsLoading(true);
-      setError(null);
+      setLoadError(null);
       const res = await getProjectById(projectId);
-      if (res.success) {
-        setProject(res.data);
-      } else {
-        setError(res.error.message);
-      }
+      if (cancelled) return;
+      if (res.success) setProject(res.data);
+      else setLoadError(res.error.message);
       setIsLoading(false);
-    }
-    loadProject();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [projectId, initialProject]);
 
   const handleDeleteFile = () => {
     if (!fileToDelete || !project) return;
-
+    const target = fileToDelete;
     startDeleteTransition(async () => {
-      const res = await deleteProjectFile(project.id, fileToDelete.id);
+      const res = await deleteProjectFile(project.id, target.id);
       if (res.success) {
-        setProject((prev) =>
-          prev
-            ? {
-                ...prev,
-                files: prev.files.filter((f) => f.id !== fileToDelete.id),
-              }
-            : null
-        );
-        setToastMessage({
-          message: "File Removed",
-          description: `"${fileToDelete.fileName}" was removed from your study.`,
-          variant: "success",
-        });
-        setFileToDelete(null);
+        setProject((prev) => (prev ? { ...prev, files: prev.files.filter((f) => f.id !== target.id) } : prev));
+        setToast({ message: "File removed", description: `${target.fileName} was removed from your study.`, variant: "success" });
       } else {
-        setToastMessage({
-          message: "Failed to Remove File",
-          description: res.error.message,
-          variant: "danger",
-        });
-        setFileToDelete(null);
+        setToast({ message: "Couldn't remove the file", description: res.error.message, variant: "danger" });
       }
+      setFileToDelete(null);
     });
   };
 
-
-
-  const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB Storage Defense Limit
-
-  const validateUploadedFile = (
-    file: File,
-    categoryId: string
-  ): { valid: boolean; error?: string } => {
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      return {
-        valid: false,
-        error: `File size exceeds the 15MB limit (${(file.size / (1024 * 1024)).toFixed(2)} MB). Please compress your file.`,
-      };
-    }
-
-    const category = CATEGORY_OPTIONS.find((c) => c.id === categoryId);
-    if (!category) return { valid: true };
-
-    const allowedExtensions = category.accept
-      .split(",")
-      .map((ext) => ext.trim().toLowerCase());
-    const fileName = file.name.toLowerCase();
-    const lastDotIndex = fileName.lastIndexOf(".");
-    const fileExt = lastDotIndex !== -1 ? fileName.substring(lastDotIndex) : "";
-
-    const isAllowed = allowedExtensions.some((ext) => fileName.endsWith(ext));
-
-    if (!isAllowed) {
-      return {
-        valid: false,
-        error: `Invalid file format "${fileExt || "unknown"}". The "${category.label}" category requires: ${category.formatLabel.split(" (Max")[0]}.`,
-      };
-    }
-
-    return { valid: true };
-  };
-
-  const handleCategorySelect = (optId: string, optValue: FileCategory) => {
-    setSelectedCategoryId(optId);
-    setUploadCategory(optValue);
-    if (selectedUploadFile) {
-      const validation = validateUploadedFile(selectedUploadFile, optId);
-      if (!validation.valid) {
-        setSelectedUploadFile(null);
-        setUploadError(validation.error || null);
-        setToastMessage({
-          message: "File Format Incompatible",
-          description: validation.error || "Please select a compatible file format.",
-          variant: "danger",
-        });
-      } else {
-        setUploadError(null);
-      }
-    } else {
-      setUploadError(null);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      const validation = validateUploadedFile(file, selectedCategoryId);
-      if (!validation.valid) {
-        setUploadError(validation.error || "Invalid file format.");
-        setSelectedUploadFile(null);
-        setToastMessage({
-          message: "Upload Rejected",
-          description: validation.error || "Selected file type is not supported.",
-          variant: "danger",
-        });
-        return;
-      }
-      setSelectedUploadFile(file);
-      setUploadError(null);
-    }
-  };
-
-  const handleUploadFile = () => {
-    if (!selectedUploadFile || !project) {
-      setUploadError("Please select a file to upload.");
-      return;
-    }
-
-    if (selectedUploadFile.size > MAX_FILE_SIZE_BYTES) {
-      setUploadError("File exceeds maximum allowed limit of 15MB. Please compress or optimize your dataset/document.");
-      return;
-    }
-
-    setUploadError(null);
-    startUploadTransition(async () => {
-      // 1. Upload the physical binary directly to Cloudflare R2
-      const uploadRes = await uploadFileToR2(selectedUploadFile, uploadCategory, project.intakeId);
-      if (!uploadRes.success || !uploadRes.data) {
-        setUploadError(uploadRes.error?.message || "Failed to upload file. Please try again.");
-        return;
-      }
-
-      // 2. Attach record into Supabase with the permanent Cloudflare storage URL
-      const res = await addProjectFile(project.id, {
-        fileName: selectedUploadFile.name,
-        filePath: uploadRes.data.publicUrl,
-        fileType: selectedUploadFile.type || "application/octet-stream",
-        fileCategory: uploadCategory,
-      });
-
-      if (res.success) {
-        setProject((prev) =>
-          prev
-            ? {
-                ...prev,
-                files: [...prev.files, res.data],
-              }
-            : null
-        );
-        setToastMessage({
-          message: "File Uploaded",
-          description: `"${selectedUploadFile.name}" has been added to your study.`,
-          variant: "success",
-        });
-        setSelectedUploadFile(null);
-        setIsUploadModalOpen(false);
-      } else {
-        setUploadError(res.error.message);
-      }
-    });
-  };
-
-  const handleResolveMissingInfo = () => {
+  const handleResolve = () => {
     if (!project) return;
-    setError(null);
     startResolveTransition(async () => {
       const res = await resolveMissingInfo(project.id);
       if (res.success) {
         setProject(res.data);
-        setToastMessage({
-          message: "Information Submitted",
-          description: "Your files have been sent to the research team for review.",
+        window.dispatchEvent(new Event("jaxis:study-updated"));
+        setToast({
+          message: "Sent to our team",
+          description: "We'll look at what you added and finish your price.",
           variant: "success",
         });
       } else {
-        setError(res.error.message);
-        setToastMessage({
-          message: "Submission Failed",
-          description: res.error.message,
-          variant: "danger",
-        });
+        setToast({ message: "That didn't go through", description: res.error.message, variant: "danger" });
       }
     });
   };
 
   if (isLoading) {
     return (
-      <div className="flex-1 w-full min-h-full flex items-center justify-center animate-content-fade my-auto">
-        <LoadingState
-          variant="page"
-          label="Loading Study Inspection Desk..."
-          description="Retrieving analytical scope, datasets, and milestone progress."
-        />
+      <div className="flex flex-1 items-center justify-center py-24">
+        <LoadingState variant="page" label="Loading your study..." />
       </div>
     );
   }
 
-  if (error || !project) {
+  if (loadError || !project) {
     return (
-      <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-20 w-full animate-content-fade">
-        <div className="flex items-center gap-2 text-xs font-mono text-white/40">
-          <Link href="/dashboard/client/projects" className="hover:text-white transition-colors">← Back to My Studies</Link>
-        </div>
-        <Card className="p-8 text-center flex flex-col items-center gap-4 bg-[#0A0A18]/90 border-white/[0.08]">
-          <p className="text-sm text-red-400 font-mono">
-            {error || "The requested research project could not be found or you lack permission to view it."}
-          </p>
-          <Link href="/dashboard/client/projects">
-            <Button variant="secondary" size="md">
-              ← Return to Projects Registry
+      <div data-portal="client" className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-24 animate-content-fade">
+        <Panel as="div">
+          <div className="flex flex-col items-center px-6 py-14 text-center">
+            <WarningCircle size={28} weight="fill" className="text-white/30" />
+            <p className="mt-4 text-sm font-medium text-white">We couldn&apos;t open this study</p>
+            <p className="mt-1 max-w-md text-[13px] text-white/55">
+              {loadError || "It may have been removed, or it belongs to another account."}
+            </p>
+            <Button asChild variant="outline" size="sm" className="mt-5">
+              <Link href="/dashboard/client/projects">Back to All Studies</Link>
             </Button>
-          </Link>
-        </Card>
+          </div>
+        </Panel>
       </div>
     );
   }
 
-  const isPreSow =
-    project.masterStatus === "NEW_REQUEST" ||
-    project.masterStatus === "AWAITING_INFORMATION" ||
-    project.masterStatus === "UNDER_EVALUATION" ||
-    project.masterStatus === "QUOTE_SENT" ||
-    project.masterStatus === "CLIENT_APPROVED" ||
-    project.masterStatus === "SOW_PENDING";
+  const stage = getClientStage(project.masterStatus);
+  const canEditFiles = EDITABLE_STATUSES.has(project.masterStatus);
 
   return (
-    <div
-      data-portal="client"
-      className="flex flex-col gap-6 pb-20 w-full"
-    >
+    <div data-portal="client" className="grid grid-cols-1 gap-6 pb-24 lg:grid-cols-12">
+      {toast ? <Toast message={toast.message} description={toast.description} variant={toast.variant} onClose={() => setToast(null)} /> : null}
 
-      {error && <Alert variant="danger">{error}</Alert>}
-      {toastMessage && (
-        <Toast
-          message={toastMessage.message}
-          description={toastMessage.description}
-          variant={toastMessage.variant}
-          onClose={() => setToastMessage(null)}
+      <div className="flex min-w-0 flex-col gap-6 lg:col-span-8">
+        <NowPanel
+          project={project}
+          stage={stage}
+          isResolving={isResolving}
+          onResolve={handleResolve}
+          onAddFile={() => setIsUploadOpen(true)}
         />
-      )}
-
-      {/* ── Request Study Deletion Modal ── */}
-      {project && (
-        <RequestStudyDeletionModal
-          open={isDeletionModalOpen}
-          onClose={() => setIsDeletionModalOpen(false)}
-          study={{
-            id: project.id,
-            intakeId: project.intakeId,
-            title: project.researchTitle,
-          }}
+        <QuestionsPanel project={project} />
+        <FilesPanel
+          project={project}
+          canEdit={canEditFiles}
+          onAdd={() => setIsUploadOpen(true)}
+          onRemove={setFileToDelete}
+          onToast={setToast}
         />
-      )}
-
-      {/* ── Status Action Bar with 5-Stage Study Pipeline ── */}
-      {(() => {
-        return (
-          <Card
-            className="overflow-hidden border border-white/10 bg-[#0A0A18] rounded-[2px] shadow-lg flex flex-col gap-4 p-5 sm:p-6 animate-card-reveal stagger-1"
-          >
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-white/45">What&apos;s happening</p>
-                <p className="mt-1 text-sm leading-relaxed text-white/85">{getClientStage(project.masterStatus).now}</p>
-              </div>
-
-              <div className="flex items-center gap-2.5 flex-wrap">
-                {project.masterStatus === "QUOTE_SENT" && (
-                  <Link href={`/dashboard/client/projects/${project.id}/quote`}>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
-                    >
-                      <Receipt size={14} weight="fill" />
-                      <span>Review Quote →</span>
-                    </Button>
-                  </Link>
-                )}
-
-                {project.masterStatus === "CLIENT_APPROVED" && (
-                  <Link href={`/dashboard/client/projects/${project.id}/quote`}>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
-                    >
-                      <FileText size={14} weight="fill" />
-                      <span>View Quote</span>
-                    </Button>
-                  </Link>
-                )}
-
-                {project.masterStatus === "SOW_PENDING" && (
-                  <Link href={`/dashboard/client/projects/${project.id}/sow`}>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
-                    >
-                      <FileText size={14} weight="fill" />
-                      <span>Review &amp; Sign Contract →</span>
-                    </Button>
-                  </Link>
-                )}
-
-                {(project.masterStatus === "SOW_SIGNED" ||
-                  project.masterStatus === "AWAITING_PAYMENT" ||
-                  project.masterStatus === "ACTIVE" ||
-                  project.masterStatus === "EXPERT_ASSIGNED" ||
-                  project.masterStatus === "IN_PROGRESS") && (
-                  <Link href={`/dashboard/client/projects/${project.id}/sow`}>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 rounded-[2px] active:scale-[0.97] transition-transform"
-                    >
-                      <ShieldCheck size={14} weight="fill" />
-                      <span>View Signed Contract</span>
-                    </Button>
-                  </Link>
-                )}
-
-                {(project.masterStatus === "SOW_SIGNED" ||
-                  project.masterStatus === "AWAITING_PAYMENT") && (
-                  <Link href={`/dashboard/client/projects/${project.id}/payment`}>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="text-xs font-sans font-semibold whitespace-nowrap flex items-center gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300] rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
-                    >
-                      <Receipt size={14} weight="fill" />
-                      <span>Proceed to Payment →</span>
-                    </Button>
-                  </Link>
-                )}
-
-                {(project.masterStatus === "ACTIVE" ||
-                  project.masterStatus === "EXPERT_ASSIGNED" ||
-                  project.masterStatus === "IN_PROGRESS") && (
-                  <Link href={`/dashboard/client/projects/${project.id}/payment`}>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
-                    >
-                      <Receipt size={14} weight="fill" />
-                      <span>Payment History</span>
-                    </Button>
-                  </Link>
-                )}
-
-                {isPreSow && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedUploadFile(null);
-                      setUploadError(null);
-                      setIsUploadModalOpen(true);
-                    }}
-                    className="text-xs font-sans whitespace-nowrap flex items-center gap-1.5 rounded-[2px] active:scale-[0.97] transition-transform"
-                  >
-                    <UploadSimple size={14} weight="fill" />
-                    <span>Attach File</span>
-                  </Button>
-                )}
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsDeletionModalOpen(true)}
-                  className="rounded-[2px] text-xs font-sans text-white/50 hover:text-amber-400 hover:bg-amber-500/10 flex items-center gap-1.5"
-                  title="Request study deletion"
-                >
-                  <Trash size={14} weight="fill" />
-                  <span>Request Deletion</span>
-                </Button>
-              </div>
-            </div>
-
-          </Card>
-        );
-      })()}
-
-      {/* ── SOW Pending Execution Banner (if SOW_PENDING) ── */}
-      {project.masterStatus === "SOW_PENDING" && (
-        <Card className="p-6 sm:p-7 bg-[#0A0A18] border border-amber-500/30 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-[2px] bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
-              <Certificate size={20} weight="fill" className="text-amber-400" />
-            </div>
-            <div className="space-y-0.5">
-              <span className="text-xs font-sans text-amber-400 font-semibold uppercase tracking-wider block">
-                Action Required · Statement of Work Ready for Signature
-              </span>
-              <p className="text-xs sm:text-sm text-white/75 font-sans leading-relaxed">
-                Your formal Statement of Work contract has been prepared. Review the research objectives, turnaround days, and payment milestones to digitally sign.
-              </p>
-            </div>
-          </div>
-          <Link href={`/dashboard/client/projects/${project.id}/sow`}>
-            <Button
-              variant="primary"
-              size="md"
-              className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#E67300] text-white whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
-            >
-              Review &amp; Sign Contract →
-            </Button>
-          </Link>
-        </Card>
-      )}
-
-      {/* ── Awaiting Payment Deposit Banner (if SOW_SIGNED or AWAITING_PAYMENT) ── */}
-      {(project.masterStatus === "SOW_SIGNED" || project.masterStatus === "AWAITING_PAYMENT") && (
-        project.hasPendingPaymentVerification || project.latestPaymentStatus === "PROOF_SUBMITTED" ? (
-          <Card className="p-6 sm:p-7 bg-[#0A0A18] border border-sky-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
-            <div className="flex items-center gap-4">
-              <div className="h-10 w-10 rounded-[2px] bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0">
-                <Clock size={20} weight="fill" className="text-sky-400" />
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-xs font-sans text-sky-400 font-semibold uppercase tracking-wider block">
-                  Deposit Proof Submitted · Awaiting Verification
-                </span>
-                <p className="text-xs sm:text-sm text-white/75 font-sans leading-relaxed">
-                  Your payment receipt has been submitted and is currently being verified by our finance team. Once confirmed, research assignment will activate automatically.
-                </p>
-              </div>
-            </div>
-            <Link href={`/dashboard/client/projects/${project.id}/payment`}>
-              <Button
-                variant="secondary"
-                size="md"
-                className="font-sans font-semibold text-xs min-h-[38px] whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform"
-              >
-                Inspect Payment Desk →
-              </Button>
-            </Link>
-          </Card>
-        ) : (
-          <Card className="p-6 sm:p-7 bg-[#0A0A18] border border-[#CC6600]/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-card-reveal stagger-2">
-            <div className="flex items-center gap-4">
-              <div className="h-10 w-10 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center shrink-0">
-                <Receipt size={20} weight="fill" className="text-[#FFA040]" />
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-xs font-sans text-[#FFA040] font-semibold uppercase tracking-wider block">
-                  Deposit Required · Downpayment Verification
-                </span>
-                <p className="text-xs sm:text-sm text-white/75 font-sans leading-relaxed">
-                  Your Statement of Work is signed. Transfer your agreed downpayment via GCash or Bank Deposit and submit the receipt to begin data analysis.
-                </p>
-              </div>
-            </div>
-            <Link href={`/dashboard/client/projects/${project.id}/payment`}>
-              <Button
-                variant="primary"
-                size="md"
-                className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#FFA040] text-white whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
-              >
-                Proceed to Payment →
-              </Button>
-            </Link>
-          </Card>
-        )
-      )}
-
-      {/* ── Pending Assignment Banner (if ACTIVE) ── */}
-      {project.masterStatus === "ACTIVE" && (
-        <Card className="p-6 sm:p-7 bg-[#0A0A18] border border-sky-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-[2px] bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0">
-              <Clock size={20} weight="fill" className="text-sky-400" />
-            </div>
-            <div className="space-y-0.5">
-              <span className="text-xs font-sans text-sky-400 font-semibold uppercase tracking-wider block">
-                Payment Confirmed · Assigning Lead Statistician &amp; QA Lead
-              </span>
-              <p className="text-xs sm:text-sm text-white/75 font-sans leading-relaxed">
-                Your downpayment has been confirmed. Our team is assigning your Lead Statistician and Senior QA Lead to begin research analysis.
-              </p>
-            </div>
-          </div>
-          <Link href={`/dashboard/client/projects/${project.id}/payment`}>
-            <Button
-              variant="secondary"
-              size="md"
-              className="font-sans font-semibold text-xs min-h-[38px] whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform"
-            >
-              View Payment History →
-            </Button>
-          </Link>
-        </Card>
-      )}
-
-      {/* ── Deliverables Released or Payment Locked Banner (if DELIVERED or REVISION_REQUESTED) ── */}
-      {(project.masterStatus === "DELIVERED" || project.masterStatus === "REVISION_REQUESTED") && (
-        project.financialSummary && !project.financialSummary.isFullyPaid && project.financialSummary.remainingBalance > 0 ? (
-          <Card className="p-6 sm:p-7 bg-[#0A0A18] border border-amber-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-content-fade">
-            <div className="flex items-center gap-4">
-              <div className="h-10 w-10 rounded-[2px] bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
-                <Receipt size={20} weight="fill" className="text-amber-400" />
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-xs font-sans text-amber-400 font-semibold uppercase tracking-wider block">
-                  Outputs Verified by QA · Final Payment Required to Unlock Deliverables
-                </span>
-                <p className="text-xs sm:text-sm text-white/75 font-sans leading-relaxed">
-                  Your statistical findings and official reports have been verified by our Senior QA Lead. Settle your remaining balance of <span className="font-mono font-bold text-white"><Peso />{project.financialSummary.remainingBalance.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</span> to immediately unlock your download links.
-                </p>
-              </div>
-            </div>
-            <Link href={`/dashboard/client/projects/${project.id}/payment`}>
-              <Button
-                variant="primary"
-                size="md"
-                className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#E67300] text-white whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform cursor-pointer shadow-md"
-              >
-                <Receipt size={15} weight="fill" className="mr-1.5" />
-                <span>Proceed to Payment →</span>
-              </Button>
-            </Link>
-          </Card>
-        ) : (
-          <Card className="p-6 sm:p-7 bg-[#0A0A18] border border-emerald-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl animate-content-fade">
-            <div className="flex items-center gap-4">
-              <div className="h-10 w-10 rounded-[2px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                <ShieldCheck size={20} weight="fill" className="text-emerald-400" />
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-xs font-sans text-emerald-400 font-semibold uppercase tracking-wider block">
-                  Research Study Complete · Final Deliverables Available
-                </span>
-                <p className="text-xs sm:text-sm text-white/75 font-sans leading-relaxed">
-                  Your statistical findings, cleaned datasets, and official reports have been verified and released. Access your downloads and the 3-day revision window.
-                </p>
-              </div>
-            </div>
-            <Link href={`/dashboard/client/projects/${project.id}/deliverables`}>
-              <Button
-                variant="primary"
-                size="md"
-                className="font-sans font-semibold text-xs min-h-[38px] bg-[#CC6600] hover:bg-[#E67300] text-white whitespace-nowrap px-5 py-2 rounded-[2px] active:scale-[0.97] transition-transform cursor-pointer shadow-md"
-              >
-                <DownloadSimple size={15} weight="fill" className="mr-1.5" />
-                <span>Download Deliverables →</span>
-              </Button>
-            </Link>
-          </Card>
-        )
-      )}
-
-      {/* ── Missing Information Banner (if AWAITING_INFORMATION) ── */}
-      {project.masterStatus === "AWAITING_INFORMATION" && (
-        <Card className="p-5 bg-amber-500/[0.04] border-l-4 border-l-amber-500 rounded-[2px] flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <span className="text-xs font-mono text-amber-400 font-bold uppercase">
-              Action Needed · Missing Information:
-            </span>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleResolveMissingInfo}
-              loading={isResolving}
-              className="text-xs font-sans font-semibold rounded-[2px] active:scale-[0.97] transition-transform bg-[#CC6600] hover:bg-[#E67300] text-white shadow-sm"
-            >
-              Submit Files &amp; Continue →
-            </Button>
-          </div>
-          <p className="text-xs text-white/90 leading-relaxed font-sans bg-black/30 p-4 rounded-[2px] border border-white/[0.08]">
-            &ldquo;{project.missingInfoReason || "Please review and attach the requested dataset or questionnaire."}&rdquo;
-          </p>
-        </Card>
-      )}
-
-      {/* ── Main Inspection Layout ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-card-reveal stagger-3">
-        {/* Left 2 Cols: Research Content, Quote & Scope, & Datasets */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Price Quote & Scope Card */}
-          {(project.masterStatus === "QUOTE_SENT" || project.masterStatus === "CLIENT_APPROVED") && (
-            <Card className="p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-4 shadow-sm">
-              <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <Receipt size={18} weight="fill" className="text-[#CC6600]" />
-                  <h3 className="text-sm font-bold text-white font-sans">
-                    Price Quote &amp; Scope
-                  </h3>
-                </div>
-                <span className="text-[0.625rem] font-mono px-2 py-0.5 rounded-[2px] bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold uppercase">
-                  {project.masterStatus === "CLIENT_APPROVED" ? "Accepted" : "Ready for Review"}
-                </span>
-              </div>
-              <p className="text-xs text-white/75 font-sans leading-relaxed">
-                {project.masterStatus === "CLIENT_APPROVED"
-                  ? "Your quote has been accepted. You will be notified when your formal Statement of Work contract is ready for digital signature."
-                  : "Our team has prepared your customized analytical scope and schedule. Review and accept your quote to assign your dedicated statistician."}
-              </p>
-              <div className="pt-1">
-                <Link href={`/dashboard/client/projects/${project.id}/quote`}>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="font-sans text-xs font-semibold bg-[#CC6600] hover:bg-[#E67300] text-white rounded-[2px] active:scale-[0.97] transition-transform shadow-md"
-                  >
-                    {project.masterStatus === "CLIENT_APPROVED" ? "View Quote Details →" : "Review & Accept Quote →"}
-                  </Button>
-                </Link>
-              </div>
-            </Card>
-          )}
-
-          {/* Research Problem & Analytical Scope */}
-          <Card className="p-6 md:p-8 flex flex-col gap-6">
-            <div className="border-b border-white/[0.08] pb-3">
-              <h3 className="text-base font-bold text-white font-sans">
-                Research Problem &amp; Analytical Scope
-              </h3>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-mono uppercase text-white/40 font-bold">
-                Statement of the Problem / Key Questions
-              </span>
-              <div
-                className="p-4 rounded-[2px] bg-[#10101E] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
-                style={{ padding: "1rem" }}
-              >
-                {project.researchQuestions || (
-                  <span className="italic text-white/40">No specific research questions provided yet.</span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-mono uppercase text-white/40 font-bold">
-                Core Research Objectives
-              </span>
-              <div
-                className="p-4 rounded-[2px] bg-[#10101E] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
-                style={{ padding: "1rem" }}
-              >
-                {project.researchObjectives || (
-                  <span className="italic text-white/40">No specific research objectives provided yet.</span>
-                )}
-              </div>
-            </div>
-
-            {project.hypotheses && (
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-mono uppercase text-white/40 font-bold">
-                  Theoretical Hypotheses
-                </span>
-                <div
-                  className="p-4 rounded-[2px] bg-[#10101E] border border-white/[0.08] text-xs text-white/90 whitespace-pre-line leading-relaxed font-sans"
-                  style={{ padding: "1rem" }}
-                >
-                  {project.hypotheses}
-                </div>
-              </div>
-            )}
-          </Card>
-
-          {/* Attached Research Documents & Datasets */}
-          <ProjectFilesCard
-            files={project.files}
-            studyId={project.intakeId}
-            canDelete={isPreSow}
-            onDeleteFile={(file) => setFileToDelete(file)}
-          />
-        </div>
-
-        {/* Right Col: Client Institutional Identity & Audit Telemetry */}
-        <div className="flex flex-col gap-6">
-          <Card className="p-6 flex flex-col gap-4">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-sky-400 font-bold border-b border-white/[0.08] pb-2">
-              Client &amp; Academic Profile
-            </h3>
-
-            <div className="flex flex-col gap-3 text-xs">
-              <div>
-                <span className="text-white/40 block">Full Name</span>
-                <span className="text-white font-semibold font-sans">{project.client.fullName}</span>
-              </div>
-
-              <div>
-                <span className="text-white/40 block">Email Address</span>
-                <span className="text-white font-mono">{project.client.email}</span>
-              </div>
-
-              {project.client.clientProfile ? (
-                <>
-                  <div>
-                    <span className="text-white/40 block">University / School</span>
-                    <span className="text-white font-semibold font-sans">
-                      {project.client.clientProfile.institutionSchool}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-white/40 block">Academic Degree / Program</span>
-                    <span className="text-white font-semibold font-sans">
-                      {project.client.clientProfile.academicProgram}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-white/40 block">Contact Number</span>
-                    <span className="text-white font-mono">
-                      {project.client.clientProfile.contactNumber}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-white/40 block">Philippine Region</span>
-                    <span className="text-white font-semibold font-sans">
-                      {formatRegion(project.client.clientProfile.region)}
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-[2px] text-amber-300 text-xs font-sans">
-                  Academic profile details not registered yet.
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* Study Information Summary */}
-          <Card className="p-6 flex flex-col gap-3">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-white/50 font-bold border-b border-white/[0.08] pb-2">
-              Study Information
-            </h3>
-            <div className="flex flex-col gap-2.5 text-xs font-mono text-white/60">
-              <div className="flex justify-between items-center gap-2">
-                <span>Created:</span>
-                <span className="text-white text-right">
-                  {new Date(project.createdAt).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })},{" "}
-                  {new Date(project.createdAt).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  })}
-                </span>
-              </div>
-              <div className="flex justify-between items-center gap-2">
-                <span>Last Modified:</span>
-                <span className="text-white text-right">
-                  {new Date(project.updatedAt).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })},{" "}
-                  {new Date(project.updatedAt).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  })}
-                </span>
-              </div>
-              <div className="flex justify-between items-center gap-2">
-                <span>Target Deadline:</span>
-                <span className="text-amber-400 font-mono font-medium text-right">
-                  {new Date(project.deadlineRequested).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Dispute Flag:</span>
-                <span className={project.hasActiveDispute ? "text-red-400" : "text-emerald-400"}>
-                  {project.hasActiveDispute ? "Active Dispute" : "Clean"}
-                </span>
-              </div>
-            </div>
-          </Card>
-        </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {fileToDelete && (
+      <aside className="flex min-w-0 flex-col gap-6 lg:col-span-4" aria-label="Study details">
+        <DetailsPanel project={project} stage={stage} />
+        <PaymentPanel project={project} stage={stage} />
+        <HelpPanel project={project} stage={stage} onAskToDelete={() => setIsDeletionModalOpen(true)} />
+      </aside>
+
+      <RequestStudyDeletionModal
+        open={isDeletionModalOpen}
+        onClose={() => setIsDeletionModalOpen(false)}
+        study={{ id: project.id, intakeId: project.intakeId, title: project.researchTitle }}
+      />
+
+      {fileToDelete ? (
         <ConfirmDialog
-          open={Boolean(fileToDelete)}
+          open
           onCancel={() => setFileToDelete(null)}
-          title="Remove Attached Document"
-          description={`Are you sure you want to remove "${fileToDelete.fileName}" from this study?`}
+          title="Remove this file?"
+          description={`${fileToDelete.fileName} will be removed from your study. You can add it again before your agreement is signed.`}
           confirmLabel="Remove File"
           confirmVariant="destructive"
           loading={isDeleting}
           onConfirm={handleDeleteFile}
         />
-      )}
+      ) : null}
 
-      {/* File Upload Modal */}
-      {isUploadModalOpen && (
-        <Modal
-          open={isUploadModalOpen}
-          onClose={() => {
-            if (!isUploading) {
-              setIsUploadModalOpen(false);
-              setSelectedUploadFile(null);
-              setUploadError(null);
-            }
+      {isUploadOpen ? (
+        <UploadModal
+          project={project}
+          onClose={() => setIsUploadOpen(false)}
+          onAdded={(file) => {
+            setProject((prev) => (prev ? { ...prev, files: [...prev.files, file] } : prev));
+            setIsUploadOpen(false);
+            setToast({ message: "File added", description: `${file.fileName} is now part of your study.`, variant: "success" });
           }}
-          title="Upload Research Document or Dataset"
-          description="Attach manuscripts, questionnaires, or raw datasets to your study."
-          size="lg"
-          footer={
-            <div className="flex items-center justify-end gap-3 w-full">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsUploadModalOpen(false)}
-                disabled={isUploading}
-                className="font-sans text-xs rounded-[2px] active:scale-[0.97] transition-all"
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleUploadFile}
-                loading={isUploading}
-                disabled={!selectedUploadFile || isUploading}
-                className="font-sans text-xs font-semibold rounded-[2px] active:scale-[0.97] transition-all bg-[#CC6600] hover:bg-[#E67300] text-white shadow-md"
-              >
-                Upload &amp; Attach File →
-              </Button>
-            </div>
-          }
-        >
-          <div className="flex flex-col gap-6 text-xs font-sans">
-            {uploadError && <Alert variant="danger">{uploadError}</Alert>}
-
-            {/* Step 1: Category Selector */}
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded-[2px] bg-white/[0.08] text-white font-mono text-[0.625rem] font-semibold">
-                    1
-                  </span>
-                  <label className="text-xs font-mono font-semibold text-white uppercase tracking-wider">
-                    Document Type
-                  </label>
-                </div>
-                <span className="text-[0.625rem] font-mono uppercase text-white/40 font-medium">Required</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {CATEGORY_OPTIONS.map((opt) => {
-                  const isSelected = selectedCategoryId === opt.id;
-                  const categoryMeta = getCategoryIcon(opt.value);
-
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => handleCategorySelect(opt.id, opt.value)}
-                      className={`p-3.5 sm:p-4 rounded-[2px] border text-left transition-all flex items-start gap-3.5 cursor-pointer group active:scale-[0.98] ${
-                        isSelected
-                          ? "bg-[#CC6600]/15 border-[#CC6600] text-white shadow-sm ring-1 ring-[#CC6600]/50"
-                          : "bg-white/[0.02] border-white/[0.08] text-white/70 hover:bg-white/[0.05] hover:border-white/20 hover:text-white"
-                      }`}
-                    >
-                      <div
-                        className={`h-9 w-9 rounded-[2px] flex items-center justify-center flex-shrink-0 transition-colors ${
-                          isSelected
-                            ? "bg-[#CC6600]/25 text-[#FFA040]"
-                            : "bg-white/[0.04] text-white/50 group-hover:text-white group-hover:bg-white/[0.08]"
-                        }`}
-                      >
-                        {categoryMeta.icon}
-                      </div>
-
-                      <div className="flex flex-col gap-1 min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="font-mono text-xs font-bold leading-snug">
-                            {opt.label}
-                          </span>
-                          {isSelected && (
-                            <Check size={15} weight="fill" className="text-emerald-400 flex-shrink-0" />
-                          )}
-                        </div>
-                        <span className="text-[0.688rem] text-white/50 font-sans leading-relaxed">
-                          {opt.desc}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Step 2: File Selector */}
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded-[2px] bg-white/[0.08] text-white font-mono text-[0.625rem] font-semibold">
-                    2
-                  </span>
-                  <label className="text-xs font-mono font-semibold text-white uppercase tracking-wider">
-                    Choose File
-                  </label>
-                </div>
-                <span className="text-[0.625rem] font-mono uppercase text-white/40 font-medium">Max 15MB</span>
-              </div>
-
-              {selectedUploadFile ? (
-                /* Staged File Progress Card */
-                <div className="p-4 sm:p-5 rounded-[2px] bg-[#0A0A18] border border-[#CC6600]/80 flex flex-col justify-between min-h-[140px] shadow-lg relative overflow-hidden group">
-                  {/* Top Row: File Icon + Name + 100% Badge */}
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="w-8 h-8 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/30 flex items-center justify-center text-[#FFA040] flex-shrink-0">
-                        <FileText size={16} weight="fill" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-mono text-xs font-bold text-white truncate" title={selectedUploadFile.name}>
-                          {selectedUploadFile.name}
-                        </span>
-                        <span className="text-[0.625rem] font-mono text-white/50">
-                          {selectedUploadFile.size < 1024
-                            ? `${selectedUploadFile.size} Bytes`
-                            : selectedUploadFile.size < 1024 * 1024
-                            ? `${(selectedUploadFile.size / 1024).toFixed(1)} KB`
-                            : `${(selectedUploadFile.size / (1024 * 1024)).toFixed(2)} MB`}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-[2px] bg-[#CC6600]/15 border border-[#CC6600]/35 text-[#FFA040] font-mono text-xs font-bold tracking-wider flex-shrink-0">
-                      100%
-                    </span>
-                  </div>
-
-                  {/* Bottom Group: Progress Bar + Status Footer */}
-                  <div className="flex flex-col gap-2.5 mt-auto pt-4">
-                    <div className="w-full bg-[#050513] h-2 rounded-[1px] overflow-hidden border border-white/10 p-[1px] flex items-center">
-                      <div
-                        className="bg-[#CC6600] h-full rounded-[1px] transition-all duration-300 w-full"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <div className="flex items-center gap-1.5 text-emerald-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        <span className="font-semibold text-emerald-300 text-[0.6875rem]">
-                          {isUploading ? "Uploading..." : "Ready to upload"}
-                        </span>
-                      </div>
-                      {!isUploading && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedUploadFile(null)}
-                          className="px-2.5 py-0.5 rounded-[2px] text-[0.6875rem] font-sans font-medium text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 transition-all cursor-pointer active:scale-[0.97]"
-                        >
-                          Change
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Interactive Drag & Drop Box */
-                <div
-                  onDragEnter={handleDragOver}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border border-dashed transition-all py-12 sm:py-14 px-6 min-h-[200px] rounded-[2px] flex flex-col items-center justify-center gap-4 cursor-pointer text-center group select-none active:scale-[0.99] ${
-                    isDragging
-                      ? "border-[#CC6600] bg-[#CC6600]/10 ring-2 ring-[#CC6600]/40 scale-[1.01]"
-                      : "border-white/20 hover:border-white/40 bg-white/[0.01] hover:bg-white/[0.03]"
-                  }`}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    accept={
-                      CATEGORY_OPTIONS.find((c) => c.id === selectedCategoryId)?.accept ||
-                      ".pdf,.doc,.docx,.xls,.xlsx,.csv,.sav"
-                    }
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const validation = validateUploadedFile(file, selectedCategoryId);
-                        if (!validation.valid) {
-                          setUploadError(validation.error || "Invalid file format.");
-                          setSelectedUploadFile(null);
-                          setToastMessage({
-                            message: "Upload Rejected",
-                            description: validation.error || "Selected file type is not supported.",
-                            variant: "danger",
-                          });
-                          e.target.value = "";
-                          return;
-                        }
-                        setSelectedUploadFile(file);
-                        setUploadError(null);
-                      }
-                    }}
-                  />
-
-                  {/* Circular Cloud Icon */}
-                  <div
-                    className={`h-12 w-12 rounded-full border flex items-center justify-center transition-colors shadow-sm ${
-                      isDragging
-                        ? "bg-[#CC6600]/20 border-[#CC6600] text-[#FFA040]"
-                        : "bg-white/[0.05] border-white/[0.10] group-hover:border-white/20 text-white/60 group-hover:text-white"
-                    }`}
-                  >
-                    <CloudArrowUp size={22} weight="fill" />
-                  </div>
-
-                  {/* Heading & Subtitle */}
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span
-                      className={`font-sans text-sm sm:text-base font-semibold tracking-wide transition-colors ${
-                        isDragging ? "text-[#FFA040]" : "text-white"
-                      }`}
-                    >
-                      {isDragging ? "Drop file to attach" : "Click to choose file or drag and drop"}
-                    </span>
-                    <span className="font-mono text-xs text-white/50">
-                      {CATEGORY_OPTIONS.find((c) => c.id === selectedCategoryId)?.formatLabel ||
-                        "PDF, DOCX, XLSX, CSV, SPSS (Max 15MB)"}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </Modal>
-      )}
+        />
+      ) : null}
     </div>
   );
 }
+
+// ─── What's happening ────────────────────────────────────────────────────────
+
+function NowPanel({
+  project: p,
+  stage,
+  isResolving,
+  onResolve,
+  onAddFile,
+}: {
+  project: ProjectDetailItem;
+  stage: ClientStage;
+  isResolving: boolean;
+  onResolve: () => void;
+  onAddFile: () => void;
+}) {
+  const base = `/dashboard/client/projects/${p.id}`;
+  const f = p.financialSummary;
+  const status = p.masterStatus;
+  const awaitingDeposit = status === "SOW_SIGNED" || status === "AWAITING_PAYMENT";
+  const receiptSent = awaitingDeposit && (p.hasPendingPaymentVerification || p.latestPaymentStatus === "PROOF_SUBMITTED");
+  const delivered = status === "DELIVERED" || status === "REVISION_REQUESTED";
+  const balanceDue = delivered && f && !f.isFullyPaid && f.remainingBalance > 0 ? f.remainingBalance : 0;
+
+  let title = stage.label;
+  let body: React.ReactNode = stage.now;
+  let next: string | null = stage.next;
+  let needsYou = stage.tone === "action";
+  let actions: React.ReactNode = null;
+
+  if (status === "AWAITING_INFORMATION") {
+    next = "Add the files below, then tell us you're done. We'll finish your price.";
+    actions = (
+      <>
+        <Button variant="outline" size="sm" onClick={onAddFile} className="gap-1.5">
+          <Plus size={14} weight="bold" />
+          Add a File
+        </Button>
+        <Button variant="primary" size="sm" onClick={onResolve} loading={isResolving} className="gap-1.5">
+          {isResolving ? "Sending..." : "I've Added Everything"}
+        </Button>
+      </>
+    );
+  } else if (receiptSent) {
+    title = "We're checking your receipt";
+    body = "We got your deposit receipt. Our team usually confirms it within one working day.";
+    next = "Once it's confirmed, we assign your statistical analyst.";
+    needsYou = false;
+    actions = <ActionLink href={`${base}/payment`} label="View Payment" />;
+  } else if (balanceDue > 0) {
+    title = "Pay the rest to get your files";
+    body = (
+      <>
+        Your files passed the final check. Pay the remaining{" "}
+        <span className="font-mono font-semibold text-white">
+          <Peso />
+          {money(balanceDue)}
+        </span>{" "}
+        to unlock the downloads.
+      </>
+    );
+    next = "Your download links open as soon as we confirm the payment.";
+    needsYou = true;
+    actions = <ActionLink href={`${base}/payment`} label="Pay the Rest" primary />;
+  } else if (stage.action && stage.action.path) {
+    const primary = needsYou || stage.tone === "done";
+    actions = <ActionLink href={`${base}${stage.action.path}`} label={stage.action.label} primary={primary} />;
+  }
+
+  return (
+    <Panel
+      aria-label="What's happening"
+      className={needsYou ? "border-[#CC6600]/35" : ""}
+    >
+      <div className="flex flex-col gap-4 px-5 py-5 sm:px-6 sm:py-6">
+        <div>
+          <p className="flex items-center gap-2 text-xs font-medium text-white/45">
+            {needsYou ? <span className="h-1.5 w-1.5 rounded-full bg-[#CC6600]" aria-hidden="true" /> : null}
+            {needsYou ? "Your turn" : "What's happening"}
+          </p>
+          <h2 className="mt-1.5 font-sans text-lg font-semibold tracking-[-0.01em] text-white">{title}</h2>
+          <p className="mt-1 text-sm leading-relaxed text-white/70">{body}</p>
+        </div>
+
+        {status === "AWAITING_INFORMATION" && p.missingInfoReason ? (
+          <div className="rounded-[2px] border border-white/[0.08] border-l-2 border-l-[#CC6600] bg-white/[0.02] px-4 py-3">
+            <p className="text-xs font-medium text-white/50">What we need from you</p>
+            <p className="mt-1 text-sm leading-relaxed text-white/85">{p.missingInfoReason}</p>
+          </div>
+        ) : null}
+
+        {p.hasActiveDispute && status !== "DISPUTED" ? (
+          <p className="text-[13px] text-white/60">
+            You have an open claim on this study.{" "}
+            <Link href="/dashboard/client/disputes" className="text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">
+              See it in Revisions &amp; help
+            </Link>
+          </p>
+        ) : null}
+
+        {next || actions ? (
+          <div className="flex flex-col gap-3 border-t border-white/[0.06] pt-4 sm:flex-row sm:items-center sm:justify-between">
+            {next ? (
+              <p className="text-[13px] leading-relaxed text-white/55">
+                <span className="text-white/80">Next: </span>
+                {next}
+              </p>
+            ) : (
+              <span />
+            )}
+            {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
+          </div>
+        ) : null}
+      </div>
+    </Panel>
+  );
+}
+
+function ActionLink({ href, label, primary = false }: { href: string; label: string; primary?: boolean }) {
+  return (
+    <Button asChild variant={primary ? "primary" : "outline"} size="sm" className="gap-1.5 whitespace-nowrap">
+      <Link href={href}>
+        {label}
+        <ArrowRight size={13} weight="bold" />
+      </Link>
+    </Button>
+  );
+}
+
+// ─── What you sent ───────────────────────────────────────────────────────────
+
+function QuestionsPanel({ project: p }: { project: ProjectDetailItem }) {
+  const rows = [
+    { label: "Research questions", body: p.researchQuestions },
+    { label: "Objectives", body: p.researchObjectives },
+    { label: "Hypotheses", body: p.hypotheses },
+  ].filter((r) => r.body && r.body.trim());
+
+  return (
+    <Panel aria-label="Your research questions">
+      <PanelHeader title="Your research questions" subtitle="What you asked us to answer. Your statistical analyst works from this." />
+      {rows.length === 0 ? (
+        <p className="px-5 pb-6 pt-4 text-[13px] text-white/45 sm:px-6">You didn&apos;t add research questions yet.</p>
+      ) : (
+        <dl className="mt-4 divide-y divide-white/[0.06] border-t border-white/[0.06]">
+          {rows.map((r) => (
+            <div key={r.label} className="flex flex-col gap-1.5 px-5 py-4 sm:flex-row sm:gap-6 sm:px-6">
+              <dt className="w-40 shrink-0 text-xs font-medium text-white/45 sm:pt-0.5">{r.label}</dt>
+              <dd className="min-w-0 flex-1 whitespace-pre-line text-sm leading-relaxed text-white/80">{r.body}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </Panel>
+  );
+}
+
+const ICON_BUTTON =
+  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] text-white/45 transition-colors hover:bg-white/[0.06] hover:text-white disabled:opacity-50";
+
+function FilesPanel({
+  project: p,
+  canEdit,
+  onAdd,
+  onRemove,
+  onToast,
+}: {
+  project: ProjectDetailItem;
+  canEdit: boolean;
+  onAdd: () => void;
+  onRemove: (file: ProjectFileItem) => void;
+  onToast: (t: ToastState) => void;
+}) {
+  const [preview, setPreview] = useState<ProjectFileItem | null>(null);
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const files = p.files;
+
+  const download = async (file: ProjectFileItem) => {
+    onToast({ message: "Download started", description: `Downloading ${file.fileName}.`, variant: "info" });
+    await triggerFileDownload(file.filePath, file.fileName);
+  };
+
+  const downloadAll = async () => {
+    if (downloadingAll) return;
+    setDownloadingAll(true);
+    onToast({ message: "Download started", description: `Downloading ${files.length} files.`, variant: "info" });
+    for (const file of files) {
+      await triggerFileDownload(file.filePath, file.fileName);
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    setDownloadingAll(false);
+  };
+
+  return (
+    <Panel aria-label="Files you sent">
+      <PanelHeader
+        title="Files you sent"
+        count={files.length}
+        subtitle={canEdit ? "You can add or remove files until your agreement is signed." : "Your statistical analyst works from these files."}
+        aside={
+          <div className="flex items-center gap-2">
+            {files.length > 1 ? (
+              <Button variant="ghost" size="sm" onClick={downloadAll} loading={downloadingAll} className="gap-1.5">
+                <DownloadSimple size={14} weight="bold" />
+                <span className="hidden sm:inline">Download All</span>
+              </Button>
+            ) : null}
+            {canEdit ? (
+              <Button variant="outline" size="sm" onClick={onAdd} className="gap-1.5">
+                <Plus size={14} weight="bold" />
+                Add a File
+              </Button>
+            ) : null}
+          </div>
+        }
+      />
+
+      {files.length === 0 ? (
+        <p className="mx-5 mb-6 mt-4 rounded-[2px] border border-dashed border-white/10 px-4 py-6 text-center text-[13px] text-white/45 sm:mx-6">
+          No files yet.
+        </p>
+      ) : (
+        <ul className="mt-4 divide-y divide-white/[0.06] border-t border-white/[0.06]">
+          {files.map((file) => {
+            const meta = getFileMeta(file.fileName, file.fileType);
+            return (
+              <li key={file.id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-white/10 bg-white/[0.04] font-mono text-[10px] font-semibold text-white/70">
+                  {meta.ext}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPreview(file)}
+                  className="min-w-0 flex-1 text-left"
+                  title={`Open ${file.fileName}`}
+                >
+                  <span className="block truncate text-sm text-white hover:underline hover:decoration-white/30 hover:underline-offset-4">
+                    {file.fileName}
+                  </span>
+                  <span className="block text-xs text-white/45">
+                    {(CATEGORY_LABEL[file.fileCategory] ?? "File") + " · Added " + formatDate(file.uploadedAt)}
+                  </span>
+                </button>
+                <div className="flex shrink-0 items-center">
+                  <button type="button" onClick={() => setPreview(file)} className={ICON_BUTTON} aria-label={`Preview ${file.fileName}`} title="Preview">
+                    <Eye size={16} weight="fill" />
+                  </button>
+                  <button type="button" onClick={() => download(file)} className={ICON_BUTTON} aria-label={`Download ${file.fileName}`} title="Download">
+                    <DownloadSimple size={16} weight="bold" />
+                  </button>
+                  {canEdit ? (
+                    <button type="button" onClick={() => onRemove(file)} className={ICON_BUTTON} aria-label={`Remove ${file.fileName}`} title="Remove">
+                      <Trash size={15} weight="fill" />
+                    </button>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {!canEdit ? (
+        <p className="flex items-center gap-2 border-t border-white/[0.06] px-5 py-3 text-xs text-white/45 sm:px-6">
+          <Lock size={13} weight="fill" className="shrink-0" />
+          Files are locked once your agreement is signed. Need to change one? Message your team.
+        </p>
+      ) : null}
+
+      {preview ? (
+        <DocumentViewerLightbox file={preview} files={files} onNavigateFile={setPreview} onClose={() => setPreview(null)} />
+      ) : null}
+    </Panel>
+  );
+}
+
+// ─── Side column ─────────────────────────────────────────────────────────────
+
+function DetailsPanel({ project: p, stage }: { project: ProjectDetailItem; stage: ClientStage }) {
+  const due = useDueText(p.deadlineRequested, stage, p.deliveredAt);
+  const pkg = clientPackageName(p.packageName);
+  const school = p.client.clientProfile;
+  const rows: Array<{ label: string; value: React.ReactNode }> = [
+    { label: stage.tone === "done" ? "Delivered" : "Due", value: due.replace(/^(Due|Delivered) /, "") },
+    { label: "Sent", value: formatDate(p.createdAt) },
+    { label: "Last update", value: formatDate(p.updatedAt) },
+  ];
+  if (pkg) rows.push({ label: "Package", value: pkg });
+  rows.push({
+    label: "School",
+    value: school?.institutionSchool ? (
+      <>
+        {school.institutionSchool}
+        {school.academicProgram ? <span className="block text-white/50">{school.academicProgram}</span> : null}
+      </>
+    ) : (
+      <Link href="/dashboard/client/profile" className="text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">
+        Add your school
+      </Link>
+    ),
+  });
+
+  return (
+    <Panel aria-label="Details">
+      <PanelHeader title="Details" />
+      <dl className="mt-3 flex flex-col px-5 pb-5 sm:px-6">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-start justify-between gap-4 border-b border-white/[0.05] py-2.5 last:border-b-0">
+            <dt className="shrink-0 text-[13px] text-white/45">{r.label}</dt>
+            <dd className="min-w-0 text-right text-[13px] text-white/85">{r.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </Panel>
+  );
+}
+
+function PaymentPanel({ project: p, stage }: { project: ProjectDetailItem; stage: ClientStage }) {
+  const f = p.financialSummary;
+  if (!f || f.totalAmount <= 0) return null;
+  const href = `/dashboard/client/projects/${p.id}${stage.step >= 2 ? "/payment" : "/quote"}`;
+  return (
+    <Panel aria-label="Payment">
+      <PanelHeader
+        title="Payment"
+        aside={
+          <Link href={href} className="text-xs text-white/55 underline-offset-4 hover:text-white hover:underline">
+            {stage.step >= 2 ? "Details" : "See price"}
+          </Link>
+        }
+      />
+      <div className="px-5 pb-5 pt-3 sm:px-6">
+        <p className="flex items-baseline justify-between gap-3">
+          <span className="text-[13px] text-white/45">{f.isFullyPaid ? "Paid in full" : "Paid so far"}</span>
+          <span className="font-mono text-sm text-white">
+            <Peso />
+            {money(f.verifiedPaid)}
+            <span className="text-white/40">
+              {" of "}
+              <Peso />
+              {money(f.totalAmount)}
+            </span>
+          </span>
+        </p>
+        <Meter value={f.verifiedPaid} max={f.totalAmount} label="Paid so far" className="mt-2" />
+        {!f.isFullyPaid ? (
+          <dl className="mt-3 flex flex-col gap-1.5 text-[13px]">
+            {!f.isDownpaymentCleared && f.downpaymentRequired > 0 ? (
+              <div className="flex justify-between gap-3">
+                <dt className="text-white/45">Deposit</dt>
+                <dd className="font-mono text-white/80">
+                  <Peso />
+                  {money(f.downpaymentRequired)}
+                </dd>
+              </div>
+            ) : null}
+            <div className="flex justify-between gap-3">
+              <dt className="text-white/45">Left to pay</dt>
+              <dd className="font-mono text-white/80">
+                <Peso />
+                {money(f.remainingBalance)}
+              </dd>
+            </div>
+          </dl>
+        ) : null}
+      </div>
+    </Panel>
+  );
+}
+
+function HelpPanel({ project: p, stage, onAskToDelete }: { project: ProjectDetailItem; stage: ClientStage; onAskToDelete: () => void }) {
+  const base = `/dashboard/client/projects/${p.id}`;
+  return (
+    <Panel aria-label="Need help">
+      <PanelHeader title="Need help?" subtitle="Our team replies in your study's messages." />
+      <div className="flex flex-col gap-2 px-5 pb-5 pt-4 sm:px-6">
+        <Button asChild variant="outline" size="sm" className="w-full justify-center gap-1.5">
+          <Link href={`${base}/messages`}>
+            <ChatCenteredText size={14} weight="fill" />
+            Message Your Team
+          </Link>
+        </Button>
+        {stage.step >= 4 ? (
+          <Button asChild variant="ghost" size="sm" className="w-full justify-center">
+            <Link href="/dashboard/client/disputes">Revisions &amp; Help</Link>
+          </Button>
+        ) : null}
+        <button
+          type="button"
+          onClick={onAskToDelete}
+          className="mt-1 inline-flex items-center justify-center gap-1.5 self-center text-xs text-white/40 transition-colors hover:text-white"
+        >
+          <Trash size={12} weight="fill" />
+          Ask to delete this study
+        </button>
+      </div>
+    </Panel>
+  );
+}
+
+// ─── Add a file ──────────────────────────────────────────────────────────────
+
+function UploadModal({
+  project,
+  onClose,
+  onAdded,
+}: {
+  project: ProjectDetailItem;
+  onClose: () => void;
+  onAdded: (file: ProjectFileItem) => void;
+}) {
+  const [typeId, setTypeId] = useState(FILE_TYPES[0]!.id);
+  const [file, setFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [isUploading, startUpload] = useTransition();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const type = FILE_TYPES.find((t) => t.id === typeId) ?? FILE_TYPES[0]!;
+
+  const check = (f: File, t = type): string | null => {
+    if (f.size > MAX_BYTES) return `${f.name} is ${formatSize(f.size)}. Files can be up to 15 MB.`;
+    const name = f.name.toLowerCase();
+    if (!t.extensions.some((ext) => name.endsWith(ext))) return `${f.name} isn't accepted for ${t.label}. Use ${t.formats}.`;
+    return null;
+  };
+
+  const pick = (f: File) => {
+    const problem = check(f);
+    setError(problem);
+    setFile(problem ? null : f);
+  };
+
+  const chooseType = (id: string) => {
+    setTypeId(id);
+    const t = FILE_TYPES.find((x) => x.id === id);
+    if (file && t) {
+      const problem = check(file, t);
+      if (problem) {
+        setFile(null);
+        setError(problem);
+      } else setError(null);
+    }
+  };
+
+  const upload = () => {
+    if (!file) {
+      setError("Choose a file first.");
+      return;
+    }
+    setError(null);
+    startUpload(async () => {
+      const up = await uploadFileToR2(file, type.category, project.intakeId);
+      if (!up.success || !up.data) {
+        setError(up.error?.message || "The upload didn't finish. Please try again.");
+        return;
+      }
+      const res = await addProjectFile(project.id, {
+        fileName: file.name,
+        filePath: up.data.publicUrl,
+        fileType: file.type || "application/octet-stream",
+        fileCategory: type.category,
+      });
+      if (res.success) onAdded(res.data);
+      else setError(res.error.message);
+    });
+  };
+
+  return (
+    <Modal
+      open
+      onClose={() => {
+        if (!isUploading) onClose();
+      }}
+      title="Add a file"
+      description="Pick what it is, then choose the file. Up to 15 MB."
+      size="lg"
+      footer={
+        <div className="flex w-full items-center justify-end gap-3">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={isUploading}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="sm" onClick={upload} loading={isUploading} disabled={!file || isUploading}>
+            {isUploading ? "Uploading..." : "Add File"}
+          </Button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-5 font-sans">
+        <fieldset>
+          <legend className="text-xs font-medium text-white/55">What is it?</legend>
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {FILE_TYPES.map((t) => {
+              const on = t.id === typeId;
+              return (
+                <label
+                  key={t.id}
+                  className={`flex cursor-pointer items-start gap-3 rounded-[2px] border px-3.5 py-3 transition-colors ${
+                    on ? "border-[#CC6600]/70 bg-[#CC6600]/[0.06]" : "border-white/[0.08] hover:border-white/20"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="file-type"
+                    value={t.id}
+                    checked={on}
+                    onChange={() => chooseType(t.id)}
+                    className="mt-0.5 accent-[#CC6600]"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-white">{t.label}</span>
+                    <span className="block text-xs text-white/50">{t.hint}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <div>
+          <p className="text-xs font-medium text-white/55">Your file</p>
+          {file ? (
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-[2px] border border-white/10 bg-white/[0.02] p-3">
+              <span className="flex min-w-0 items-center gap-2.5">
+                <Check size={15} weight="bold" className="shrink-0 text-[#CC6600]" />
+                <span className="min-w-0">
+                  <span className="block truncate text-[13px] text-white" title={file.name}>
+                    {file.name}
+                  </span>
+                  <span className="text-xs text-white/45">{isUploading ? "Uploading..." : formatSize(file.size)}</span>
+                </span>
+              </span>
+              {!isUploading ? (
+                <button
+                  type="button"
+                  onClick={() => setFile(null)}
+                  className="text-xs text-white/55 underline-offset-4 hover:text-white hover:underline"
+                >
+                  Choose another
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => inputRef.current?.click()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  inputRef.current?.click();
+                }
+              }}
+              onDragEnter={(e) => {
+                e.preventDefault();
+                setDragging(true);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!dragging) setDragging(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragging(false);
+                const f = e.dataTransfer.files?.[0];
+                if (f) pick(f);
+              }}
+              className={`mt-2 flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[2px] border border-dashed px-4 py-8 text-center transition-colors ${
+                dragging ? "border-[#CC6600] bg-[#CC6600]/[0.06]" : "border-white/15 hover:border-white/35 hover:bg-white/[0.02]"
+              }`}
+            >
+              <input
+                ref={inputRef}
+                type="file"
+                accept={type.extensions.join(",")}
+                className="hidden"
+                aria-label={`Choose your ${type.label}`}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) pick(f);
+                  e.target.value = "";
+                }}
+              />
+              <CloudArrowUp size={22} weight="fill" className="text-white/40" />
+              <span className="text-[13px] text-white/80">
+                <span className="font-medium text-white underline underline-offset-4">Choose a file</span> or drop it here
+              </span>
+              <span className="text-xs text-white/40">{type.formats}</span>
+            </div>
+          )}
+          {error ? (
+            <p role="alert" className="mt-2 flex items-start gap-1.5 text-[13px] text-[#FFA040]">
+              <WarningCircle size={15} weight="fill" className="mt-0.5 shrink-0" />
+              {error}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+

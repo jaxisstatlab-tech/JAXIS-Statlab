@@ -26,7 +26,8 @@ All AI coding assistants and developers MUST strictly follow the design system, 
     ```tsx
     <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
     ```
-    *(or `max-w-5xl mx-auto` for focused legal contract / SOW document desks).*
+    *(Only printable paper documents, e.g. the SOW or a payslip, keep their own narrower document width inside the page.)*
+  - **One Page Width for Every Role**: Inside `/dashboard`, `max-w-7xl` means **100rem (1600px)**: `DashboardShell.tsx` sets `[--container-7xl:100rem]` on `<main>`. Pages fill the screen on laptops and full-HD monitors and sit centred at 1600px on larger screens. Every page wrapper (all roles, forms included) uses `max-w-7xl`; never cap a page at `max-w-4xl` / `5xl` / `6xl`, because that leaves empty sides and makes the width jump between pages. Keep wide forms readable by splitting sections into columns on large screens instead.
 - **Universal Consistent Grid Gap & Spacing Rhythm Standard (`gap-6` / 24px MANDATORY)**:
   - All major layouts, multi-column bento desks, status ribbon rows, metric card grids, and section stacks **MUST use a unified `gap-6` (24px)**:
     1. **Outer Page Vertical Section Spacing**: `gap-6` (between PageHeader, alert banners, KPI ribbons, bento desks, and data tables).

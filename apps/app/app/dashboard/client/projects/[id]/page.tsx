@@ -18,12 +18,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: `${res.data.intakeId} – ${res.data.researchTitle} | JAXIS StatLab`,
       description:
         res.data.researchObjectives ||
-        "Research study detail, deliverables, and progress tracking.",
+        "Where your study stands, what you sent, and what to do next.",
     };
   }
   return {
-    title: "Study Details | JAXIS StatLab",
-    description: "Research study detail, deliverables, and progress tracking.",
+    title: "Your study | JAXIS StatLab",
+    description: "Where your study stands, what you sent, and what to do next.",
   };
 }
 
@@ -39,7 +39,7 @@ export default async function ClientProjectDetailPage({ params }: PageProps) {
     <Suspense
       fallback={
         <div className="py-24 flex justify-center items-center">
-          <LoadingState variant="page" label="Loading study details..." />
+          <LoadingState variant="page" label="Loading your study..." />
         </div>
       }
     >

@@ -119,7 +119,7 @@ export function AboutMission() {
             </p>
             <p>
               We started JAXIS to close that gap: the right test for your exact
-              study, rerun by a second statistician, written up in plain
+              study, rerun by a second statistical analyst, written up in plain
               English, with the code to run it again in front of your panel.
             </p>
           </div>
@@ -295,7 +295,7 @@ export function AboutTeam() {
             The people behind your study
           </h2>
           <p className={subtitle}>
-            Mathematicians and statisticians who run, check, and explain your
+            Mathematicians and statistical analysts who run, check, and explain your
             analysis from request to delivery.
           </p>
         </Reveal>
@@ -360,7 +360,7 @@ export function AboutTeam() {
 
         <Reveal className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-8 lg:flex-row lg:items-center lg:gap-10">
           <span className="shrink-0 font-mono text-[11px] uppercase tracking-wider text-white/55">
-            Our statisticians specialize in
+            Our statistical analysts specialize in
           </span>
           <ul className="flex flex-wrap gap-2">
             {SPECIALTIES.map((s) => (

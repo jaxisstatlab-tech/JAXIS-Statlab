@@ -54,7 +54,7 @@ export const REVISION_CLASSIFICATION_METADATA: Record<
     label: "Included Revision",
     description:
       "Minor corrections, clarifications, formatting adjustments, or re-running tests strictly within original SOW scope.",
-    actionLabel: "Route to Lead Statistician",
+    actionLabel: "Route to Lead Statistical Analyst",
     isFree: true,
     requiresNewSow: false,
     requiresNewQuote: false,

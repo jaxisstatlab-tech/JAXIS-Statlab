@@ -47,7 +47,7 @@ export const PRIVACY: LegalDoc = {
         {
           list: [
             "We remove respondent names, email addresses, and student ID numbers from your dataset before anyone starts work.",
-            "Every statistician signs a non-disclosure agreement.",
+            "Every statistical analyst signs a non-disclosure agreement.",
             "Your files are kept in private storage. Download links expire after one hour.",
             "Team members can only see the studies they are assigned to.",
           ],
@@ -60,7 +60,7 @@ export const PRIVACY: LegalDoc = {
       blocks: [
         {
           list: [
-            "The statisticians and reviewers assigned to your study.",
+            "The statistical analysts and reviewers assigned to your study.",
             "Companies that host our systems, only so the service can run: Supabase (database), Cloudflare (file storage), Vercel (website hosting), and our email provider.",
             "Government authorities, only when the law requires it.",
           ],
@@ -126,7 +126,7 @@ export const TERMS: LegalDoc = {
       title: "Academic honesty",
       blocks: [
         "We never make up data or change data to get a better result. If a request asks for that, we will decline the study and refund any payment.",
-        "You are responsible for following your school's rules about outside help. We recommend telling your adviser that you worked with a statistician.",
+        "You are responsible for following your school's rules about outside help. We recommend telling your adviser that you worked with a statistical analyst.",
       ],
     },
     {
@@ -155,7 +155,7 @@ export const TERMS: LegalDoc = {
       id: "delivery",
       title: "Delivery times",
       blocks: [
-        "Your delivery date is in your written scope. The timer starts once a statistician is assigned, and it counts weekends but not holidays. If we need more information from you, the timer pauses until you reply.",
+        "Your delivery date is in your written scope. The timer starts once a statistical analyst is assigned, and it counts weekends but not holidays. If we need more information from you, the timer pauses until you reply.",
         "If we miss a Rush, Express, or Emergency deadline, we refund the faster delivery fee.",
       ],
     },
@@ -182,7 +182,7 @@ export const TERMS: LegalDoc = {
       blocks: [
         {
           list: [
-            "DefenseLab is a 1-on-1 mock panel with a senior statistician, at ₱250 per hour, paid before scheduling.",
+            "DefenseLab is a 1-on-1 mock panel with a senior statistical analyst, at ₱250 per hour, paid before scheduling.",
             "To reschedule, tell us at least 12 hours before the session. A late change or a missed session counts as used.",
             "Sessions are recorded, and you receive the recording.",
           ],
@@ -191,9 +191,9 @@ export const TERMS: LegalDoc = {
     },
     {
       id: "communication",
-      title: "Talking with your statistician",
+      title: "Talking with your statistical analyst",
       blocks: [
-        "All messages with your statistician stay inside the platform. Messages that share personal phone numbers, emails, social media accounts, or payment details are blocked, to protect you and your payment.",
+        "All messages with your statistical analyst stay inside the platform. Messages that share personal phone numbers, emails, social media accounts, or payment details are blocked, to protect you and your payment.",
       ],
     },
     {

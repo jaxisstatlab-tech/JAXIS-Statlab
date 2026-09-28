@@ -28,6 +28,7 @@ import {
   type DisputeResolutionType,
 } from "./schemas";
 import { revalidatePath } from "next/cache";
+import { devDisputesEnabled, devClientDisputes, devSubmitDispute } from "./dev-store";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -189,11 +190,19 @@ export async function getClientEligibleDisputesAction(): Promise<{
     if (process.env.NODE_ENV !== "production") {
       const session = await auth();
       if (session?.user?.id) {
-        // Offline dev: delivered studies from the local store; there is no local claims store.
-        return {
-          success: true,
-          data: { eligibleProjects: readDevDeliveredStudies(session.user.id, session.user.email), clientDisputes: [] },
-        };
+        // Offline dev: delivered studies from the local store, plus local claims in offline mode.
+        const eligibleProjects = readDevDeliveredStudies(session.user.id, session.user.email);
+        if (devDisputesEnabled()) {
+          const { claims, latestByProject } = devClientDisputes(session.user);
+          return {
+            success: true,
+            data: {
+              eligibleProjects: eligibleProjects.map((e) => ({ ...e, existingDispute: latestByProject.get(e.projectId) ?? null })),
+              clientDisputes: claims,
+            },
+          };
+        }
+        return { success: true, data: { eligibleProjects, clientDisputes: [] } };
       }
     }
     return { success: false, error: { message: msg } };
@@ -337,6 +346,15 @@ export async function submitDisputeAction(rawInput: SubmitDisputeInput): Promise
 
     return { success: true, data: { disputeId: dispute.id } };
   } catch (err: unknown) {
+    if (devDisputesEnabled()) {
+      const session = await auth();
+      const parsed = SubmitDisputeSchema.safeParse(rawInput);
+      if (session?.user?.id && parsed.success) {
+        const res = devSubmitDispute(session.user, parsed.data);
+        if (res.success) revalidatePath("/dashboard/client/disputes");
+        return res;
+      }
+    }
     const msg = err instanceof Error ? err.message : "Failed to submit dispute.";
     console.error("submitDisputeAction error:", err);
     return { success: false, error: { message: msg } };

@@ -391,7 +391,7 @@ export function renderEmailTemplate(
       badgeColor = "#10B981";
       bodyHtml = `
         <p>Your payment deposit has been verified and cleared by Finance.</p>
-        <p>Your study is now fully active! An expert statistician and Senior QA lead will be assigned to begin processing your data.</p>
+        <p>Your study is now fully active! An expert statistical analyst and Senior QA lead will be assigned to begin processing your data.</p>
       `;
       metaRows = [
         { label: "Study ID", value: intakeId },
@@ -422,12 +422,12 @@ export function renderEmailTemplate(
       badgeText = "TEAM ASSIGNED";
       badgeColor = "#38BDF8";
       bodyHtml = `
-        <p>A specialized Lead Statistician and Senior QA Lead have been assigned to your research study.</p>
+        <p>A specialized Lead Statistical Analyst and Senior QA Lead have been assigned to your research study.</p>
         <p>Data cleaning, coding, and hypothesis testing have officially commenced per your signed SOW specifications.</p>
       `;
       metaRows = [
         { label: "Study ID", value: intakeId },
-        { label: "Lead Statistician", value: data.statisticianName || "Assigned Specialist" },
+        { label: "Lead Statistical Analyst", value: data.statisticianName || "Assigned Specialist" },
         { label: "Estimated Delivery", value: data.deliveryDueDate || "Per SLA Schedule" },
       ];
       ctaText = "View Workspace & Messages";

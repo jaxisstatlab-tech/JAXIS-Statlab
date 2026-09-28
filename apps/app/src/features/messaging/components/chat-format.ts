@@ -23,7 +23,7 @@ export function roleLabel(role?: string | null): string {
     case "CLIENT":
       return "Client";
     case "STATISTICIAN":
-      return "Statistician";
+      return "Statistical Analyst";
     case "SENIOR_QA_LEAD":
       return "Reviewer";
     case "ADMIN":
