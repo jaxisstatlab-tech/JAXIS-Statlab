@@ -578,11 +578,31 @@ html[data-intro="done"] .intro {
   width: var(--horizon-d);
   height: var(--horizon-d);
   border-radius: 50%;
-  background: var(--bg);
+  background:
+    radial-gradient(
+      ellipse 1800px 750px at 50% 0%,
+      rgba(230, 115, 0, 0.38) 0%,
+      rgba(180, 80, 0, 0.22) 20%,
+      rgba(90, 35, 4, 0.12) 42%,
+      rgba(15, 6, 2, 0.05) 68%,
+      #010114 92%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(204, 102, 0, 0.25) 0px,
+      rgba(140, 55, 0, 0.14) 100px,
+      rgba(35, 12, 3, 0.06) 240px,
+      rgba(1, 1, 20, 0.5) 400px,
+      #010114 550px
+    ),
+    #010114;
   box-shadow:
     0 -1px 0 0 rgba(255, 176, 102, 0.95),
     0 -8px 40px 0 rgba(230, 115, 0, 0.55),
-    0 -60px 180px 20px rgba(204, 102, 0, 0.35);
+    0 -60px 180px 20px rgba(204, 102, 0, 0.35),
+    inset 0 2px 12px 0 rgba(255, 190, 120, 0.45),
+    inset 0 16px 60px 0 rgba(204, 102, 0, 0.35),
+    inset 0 60px 180px 0 rgba(140, 55, 0, 0.22);
 }
 @property --ha {
   syntax: "<angle>";
