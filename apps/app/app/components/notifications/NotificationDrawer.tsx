@@ -60,6 +60,16 @@ export function NotificationDrawer({
   } | null>(null);
   const [isRinging, setIsRinging] = useState<boolean>(false);
   const sseConnectedRef = useRef(false);
+  // Two copies exist (sidebar row on desktop, top-bar icon on phones). Only the one on screen loads
+  // alerts, polls and keeps the live stream, so the work isn't doubled on every page.
+  const [isActiveCopy, setIsActiveCopy] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsActiveCopy((triggerVariant === "row") === mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, [triggerVariant]);
 
   const [optimisticState, setOptimisticState] = useOptimistic(
     { alerts, unreadCount },
@@ -106,7 +116,9 @@ export function NotificationDrawer({
   const loadAlerts = useCallback(async (isInitial = false) => {
     if (isInitial) setIsLoading(true);
     try {
-      const res = await getInAppAlertsAction();
+      // A plain GET (not a server action) so background checks never hold up page navigation.
+      const response = await fetch("/api/v1/alerts", { cache: "no-store" });
+      const res = (await response.json()) as Awaited<ReturnType<typeof getInAppAlertsAction>>;
       if (res.success && res.data) {
         const freshAlerts = res.data.alerts;
         const freshUnreadCount = res.data.unreadCount;
@@ -147,7 +159,12 @@ export function NotificationDrawer({
   }, []);
 
   // ── Real-Time Server-Sent Events (SSE) Stream ──
+  // Off unless NEXT_PUBLIC_NOTIFICATIONS_STREAM=1. The stream's event bus lives in one server's
+  // memory, so on serverless hosting it rarely reaches the right instance (the 15-second check below
+  // is what delivers alerts), while every open tab kept a server function busy. Locally it also used
+  // up the browser's 6 connections per site, which made page loads wait up to a minute.
   useEffect(() => {
+    if (!isActiveCopy || process.env.NEXT_PUBLIC_NOTIFICATIONS_STREAM !== "1") return;
     let eventSource: EventSource | null = null;
     let reconnectTimer: NodeJS.Timeout | null = null;
     let isMounted = true;
@@ -225,9 +242,10 @@ export function NotificationDrawer({
       if (eventSource) eventSource.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
     };
-  }, []);
+  }, [isActiveCopy]);
 
   useEffect(() => {
+    if (!isActiveCopy) return;
     loadAlerts(true);
 
     const poll = () => {
@@ -253,7 +271,7 @@ export function NotificationDrawer({
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [loadAlerts]);
+  }, [loadAlerts, isActiveCopy]);
 
   // Mount check for client portal rendering
   useEffect(() => {

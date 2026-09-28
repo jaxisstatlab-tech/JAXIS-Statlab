@@ -29,7 +29,72 @@ Order: **Client → Statistician → QA Lead → Admin → Finance → CEO → S
 | 7. Staff | 0 of 2 | all |
 | 8. Sign-in and system | 2 of 8 | forgot/reset password, no access, not found, error, loading |
 
-**Next up:** the Statistician pass (dashboard, workbench, payouts, profile).
+**Next up:** the Statistician pass (dashboard, workbench, payouts, profile), including its checklist under **Performance and optimization**.
+
+---
+
+## Performance and optimization
+
+**Why pages felt slow (measured 2026-09-28 on the offline app, every client page, warm):**
+
+1. **The notification live stream (biggest):** every page opened a stream to `/api/v1/notifications/stream` (two per page, one per bell copy) that stays open ~60 s. Browsers allow 6 connections per site on localhost, so after a few clicks new pages waited **30–58 s** before they even started. In production (Vercel) the stream's in-memory event bus rarely reaches the right server instance, so it didn't deliver much there, but every open tab kept a server function busy.
+2. **Tabs that loaded in the browser:** Price, Agreement, Payment and Receipt opened with a spinner, then made 2–4 extra server calls. Next.js runs server actions **one at a time in the same queue as navigation**, so those calls (plus the bell/unread polling, also server actions) made later clicks wait.
+3. **Sequential database reads:** the dashboard layout read account status, then the client profile, then unread messages, one after another (about 4 round trips) on every full page load; the profile lookup ran again inside pages.
+4. **Header re-fetch:** the study header re-read the whole study on every tab click.
+5. **Dev only:** the first visit to a page compiles it (2–30 s). Production builds don't do this.
+
+**Result (client, offline dev, warm):** before 0.5–1.9 s with frequent 30–58 s stalls and up to 4 browser calls per page → after **0.5–1.1 s on all 13 pages, no stalls, 0 browser calls on load**. Feature tests re-run after the change: payment + receipts, signing, overview, change requests (71/72; the one miss is a known test-script pattern, screen checked by eye).
+
+**For production (not code):**
+- **Check the Vercel function region.** The database is in Singapore (`aws-0-ap-southeast-1` pooler). With no `vercel.json`, Vercel runs functions in Washington (iad1) unless the project settings say otherwise; then every database read crosses the Pacific (~200 ms each), and a page with 3–5 reads in a row waits 1 s+ before anything shows. Set Project → Settings → Functions → Region to **Singapore (sin1)**. (The Vercel account linked here has no JAXIS project, so it wasn't checked.)
+- Keep using the Supabase pooler URL (`:6543`, `pgbouncer=true`) for `DATABASE_URL` on Vercel.
+
+### Performance standards (every page, all roles)
+
+Use this as the checklist for each page in each role's pass (the client pages now meet it):
+
+- [ ] **Data on the server first:** `page.tsx` is a server component that loads the data and passes it to the client view as initial data. No "spinner, then fetch" on first open.
+- [ ] **Reads in parallel:** independent reads go in one `Promise.all`, never one after another. Anything read by both the layout and the page is wrapped in React `cache` (e.g. `getStudyOnce`, `getClientProfileOnce`).
+- [ ] **No server actions for background reads:** polling, "refresh on focus" and counters use plain GET endpoints (`fetch`), because Next runs server actions one at a time in the same queue as navigation. Server actions are for changes (save, send, accept).
+- [ ] **No duplicate work in the shell:** anything mounted twice (desktop and phone versions) does its work only in the visible copy; polling pauses while the tab is hidden.
+- [ ] **No long-lived connections per page:** no SSE/streams per tab; use Supabase Realtime (already used for chat) or short polling.
+- [ ] **Loading boundaries:** sections with their own header/tabs get a `loading.tsx` so the frame stays and only the content waits (also lets Next prefetch the frame).
+- [ ] **Refresh only on real change:** after a change, fire `jaxis:study-updated` (or a similar event) instead of re-reading on every click.
+- [ ] **Heavy code loads on demand:** big libraries (PDF, viewers, charts) are `next/dynamic` or `await import()` inside the action that needs them, never imported at the top of a page component.
+- [ ] **Queries:** `select` only the fields shown, paginate long lists, no query inside a loop (N+1); keep the per-request study cache.
+- [ ] **Measure:** warm load under ~1 s on the offline app for every page, 0 browser server calls on open (script: `pp/perf-client.mjs`, run on a separate check server so your own isn't disturbed).
+
+### More optimizations found (not done yet)
+
+- [ ] **Files tab ships the PDF library to the browser:** `ClientDeliverablesDesk` imports `downloadCertificatePdf` (pdf-lib, several hundred KB) for a fallback that never runs, and that module downloads the seal, logo and a signature image in the background on every Files visit. Remove the client fallback (the server route makes the PDF) or load it with `await import()` only if needed.
+- [ ] **Icon library not optimized:** add `@phosphor-icons/react` to `experimental.optimizePackageImports` in `next.config.mjs` (icons are imported on almost every page); smaller bundles and faster dev compiles.
+- [ ] **`<img>` tags (10):** switch real image files (seal, logos) to `next/image` where possible; data-URL signatures can stay `<img>`.
+- [ ] **Unused code:** `CertificateModal.tsx` (never opened) and the `/api/v1/notifications/stream` route (stream now off) — delete once confirmed, or replace the stream with Supabase Realtime if instant bell alerts are wanted.
+- [ ] **Cold starts in production:** after the region move, check Vercel's function logs for slow first requests; keep server-only libraries (sharp, pdf-lib, AWS SDK) out of shared layout code so every page's function stays small.
+- [ ] **Monitoring:** turn on Vercel Speed Insights (or Analytics) to see real page-load times for real users after deploys.
+
+### Client — done 2026-09-28
+
+- [x] Dashboard layout reads account status, client profile, duty shift and unread count **at the same time** (`Promise.all`, same fallbacks); the client profile is read once per request and shared with the page (`src/features/client-profile/profile-cache.ts`, used by My Studies, All studies, Profile, Send a new study).
+- [x] Price, Agreement, Payment and Receipt load their data **on the server** (`page.tsx` → `ClientQuoteView` / `ClientSowView` / `ClientPaymentView` / `ClientReceiptView` with initial data; the study comes from the layout's per-request cache, so no extra read). They still refresh themselves after accept / sign / upload.
+- [x] Study header no longer re-reads the study on every tab click; pages that change the stage (accept/decline price, sign, pay, add files, request changes) fire `jaxis:study-updated` and it refreshes then.
+- [x] `loading.tsx` inside the study (`projects/[id]/loading.tsx`): the title, tracker and tabs stay while a tab loads, and Next can prefetch the study layout.
+- [x] Bell: only the copy on screen loads, polls and listens (was two copies doing everything); alerts and the sidebar unread count now come from plain GET endpoints (`/api/v1/alerts`, `/api/v1/messages/unread`, same login checks, 401 without login) so background checks never hold up a click; polling pauses while the tab is hidden.
+- [x] Notification live stream off by default (`NEXT_PUBLIC_NOTIFICATIONS_STREAM=1` turns it back on). Alerts still arrive within 15 s and on returning to the tab.
+- [x] `apps/app/.gitignore` ignores every `.next-*` build folder (a check server's build folder was being scanned by Tailwind and broke CSS).
+
+### Other roles — to do in each role's pass (same recipe)
+
+Shared shell fixes above (layout, bell, unread count, stream) already apply to every role.
+
+- [ ] **Statistician:** load on the server: `statistician/profile`; check `StatisticianPayoutsClient` (reloads in the browser); workbench: check for browser-side loads and sequential reads; add `loading.tsx` in `statistician/projects/[id]`; measure all pages.
+- [ ] **QA Lead:** load on the server: `qa/profile`; check `QaPayoutsClient`; review/files desks: check browser-side loads; `loading.tsx` in `qa/projects/[id]`; measure.
+- [ ] **Admin:** load on the server: `admin/archive`, `audit`, `defenselab`, `disputes`, `notifications`, `profile`, `reports`, `projects/[id]`, `projects/[id]/payment`, `projects/[id]/sow`; check `AssignmentsClient`, `AdminIntakeClient`; `loading.tsx` in `admin/projects/[id]`; measure.
+- [ ] **Finance:** load on the server: `finance/profile`, `reports`, `projects/[id]/payment`, `payroll/payslips/[id]/print`; check `AttendanceReviewClient`, `FinanceDisputesClient`, `SpecialistLeaveApprovalsClient`, `FinancePayoutsClient`, `FinancePayrollClient`; measure.
+- [ ] **CEO:** load on the server: `ceo/disputes`, `finance`, `payroll`, `profile`, `reports`, `retention`; check `CeoAttendanceAuditClient`; measure.
+- [ ] **Staff (shared):** load on the server: `staff/hr/payslips/[id]/print`; check `StaffAttendanceClient`, `HrPortalClient`; measure.
+- [ ] **Staff-only shell parts:** `DutyClockWidget` polls with a server action (`getActiveShift`); move its background refresh to a GET endpoint like the bell.
+- [ ] **Messages (all roles):** the open chat and inbox refresh with server actions (`getProjectMessages`, `getMyProjectThreads`) every few seconds; move those background refreshes to GET (`/api/v1/messages` already exists for the chat) so they never hold up clicks.
 
 ---
 
@@ -178,17 +243,19 @@ Tracker coverage checked 2026-09-27: all 78 pages in `apps/app/app` are listed (
 ### Needs a decision from the owner
 
 1. **Data bug (backend):** `createProject` (`src/features/projects/actions.ts`), on a foreign-key error, retries by saving the study under *another* client account (the first `client@jaxis.dev` or any CLIENT user it finds). A client's thesis could land in someone else's list. Fix: return a clear error instead.
-2. **Offline fallbacks run in production (backend):** `addProjectFile`, `deleteProjectFile`, `resolveMissingInfo` and `getPaymentsByProject` fall back to the local offline files on *any* database error (not gated on `JAXIS_OFFLINE`). A live database hiccup would report success without saving. Gate them like the other offline fallbacks.
-3. **Server rules (backend):** file add/remove is blocked only for SOW_SIGNED, ACTIVE, IN_PROGRESS and DELIVERED (the page allows it only before the agreement is signed; block every later stage too). `submitPaymentProof` accepts any amount and type; it could check the amount against what's due.
-4. **Agreement wording (contract text, not changed):** saved terms (`src/lib/sow-rules.ts`) say free changes within **7 business days**; the website, guide and Revisions page say **3**. The terms are jargon-heavy ("SLA timeline commences", "Supplemental Statement of Work"); rewrite the defaults in plain English for new agreements (signed ones keep what they say). The agreement says the final balance is "paid after you review and accept the final results", but the app asks for it before files can be downloaded; align the wording or the flow.
-5. **Certificate wording (changed 2026-09-28, please confirm):** it now says the analysis was "checked by a second statistical analyst and approved for release" and lists what was checked, instead of "certified compliant with academic research standards". Already-downloaded certificates keep the old text. `public/signatures/qa-lead-maria.png` is only used when a reviewer's own signature is that file; upload each reviewer's signature in their profile to have it printed.
-6. **Receipts:** the new receipt is titled "Acknowledgement Receipt" on purpose. If JAXIS issues BIR official receipts, we can add the OR number / TIN; if not, consider adding "This is not an official receipt".
-7. **Sample logins in production:** `@jaxis.dev` accounts (incl. admin and CEO; passwords are in the public repo) work in production unless `DISABLE_DEV_LOGINS=true` is set in hosting. Set it now; a code fix (dev/offline only) is waiting on a yes.
-8. **Messages on phones:** opening Messages marks the newest chat read on the server (`loadInbox` → `getProjectMessages`); on phones only the list shows, so it's marked read unseen. Fix: mark read when the chat is actually shown.
-9. Website About page: Kim's middle name is spelled "Ric"; the request said "Rick". Confirm.
+2. **User lookup can create accounts or borrow another client's (backend, security):** `resolveOrProvisionUser` (`src/lib/user-healing.ts`, used by `getClientProfile` and others) — if the id and email lookups fail, it auto-creates a user with a fixed default password hash, and as a last resort returns *another* client's id (`client@jaxis.dev` or any CLIENT). Same kind of bug as #1. Fix: return an error instead.
+3. **Offline fallbacks run in production (backend):** `addProjectFile`, `deleteProjectFile`, `resolveMissingInfo` and `getPaymentsByProject` fall back to the local offline files on *any* database error (not gated on `JAXIS_OFFLINE`). A live database hiccup would report success without saving. Gate them like the other offline fallbacks.
+4. **Server rules (backend):** file add/remove is blocked only for SOW_SIGNED, ACTIVE, IN_PROGRESS and DELIVERED (the page allows it only before the agreement is signed; block every later stage too). `submitPaymentProof` accepts any amount and type; it could check the amount against what's due.
+5. **Agreement wording (contract text, not changed):** saved terms (`src/lib/sow-rules.ts`) say free changes within **7 business days**; the website, guide and Revisions page say **3**. The terms are jargon-heavy ("SLA timeline commences", "Supplemental Statement of Work"); rewrite the defaults in plain English for new agreements (signed ones keep what they say). The agreement says the final balance is "paid after you review and accept the final results", but the app asks for it before files can be downloaded; align the wording or the flow.
+6. **Certificate wording (changed 2026-09-28, please confirm):** it now says the analysis was "checked by a second statistical analyst and approved for release" and lists what was checked, instead of "certified compliant with academic research standards". Already-downloaded certificates keep the old text. `public/signatures/qa-lead-maria.png` is only used when a reviewer's own signature is that file; upload each reviewer's signature in their profile to have it printed.
+7. **Receipts:** the new receipt is titled "Acknowledgement Receipt" on purpose. If JAXIS issues BIR official receipts, we can add the OR number / TIN; if not, consider adding "This is not an official receipt".
+8. **Sample logins in production:** `@jaxis.dev` accounts (incl. admin and CEO; passwords are in the public repo) work in production unless `DISABLE_DEV_LOGINS=true` is set in hosting. Set it now; a code fix (dev/offline only) is waiting on a yes.
+9. **Messages on phones:** opening Messages marks the newest chat read on the server (`loadInbox` → `getProjectMessages`); on phones only the list shows, so it's marked read unseen. Fix: mark read when the chat is actually shown.
+10. Website About page: Kim's middle name is spelled "Ric"; the request said "Rick". Confirm.
 
 ### Before deploying
 
+- **Speed:** set the Vercel function region to Singapore (sin1) to sit next to the database (see **Performance and optimization**). Leave `NEXT_PUBLIC_NOTIFICATIONS_STREAM` unset (stream off).
 - Hosting (Vercel): paste the new `SUPABASE_SERVICE_ROLE_KEY` (the one there is the old, deleted key; the code no longer uses it, but `env.ts` requires it) and add `DISABLE_DEV_LOGINS=true` if missing.
 - Test live chat, typing and online dots with two accounts on staging (offline can't reach Supabase Realtime).
 - Everyone already logged in will be asked to log in once (new session rules).

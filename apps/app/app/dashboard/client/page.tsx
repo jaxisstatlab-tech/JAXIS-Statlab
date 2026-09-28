@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { getProjects } from "@/features/projects/actions";
-import { getClientProfile } from "@/features/client-profile/actions";
+import { getClientProfileOnce } from "@/features/client-profile/profile-cache";
 import { auth } from "@/lib/auth";
 import { ClientDashboardClient } from "./ClientDashboardClient";
 import { LoadingState } from "@repo/ui";
@@ -18,7 +18,7 @@ export const revalidate = 0;
 export default async function ClientDashboardPage() {
   const [projRes, profile, session] = await Promise.all([
     getProjects(),
-    getClientProfile(),
+    getClientProfileOnce(),
     auth(),
   ]);
 

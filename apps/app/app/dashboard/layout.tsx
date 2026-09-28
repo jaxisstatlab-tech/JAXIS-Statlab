@@ -4,7 +4,7 @@ import { DashboardShell } from "../components/layout/DashboardShell";
 import { auth, getLiveAccountState, computePasswordFingerprint } from "@/lib/auth";
 import { getDevUserByEmail } from "@/lib/mock-data/users.data";
 import type { RoleName } from "@prisma/client";
-import { getClientProfile } from "@/features/client-profile/actions";
+import { getClientProfileOnce } from "@/features/client-profile/profile-cache";
 import { getActiveShift } from "@/features/attendance/actions";
 import { getUnreadMessagesCount } from "@/features/messaging/actions";
 
@@ -22,9 +22,38 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  const userRole = (user?.role as RoleName) || "ADMIN";
+  const isInternal = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO"].includes(userRole);
+
+  // Everything this layout needs is read at the same time (one database round trip deep instead
+  // of four in a row). Each read has its own safe fallback, as before.
+  const [liveResult, clientProfile, activeShift, unreadCount] = await Promise.all([
+    getLiveAccountState(user.id).then(
+      (state) => ({ state, error: null as unknown }),
+      (error: unknown) => ({ state: null, error })
+    ),
+    userRole === "CLIENT"
+      ? getClientProfileOnce().catch((err: unknown) => {
+          console.warn("[DashboardLayout] Client profile check warning:", err);
+          return undefined;
+        })
+      : Promise.resolve(undefined),
+    isInternal
+      ? getActiveShift().catch((err: unknown) => {
+          console.warn("[DashboardLayout] getActiveShift fallback to null:", err);
+          return null;
+        })
+      : Promise.resolve(null),
+    getUnreadMessagesCount().catch((err: unknown) => {
+      console.warn("[DashboardLayout] getUnreadMessagesCount fallback to 0:", err);
+      return 0;
+    }),
+  ]);
+
   // 1. Live account state check: immediate eviction for suspended, terminated, or changed passwords
   try {
-    const liveState = await getLiveAccountState(user.id);
+    if (liveResult.error) throw liveResult.error;
+    const liveState = liveResult.state;
     if (liveState) {
       if (liveState.status === "SUSPENDED") {
         redirect("/login?error=AccountSuspended");
@@ -48,7 +77,6 @@ export default async function DashboardLayout({
     console.warn("[DashboardLayout] Live account check non-blocking warning:", err);
   }
 
-  const userRole = (user?.role as RoleName) || "ADMIN";
   const userFullName = user?.fullName || user?.name || "Research Staff";
   const userEmail = user?.email || "";
   // Offline dev sessions can carry a different id than the offline study files use.
@@ -57,36 +85,13 @@ export default async function DashboardLayout({
       ? getDevUserByEmail(userEmail)?.id
       : undefined) || user.id;
 
-  let clientProfileIncomplete = false;
-  if (userRole === "CLIENT" && user?.id) {
-    try {
-      const profile = await getClientProfile();
-      if (!profile || !profile.institutionSchool || !profile.contactNumber) {
-        clientProfileIncomplete = true;
-      }
-    } catch (err) {
-      console.warn("[DashboardLayout] Client profile check warning:", err);
-    }
-  }
-
-  const isInternal = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO"].includes(userRole);
-  let initialActiveShift = null;
-  if (isInternal) {
-    try {
-      initialActiveShift = await getActiveShift();
-    } catch (err) {
-      console.warn("[DashboardLayout] getActiveShift fallback to null:", err);
-      initialActiveShift = null;
-    }
-  }
-
-  let initialUnreadMessagesCount = 0;
-  try {
-    initialUnreadMessagesCount = await getUnreadMessagesCount();
-  } catch (err) {
-    console.warn("[DashboardLayout] getUnreadMessagesCount fallback to 0:", err);
-    initialUnreadMessagesCount = 0;
-  }
+  // A failed profile check (undefined) doesn't nag; a missing or incomplete profile does.
+  const clientProfileIncomplete =
+    userRole === "CLIENT" &&
+    clientProfile !== undefined &&
+    (!clientProfile || !clientProfile.institutionSchool || !clientProfile.contactNumber);
+  const initialActiveShift = activeShift;
+  const initialUnreadMessagesCount = unreadCount;
 
   return (
     <DashboardShell

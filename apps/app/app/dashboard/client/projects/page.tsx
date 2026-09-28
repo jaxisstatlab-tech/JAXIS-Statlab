@@ -1,5 +1,5 @@
 import { getProjects } from "@/features/projects/actions";
-import { getClientProfile } from "@/features/client-profile/actions";
+import { getClientProfileOnce } from "@/features/client-profile/profile-cache";
 import { ClientProjectsListClient } from "./ClientProjectsListClient";
 import type { Metadata } from "next";
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function ClientProjectsListPage() {
   const [projectsRes, profile] = await Promise.all([
     getProjects({ status: "ALL", search: "" }),
-    getClientProfile(),
+    getClientProfileOnce(),
   ]);
 
   const initialProjects = projectsRes.success ? projectsRes.data : [];

@@ -12,6 +12,8 @@
 # next.js
 /.next/
 /.next-offline/
+# any other build folder (check servers, release-check builds); Tailwind skips ignored files
+/.next-*/
 /out/
 
 # production
