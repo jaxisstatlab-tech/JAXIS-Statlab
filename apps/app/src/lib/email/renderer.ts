@@ -289,12 +289,14 @@ export function renderEmailTemplate(
   template: EmailTemplateName,
   data: Record<string, any>
 ): EmailRenderResult {
-  const isProd = process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
-  const appUrl =
+  const rawUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.AUTH_URL ||
-    process.env.NEXTAUTH_URL ||
-    (isProd ? "https://jaxis-statlab-app.vercel.app" : "http://localhost:3001");
+    process.env.NEXTAUTH_URL;
+  const appUrl =
+    rawUrl && !rawUrl.includes("localhost")
+      ? rawUrl.replace(/\/$/, "")
+      : "https://app.jaxis-statlab.com";
 
   // Specialized Clean Minimalist Reset Password Email matching inspiration
   if (template === "PasswordReset") {

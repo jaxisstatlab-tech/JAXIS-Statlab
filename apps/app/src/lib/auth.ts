@@ -25,10 +25,10 @@ export function computePasswordFingerprint(passwordHash: string): string {
 // Enforce production URL in Vercel environments if not already specified
 if (process.env.VERCEL) {
   if (!process.env.AUTH_URL) {
-    process.env.AUTH_URL = "https://jaxis-statlab-app.vercel.app";
+    process.env.AUTH_URL = "https://app.jaxis-statlab.com";
   }
   if (!process.env.NEXTAUTH_URL) {
-    process.env.NEXTAUTH_URL = "https://jaxis-statlab-app.vercel.app";
+    process.env.NEXTAUTH_URL = "https://app.jaxis-statlab.com";
   }
 }
 

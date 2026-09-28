@@ -13,3 +13,16 @@ export function safeCallbackPath(value: string | null | undefined, fallback = "/
   if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return fallback;
   return value;
 }
+
+// Canonical production URL for the app portal (apps/app).
+// A localhost value is filtered out so outgoing emails never link to someone's dev machine.
+const configuredApp =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.AUTH_URL ||
+  process.env.NEXTAUTH_URL;
+
+export const APP_URL =
+  configuredApp && !configuredApp.includes("localhost")
+    ? configuredApp.replace(/\/$/, "")
+    : "https://app.jaxis-statlab.com";
+

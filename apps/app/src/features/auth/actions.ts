@@ -17,6 +17,7 @@ import {
   registerDevUser,
 } from "@/lib/mock-data/users.data";
 import { sendEmail } from "@/lib/email";
+import { APP_URL } from "@/lib/site";
 import { ensureFreshAccountNotifications } from "@/features/notifications/actions";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 
@@ -290,14 +291,14 @@ export async function requestPasswordResetAction(
       3000
     );
 
-    const isProd = process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.AUTH_URL ||
-      process.env.NEXTAUTH_URL ||
-      (isProd ? "https://jaxis-statlab-app.vercel.app" : "http://localhost:3001");
-    const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
-    console.log(`\n🔑 [PASSWORD RECOVERY LINK]: ${resetUrl}\n`);
+    // For real email dispatch, always use the production app domain (https://app.jaxis-statlab.com)
+    // so links clicked in email clients work reliably across all devices (phones, tablets, laptops).
+    const resetUrl = `${APP_URL}/reset-password?token=${rawToken}`;
+    const devLocalUrl = `http://localhost:3001/reset-password?token=${rawToken}`;
+    console.log(`\n🔑 [PASSWORD RECOVERY LINK (Production)]: ${resetUrl}`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`🔑 [PASSWORD RECOVERY LINK (Local Dev)]: ${devLocalUrl}\n`);
+    }
 
     // Dispatch recovery email via Resend abstraction
     const emailRes = await sendEmail({
@@ -345,7 +346,7 @@ export async function requestPasswordResetAction(
           : undefined,
         devRecoveryUrl:
           process.env.NODE_ENV !== "production" || isSandboxRestriction
-            ? `${appUrl}/reset-password?token=${rawToken}`
+            ? devLocalUrl
             : undefined,
       },
     };
