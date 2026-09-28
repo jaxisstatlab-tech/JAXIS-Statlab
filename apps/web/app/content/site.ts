@@ -12,6 +12,11 @@ export const FAQS: Faq[] = [
   },
   {
     pricing: true,
+    q: "Do you write Chapter 4 for me?",
+    a: "No. JAXIS is a statistical consulting and data analysis service, not a thesis-writing service. We run your statistical tests, format your APA 7th edition tables, and give you a plain-English write-up of your findings and speaking points. You write your own Chapter 4 and discussion using our outputs. This protects your academic integrity and ensures you can confidently defend your study in front of your panel.",
+  },
+  {
+    pricing: true,
     q: "What if my adviser or panel asks for changes?",
     a: "Changes within your agreed scope are free. If your adviser asks for different tables, clearer explanations, or extra checks on the same analysis, we update your files at no cost. New tests outside the scope get their own price first.",
   },
