@@ -9,7 +9,7 @@ const PROMISES = ["Free account", "Written price in 24 hours", "Pay by GCash or 
 
 export default function FinalCTA() {
   return (
-    <section id="final-cta" className="relative overflow-x-clip pb-48 pt-24 lg:pb-56 lg:pt-32">
+    <section id="final-cta" className="relative overflow-hidden pb-48 pt-24 lg:pb-56 lg:pt-32">
       <CtaField />
       <HorizonTracker />
       <div className={`${container} relative text-center`}>
