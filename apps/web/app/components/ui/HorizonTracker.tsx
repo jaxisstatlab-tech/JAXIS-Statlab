@@ -16,13 +16,24 @@ export default function HorizonTracker() {
     const updateGeometry = () => {
       const w = section.getBoundingClientRect().width || window.innerWidth;
       const isLg = window.matchMedia("(min-width: 1024px)").matches;
-      // Peak height of the arch above the bottom edge of the section
-      const peakH = isLg ? 220 : 170; // elevated so the arch curve completes gracefully above the floor
-      // Desired height of the arch at the left/right screen edges (above bottom edge)
-      const edgeH = isLg ? 90 : 60;
-      const s = Math.max(20, peakH - edgeH); // sagitta (drop from center to edge)
+      // Responsive peak height above floor and sagitta (curvature drop from center to edge).
+      // On mobile, keep sagitta gentle (20-30px) so the arch is stretched wide
+      // across the phone instead of curving steeply like a half-circle dome.
+      let peakH = 140;
+      let s = 28;
 
-      // Radius of circle passing through (0, edgeH), (w/2, peakH), (w, edgeH):
+      if (w >= 1024) {
+        peakH = 220;
+        s = 115;
+      } else if (w >= 640) {
+        peakH = 175;
+        s = 55;
+      } else {
+        s = Math.max(20, Math.min(30, Math.round(w * 0.07)));
+        peakH = 140;
+      }
+
+      // Radius of circle passing through (0, peakH - s), (w/2, peakH), (w, peakH - s):
       // (w/2)^2 + (R - s)^2 = R^2 => R = (w^2 / (8 * s)) + (s / 2)
       const r = (w * w) / (8 * s) + s / 2;
       const d = Math.round(2 * r);
