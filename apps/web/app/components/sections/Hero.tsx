@@ -15,14 +15,14 @@ export default function Hero() {
       </HeroPixels>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-[#010114] to-transparent" />
 
-      <div className={`${container} relative flex min-h-svh flex-col items-center justify-center pb-16 pt-28 text-center`}>
+      <div className={`${container} relative z-10 flex min-h-svh flex-col items-start justify-end pb-20 sm:pb-24 lg:pb-28 pt-32 text-left`}>
         <div className="hero-in inline-flex items-center gap-2 font-mono text-xs text-white/70">
           <span className="h-1.5 w-1.5 rounded-full bg-[#CC6600]" />
           <DecryptedText text="jaxis.analyze(your_study)" delay={350} />
         </div>
 
         <h1
-          className="hero-in mt-6 max-w-4xl font-sans text-[2.3rem] font-medium leading-[1.05] tracking-[-0.04em] text-white sm:text-6xl lg:text-[4rem]"
+          className="hero-in mt-6 max-w-4xl font-sans text-[2.3rem] font-medium leading-[1.05] tracking-[-0.04em] text-white sm:text-6xl lg:text-[4.25rem] text-left"
           style={{ ["--d" as string]: "80ms" }}
         >
           <span className="sr-only">Thesis, survey, dissertation, and research statistics, checked by experts</span>
@@ -38,14 +38,14 @@ export default function Hero() {
         </h1>
 
         <p
-          className="hero-in mt-6 max-w-2xl font-mono text-xs leading-relaxed text-white/60 sm:text-sm"
+          className="hero-in mt-6 max-w-2xl font-mono text-xs leading-relaxed text-white/60 sm:text-sm text-left"
           style={{ ["--d" as string]: "160ms" }}
         >
           Generic templates won&apos;t pass your panel. We run your analysis for your exact study, checked by two
           statistical analysts before delivery. Real numbers, plain explanations, zero shortcuts.
         </p>
 
-        <div className="hero-in mt-9 flex flex-wrap items-center justify-center gap-6" style={{ ["--d" as string]: "240ms" }}>
+        <div className="hero-in mt-9 flex flex-wrap items-center justify-start gap-5 sm:gap-6" style={{ ["--d" as string]: "240ms" }}>
           <a href={LOGIN_URL} data-cta="hero-send" className={btnPrimary}>
             Send your study
             <ArrowRight size={15} weight="bold" />
