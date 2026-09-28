@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Cookie } from "@phosphor-icons/react";
+import { Cookie, X } from "@phosphor-icons/react";
 import {
   CONSENT_OPEN,
   getConsent,
@@ -11,8 +11,8 @@ import {
 } from "@/lib/consent";
 import { btnGhost, btnPrimary } from "../ui/styles";
 
-// Small, non-blocking consent card. Shown until the visitor chooses, and again from the footer's
-// "Cookie settings". Accept and Reject carry equal weight; nothing that needs consent loads before Accept.
+// Floating, wide consent banner modeled after the standard consent bar pattern.
+// Shown until the visitor chooses, or when reopened from the footer's "Cookie settings".
 export default function ConsentBanner() {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState<Consent | null>(null);
@@ -48,54 +48,70 @@ export default function ConsentBanner() {
   };
 
   return (
-    // Full-width fixed rail that centres the card; only the card itself takes clicks.
-    <div className="pointer-events-none fixed inset-x-4 bottom-4 z-[60] flex justify-center sm:bottom-6">
+    // Centered bottom rail for wide floating banner
+    <div className="pointer-events-none fixed inset-x-4 bottom-4 z-[60] flex justify-center sm:bottom-6 md:bottom-8">
       <div
         role="region"
         aria-label="Cookie choices"
-        className="consent-card pointer-events-auto w-full rounded-[2px] border border-white/12 bg-[#050513]/95 p-5 backdrop-blur-md sm:w-[26rem]"
+        className="consent-card pointer-events-auto relative w-full max-w-4xl rounded-[2px] border border-white/12 bg-[#050513]/95 p-5 sm:p-6 backdrop-blur-md shadow-2xl shadow-black/80"
         data-open={open ? "" : undefined}
         inert={!open}
       >
-        <div className="flex items-center gap-2.5">
-          <Cookie size={18} weight="fill" className="text-[#CC6600]" />
-          <p className="font-sans text-[15px] font-semibold text-white">
-            Your privacy
-          </p>
-        </div>
-        <p className="mt-2 font-sans text-[13px] leading-relaxed text-white/65">
-          We&apos;d like to count visits anonymously to learn which pages help
-          people. No ads, and we never sell your data.
-        </p>
-        <Link
-          href="/privacy#cookies"
-          className="mt-2 inline-block font-mono text-[11px] text-white/55 underline decoration-white/25 underline-offset-4 transition-colors hover:text-white"
+        {/* Close button in top-right corner */}
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Close cookie consent banner"
+          className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-[2px] text-white/45 transition-colors hover:bg-white/[0.08] hover:text-white sm:right-4 sm:top-4"
         >
-          Read our Privacy Policy
-        </Link>
-        {current ? (
-          <p className="mt-3 font-mono text-[11px] text-white/45">
-            Current choice:{" "}
-            <span className="text-white/80">
-              {current === "accepted" ? "Accepted" : "Rejected"}
-            </span>
-          </p>
-        ) : null}
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => choose("rejected")}
-            className={`${btnGhost} h-9 text-[13px]`}
-          >
-            Reject
-          </button>
-          <button
-            type="button"
-            onClick={() => choose("accepted")}
-            className={`${btnPrimary} h-9 text-[13px]`}
-          >
-            Accept
-          </button>
+          <X size={15} weight="bold" />
+        </button>
+
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 pr-6 sm:pr-8">
+          {/* Title and message with privacy policy link */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <Cookie size={18} weight="fill" className="text-[#CC6600] shrink-0" />
+              <p className="font-sans text-sm sm:text-[15px] font-semibold text-white tracking-tight">
+                Cookie Consent
+              </p>
+            </div>
+            <p className="mt-1.5 font-sans text-xs sm:text-[13px] leading-relaxed text-white/70">
+              By clicking &ldquo;Accept All&rdquo;, you agree to the storing of cookies on your device to enhance site navigation, analyze site usage, and assist in our research services.{" "}
+              <Link
+                href="/privacy"
+                className="font-medium text-white underline decoration-white/35 underline-offset-4 transition-colors hover:text-[#CC6600]"
+              >
+                Privacy policy
+              </Link>
+            </p>
+            {current ? (
+              <p className="mt-1.5 font-mono text-[11px] text-white/45">
+                Current choice:{" "}
+                <span className="text-white/80 font-medium capitalize">
+                  {current === "accepted" ? "Accepted" : "Rejected"}
+                </span>
+              </p>
+            ) : null}
+          </div>
+
+          {/* Action buttons */}
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => choose("rejected")}
+              className={`${btnGhost} h-9 px-4 text-xs sm:text-[13px]`}
+            >
+              Decline
+            </button>
+            <button
+              type="button"
+              onClick={() => choose("accepted")}
+              className={`${btnPrimary} h-9 px-5 text-xs sm:text-[13px]`}
+            >
+              Accept All
+            </button>
+          </div>
         </div>
       </div>
     </div>
