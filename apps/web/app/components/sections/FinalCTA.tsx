@@ -9,9 +9,11 @@ const PROMISES = ["Free account", "Written price in 24 hours", "Pay by GCash or 
 
 export default function FinalCTA() {
   return (
-    <section id="final-cta" className="relative overflow-hidden pb-48 pt-24 lg:pb-56 lg:pt-32">
+    <section id="final-cta" className="relative overflow-hidden pb-64 pt-24 lg:pb-72 lg:pt-32">
       <CtaField />
       <HorizonTracker />
+      {/* Seamless floor transition: dissolves any ambient halo into #010114 before the footer */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent via-[#010114]/80 to-[#010114] z-[2]" />
       <div className={`${container} relative text-center`}>
         <Reveal>
           <div className="mb-3 font-mono text-xs font-medium uppercase tracking-[0.15em] text-white/55">Get started</div>
