@@ -7,7 +7,8 @@ import ConsentedAnalytics from "./components/layout/ConsentedAnalytics";
 import Intro from "./components/layout/Intro";
 import ExitCurtain from "./components/layout/ExitCurtain";
 import AnchorScroll from "./components/layout/AnchorScroll";
-import { APP_URL } from "@/lib/config";
+import { APP_URL, FACEBOOK_URL } from "@/lib/config";
+import { FAQS } from "./content/site";
 
 const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -43,6 +44,20 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "https://jaxis-statlab.com",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
   },
   icons: {
     icon: [
@@ -97,7 +112,7 @@ export default function RootLayout({
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "Organization",
+        "@type": ["Organization", "ProfessionalService"],
         "@id": "https://jaxis-statlab.com/#organization",
         name: "JAXIS StatLab",
         alternateName: ["JAXIS", "jaxisstatlab", "JAXIS StatLab Maramag"],
@@ -107,13 +122,58 @@ export default function RootLayout({
           url: "https://jaxis-statlab.com/jaxislogo.png",
         },
         description:
-          "Student-focused statistical consulting firm based in Maramag, Bukidnon, Philippines offering expert support in data analysis, thesis assistance, SPSS, RStudio, and academic research.",
+          "Student-focused statistical consulting firm based in Maramag, Bukidnon, Philippines offering expert support in data analysis, thesis assistance, SPSS, RStudio, Jamovi, SmartPLS, and academic research.",
         address: {
           "@type": "PostalAddress",
           addressLocality: "Maramag",
           addressRegion: "Bukidnon",
           addressCountry: "PH",
         },
+        areaServed: [
+          { "@type": "Country", name: "Philippines" },
+          { "@type": "AdministrativeArea", name: "Bukidnon" },
+          { "@type": "AdministrativeArea", name: "Northern Mindanao" },
+          { "@type": "AdministrativeArea", name: "Davao Region" }
+        ],
+        knowsAbout: [
+          "Statistical Consulting",
+          "Data Analysis",
+          "Thesis Assistance",
+          "SPSS Analysis",
+          "RStudio Analysis",
+          "Jamovi",
+          "SmartPLS",
+          "Hypothesis Testing",
+          "ANOVA & Regression",
+          "Sample Size Calculation",
+          "Academic Research Methodology",
+          "Defense Preparation"
+        ],
+        hasOfferCatalog: {
+          "@type": "OfferCatalog",
+          name: "Statistical Services",
+          itemListElement: [
+            {
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "Service",
+                name: "Statistical Data Analysis for Theses",
+                description: "Complete statistical treatment, hypothesis testing, and APA 7th edition formatting."
+              }
+            },
+            {
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "Service",
+                name: "DefenseLab Coaching",
+                description: "1-on-1 coaching for thesis oral defense, result interpretation, and panel questioning."
+              }
+            }
+          ]
+        },
+        sameAs: [
+          FACEBOOK_URL || "https://www.facebook.com/jaxisstatlab",
+        ],
       },
       {
         "@type": "WebSite",
@@ -123,6 +183,18 @@ export default function RootLayout({
         publisher: {
           "@id": "https://jaxis-statlab.com/#organization",
         },
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://jaxis-statlab.com/#faq",
+        mainEntity: FAQS.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: f.a,
+          },
+        })),
       },
     ],
   };
@@ -139,6 +211,8 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM context summary" />
+        <link rel="alternate" type="text/plain" href="/llms-full.txt" title="Full LLM knowledge base" />
         <link rel="preconnect" href={new URL(APP_URL).origin} />
         <link rel="dns-prefetch" href={new URL(APP_URL).origin} />
         <script dangerouslySetInnerHTML={{ __html: INTRO_GATE }} />

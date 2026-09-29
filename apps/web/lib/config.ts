@@ -4,7 +4,7 @@ export const APP_URL =
 export const REGISTER_URL = `${APP_URL}/register`;
 export const LOGIN_URL = `${APP_URL}/login`;
 
-export const CONTACT_EMAIL = "consult@jaxisstatlab.com";
+export const CONTACT_EMAIL = "consult@jaxis-statlab.com";
 
 // Optional. Each item only appears on the site once its value is set.
 export const FACEBOOK_URL = process.env.NEXT_PUBLIC_FACEBOOK_URL || "";

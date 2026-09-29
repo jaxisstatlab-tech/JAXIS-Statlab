@@ -1,6 +1,21 @@
 // Copy for /about. Everything here restates how JAXIS already works (site copy and apps/app/docs);
 // no made-up milestones. CORE_TEAM and EXPERT_TEAM are the real team, in the order they appear.
 
+export const VISION = {
+  kicker: "Vision",
+  title: "Our Vision",
+  body: "We envision becoming a leading provider of trusted statistical services, recognized for our excellence, integrity, and meaningful contributions to data-driven success across academic, professional, and business sectors.",
+};
+
+export const MISSION = {
+  kicker: "Mission",
+  title: "Our Mission",
+  body: [
+    "We commit ourselves to providing accessible, high-quality statistical services that support academic, professional, and business success.",
+    "Our goal is to provide analytical support that is clear, dependable, and aligned with ethical and professional best practices.",
+  ],
+};
+
 export const NUMBERS: {
   to: number;
   prefix?: string;

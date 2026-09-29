@@ -17,10 +17,12 @@ import { LOGIN_URL } from "@/lib/config";
 import {
   CORE_TEAM,
   EXPERT_TEAM,
+  MISSION,
   NUMBERS,
   SPECIALTIES,
   STORY,
   VALUES,
+  VISION,
   type TeamMember,
   type Value,
 } from "../../content/about";
@@ -105,25 +107,31 @@ export function AboutMission() {
   return (
     <section className={`${band} py-20 lg:py-28`}>
       <div className={container}>
-        <Reveal className="mx-auto max-w-[46rem]">
-          <div className={kicker}>Mission</div>
-          <h2 data-split className={heading}>
-            Help every student understand the results they defend
-          </h2>
-          <div className="mt-6 flex flex-col gap-5 font-mono text-xs leading-relaxed text-white/60 sm:text-sm">
-            <p>
-              A thesis defense doesn&apos;t test whether you can run SPSS. It
-              tests whether you understand what your numbers say. Generic
-              templates and copy-paste outputs leave students holding tables
-              they can&apos;t explain.
-            </p>
-            <p>
-              We started JAXIS to close that gap: the right test for your exact
-              study, rerun by a second statistical analyst, written up in plain
-              English, with the code to run it again in front of your panel.
-            </p>
-          </div>
-        </Reveal>
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:gap-16">
+          {/* Vision Column */}
+          <Reveal>
+            <div className={kicker}>{VISION.kicker}</div>
+            <h2 data-split className={heading}>
+              {VISION.title}
+            </h2>
+            <div className="mt-6 flex flex-col gap-5 font-mono text-xs leading-relaxed text-white/60 sm:text-sm">
+              <p>{VISION.body}</p>
+            </div>
+          </Reveal>
+
+          {/* Mission Column */}
+          <Reveal delay={100}>
+            <div className={kicker}>{MISSION.kicker}</div>
+            <h2 data-split className={heading}>
+              {MISSION.title}
+            </h2>
+            <div className="mt-6 flex flex-col gap-5 font-mono text-xs leading-relaxed text-white/60 sm:text-sm">
+              {MISSION.body.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+          </Reveal>
+        </div>
       </div>
     </section>
   );
@@ -131,7 +139,7 @@ export function AboutMission() {
 
 export function AboutNumbers() {
   return (
-    <section id="quality" className="scroll-mt-16 py-20 lg:py-28">
+    <section id="quality" className={`${band} scroll-mt-16 py-20 lg:py-28`}>
       <div className={container}>
         <Reveal>
           <div className={kicker}>By the numbers</div>
@@ -205,7 +213,7 @@ export function AboutStory() {
 
 export function AboutValues() {
   return (
-    <section className={`${band} py-20 lg:py-28`}>
+    <section className="py-20 lg:py-28">
       <div className={container}>
         <Reveal className="mx-auto max-w-2xl text-center">
           <div className={kicker}>Values</div>

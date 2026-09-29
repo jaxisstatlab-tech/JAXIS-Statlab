@@ -30,7 +30,7 @@ export const CLIENT_PACKAGES: Record<PackageName, ClientPackage> = {
     bestFor: "Describing who answered your survey",
     features: [
       "Demographic frequencies and percentages",
-      "Cross-tabulations and chi-square",
+      "Cross-tabulations",
       "Ready-to-paste APA 7th edition tables",
       "Plain-English findings for Chapter 4",
     ],
@@ -43,7 +43,7 @@ export const CLIENT_PACKAGES: Record<PackageName, ClientPackage> = {
       "Hypothesis tests (t-tests, ANOVA, regression)",
       "Assumption checks and effect sizes",
       "Full plain-English Chapter 4 write-up",
-      "Analysis scripts (.R, .py, .sps) included",
+      "Independent dual-analyst verification",
     ],
   },
   JX_04_ADVANCED: {

@@ -30,11 +30,11 @@ export const FAQS: Faq[] = [
   },
   {
     q: "I don't know much about statistics. How will I defend my results?",
-    a: "You don't need to. Every study comes with a plain-English script that explains each Chapter 4 table in simple words, plus answers to the questions panels ask most. You can also book a live DefenseLab practice session.",
+    a: "You don't need to. Every study comes with a plain-English guide that explains each Chapter 4 table in simple words, plus answers to the questions panels ask most. You can also book a live DefenseLab practice session.",
   },
   {
     q: "What files will I receive?",
-    a: "APA 7th edition tables ready for Word, a plain-English write-up of your findings, your cleaned dataset (.sav or .csv), and the full code in R, Python, or SPSS so the results can be rerun.",
+    a: "APA 7th edition tables ready for Word, a plain-English write-up of your findings, your cleaned dataset (.sav or .csv), and a signed statistical verification summary so you are fully prepared for your defense.",
   },
   {
     pricing: true,

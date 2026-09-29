@@ -66,9 +66,9 @@ const FILES: {
     shapes: FILE_DATA,
   },
   {
-    tag: "Code",
-    type: "R · PY · SPS",
-    title: "The exact script behind every number, so anyone can rerun it",
+    tag: "Audit",
+    type: "PDF · CERT",
+    title: "Signed statistical verification certificate confirming dual-analyst checks",
     shapes: FILE_CODE,
   },
   {

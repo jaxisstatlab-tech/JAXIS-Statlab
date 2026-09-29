@@ -30,7 +30,7 @@ const FILE_KIND: Record<string, { label: string; detail: string }> = {
   PDF_REPORT: { label: "Results write-up", detail: "Your results explained, with APA tables, ready for Chapter 4." },
   STATISTICAL_OUTPUT: { label: "Tables and output", detail: "The tables and the software output behind them." },
   RAW_DATA_CLEANED: { label: "Cleaned data", detail: "Your data after cleaning, as used in the analysis." },
-  APPENDIX: { label: "Extra tables and code", detail: "Extra tables, charts and the code we ran." },
+  APPENDIX: { label: "Supplementary tables & charts", detail: "Additional summary tables and diagnostic charts." },
   OTHER: { label: "Other file", detail: "" },
 };
 

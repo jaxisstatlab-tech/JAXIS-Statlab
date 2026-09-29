@@ -86,7 +86,7 @@ export const PACKAGES_CATALOG: Record<PackageName, PackageDefinition> = {
     deliverables: [
       "Complete Chapter 4 findings with APA 7th publication tables",
       "Hypothesis testing decision tables (p-values, effect sizes, Cohen's d)",
-      "Reproducible statistical script (.R / SPSS syntax)",
+      "Independent dual-analyst verification and quality audit",
     ],
     recommendedFor: "Undergraduate Theses, Master's Theses, and Correlational/Comparative Research.",
   },
@@ -103,7 +103,7 @@ export const PACKAGES_CATALOG: Record<PackageName, PackageDefinition> = {
     deliverables: [
       "Path model diagrams and structural validity models",
       "Comprehensive APA 7th Chapter 4 & Methodology defense deck",
-      "Peer-reviewed grade statistical code and raw computational logs",
+      "Comprehensive model diagnostics and structural validity logs",
     ],
     recommendedFor: "Doctoral Dissertations, Scopus/WOS Journal Submissions, and Complex Multi-Tier Research.",
   },

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { NotFoundPage } from "@repo/ui/NotFoundPage";
+import { NotFoundPage } from "@repo/ui";
 import { LOGIN_URL } from "@/lib/config";
 
 export const metadata: Metadata = {

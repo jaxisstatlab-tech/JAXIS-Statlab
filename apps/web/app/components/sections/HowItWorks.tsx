@@ -40,7 +40,7 @@ const STEPS: { id: string; tag: string; time: string; title: string; body: strin
     tag: "Delivery",
     time: "Instant",
     title: "Download and defend",
-    body: "APA tables, a plain-English write-up, cleaned data, code, and your defense script.",
+    body: "APA tables, a plain-English write-up, cleaned data, and your defense prep guide.",
     shapes: STEP_DELIVER,
   },
 ];

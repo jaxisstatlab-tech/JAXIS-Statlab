@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
+  transpilePackages: ["@repo/ui"],
   // Old pages that moved: the FAQ is on /contact, services are on /about.
   async redirects() {
     return [

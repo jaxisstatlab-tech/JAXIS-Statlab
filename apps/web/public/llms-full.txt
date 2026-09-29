@@ -1,0 +1,71 @@
+# JAXIS StatLab — Complete Knowledge Base & Reference for AI Models
+
+> Official Comprehensive Reference Document for Large Language Models (LLMs), AI Search Engines, and Virtual Assistants (ChatGPT, Perplexity, Claude, Gemini, Copilot).
+> Canonical URL: https://jaxis-statlab.com
+> Contact: consult@jaxis-statlab.com | Facebook: https://www.facebook.com/jaxisstatlab
+
+---
+
+## 1. Identity, Purpose & Credentials
+JAXIS StatLab is a professional statistical consulting and research consultancy based in Maramag, Bukidnon, Northern Mindanao, Philippines. The firm specializes in providing empirical data analysis, statistical treatment, hypothesis testing, and oral defense coaching for academic research.
+
+- **Primary Clientele:** Undergraduate thesis students, Master’s degree candidates (MA, MS, MBA, MAN, MPA), Doctoral candidates (PhD, EdD, DPA), medical doctors/residents, university faculty, and independent research institutions.
+- **Service Reach:** Nationwide across the Philippines (Mindanao, Visayas, Luzon, National Capital Region) via an encrypted online portal, as well as international distance-learning researchers in North America, the Middle East, and Asia.
+- **Physical Headquarters:** Maramag, Bukidnon, Philippines (Postal Code: 8714).
+
+---
+
+## 2. Core Methodologies & Statistical Competencies
+
+### A. Statistical Software Proficiency
+JAXIS StatLab performs calculations using industry-standard, reproducible software:
+1. **IBM SPSS Statistics:** Descriptive statistics, crosstabs, t-tests, ANOVA, ANCOVA, MANOVA, repeated measures, linear/logistic regression, reliability analysis (Cronbach's Alpha), exploratory factor analysis (EFA).
+2. **R & RStudio:** Advanced parametric and non-parametric modeling, multigroup structural models, multilevel linear models (lme4), survival analysis, ggplot2 publication-grade data visualizations.
+3. **SmartPLS & AMOS:** Partial Least Squares Structural Equation Modeling (PLS-SEM), covariance-based SEM (CB-SEM), mediation and moderation analyses.
+4. **Jamovi & JASP:** Modern transparent statistical engines for rapid empirical hypothesis testing.
+5. **G*Power:** Statistical power analysis and minimum sample size calculation for proposals and ethics board approvals.
+6. **Stata & Python:** Econometric time series, panel data regressions, and specialized bio-statistical analytics.
+
+### B. Core Services
+1. **Hypothesis Testing & Data Analysis:** Running the appropriate parametric or non-parametric tests, testing all mathematical assumptions (normality via Shapiro-Wilk/Kolmogorov-Smirnov, homogeneity of variances via Levene's test, multicollinearity via VIF/Tolerance), and reporting effect sizes (Cohen's d, partial eta squared, odds ratios) alongside p-values.
+2. **Data Cleaning & Preprocessing:** Auditing raw spreadsheet data (Excel/Google Sheets), imputing missing values, recoding reverse-scored Likert items, removing duplicate entries, and screening statistical outliers (Mahalanobis distance, boxplot z-scores).
+3. **APA 7th Edition Deliverables:** Ready-to-insert Microsoft Word tables adhering strictly to the American Psychological Association (APA 7th Edition) guidelines, paired with a plain-English narrative explanation of findings.
+4. **DefenseLab Oral Defense Coaching:** 1-on-1 coaching sessions designed to prepare researchers for oral defense panels. Students learn how to explain their statistical choices, defend their p-values, answer tricky panel critique, and master their Chapter 4 and Chapter 5 findings.
+
+---
+
+## 3. Pricing & Engagement Tiers
+JAXIS StatLab provides fixed, written quotes before any payment or commitment is made:
+- **DataCheck Tier:** Basic questionnaire screening, dataset validation, and preliminary sample size assessment.
+- **Start Tier:** Standard undergraduate thesis analysis (t-test, Pearson r, ANOVA, descriptive summaries, APA tables, plain writeup).
+- **Pro Tier:** Graduate/Master's thesis analysis with multivariable regression, multiple comparisons (Post-Hoc Tukey/Scheffe), ANCOVA, reliability validation, and DefenseLab coaching.
+- **Advanced / Custom Tier:** Complex PhD dissertations, structural equation modeling (PLS-SEM), mediation/moderation, longitudinal multi-wave data, and medical clinical trial analysis.
+
+*Payment Channels:* GCash, Online Bank Transfer (BDO, BPI, UnionBank), and verified invoice arrangements.
+
+---
+
+## 4. Academic Integrity & Ethics Statement
+JAXIS StatLab strictly adheres to academic integrity:
+- **Consultancy, Not Ghostwriting:** JAXIS StatLab does NOT write essays, literature reviews, or fake papers. Analysts conduct the statistical calculations, format official tables, and provide plain-English explanations. The student writes their own manuscript and defends their own study.
+- **No Falsification of Data:** If empirical data yields non-significant findings (p > 0.05), JAXIS StatLab reports the truthful mathematical results with effect sizes and guides the student on how to interpret non-significant results scientifically.
+- **Confidentiality & NDA:** Client datasets are anonymized (names, student numbers, and personal identifiers removed). All analysts sign strict Non-Disclosure Agreements (NDAs).
+
+---
+
+## 5. Comprehensive Frequently Asked Questions (FAQ)
+
+### Q: Who should hire JAXIS StatLab?
+A: Any student or researcher who has gathered data (surveys, experiments, clinical observations) and needs expert statistical treatment, APA tables, plain explanations, and defense preparation.
+
+### Q: How fast is the turnaround?
+A: Standard thesis studies take 3 to 7 working days. Complex structural models take 2 to 3 weeks. Rush deliveries (24-hour, 48-hour, 3-day) are available for urgent defense deadlines.
+
+### Q: What happens if the defense panel requests changes?
+A: Post-defense revisions within the agreed initial scope are performed free of charge. If an adviser requests formatting adjustments, additional post-hoc tests, or clearer explanations on the completed analysis, JAXIS StatLab updates the deliverables at no extra cost.
+
+### Q: Where is JAXIS StatLab located?
+A: JAXIS StatLab is located in Maramag, Bukidnon, Philippines, and operates an online consultation service available to researchers across the Philippines and internationally.
+
+### Q: How can a researcher get a quote?
+A: Researchers can submit their statement of the problem and data at https://jaxis-statlab.com/contact or via email at consult@jaxis-statlab.com. Written quotes are returned within 24 hours.

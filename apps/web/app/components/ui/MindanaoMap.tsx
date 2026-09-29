@@ -1,72 +1,179 @@
-// Dot-matrix locator of Mindanao with Bukidnon lit and a pin on Maramag.
-// Outlines are rough [longitude, latitude] traces: close enough to read as the island, not survey-grade.
+"use client";
 
-type Pt = [number, number];
+import { useEffect, useState } from "react";
 
-const MINDANAO: Pt[] = [
-  [122.07, 6.91], [122.13, 7.7], [122.6, 8.0], [122.99, 8.24], [123.42, 8.66], [123.8, 8.5], [123.84, 8.15],
-  [124.24, 8.23], [124.65, 8.48], [125.1, 8.82], [125.5, 9.0], [125.49, 9.79], [125.75, 9.6], [126.2, 9.08],
-  [126.36, 8.21], [126.6, 7.3], [126.22, 6.95], [126.18, 6.27], [125.85, 6.9], [125.61, 7.07], [125.36, 6.75],
-  [125.61, 6.4], [125.4, 5.6], [125.17, 6.11], [124.62, 5.99], [124.06, 6.53], [124.25, 7.22], [124.07, 7.59],
-  [123.44, 7.83], [123.17, 7.58], [122.6, 7.4],
-];
+// High-precision geographic locator for Mindanao, Bukidnon, and Maramag.
+// Uses official Philippine boundary vectors with Dashdark X tactical cartography.
 
-const BUKIDNON: Pt[] = [
-  [124.6, 8.4], [125.1, 8.65], [125.35, 8.45], [125.45, 8.0], [125.3, 7.55], [125.0, 7.45], [124.7, 7.6], [124.55, 8.0],
-];
-
-const MARAMAG: Pt = [125.0, 7.76];
-
-const inside = ([x, y]: Pt, poly: Pt[]) => {
-  let hit = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i]!;
-    const [xj, yj] = poly[j]!;
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
-  }
-  return hit;
-};
-
-const STEP = 0.075;
-const BOUNDS = { west: 121.9, east: 126.8, north: 9.95, south: 5.45 };
-const SCALE = 100;
-const px = (lon: number) => (lon - BOUNDS.west) * SCALE;
-const py = (lat: number) => (BOUNDS.north - lat) * SCALE;
-
-const DOTS: { x: number; y: number; lit: boolean }[] = [];
-for (let lat = BOUNDS.south; lat <= BOUNDS.north; lat += STEP) {
-  for (let lon = BOUNDS.west; lon <= BOUNDS.east; lon += STEP) {
-    const p: Pt = [lon, lat];
-    if (inside(p, MINDANAO)) DOTS.push({ x: px(lon), y: py(lat), lit: inside(p, BUKIDNON) });
-  }
-}
-
-const W = (BOUNDS.east - BOUNDS.west) * SCALE;
-const H = (BOUNDS.north - BOUNDS.south) * SCALE;
+import mapData from "./mindanao-data.json";
 
 export default function MindanaoMap({ className = "" }: { className?: string }) {
-  const pin = { x: px(MARAMAG[0]), y: py(MARAMAG[1]) };
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const { width, height, maramag, bukidnonPath, mindanaoOutline } = mapData;
+
   return (
-    <div className={`relative ${className}`}>
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-full w-full" role="img" aria-label="Map of Mindanao with Maramag, Bukidnon marked">
-        {DOTS.map((d, i) => (
-          <circle key={i} cx={d.x} cy={d.y} r={d.lit ? 2.6 : 2.2} fill={d.lit ? "#CC6600" : "rgba(255,255,255,0.16)"} />
-        ))}
+    <div className={`relative w-full select-none overflow-hidden ${className}`}>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="h-full w-full"
+        role="img"
+        aria-label="Map of Mindanao highlighting Bukidnon and Maramag headquarters"
+      >
+        <defs>
+          {/* Tactical Digital Dot Matrix Patterns */}
+          <pattern id="mindanao-dot-grid" width="10" height="10" patternUnits="userSpaceOnUse">
+            <circle cx="5" cy="5" r="1.15" fill="rgba(255, 255, 255, 0.22)" />
+          </pattern>
+          <pattern id="bukidnon-dot-grid" width="10" height="10" patternUnits="userSpaceOnUse">
+            <circle cx="5" cy="5" r="1.6" fill="#CC6600" />
+          </pattern>
+
+          {/* Masks */}
+          <mask id="mindanao-island-mask">
+            <path d={mindanaoOutline} fill="#FFFFFF" />
+            <path d={bukidnonPath} fill="#FFFFFF" />
+          </mask>
+          <mask id="bukidnon-province-mask">
+            <path d={bukidnonPath} fill="#FFFFFF" />
+          </mask>
+        </defs>
+
+        {/* Ambient Radial Gradient behind Bukidnon */}
+        <radialGradient id="hq-glow" cx="67%" cy="51%" r="35%">
+          <stop offset="0%" stopColor="#CC6600" stopOpacity="0.14" />
+          <stop offset="100%" stopColor="#CC6600" stopOpacity="0" />
+        </radialGradient>
+        <rect x="0" y="0" width={width} height={height} fill="url(#hq-glow)" />
+
+        {/* Background Coordinate Grid */}
+        <g stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" strokeDasharray="2 4">
+          <line x1="0" y1="120" x2={width} y2="120" />
+          <line x1="0" y1="240" x2={width} y2="240" />
+          <line x1="0" y1="360" x2={width} y2="360" />
+          <line x1="0" y1="480" x2={width} y2="480" />
+
+          <line x1="120" y1="0" x2="120" y2={height} />
+          <line x1="240" y1="0" x2="240" y2={height} />
+          <line x1="360" y1="0" x2="360" y2={height} />
+          <line x1="480" y1="0" x2="480" y2={height} />
+        </g>
+
+        {/* Corner Reticle Crosshairs */}
+        <g stroke="rgba(255, 255, 255, 0.25)" strokeWidth="1">
+          <path d="M 12 18 L 12 12 L 18 12" fill="none" />
+          <path d={`M ${width - 18} 12 L ${width - 12} 12 L ${width - 12} 18`} fill="none" />
+          <path d={`M 12 ${height - 18} L 12 ${height - 12} L 18 ${height - 12}`} fill="none" />
+          <path d={`M ${width - 18} ${height - 12} L ${width - 12} ${height - 12} L ${width - 12} ${height - 18}`} fill="none" />
+        </g>
+
+
+
+        {/* Mainland Base Silhouette */}
+        <path
+          d={mindanaoOutline}
+          fill="#080C20"
+          stroke="rgba(255, 255, 255, 0.16)"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+
+        {/* Mainland Dot Matrix Overlay */}
+        <rect
+          x="0"
+          y="0"
+          width={width}
+          height={height}
+          fill="url(#mindanao-dot-grid)"
+          mask="url(#mindanao-island-mask)"
+        />
+
+        {/* Bukidnon Province Boundary and Glow Substrate */}
+        <path
+          d={bukidnonPath}
+          fill="rgba(204, 102, 0, 0.18)"
+          stroke="#CC6600"
+          strokeWidth="1.5"
+          strokeDasharray="3 2"
+          strokeLinejoin="round"
+        />
+
+        {/* Bukidnon Lit Orange Dots */}
+        <rect
+          x="0"
+          y="0"
+          width={width}
+          height={height}
+          fill="url(#bukidnon-dot-grid)"
+          mask="url(#bukidnon-province-mask)"
+        />
+
+        {/* Sonar Radar Wave Pulses from Maramag */}
+        {mounted && (
+          <>
+            <circle
+              cx={maramag.x}
+              cy={maramag.y}
+              r="4"
+              fill="none"
+              stroke="#CC6600"
+              className="animate-ping"
+              style={{
+                transformOrigin: `${maramag.x}px ${maramag.y}px`,
+                animationDuration: "2.8s",
+              }}
+            />
+          </>
+        )}
+
+        {/* Maramag Reticle Crosshairs */}
+        <g stroke="#CC6600" strokeWidth="1" opacity="0.8">
+          <line x1={maramag.x - 14} y1={maramag.y} x2={maramag.x - 5} y2={maramag.y} />
+          <line x1={maramag.x + 5} y1={maramag.y} x2={maramag.x + 14} y2={maramag.y} />
+          <line x1={maramag.x} y1={maramag.y - 14} x2={maramag.x} y2={maramag.y - 5} />
+          <line x1={maramag.x} y1={maramag.y + 5} x2={maramag.x} y2={maramag.y + 14} />
+        </g>
+
+        {/* Maramag Pinpoint Core */}
+        <circle cx={maramag.x} cy={maramag.y} r="3.5" fill="#CC6600" stroke="#FFFFFF" strokeWidth="1.5" />
+
+        {/* Leader Line to Tactical HUD Tag */}
+        <path
+          d={`M ${maramag.x + 4} ${maramag.y} L ${maramag.x + 20} ${maramag.y} L ${maramag.x + 30} ${maramag.y - 13} L ${maramag.x + 124} ${maramag.y - 13}`}
+          fill="none"
+          stroke="rgba(255, 255, 255, 0.4)"
+          strokeWidth="1"
+        />
+
+        {/* Maramag Tactical Callout Chip */}
+        <g transform={`translate(${maramag.x + 32}, ${maramag.y - 28})`}>
+          <rect
+            x="0"
+            y="0"
+            width="104"
+            height="22"
+            rx="2"
+            fill="#010114"
+            stroke="rgba(255, 255, 255, 0.22)"
+            strokeWidth="1"
+          />
+          <circle cx="9" cy="11" r="2.5" fill="#CC6600" />
+          <text
+            x="17"
+            y="14.5"
+            fill="#FFFFFF"
+            fontFamily="monospace"
+            fontSize="9.5"
+            fontWeight="700"
+            letterSpacing="0.08em"
+          >
+            MARAMAG
+          </text>
+        </g>
       </svg>
-      <span
-        aria-hidden="true"
-        className="absolute flex h-3 w-3 -translate-x-1/2 -translate-y-1/2 items-center justify-center"
-        style={{ left: `${(pin.x / W) * 100}%`, top: `${(pin.y / H) * 100}%` }}
-      >
-        <span className="absolute inline-flex h-full w-full rounded-full bg-white/70 motion-safe:animate-ping" />
-        <span className="relative h-3 w-3 rounded-full border-2 border-white bg-[#CC6600]" />
-      </span>
-      <span
-        className="absolute -translate-y-1/2 whitespace-nowrap rounded-[2px] border border-white/15 bg-[#010114] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-white"
-        style={{ left: `calc(${(pin.x / W) * 100}% + 12px)`, top: `${(pin.y / H) * 100}%` }}
-      >
-        Maramag
-      </span>
     </div>
   );
 }

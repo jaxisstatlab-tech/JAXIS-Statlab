@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowRight, Broom, ChartBar, Code, Graph, Microphone, TextAlignLeft, UsersThree } from "@phosphor-icons/react/ssr";
+import { ArrowRight, Broom, ChartBar, Graph, Microphone, ShieldCheck, TextAlignLeft, UsersThree } from "@phosphor-icons/react/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import { LOGIN_URL } from "@/lib/config";
 import { BELL_SHAPES, IsoScene } from "../ui/Iso";
@@ -67,7 +67,7 @@ const STRANDS = [
   { label: "HUMSS", pct: 27, tone: "bg-white/15" },
 ];
 
-const TESTS = ["t-test", "ANOVA", "Regression", "Correlation", "Chi-square", "Mann-Whitney"];
+const TESTS = ["t-test", "ANOVA", "Regression", "Correlation", "ANCOVA", "Mann-Whitney"];
 const MODELS = ["Structural equation models", "Path analysis", "Multilevel models", "Survival analysis"];
 
 export default function Services() {
@@ -96,7 +96,7 @@ export default function Services() {
                   </h3>
                   <p className="mt-2 max-w-md font-sans text-[15px] leading-relaxed text-white/65">
                     The right test for your questions, assumptions checked first, and effect sizes reported, not just
-                    p-values. Every result is rerun by a second statistical analyst.
+                    p-values. Every result is audited by a statistical review editor.
                   </p>
                   <div className="mt-5 flex flex-wrap gap-1.5">
                     {TESTS.map((t) => (
@@ -194,31 +194,42 @@ export default function Services() {
             </Tile>
 
             <Tile delay={90} className="sm:col-span-2">
-              <Header icon={Code} title="Code you can rerun" sub="The exact script behind every result. If your panel asks, run it again in front of them." />
-              <pre className={`${well} mt-5 overflow-x-auto py-3 font-mono text-[12px] leading-[1.8] text-white/80`}>
-                <code className="grid">
-                  {[
-                    <span key="c" className="italic text-white/45"># Multiple regression on GWA</span>,
-                    <span key="m">
-                      model &lt;- <span className="text-[#FFA040]">lm</span>(gwa ~ habits + hours + sleep + strand, data = df)
-                    </span>,
-                    <span key="s">summary(model)</span>,
-                  ].map((line, i) => (
-                    <span key={i} className="grid grid-cols-[2.25rem_1fr] pr-4">
-                      <span className="select-none pr-3 text-right text-white/25">{i + 1}</span>
-                      <span className="whitespace-pre">{line}</span>
-                    </span>
-                  ))}
-                </code>
-              </pre>
-              <Footer value="3">languages · R, Python, SPSS</Footer>
+              <Header
+                icon={ShieldCheck}
+                title="Dual-analyst verification"
+                sub="Every test is run independently by two statistical analysts to guarantee 100% accuracy before delivery."
+              />
+              <div className={`${well} mt-5 p-4 flex flex-col gap-3 font-mono text-[12px]`}>
+                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+                  <div className="flex items-center gap-2 text-white/70">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    <span>Primary Statistical Analysis</span>
+                  </div>
+                  <span className="text-white/40 font-mono text-[11px]">Completed & Logged</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+                  <div className="flex items-center gap-2 text-white/70">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    <span>Independent Re-estimation</span>
+                  </div>
+                  <span className="text-[#FFA040] font-mono text-[11px]">Exact Match (100%)</span>
+                </div>
+                <div className="flex items-center justify-between pt-0.5">
+                  <div className="flex items-center gap-2 text-white/70">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#CC6600]" />
+                    <span>Quality Lead Sign-off</span>
+                  </div>
+                  <span className="text-emerald-400 font-mono text-[11px]">Verified for Defense</span>
+                </div>
+              </div>
+              <Footer value="2">analysts check every study</Footer>
             </Tile>
 
             <Tile delay={180} className="sm:col-span-2">
               <Header
                 icon={Microphone}
                 title="Defense prep"
-                sub="A written script for the questions panels ask most, plus live practice before the real thing."
+                sub="A written guide for the questions panels ask most, plus live practice before the real thing."
               />
               <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-[1.4fr_1fr]">
                 <div className={`${well} px-3.5 pb-3 pt-3`}>

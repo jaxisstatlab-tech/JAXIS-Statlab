@@ -15,10 +15,10 @@ export default function AboutPage() {
     <SiteShell>
       <AboutHero />
       <AboutMission />
-      <AboutNumbers />
-      <AboutStory />
-      <AboutValues />
       <AboutTeam />
+      <AboutNumbers />
+      <AboutValues />
+      <AboutStory />
       <FinalCTA />
     </SiteShell>
   );

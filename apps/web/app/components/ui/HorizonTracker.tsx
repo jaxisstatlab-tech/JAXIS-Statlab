@@ -15,7 +15,6 @@ export default function HorizonTracker() {
     // edge-to-edge across the entire section width without cutting off or leaving flat bottom corners.
     const updateGeometry = () => {
       const w = section.getBoundingClientRect().width || window.innerWidth;
-      const isLg = window.matchMedia("(min-width: 1024px)").matches;
       // Responsive peak height above floor and sagitta (curvature drop from center to edge).
       // On mobile, keep sagitta gentle (20-30px) so the arch is stretched wide
       // across the phone instead of curving steeply like a half-circle dome.
