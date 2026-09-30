@@ -259,39 +259,31 @@ html[data-intro="done"] .intro {
   left: 50%;
   top: 50%;
   width: 92px;
-  height: auto;
-  overflow: visible;
+  height: 92px;
   translate: -50% -50%;
+  opacity: 0;
+  scale: 0.85;
   animation:
+    intro-logo-in 420ms cubic-bezier(0.23, 1, 0.32, 1) 280ms forwards,
     intro-fly 380ms cubic-bezier(0.65, 0, 0.35, 1) 860ms forwards,
     intro-out 140ms ease 1220ms forwards;
 }
-@keyframes intro-fly {
+@keyframes intro-logo-in {
   to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@keyframes intro-fly {
+  from {
+    opacity: 1;
+    scale: 1;
+  }
+  to {
+    opacity: 1;
     left: var(--logo-x);
     top: 32px;
     scale: 0.239;
-  }
-}
-.intro-pt {
-  fill: rgba(255, 255, 255, 0.9);
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-  transform: scale(0.2);
-  animation: intro-pt 280ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
-}
-.intro-pt-hook {
-  fill: #ff8a1f;
-}
-@keyframes intro-pt {
-  60% {
-    opacity: 1;
-    transform: scale(1.18);
-  }
-  to {
-    opacity: 1;
-    transform: none;
   }
 }
 .intro-word {

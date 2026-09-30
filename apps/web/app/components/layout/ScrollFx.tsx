@@ -49,10 +49,10 @@ export default function ScrollFx() {
           : {
               syncTouch: true,
               // Lower lerp = the page eases toward the finger more gently.
-              syncTouchLerp: 0.06,
+              syncTouchLerp: 0.09,
               // Lower = a flick carries less momentum, so it coasts a shorter, calmer distance.
-              touchInertiaExponent: 1.35,
-              touchMultiplier: 0.85,
+              touchInertiaExponent: 1.6,
+              touchMultiplier: 1,
             },
       );
       setLenis(lenis);
