@@ -10,7 +10,7 @@ const PROOF = ["Signed audit certificate on delivery", "Fixed written price with
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden">
+    <section data-hero className="relative overflow-hidden">
       <HeroPixels>
         <PixelField className="pixel-field absolute inset-0 h-full w-full" />
       </HeroPixels>
@@ -21,9 +21,9 @@ export default function Hero() {
       />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-[#010114] to-transparent" />
 
-      <div className={`${container} relative z-10 flex min-h-svh flex-col items-center justify-center pb-20 pt-32 text-center`}>
+      <div data-hero-content className={`${container} relative z-10 flex min-h-svh flex-col items-center justify-center pb-20 pt-32 text-center`}>
         <div
-          className="hero-in flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.14em] text-white/55 sm:text-xs sm:tracking-[0.2em]"
+          className="hero-in flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.1em] min-[380px]:text-[11px] min-[380px]:tracking-[0.14em] text-white/55 sm:text-xs sm:tracking-[0.2em]"
           style={{ ["--d" as string]: "40ms" }}
         >
           <span aria-hidden="true" className="hidden h-px w-10 bg-white/20 sm:block" />
@@ -32,7 +32,7 @@ export default function Hero() {
         </div>
 
         <h1
-          className="hero-in mt-7 max-w-5xl font-sans text-[2.5rem] font-medium leading-[1.03] tracking-[-0.045em] text-white sm:text-6xl lg:text-[5rem]"
+          className="hero-in mt-7 max-w-5xl font-sans text-[2.1rem] font-medium leading-[1.03] min-[380px]:text-[2.5rem] tracking-[-0.045em] text-white sm:text-6xl lg:text-[5rem]"
           style={{ ["--d" as string]: "100ms" }}
         >
           <span className="sr-only">Thesis, survey, dissertation, and research statistics, checked by experts</span>

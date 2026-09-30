@@ -7,7 +7,7 @@ import { artLabel, panel, solidPanel } from "./ServiceArt";
 // "before" state until the pipeline's orange route reaches that step (`on`), then settles into its "done" state.
 
 const ease = "ease-[cubic-bezier(0.23,1,0.32,1)]";
-const frame = "relative h-44 w-full overflow-hidden";
+const frame = "relative h-36 w-full overflow-hidden lg:h-44";
 
 function Peso() {
   return <span className="mr-0.5 inline-block select-none font-sans font-normal opacity-85">₱</span>;

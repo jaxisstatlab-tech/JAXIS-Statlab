@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowsClockwise, DownloadSimple, FileArrowUp, Receipt, Wallet, type Icon } from "@phosphor-icons/react";
 import SpotlightGrid from "./SpotlightGrid";
 import StepArt from "./StepArt";
@@ -14,13 +14,28 @@ const ease = "ease-[cubic-bezier(0.23,1,0.32,1)]";
 const num = (i: number) => String(i + 1).padStart(2, "0");
 
 // The five steps as a pipeline in the same joined grid as Services: an orange route runs through each step once
-// when the section comes into view, replays on hover, and any step can be picked by hand.
+// when the section comes into view, replays on hover, and any step can be picked by hand. Below lg, ScrollFx pins
+// the grid instead and scrolling drives the steps: it sends "step-scroll" events, and picking a step sends
+// "step-jump" back so the page scrolls to that step.
+const SCROLL_DRIVEN = "(max-width: 1023px) and (prefers-reduced-motion: no-preference)";
+
+// Follows the query live, so resizing or rotating into the scroll-driven layout stops the autoplay at once.
+const subscribeScrollDriven = (onChange: () => void) => {
+  const query = window.matchMedia(SCROLL_DRIVEN);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+};
 export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const timer = useRef(0);
   const running = useRef(false);
   const [active, setActive] = useState(0);
   const last = steps.length - 1;
+  const scrollDriven = useSyncExternalStore(
+    subscribeScrollDriven,
+    () => window.matchMedia(SCROLL_DRIVEN).matches,
+    () => false,
+  );
 
   useEffect(() => {
     const el = ref.current;
@@ -29,6 +44,15 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       const id = requestAnimationFrame(() => setActive(last));
       return () => cancelAnimationFrame(id);
+    }
+
+    if (scrollDriven) {
+      // No autoplay here: only the scroll moves the steps, forwards and backwards.
+      window.clearInterval(timer.current);
+      running.current = false;
+      const onStep = (e: Event) => setActive((e as CustomEvent<number>).detail);
+      el.addEventListener("step-scroll", onStep);
+      return () => el.removeEventListener("step-scroll", onStep);
     }
 
     const play = () => {
@@ -67,9 +91,13 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
       window.clearInterval(timer.current);
       stage?.removeEventListener("pointerenter", play);
     };
-  }, [last]);
+  }, [last, scrollDriven]);
 
   const choose = (i: number) => {
+    if (scrollDriven) {
+      ref.current?.dispatchEvent(new CustomEvent("step-jump", { detail: i }));
+      return;
+    }
     window.clearInterval(timer.current);
     running.current = false;
     setActive(i);
@@ -79,16 +107,16 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
 
   return (
     <SpotlightGrid className="mt-10">
-      <div ref={ref} className="grid grid-cols-1 gap-px overflow-hidden rounded-[1px] lg:grid-cols-5">
+      <div ref={ref} data-step-pin={steps.length} className="grid grid-cols-1 gap-px overflow-hidden rounded-[1px] lg:grid-cols-5">
         {/* The pipeline */}
         <div
           data-flow-stage
           className="bento-tile relative overflow-hidden bg-[#0A0A18] bg-[radial-gradient(ellipse_60%_90%_at_50%_100%,rgba(255,255,255,0.04),transparent)] lg:col-span-5"
         >
-          <div className="flex items-start justify-between gap-4 px-7 pt-7 sm:px-8 sm:pt-8">
+          <div className="flex flex-col-reverse gap-3 px-7 pt-7 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-8 sm:pt-8">
             <div>
               <h3 className={`${cardTitle} mb-1.5 lg:text-xl`}>Follow one study</h3>
-              <p className={`${cardDesc} max-w-[44ch]`}>Every step is tracked in your account, from upload to download.</p>
+              <p className={`${cardDesc} max-w-[44ch] max-lg:hidden`}>Every step is tracked in your account, from upload to download.</p>
             </div>
             <span className="shrink-0 pt-1 font-mono text-[11px] uppercase tracking-wider text-white/55" aria-live="polite">
               Step <span className="text-white">{num(active)}</span> / {num(last)}
@@ -99,7 +127,7 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
             </span>
           </div>
 
-          <div className="px-4 pb-8 pt-10 sm:px-8 sm:pb-10">
+          <div className="px-4 pb-6 pt-6 sm:px-8 lg:pb-10 lg:pt-10">
           <ol className="relative mx-auto grid max-w-5xl grid-cols-5">
             <span aria-hidden="true" className="absolute left-[10%] right-[10%] top-[22px] border-t border-dashed border-white/20" />
             <span
@@ -147,6 +175,7 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
               );
             })}
           </ol>
+          <p className="mt-4 text-center font-mono text-[10.5px] uppercase tracking-wider text-white/45 lg:hidden">Scroll or tap a step</p>
           </div>
         </div>
 
@@ -156,7 +185,9 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
           return (
             <div
               key={s.tag}
-              className={`bento-tile relative flex flex-col overflow-hidden transition-colors duration-300 ${on ? "bg-[#0E0E21]" : "bg-[#0A0A18]"}`}
+              className={`bento-tile relative flex-col overflow-hidden transition-colors duration-300 max-lg:animate-[step-in_400ms_cubic-bezier(0.23,1,0.32,1)] lg:flex ${
+                on ? "flex bg-[#0E0E21]" : "hidden bg-[#0A0A18]"
+              }`}
             >
               <button
                 type="button"
@@ -168,7 +199,7 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
                 aria-hidden="true"
                 className={`absolute inset-x-0 top-0 z-10 h-[2px] bg-[#CC6600] transition-opacity duration-300 ${on ? "opacity-100" : "opacity-0"}`}
               />
-              <div className="px-7 pt-7 sm:px-8">
+              <div className="px-7 pt-5 sm:px-8 lg:pt-7">
                 <div className="flex items-baseline justify-between gap-3 font-mono text-[11px]">
                   <span className={`tabular-nums transition-colors duration-300 ${on ? "text-[#FFA040]" : "text-white/40"}`}>{num(i)}</span>
                   <span className="text-white/55">{s.time}</span>
@@ -176,7 +207,7 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
                 <h3 className={`${cardTitle} mt-4`}>{s.title}</h3>
                 <p className={`${cardDesc} mt-1.5`}>{s.body}</p>
               </div>
-              <div className="mt-auto pt-6">
+              <div className="mt-auto pt-4 lg:pt-6">
                 <StepArt index={i} on={i <= active} />
               </div>
             </div>

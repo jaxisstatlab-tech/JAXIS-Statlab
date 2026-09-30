@@ -26,7 +26,7 @@ export default function PricingPreview() {
         <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className={kicker}>Pricing</div>
-            <h2 data-split className={heading}>
+            <h2 className={heading}>
               Priced for your study, from <Peso />
               {peso(LOWEST_PRICE)}
             </h2>
@@ -151,14 +151,14 @@ export default function PricingPreview() {
           </Reveal>
 
           {/* Add-ons */}
-          <div className="grid grid-cols-1 gap-4 border-t border-white/[0.08] px-6 py-5 sm:px-8 md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_7rem] md:items-center md:gap-8">
+          <div className="grid grid-cols-1 gap-4 border-t border-white/[0.08] px-6 py-5 sm:px-8 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_7rem] lg:items-center lg:gap-8">
             <div>
               <div className="font-sans text-[15px] font-medium text-white">Optional add-ons</div>
               <p className="mt-0.5 font-sans text-[13px] text-white/55">Picked when you accept your price.</p>
             </div>
             <ul className="flex flex-wrap gap-2">
               {speeds.map((a) => (
-                <li key={a.id} className="rounded-[2px] border border-white/10 px-3 py-1.5 font-mono text-xs text-white/70">
+                <li key={a.id} className="whitespace-nowrap rounded-[2px] border border-white/10 px-3 py-1.5 font-mono text-xs text-white/70">
                   <span className="text-white">{a.name}</span> {SPEEDS.find((s) => s.id === a.id)?.time} ·{" "}
                   <span className="text-white">
                     +<Peso />
@@ -167,7 +167,7 @@ export default function PricingPreview() {
                 </li>
               ))}
               {practice.map((a) => (
-                <li key={a.id} className="rounded-[2px] border border-white/10 px-3 py-1.5 font-mono text-xs text-white/70">
+                <li key={a.id} className="whitespace-nowrap rounded-[2px] border border-white/10 px-3 py-1.5 font-mono text-xs text-white/70">
                   <span className="text-white">{a.name}</span> ·{" "}
                   <span className="text-white">
                     +<Peso />
@@ -179,7 +179,7 @@ export default function PricingPreview() {
             </ul>
             <Link
               href="/pricing#add-ons"
-              className="inline-flex items-center gap-1.5 font-mono text-xs text-white/70 transition-colors hover:text-white md:justify-self-end"
+              className="inline-flex items-center gap-1.5 font-mono text-xs text-white/70 transition-colors hover:text-white lg:justify-self-end"
             >
               Details
               <ArrowUpRight size={12} weight="bold" />

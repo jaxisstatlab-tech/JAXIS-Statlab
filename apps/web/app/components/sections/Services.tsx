@@ -12,7 +12,7 @@ export default function Services() {
         <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className={kicker}>Services</div>
-            <h2 data-split className={heading}>Every test your study needs</h2>
+            <h2 className={heading}>Every test your study needs</h2>
             <p className={subtitle}>From a quick data check to full structural models. Checked twice, explained simply.</p>
           </div>
           <a href={SEND_STUDY_URL} data-cta="services-send" className={`${btnPrimary} shrink-0`}>
@@ -21,17 +21,18 @@ export default function Services() {
         </Reveal>
 
         <SpotlightGrid className="mt-10">
-            <div className="grid grid-cols-1 gap-px overflow-hidden rounded-[1px] sm:grid-cols-2 lg:grid-cols-4">
+            <div data-h-scroll data-h-snap className="no-scrollbar flex snap-x snap-mandatory gap-px overflow-x-auto overscroll-x-contain rounded-[1px] sm:grid sm:grid-cols-2 sm:overflow-hidden lg:grid-cols-4">
             <BentoCard
+              slide
               index="01"
               title="Data cleaning"
               desc="We flag answers that don't fit, check your data's shape, and confirm your survey is reliable before any test runs."
-              delay={90}
             >
               <CleaningArt />
             </BentoCard>
 
             <BentoCard
+              slide
               index="02"
               title="Hypothesis testing"
               desc="The right test for your question, with effect sizes, not just p‑values."
@@ -41,52 +42,55 @@ export default function Services() {
             </BentoCard>
 
             <BentoCard
+              slide
               index="03"
               title="APA tables and findings"
               desc="APA 7th edition, ready for Word, each with a plain-English note."
-              delay={180}
             >
               <FindingsArt />
             </BentoCard>
 
             <BentoCard
+              slide
               index="04"
               title="Respondent profiles"
               desc="Who answered your survey, as frequency tables, charts, and cross-tabs."
-              delay={90}
             >
               <ProfilesArt />
             </BentoCard>
 
             <BentoCard
+              slide
               index="05"
               title="Advanced models"
               desc="SEM and path models for dissertations, showing what affects what. Checked by a senior methodologist."
-              delay={180}
             >
               <ModelsArt />
             </BentoCard>
 
             <BentoCard
+              slide
               index="06"
               title="Checked by two analysts"
               desc="A second analyst reruns everything from scratch. When the numbers match, you get a signed audit certificate."
-              delay={270}
             >
               <CheckArt />
             </BentoCard>
 
             <BentoCard
+              slide
               index="07"
               title="Defense prep"
               desc="A plain-English guide to the questions panels ask most, plus optional live practice."
-              delay={360}
             >
               <DefenseArt />
             </BentoCard>
           </div>
         </SpotlightGrid>
-        <p className="mt-4 text-right font-mono text-[11px] text-white/40">Numbers shown are examples.</p>
+        <div className="mt-4 flex items-center justify-between gap-4 font-mono text-[11px] text-white/45 sm:justify-end">
+          <span className="sm:hidden">Keep scrolling to see all 7</span>
+          <span>Numbers shown are examples.</span>
+        </div>
       </div>
     </section>
   );

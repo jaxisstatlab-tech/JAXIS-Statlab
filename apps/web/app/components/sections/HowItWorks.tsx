@@ -46,7 +46,7 @@ export default function HowItWorks() {
       <div className={container}>
         <Reveal>
           <div className={kicker}>How it works</div>
-          <h2 data-split className={heading}>
+          <h2 className={heading}>
             From request to defense-ready
           </h2>
           <p className={subtitle}>Five clear steps. You always know what happens next.</p>

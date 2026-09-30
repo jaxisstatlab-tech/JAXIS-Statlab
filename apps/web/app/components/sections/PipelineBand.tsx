@@ -14,7 +14,7 @@ export default function PipelineBand() {
         <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className={kicker}>Your account</div>
-            <h2 data-split className={heading}>
+            <h2 className={heading}>
               Always know where your study is
             </h2>
             <p className={subtitle}>Every message, check, payment, and file shows up the moment it happens.</p>
@@ -42,7 +42,6 @@ export default function PipelineBand() {
               index="02"
               title="Chat inside your study"
               desc="Ask your analyst about your results, right next to your files."
-              delay={90}
               className="lg:col-span-5"
             >
               <div className="mt-6 w-full">
@@ -54,7 +53,6 @@ export default function PipelineBand() {
               index="03"
               title="Price and payments"
               desc="Your written price and every payment, on record."
-              delay={180}
               className="lg:col-span-5"
             >
               <div className="mt-6 w-full">

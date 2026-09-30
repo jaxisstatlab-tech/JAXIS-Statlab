@@ -33,10 +33,10 @@ export default function FinalCTA() {
               <ArrowUpRight size={14} weight="bold" />
             </Link>
           </div>
-          <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-mono text-[11px] text-white/55">
+          <ul className="mt-8 flex flex-col items-center gap-2 font-mono text-[11px] text-white/55 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-5">
             {PROMISES.map((p, i) => (
               <li key={p} className="flex items-center gap-5">
-                {i > 0 ? <span aria-hidden="true" className="h-1 w-1 rounded-full bg-white/25" /> : null}
+                {i > 0 ? <span aria-hidden="true" className="hidden h-1 w-1 rounded-full bg-white/25 sm:block" /> : null}
                 {p}
               </li>
             ))}

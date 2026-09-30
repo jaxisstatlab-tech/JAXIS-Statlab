@@ -47,7 +47,7 @@ export default function Testimonials() {
         <Reveal>
           <div>
             <div className={kicker}>From students</div>
-            <h2 data-split className={heading}>
+            <h2 className={heading}>
               In their own words
             </h2>
             <p className={subtitle}>Messages from thesis groups we&apos;ve worked with, kept as they sent them.</p>
@@ -69,7 +69,7 @@ export default function Testimonials() {
               <Attribution t={featured} />
             </Reveal>
 
-            <div className="flex flex-col gap-4 lg:col-span-5">
+            <div className="hidden flex-col gap-4 sm:flex lg:col-span-5">
               {side.map((t, i) => (
                 <Reveal as="figure" key={t.quote} delay={(i + 1) * 80} className={`${card} flex-1`}>
                   <blockquote className="flex-1 text-pretty font-sans text-[15px] leading-relaxed text-white/80">{t.quote}</blockquote>
@@ -81,8 +81,23 @@ export default function Testimonials() {
           </div>
         ) : null}
 
+        {rest.length ? (
+          <div data-h-pin className="sm:hidden">
+            <div data-h-scroll className="no-scrollbar -mx-6 mt-4 flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto overscroll-x-contain px-6">
+              {rest.map((t) => (
+                <figure key={t.quote} className={`${card} w-[85%] shrink-0 snap-start`}>
+                  <blockquote className="flex-1 text-pretty font-sans text-[15px] leading-relaxed text-white/80">{t.quote}</blockquote>
+                  <Translation text={t.translation} />
+                  <Attribution t={t} />
+                </figure>
+              ))}
+            </div>
+            <p className="mt-3 font-mono text-[11px] text-white/45">Keep scrolling for {rest.length} more</p>
+          </div>
+        ) : null}
+
         {more.length ? (
-          <div className="mt-4 gap-4 sm:columns-2 lg:columns-3">
+          <div className="mt-4 hidden gap-4 sm:block sm:columns-2 lg:columns-3">
             {more.map((t, i) => (
               <Reveal as="figure" key={t.quote} delay={(i % 3) * 80} className={`${card} mb-4 break-inside-avoid`}>
                 <blockquote className="text-pretty font-sans text-[15px] leading-relaxed text-white/80">{t.quote}</blockquote>

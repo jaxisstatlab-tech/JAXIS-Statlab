@@ -30,7 +30,7 @@ export default function MobileCTA() {
       }`}
     >
       <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 max-[359px]:hidden">
           <div className="truncate font-sans text-sm font-medium text-white">Fixed price in 24 hours</div>
           <div className="truncate font-mono text-[11px] text-white/55">No payment needed to ask</div>
         </div>

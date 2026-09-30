@@ -39,7 +39,7 @@ export default function SpotlightGrid({ children, className = "" }: { children: 
   }, []);
 
   return (
-    <div ref={ref} className={`spotlight-frame rounded-[2px] p-px ${className}`}>
+    <div ref={ref} data-grid-draw className={`spotlight-frame rounded-[2px] p-px ${className}`}>
       {children}
     </div>
   );

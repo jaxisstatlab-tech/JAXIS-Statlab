@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { getLenis } from "@/lib/smoothScroll";
 
 // Glides to #section links on the current page. Done per click rather than with CSS
 // `scroll-behavior: smooth`, which would also animate the browser's Back/Forward scroll
-// restore and let the pinned "How it works" setup interrupt it.
+// restore. When Lenis is smoothing the page, the scroll goes through it so the two don't fight.
 export default function AnchorScroll() {
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -18,7 +19,13 @@ export default function AnchorScroll() {
 
       e.preventDefault();
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      const lenis = getLenis();
+      if (lenis && !reduce) {
+        // Lenis already honours the section's scroll-margin-top.
+        lenis.scrollTo(target);
+      } else {
+        target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      }
       window.history.pushState(window.history.state, "", url.hash);
     };
     // Capture phase, so this runs before next/link handles the same click.

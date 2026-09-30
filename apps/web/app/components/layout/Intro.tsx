@@ -1,7 +1,9 @@
-// First-visit intro: the JAXIS mark assembles from square data points (the same language as the hero grid and
-// the How it works particles), then the screen dissolves into the hero, which is already rising underneath.
-// Pure CSS so it always finishes, even if scripts are slow. A head script sets html[data-intro="skip"] on repeat
-// visits in the same session or when reduced motion is requested, which hides it entirely.
+import PixelField from "../ui/PixelField";
+
+// First-visit intro: the hero's pixel grid lights up in a sweep and gathers into the centre, where the JAXIS mark
+// assembles from square points; the mark then flies into the navbar logo while the dark cover lifts off the hero,
+// whose own grid stays as the background. Pure CSS so it always finishes, even if scripts are slow. A head script
+// sets html[data-intro="skip"] on repeat visits in the same session or when reduced motion is requested.
 
 type Pt = [number, number];
 
@@ -41,7 +43,7 @@ function inside([x, y]: Pt, poly: Pt[]) {
 }
 
 // Square points on a regular grid, each tagged with which part of the mark it belongs to and when it lights:
-// a diagonal sweep from the bottom-left, so the bars appear to rise.
+// a diagonal sweep from the bottom-left, starting as the lit grid pulls back into the centre.
 const POINTS = (() => {
   const out: { x: number; y: number; hook: boolean; delay: number }[] = [];
   for (let y = BOX.y + STEP / 2; y < BOX.y + BOX.h; y += STEP) {
@@ -50,7 +52,7 @@ const POINTS = (() => {
       const hook = inside(src, HOOK);
       if (!hook && !inside(src, BAR)) continue;
       const sweep = (x - BOX.x) / BOX.w + (BOX.y + BOX.h - y) / BOX.h;
-      out.push({ x: x - SIZE / 2, y: y - SIZE / 2, hook, delay: Math.round(80 + (sweep / 2) * 380) });
+      out.push({ x: x - SIZE / 2, y: y - SIZE / 2, hook, delay: Math.round(200 + (sweep / 2) * 360) });
     }
   }
   return out;
@@ -59,24 +61,23 @@ const POINTS = (() => {
 export default function Intro() {
   return (
     <div aria-hidden="true" className="intro">
-      <div className="intro-stage">
-        <span className="intro-glow" />
-        <svg viewBox={`${BOX.x} ${BOX.y} ${BOX.w} ${BOX.h}`} className="intro-mark">
-          {POINTS.map((p) => (
-            <rect
-              key={`${p.x}-${p.y}`}
-              x={p.x}
-              y={p.y}
-              width={SIZE}
-              height={SIZE}
-              className={p.hook ? "intro-pt intro-pt-hook" : "intro-pt"}
-              style={{ animationDelay: `${p.delay}ms` }}
-            />
-          ))}
-        </svg>
-        <div className="intro-word font-sans text-[17px] font-semibold tracking-[-0.01em] text-white">
-          JAXIS <span className="font-normal text-white/60">StatLab</span>
-        </div>
+      <PixelField className="intro-grid" />
+      <span className="intro-glow" />
+      <svg viewBox={`${BOX.x} ${BOX.y} ${BOX.w} ${BOX.h}`} className="intro-mark">
+        {POINTS.map((p) => (
+          <rect
+            key={`${p.x}-${p.y}`}
+            x={p.x}
+            y={p.y}
+            width={SIZE}
+            height={SIZE}
+            className={p.hook ? "intro-pt intro-pt-hook" : "intro-pt"}
+            style={{ animationDelay: `${p.delay}ms` }}
+          />
+        ))}
+      </svg>
+      <div className="intro-word font-sans text-[17px] font-semibold tracking-[-0.01em] text-white">
+        JAXIS <span className="font-normal text-white/60">StatLab</span>
       </div>
     </div>
   );
