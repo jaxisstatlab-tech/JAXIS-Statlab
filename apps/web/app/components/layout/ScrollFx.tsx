@@ -13,8 +13,8 @@ ScrollTrigger.config({ ignoreMobileResize: true });
 
 // Scroll-driven effects, wired by data attributes so sections stay server-rendered. All of it is off when the
 // visitor asks for reduced motion. Phones keep native touch scrolling and skip the costlier effects.
-//   Lenis                 smooths mouse wheel and trackpad scrolling; not created on touch devices, whose own
-//                         momentum scrolling is already smooth
+//   Lenis                 smooths mouse wheel and trackpad scrolling; on touch it also takes over the fling
+//                         (syncTouch) with a softer, slower glide so a quick swipe can't race past sections
 //   [data-hero]           hero copy drifts up and fades as you scroll away; its pixel field lags behind for depth
 //   [data-grid-draw]      a joined card grid draws its hairlines left to right, then its cards settle in
 //   [data-h-scroll]       on phones, a swipe row pins mid-screen and scrolling down moves it sideways, so every
@@ -43,15 +43,23 @@ export default function ScrollFx() {
       const cleanups: (() => void)[] = [];
       if (!motion) return;
 
-      let lenis: Lenis | null = null;
-      const tick = (time: number) => lenis?.raf(time * 1000);
-      if (pointer) {
-        lenis = new Lenis({ lerp: 0.1 });
-        setLenis(lenis);
-        lenis.on("scroll", ScrollTrigger.update);
-        gsap.ticker.add(tick);
-        gsap.ticker.lagSmoothing(0);
-      }
+      const lenis = new Lenis(
+        pointer
+          ? { lerp: 0.1 }
+          : {
+              syncTouch: true,
+              // Lower lerp = the page eases toward the finger more gently.
+              syncTouchLerp: 0.06,
+              // Lower = a flick carries less momentum, so it coasts a shorter, calmer distance.
+              touchInertiaExponent: 1.35,
+              touchMultiplier: 0.85,
+            },
+      );
+      setLenis(lenis);
+      lenis.on("scroll", ScrollTrigger.update);
+      const tick = (time: number) => lenis.raf(time * 1000);
+      gsap.ticker.add(tick);
+      gsap.ticker.lagSmoothing(0);
 
       const hero = document.querySelector<HTMLElement>("[data-hero]");
       if (hero) {
@@ -201,12 +209,10 @@ export default function ScrollFx() {
       return () => {
         cleanups.forEach((fn) => fn());
         splits.forEach((s) => s.revert());
-        if (lenis) {
-          gsap.ticker.remove(tick);
-          gsap.ticker.lagSmoothing(500, 33);
-          lenis.destroy();
-          setLenis(null);
-        }
+        gsap.ticker.remove(tick);
+        gsap.ticker.lagSmoothing(500, 33);
+        lenis.destroy();
+        setLenis(null);
       };
     });
 
