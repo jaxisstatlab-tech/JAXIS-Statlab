@@ -3,30 +3,15 @@ import Link from "next/link";
 import { ArrowUpRight, ChatCircleText, Database, SealCheck, Table, TextAlignLeft } from "@phosphor-icons/react/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import { SAMPLE_OUTPUT_URL } from "@/lib/config";
+import { DELIVERABLES } from "../../content/site";
 import { CORE_TEAM, EXPERT_TEAM, type TeamMember } from "../../content/about";
 import Reveal from "../ui/Reveal";
 import SpotlightGrid from "../ui/SpotlightGrid";
 import { FindingsPreview } from "../ui/ServiceArt";
 import { btnGhost, cardDesc, cardTitle, container, heading, kicker, subtitle } from "../ui/styles";
 
-// The five files every study gets (matches "What files will I receive?" in the FAQ).
-const FILES: { icon: Icon; name: string; format: string; body: string }[] = [
-  { icon: Table, name: "APA tables", format: "DOCX", body: "Every table in APA 7th edition, ready to paste into Word." },
-  {
-    icon: TextAlignLeft,
-    name: "Findings summary",
-    format: "DOCX",
-    body: "Each result explained in plain English, so you can write your own Chapter 4.",
-  },
-  { icon: Database, name: "Cleaned dataset", format: "SAV · CSV", body: "Your data, cleaned and labeled, ready to reopen." },
-  {
-    icon: SealCheck,
-    name: "Certificate of Statistical Audit",
-    format: "PDF",
-    body: "Signed proof that a second analyst checked your analysis and approved it. Show it to your adviser or panel.",
-  },
-  { icon: ChatCircleText, name: "Defense guide", format: "PDF", body: "The questions panels ask most, answered in plain English." },
-];
+// Icons for the five DELIVERABLES, in the same order.
+const FILE_ICONS: Icon[] = [Table, TextAlignLeft, Database, SealCheck, ChatCircleText];
 
 // Featured on the home page; the full team is on /about.
 const FEATURED = ["Jobelle S. Sorino-Simblante", "Jerome P. Gallego"]
@@ -122,7 +107,9 @@ export default function SampleOutput() {
             {/* What arrives */}
             <div className="bg-[#0A0A18] lg:col-span-5">
               <ul className="divide-y divide-white/[0.07]">
-                {FILES.map(({ icon: FileIcon, name, format, body }) => (
+                {DELIVERABLES.map(({ name, format, body }, i) => {
+                  const FileIcon = FILE_ICONS[i] ?? Table;
+                  return (
                   <li key={name} className="flex gap-4 px-6 py-5 sm:px-8 lg:py-[1.4rem]">
                     <FileIcon size={18} weight="fill" className="mt-0.5 shrink-0 text-white/55" aria-hidden="true" />
                     <div className="min-w-0 flex-1">
@@ -133,7 +120,8 @@ export default function SampleOutput() {
                       <p className="mt-1 font-sans text-[13.5px] leading-relaxed text-white/60">{body}</p>
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </div>
 

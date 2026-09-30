@@ -131,3 +131,63 @@ export const TESTIMONIALS: Testimonial[] = [
     school: "",
   },
 ];
+
+export type HowStep = { tag: string; time: string; title: string; body: string; chips: string[] };
+
+// The five steps of a study, shown in How it works and described to search and AI engines.
+export const HOW_STEPS: HowStep[] = [
+  {
+    tag: "Submit",
+    time: "5 minutes",
+    title: "Send your study",
+    body: "Upload your research questions, survey, and data through your free account.",
+    chips: ["Research questions", "Survey", "Data"],
+  },
+  {
+    tag: "Price",
+    time: "Under 24 hours",
+    title: "Get a fixed price",
+    body: "The exact tests, files, and price in writing. No payment needed to ask.",
+    chips: ["Tests", "Files", "Price in writing"],
+  },
+  {
+    tag: "Deposit",
+    time: "Same day",
+    title: "Pay by GCash or bank",
+    body: "Work starts as soon as your deposit clears. Larger plans pay the rest on delivery.",
+    chips: ["GCash", "Bank transfer"],
+  },
+  {
+    tag: "Analysis",
+    time: "3 to 7 days",
+    title: "We run and recheck it",
+    body: "One statistical analyst runs your tests, a second reruns them, and a senior reviewer signs off.",
+    chips: ["First run", "Rerun", "Senior review"],
+  },
+  {
+    tag: "Delivery",
+    time: "Instant",
+    title: "Download and defend",
+    body: "APA tables, a plain-English write-up, cleaned data, and your defense prep guide.",
+    chips: ["APA tables", "Write-up", "Cleaned data", "Defense guide"],
+  },
+];
+
+export type Deliverable = { name: string; format: string; body: string };
+
+// The five files every study gets (matches "What files will I receive?" in the FAQ).
+export const DELIVERABLES: Deliverable[] = [
+  { name: "APA tables", format: "DOCX", body: "Every table in APA 7th edition, ready to paste into Word." },
+  {
+    name: "Findings summary",
+    format: "DOCX",
+    body: "Each result explained in plain English, so you can write your own Chapter 4.",
+  },
+  { name: "Cleaned dataset", format: "SAV · CSV", body: "Your data, cleaned and labeled, ready to reopen." },
+  {
+    name: "Certificate of Statistical Audit",
+    format: "PDF",
+    body: "Signed proof that a second analyst checked your analysis and approved it. Show it to your adviser or panel.",
+  },
+  { name: "Defense guide", format: "PDF", body: "The questions panels ask most, answered in plain English." },
+];

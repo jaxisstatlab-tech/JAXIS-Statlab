@@ -9,6 +9,7 @@ import PricingPreview from "./components/sections/PricingPreview";
 import FAQ from "./components/sections/FAQ";
 import FinalCTA from "./components/sections/FinalCTA";
 import { FAQS } from "./content/site";
+import { faqJsonLd } from "@/lib/seo";
 
 // The objections students raise before sending anything; the full list lives on /contact.
 const HOME_QUESTIONS = [
@@ -22,6 +23,7 @@ const HOME_FAQS = HOME_QUESTIONS.map((q) => FAQS.find((f) => f.q === q)).filter(
 export default function Home() {
   return (
     <SiteShell>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(HOME_FAQS, "")) }} />
       <Hero />
       <Services />
       <HowItWorks />

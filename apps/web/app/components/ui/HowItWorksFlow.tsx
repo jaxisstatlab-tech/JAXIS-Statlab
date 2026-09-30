@@ -6,7 +6,8 @@ import SpotlightGrid from "./SpotlightGrid";
 import StepArt from "./StepArt";
 import { cardDesc, cardTitle } from "./styles";
 
-export type Step = { tag: string; time: string; title: string; body: string; chips: string[] };
+import type { HowStep as Step } from "../../content/site";
+export type { Step };
 
 const ICONS: Icon[] = [FileArrowUp, Receipt, Wallet, ArrowsClockwise, DownloadSimple];
 const STEP_MS = 1400;
