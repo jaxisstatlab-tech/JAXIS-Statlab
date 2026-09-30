@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import Lenis from "lenis";
-import { setLenis } from "@/lib/smoothScroll";
+import { getLenis, setLenis } from "@/lib/smoothScroll";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 // Phones resize the viewport as the address bar shows and hides; recalculating then makes the page jump.
@@ -20,8 +20,9 @@ ScrollTrigger.config({ ignoreMobileResize: true });
 //   [data-h-scroll]       on phones, a swipe row pins mid-screen and scrolling down moves it sideways, so every
 //                         card (and its picture) comes into view without a swipe. With data-h-snap it pages one
 //                         whole card at a time; without it the row glides continuously.
-//   [data-step-pin="5"]   below lg, a step grid pins under the navbar and scrolling drives its steps (it gets
-//                         "step-scroll" events with the step index, and can send "step-jump" to scroll to a step)
+//   [data-tab-pin="5"]    a step list pins under the navbar and scrolling moves through its steps, both ways (it
+//                         gets "step-scroll" with the step index and --step-p for progress through the step, and
+//                         can send "step-jump" to scroll to a step)
 //   main > section        on large screens, each section recedes slightly as it scrolls out the top (not the first
 //                         or last section, nor any section with sticky content, which a transform would break)
 //   [data-split]          heading lines slide up out of a mask when scrolled into view
@@ -35,11 +36,10 @@ export default function ScrollFx() {
       pointer: "(hover: hover) and (pointer: fine)",
       wide: "(min-width: 1024px)",
       phone: "(max-width: 639px)",
-      narrow: "(max-width: 1023px)",
     };
 
     mm.add(conditions, (context) => {
-      const { motion, pointer, wide, phone, narrow } = context.conditions ?? {};
+      const { motion, pointer, wide, phone } = context.conditions ?? {};
       const cleanups: (() => void)[] = [];
       if (!motion) return;
 
@@ -73,8 +73,7 @@ export default function ScrollFx() {
       }
 
       gsap.utils.toArray<HTMLElement>("[data-grid-draw]").forEach((frame) => {
-        // Stacked step cards fade themselves below lg, so the draw-in leaves them alone there.
-        const cells = Array.from(frame.firstElementChild?.children ?? []).filter((c) => !(narrow && c.hasAttribute("data-step-card")));
+        const cells = Array.from(frame.firstElementChild?.children ?? []);
         gsap.set(frame, { "--draw": 0 });
         gsap.set(cells, { autoAlpha: 0, y: 24 });
         gsap
@@ -139,33 +138,46 @@ export default function ScrollFx() {
         });
       }
 
-      if (narrow) {
-        gsap.utils.toArray<HTMLElement>("[data-step-pin]").forEach((grid) => {
-          const count = Math.max(1, Number(grid.dataset.stepPin) || 1);
-          const frame = grid.closest<HTMLElement>("[data-grid-draw]") ?? grid;
-          let current = -1;
-          const trigger = ScrollTrigger.create({
-            trigger: frame,
-            start: "top 72px",
-            end: () => `+=${Math.round(window.innerHeight * 0.45 * count)}`,
-            pin: frame,
-            invalidateOnRefresh: true,
-            onUpdate: (self) => {
-              const index = Math.min(count - 1, Math.floor(self.progress * count));
-              if (index === current) return;
-              current = index;
-              grid.dispatchEvent(new CustomEvent("step-scroll", { detail: index }));
-            },
-          });
-          const jump = (e: Event) => {
-            const index = (e as CustomEvent<number>).detail;
-            const top = trigger.start + ((index + 0.5) / count) * (trigger.end - trigger.start);
-            window.scrollTo({ top, behavior: "smooth" });
-          };
-          grid.addEventListener("step-jump", jump);
-          cleanups.push(() => grid.removeEventListener("step-jump", jump));
+      gsap.utils.toArray<HTMLElement>("[data-tab-pin]").forEach((block) => {
+        const count = Math.max(1, Number(block.dataset.tabPin) || 1);
+        let current = -1;
+        block.setAttribute("data-pinned", "");
+        // Phones pin the whole section content (heading included) so the held screen is full, not a short block.
+        const pinned = (!wide && block.parentElement) || block;
+        const trigger = ScrollTrigger.create({
+          trigger: pinned,
+          // Centred in the visible space: below the navbar (64px) and, on phones, above the sticky button bar (~72px).
+          start: () => {
+            const wide = window.innerWidth >= 1024;
+            const room = window.innerHeight - 64 - (wide ? 0 : 72);
+            return `top ${Math.round(Math.max(wide ? 84 : 72, 64 + (room - pinned.offsetHeight) / 2))}px`;
+          },
+          end: () => `+=${Math.round(window.innerHeight * 0.55 * count)}`,
+          pin: pinned,
+          invalidateOnRefresh: true,
+          onUpdate: (self) => {
+            const x = self.progress * count;
+            const index = Math.min(count - 1, Math.floor(x));
+            block.style.setProperty("--step-p", String(Math.min(1, x - index)));
+            if (index === current) return;
+            current = index;
+            block.dispatchEvent(new CustomEvent("step-scroll", { detail: index }));
+          },
         });
-      }
+        const jump = (e: Event) => {
+          const index = (e as CustomEvent<number>).detail;
+          const top = trigger.start + ((index + 0.35) / count) * (trigger.end - trigger.start);
+          const smooth = getLenis();
+          if (smooth) smooth.scrollTo(top);
+          else window.scrollTo({ top, behavior: "smooth" });
+        };
+        block.addEventListener("step-jump", jump);
+        cleanups.push(() => {
+          block.removeEventListener("step-jump", jump);
+          block.removeAttribute("data-pinned");
+          block.style.removeProperty("--step-p");
+        });
+      });
 
       // Pins were created per feature, not in page order; sort so each accounts for the pins above it.
       ScrollTrigger.sort();
@@ -173,7 +185,8 @@ export default function ScrollFx() {
 
       const sections = wide ? gsap.utils.toArray<HTMLElement>("main > section") : [];
       sections.forEach((section, i) => {
-        if (i === 0 || i === sections.length - 1 || section.querySelector("[class*='sticky']")) return;
+        // A transform on the section would break anything pinned or sticky inside it.
+        if (i === 0 || i === sections.length - 1 || section.querySelector("[class*='sticky'], [data-tab-pin], [data-h-scroll]")) return;
         gsap.to(section, {
           scale: 0.97,
           opacity: 0.5,

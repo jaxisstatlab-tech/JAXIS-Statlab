@@ -140,37 +140,32 @@ export default function MindanaoMap({ className = "" }: { className?: string }) 
         {/* Maramag Pinpoint Core */}
         <circle cx={maramag.x} cy={maramag.y} r="3.5" fill="#CC6600" stroke="#FFFFFF" strokeWidth="1.5" />
 
-        {/* Leader Line to Tactical HUD Tag */}
+        {/* Leader line from the pin to the label's corner */}
         <path
-          d={`M ${maramag.x + 4} ${maramag.y} L ${maramag.x + 20} ${maramag.y} L ${maramag.x + 30} ${maramag.y - 13} L ${maramag.x + 124} ${maramag.y - 13}`}
+          d={`M ${maramag.x + 5} ${maramag.y - 5} L ${maramag.x + 24} ${maramag.y - 26}`}
           fill="none"
-          stroke="rgba(255, 255, 255, 0.4)"
-          strokeWidth="1"
+          stroke="rgba(255, 255, 255, 0.45)"
+          strokeWidth="1.2"
         />
 
-        {/* Maramag Tactical Callout Chip */}
-        <g transform={`translate(${maramag.x + 32}, ${maramag.y - 28})`}>
-          <rect
-            x="0"
-            y="0"
-            width="104"
-            height="22"
-            rx="2"
-            fill="#010114"
-            stroke="rgba(255, 255, 255, 0.22)"
-            strokeWidth="1"
-          />
-          <circle cx="9" cy="11" r="2.5" fill="#CC6600" />
+        {/* Location label. The map is drawn at 600 units and shown at about 26rem, so sizes here are roughly 1.45x
+            what they read as on screen. */}
+        <g transform={`translate(${maramag.x + 24}, ${maramag.y - 78})`}>
+          <rect x="0" y="0" width="172" height="52" rx="3" fill="#0A0A18" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="1.2" />
+          <rect x="0" y="0" width="3" height="52" fill="#CC6600" />
+          <text x="14" y="23" fill="#FFFFFF" fontFamily="var(--font-sans), sans-serif" fontSize="15" fontWeight="600">
+            Maramag, Bukidnon
+          </text>
           <text
-            x="17"
-            y="14.5"
-            fill="#FFFFFF"
-            fontFamily="monospace"
-            fontSize="9.5"
-            fontWeight="700"
+            x="14"
+            y="41"
+            fill="#FFA040"
+            fontFamily="var(--font-mono), monospace"
+            fontSize="11.5"
+            fontWeight="500"
             letterSpacing="0.08em"
           >
-            MARAMAG
+            JAXIS STATLAB HQ
           </text>
         </g>
       </svg>

@@ -12,7 +12,7 @@ export default function HowItWorks() {
           <h2 className={heading}>
             From request to defense-ready
           </h2>
-          <p className={subtitle}>Five clear steps. You always know what happens next.</p>
+          <p className={`${subtitle} max-lg:[@media(max-height:760px)]:hidden`}>Five clear steps. You always know what happens next.</p>
         </Reveal>
         <HowItWorksFlow steps={HOW_STEPS} />
       </div>

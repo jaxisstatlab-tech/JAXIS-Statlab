@@ -85,6 +85,16 @@ body,
   display: none;
 }
 
+/* How it works tabs: the open step's progress bar */
+@keyframes tab-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* Lenis smooth scrolling (from lenis/dist/lenis.css) */
 html.lenis,
 html.lenis body {
