@@ -43,27 +43,6 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
     else setActive(i);
   };
 
-  const stage = (
-    <>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:12px_12px] [mask-image:radial-gradient(ellipse_at_50%_70%,black,transparent_75%)]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-[radial-gradient(ellipse_at_50%_100%,rgba(204,102,0,0.12),transparent_70%)]"
-      />
-      <div className="relative flex items-center justify-between px-5 pt-4 font-mono text-[10.5px] uppercase tracking-wider lg:px-7 lg:pt-6 lg:text-[11px]">
-        <span className="text-white/45">
-          Step <span className="text-white">{num(active)}</span> / {num(last)}
-          <span className="text-white/25"> · </span>
-          <span className="text-[#FFA040]">{steps[active]?.tag}</span>
-        </span>
-        <span className="text-white/45">{steps[active]?.time}</span>
-      </div>
-    </>
-  );
-
   return (
     <div
       ref={ref}
@@ -104,16 +83,25 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
         {steps.map((s, i) => {
           const on = i === active;
           return (
-            <li key={s.tag} className="relative border-b border-white/10">
+            <li
+              key={s.tag}
+              className={`relative border-b border-white/10 transition-[background-color] duration-500 ${on ? "bg-[linear-gradient(90deg,rgba(204,102,0,0.07),transparent_70%)]" : ""}`}
+            >
+              {/* The open step's rail; while pinned it fills top to bottom as you scroll through the step */}
               <span
                 aria-hidden="true"
-                className={`absolute -left-px top-0 h-full w-[2px] bg-[#CC6600] transition-opacity duration-300 ${on ? "opacity-100" : "opacity-0"}`}
-              />
+                className={`absolute left-0 top-0 h-full w-[2px] bg-white/[0.08] transition-opacity duration-300 ${on ? "opacity-100" : "opacity-0"}`}
+              >
+                <span
+                  className="block h-full w-full origin-top bg-[#FF8A1F] shadow-[0_0_10px_rgba(255,138,31,0.6)]"
+                  style={{ transform: on ? "scaleY(var(--step-p, 1))" : "scaleY(0)" }}
+                />
+              </span>
               <button
                 type="button"
                 onClick={() => choose(i)}
                 aria-current={on ? "step" : undefined}
-                className="group flex w-full items-baseline gap-4 py-3.5 pl-4 text-left lg:py-5 lg:pl-5"
+                className="group flex w-full items-baseline gap-4 py-3.5 pl-4 text-left lg:py-[1.375rem] lg:pl-6"
               >
                 <span className={`font-mono text-xs tabular-nums transition-colors duration-300 ${on ? "text-[#FFA040]" : "text-white/40"}`}>
                   {num(i)}
@@ -137,25 +125,25 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
                 }`}
               >
                 <div className="overflow-hidden">
-                  <p className="max-w-md pb-5 pl-[3.25rem] pr-4 font-sans text-[15px] leading-relaxed text-white/65">{s.body}</p>
+                  <p className="max-w-md pb-6 pl-[3.5rem] pr-4 font-sans text-[15px] leading-relaxed text-white/65">{s.body}</p>
                 </div>
               </div>
-
-              {/* Progress through this step while scrolling (only while pinned) */}
-              {on ? (
-                <span aria-hidden="true" className="absolute bottom-[-1px] left-0 hidden h-px w-full group-data-[pinned]/tabs:block">
-                  <span className="block h-full w-full origin-left bg-[#FF8A1F]" style={{ transform: "scaleX(var(--step-p, 0))" }} />
-                </span>
-              ) : null}
             </li>
           );
         })}
       </ol>
 
       {/* Wide screens: one showcase panel; the five scenes share it and cross-fade */}
-      <div className="relative hidden overflow-hidden rounded-[2px] border border-white/[0.08] bg-[#0A0A18] lg:col-span-7 lg:flex lg:flex-col">
-        {stage}
-        <div className="relative mt-2 grid">
+      <div className="relative hidden overflow-hidden rounded-[2px] border border-white/[0.08] bg-[#0A0A18] lg:col-span-7 lg:flex lg:flex-col lg:justify-center">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:14px_14px] [mask-image:radial-gradient(ellipse_at_50%_55%,black,transparent_70%)]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-3/4 bg-[radial-gradient(ellipse_at_50%_100%,rgba(204,102,0,0.13),transparent_65%)]"
+        />
+        <div className="relative grid">
           {steps.map((s, i) => (
             <div
               key={s.tag}
@@ -186,7 +174,7 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
             </div>
           ))}
         </div>
-        <div className="relative -mx-6 mt-6 grid [mask-image:linear-gradient(to_bottom,black_80%,transparent)]">
+        <div className="relative -mx-6 mt-4 grid">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 bottom-0 h-3/4 bg-[radial-gradient(ellipse_at_50%_100%,rgba(204,102,0,0.14),transparent_70%)]"
@@ -199,7 +187,7 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
                 i === active ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
               }`}
             >
-              <StageArt index={i} on={i === active && artOn} label={`${s.title}: ${s.body}`} zoom={1.3} />
+              <StageArt index={i} on={i === active && artOn} label={`${s.title}: ${s.body}`} zoom={1.45} />
             </div>
           ))}
         </div>

@@ -347,10 +347,12 @@ const MODEL_NODES = [
   { y: 102, label: "Sleep" },
   { y: 174, label: "Stress" },
 ];
+// Each path eases out of its predictor and into its own port on the outcome, so the arrowheads arrive level and
+// evenly spaced instead of piling onto one point. Labels sit at each curve's midpoint.
 const MODEL_PATHS = [
-  { d: "M112 48 L196 114", len: 107, label: ".51", x: 150, y: 74, strongest: true },
-  { d: "M112 120 L196 120", len: 84, label: ".22", x: 154, y: 113, strongest: false },
-  { d: "M112 192 L196 126", len: 107, label: "−.19", x: 150, y: 172, strongest: false },
+  { d: "M112 48 C158 48 150 96 195.5 96", label: ".51", x: 154, y: 72, strongest: true },
+  { d: "M112 120 L195.5 120", label: ".22", x: 153, y: 120, strongest: false },
+  { d: "M112 192 C158 192 150 144 195.5 144", label: "−.19", x: 154, y: 168, strongest: false },
 ];
 
 export function ModelsArt() {
@@ -381,11 +383,11 @@ export function ModelsArt() {
             <stop offset="0" stopColor="#fff" stopOpacity="0.09" />
             <stop offset="1" stopColor="#fff" stopOpacity="0.02" />
           </linearGradient>
-          <marker id="svc-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
-            <path d="M0 0 L8 4 L0 8 Z" fill="rgba(255,255,255,0.6)" />
+          <marker id="svc-arrow" viewBox="0 0 8 8" refX="7.5" refY="4" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto">
+            <path d="M0 0.5 L8 4 L0 7.5 Z" fill="rgba(255,255,255,0.55)" />
           </marker>
-          <marker id="svc-arrow-hot" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
-            <path d="M0 0 L8 4 L0 8 Z" fill="#FF8A1F" />
+          <marker id="svc-arrow-hot" viewBox="0 0 8 8" refX="7.5" refY="4" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto">
+            <path d="M0 0.5 L8 4 L0 7.5 Z" fill="#FF8A1F" />
           </marker>
         </defs>
 
@@ -417,34 +419,42 @@ export function ModelsArt() {
               key={p.d}
               d={p.d}
               fill="none"
-              stroke={hot ? "#FF8A1F" : "rgba(255,255,255,0.35)"}
+              stroke={hot ? "#FF8A1F" : "rgba(255,255,255,0.3)"}
               strokeWidth={hot ? 1.5 : 1}
               markerEnd={drawn ? (hot ? "url(#svc-arrow-hot)" : "url(#svc-arrow)") : undefined}
-              strokeDasharray={p.len}
-              strokeDashoffset={drawn ? 0 : p.len}
-              className={`transition-[stroke-dashoffset,stroke] duration-500 ${ease}`}
+              pathLength={1}
+              strokeDasharray="1"
+              strokeDashoffset={drawn ? 0 : 1}
+              className={`transition-[stroke-dashoffset,stroke] duration-700 ${ease}`}
             />
           );
         })}
-        {MODEL_PATHS.map((p) => (
-          <text
-            key={p.label}
-            x={p.x}
-            y={p.y}
-            textAnchor="middle"
-            stroke="#0A0A18"
-            strokeWidth="4"
-            paintOrder="stroke"
-            className={`font-mono text-[10.5px] transition-opacity duration-300 ${estimated ? "opacity-100" : "opacity-0"} ${
-              p.strongest ? "fill-[#FFA040]" : "fill-white/75"
-            }`}
-          >
-            {p.label}
-          </text>
-        ))}
+        {MODEL_PATHS.map((p) => {
+          const hot = estimated && p.strongest;
+          return (
+            <g key={p.label} className={`transition-opacity duration-300 ${estimated ? "opacity-100" : "opacity-0"}`}>
+              <rect
+                x={p.x - 16}
+                y={p.y - 8}
+                width="32"
+                height="16"
+                rx="2"
+                fill="#0A0A18"
+                stroke={hot ? "rgba(255,138,31,0.6)" : "rgba(255,255,255,0.14)"}
+              />
+              <text x={p.x} y={p.y + 3.5} textAnchor="middle" className={`font-mono text-[10px] ${hot ? "fill-[#FFA040]" : "fill-white/75"}`}>
+                {p.label}
+              </text>
+            </g>
+          );
+        })}
 
-        <rect x="196" y="102" width="92" height="36" rx="4" fill="url(#svc-tile)" stroke="rgba(255,255,255,0.28)" />
-        <text x="242" y="124" textAnchor="middle" className="fill-white font-sans text-[12px] font-medium">
+        {/* The outcome, tall enough to give each incoming path its own port */}
+        <rect x="196" y="80" width="92" height="80" rx="4" fill="url(#svc-tile)" stroke="rgba(255,255,255,0.24)" />
+        <text x="242" y="113" textAnchor="middle" className="fill-white/45 font-mono text-[8.5px] uppercase tracking-wider">
+          Outcome
+        </text>
+        <text x="242" y="130" textAnchor="middle" className="fill-white font-sans text-[12px] font-medium">
           Engagement
         </text>
       </svg>

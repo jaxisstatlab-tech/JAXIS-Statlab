@@ -1,318 +1,380 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  ArrowUp,
-  ChatCircleText,
-  CheckCircle,
-  Database,
-  DownloadSimple,
-  FileText,
-  FolderSimple,
-  SealCheck,
-  Table,
-} from "@phosphor-icons/react";
-import { artLabel, panel, solidPanel } from "./ServiceArt";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { CheckCircle, DownloadSimple, SealCheck } from "@phosphor-icons/react";
+import { DELIVERABLES } from "../../content/site";
 
-// Large scenes for the How it works showcase: one per step, in the same layered-panel style as the Services cards
-// but composed for a wide stage. Every scene is drawn on a fixed 640 x 360 canvas and scaled to fit its container,
-// so it looks identical at any width. `on` flips from the step's "before" state to its "done" state.
+// Scenes for the How it works showcase, one per step. They share one system so the five read as a set: a single
+// straight card (the thing the client actually sees at that step) resting on two sheets behind it, one orange
+// accent per scene, and motion that tells the step's story when `on` flips from "before" to "done". Every scene is
+// drawn on a fixed 640 x 360 canvas and scaled to fit, so it looks identical at any width, and the card stays inside
+// the middle 490px so phones (which zoom in and crop the sides) still show all of it.
 
 const W = 640;
 const H = 360;
 const ease = "ease-[cubic-bezier(0.23,1,0.32,1)]";
+const curve = "cubic-bezier(0.23,1,0.32,1)";
 
 function Peso() {
   return <span className="mr-0.5 inline-block select-none font-sans font-normal opacity-85">₱</span>;
 }
 
-function Status({ on, before, after }: { on: boolean; before: string; after: string }) {
-  return (
-    <span className={`font-mono text-[11px] uppercase tracking-wider transition-colors duration-300 ${on ? "text-[#FFA040]" : "text-white/45"}`}>
-      {on ? after : before}
-    </span>
-  );
+// Rows rise into place one after another.
+const rise = (on: boolean) => `transition-[opacity,translate] duration-500 ${ease} ${on ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`;
+const after = (on: boolean, ms: number): CSSProperties => ({ transitionDelay: on ? `${ms}ms` : "0ms" });
+
+function Meta({ children }: { children: ReactNode }) {
+  return <span className="font-mono text-[10px] uppercase tracking-wider text-white/40">{children}</span>;
 }
 
-function Bar({ on, delay = 0, width = 100 }: { on: boolean; delay?: number; width?: number }) {
+function Signal({ on, before, done, delay = 0 }: { on: boolean; before: string; done: string; delay?: number }) {
+  const [lit, setLit] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setLit(on), on ? delay : 0);
+    return () => window.clearTimeout(t);
+  }, [on, delay]);
   return (
-    <span className="block h-1 overflow-hidden rounded-full bg-white/[0.08]">
+    <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider">
       <span
-        className={`block h-full bg-[#CC6600] transition-[width] duration-700 ${ease}`}
-        style={{ width: on ? `${width}%` : "0%", transitionDelay: on ? `${delay}ms` : "0ms" }}
+        className={`h-1.5 w-1.5 rounded-full transition-[background-color,box-shadow] duration-300 ${
+          lit ? "bg-[#FF8A1F] shadow-[0_0_8px_rgba(255,138,31,0.9)]" : "bg-white/25"
+        }`}
       />
+      <span className={`transition-colors duration-300 ${lit ? "text-[#FFA040]" : "text-white/45"}`}>{lit ? done : before}</span>
     </span>
   );
 }
 
-/* 01 Submit: files slide into the upload window one by one, each bar filling. */
+function Tag({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex w-11 shrink-0 justify-center rounded-[2px] border border-white/[0.09] bg-white/[0.03] py-[3px] font-mono text-[9px] font-semibold tracking-wider text-white/60">
+      {children}
+    </span>
+  );
+}
+
+function Tick({ on, delay }: { on: boolean; delay: number }) {
+  return (
+    <CheckCircle
+      size={15}
+      weight="fill"
+      className={`shrink-0 transition-[color,scale] duration-300 ${ease} ${on ? "scale-100 text-[#FF8A1F]" : "scale-75 text-white/10"}`}
+      style={after(on, delay)}
+    />
+  );
+}
+
+// The card every scene is built on, centred, with two sheets stacked behind it for depth.
+function Sheet({ title, meta, footer, children }: { title: string; meta: ReactNode; footer: ReactNode; children: ReactNode }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pt-5">
+      <div className="relative w-[400px]">
+        <div aria-hidden="true" className="absolute inset-x-10 -top-5 h-full rounded-[4px] border border-white/[0.05] bg-[#0B0B1D]" />
+        <div aria-hidden="true" className="absolute inset-x-5 -top-2.5 h-full rounded-[4px] border border-white/[0.07] bg-[#0F0F24]" />
+        <div className="relative overflow-hidden rounded-[4px] border border-white/[0.1] bg-[linear-gradient(180deg,#17172F,#0E0E22)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_40px_80px_-30px_rgba(0,0,0,0.95)]">
+          <span
+            aria-hidden="true"
+            className="absolute inset-x-12 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,160,64,0.6),transparent)]"
+          />
+          <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3.5">
+            <span className="font-sans text-[13px] font-medium text-white">{title}</span>
+            {meta}
+          </div>
+          {children}
+          <div className="flex items-center justify-between border-t border-white/[0.06] bg-white/[0.015] px-5 py-3">{footer}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* 01 Submit: the three files land one by one; each upload line runs across, then clears to a tick. */
 const FILES = [
-  { name: "Chapters 1–3.docx", size: "1.2 MB" },
-  { name: "Survey questionnaire.pdf", size: "340 KB" },
-  { name: "Responses.xlsx", size: "86 KB" },
+  { type: "DOCX", name: "Chapters 1–3", size: "1.2 MB" },
+  { type: "PDF", name: "Survey questionnaire", size: "340 KB" },
+  { type: "XLSX", name: "Responses", size: "86 KB" },
 ];
 function UploadScene({ on }: { on: boolean }) {
   return (
-    <>
-      <div aria-hidden="true" className={`absolute left-[92px] top-[70px] h-[300px] w-[460px] -rotate-[5deg] ${panel}`} />
-      <div aria-hidden="true" className={`absolute left-[104px] top-[58px] h-[300px] w-[460px] -rotate-[2deg] ${panel}`} />
-      <div className={`absolute left-[110px] top-[44px] h-[340px] w-[440px] ${solidPanel}`}>
-        <div className="flex items-center gap-1.5 border-b border-white/[0.07] px-4 py-2.5">
-          {[0, 1, 2].map((d) => (
-            <span key={d} className="h-2 w-2 rounded-full bg-white/15" />
-          ))}
-          <span className={`${artLabel} ml-3`}>Send your study</span>
-        </div>
-        <div className="p-5">
-          <div className="flex items-center justify-between">
-            <span className={artLabel}>Your files</span>
-            <Status on={on} before="Uploading" after="3 files received" />
-          </div>
-          <ul className="mt-4 flex flex-col gap-3">
-            {FILES.map((f, i) => (
-              <li
-                key={f.name}
-                className={`rounded-[3px] border border-white/[0.08] bg-white/[0.03] px-3.5 py-3 transition-[opacity,translate] duration-500 ${ease} ${
-                  on ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
-                }`}
-                style={{ transitionDelay: on ? `${i * 180}ms` : "0ms" }}
-              >
-                <div className="flex items-center gap-3">
-                  <FileText size={16} weight="fill" className="shrink-0 text-white/60" />
-                  <span className="flex-1 truncate font-sans text-[13px] text-white/90">{f.name}</span>
-                  <span className="font-mono text-[10.5px] text-white/45">{f.size}</span>
-                  <CheckCircle
-                    size={15}
-                    weight="fill"
-                    className={`shrink-0 transition-colors duration-300 ${on ? "text-[#FF8A1F]" : "text-white/15"}`}
-                    style={{ transitionDelay: on ? `${400 + i * 180}ms` : "0ms" }}
-                  />
-                </div>
-                <div className="mt-2.5">
-                  <Bar on={on} delay={150 + i * 180} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-      <span
-        className={`absolute left-[566px] top-[20px] flex h-11 w-11 items-center justify-center rounded-full border transition-[border-color,background-color,translate] duration-500 ${ease} ${
-          on ? "-translate-y-2 border-[#FF8A1F] bg-[#21150F]" : "border-white/15 bg-[#11112A]"
-        }`}
-      >
-        <ArrowUp size={18} weight="bold" className={on ? "text-[#FF8A1F]" : "text-white/50"} />
-      </span>
-    </>
+    <Sheet
+      title="Send your study"
+      meta={<Meta>3 files</Meta>}
+      footer={
+        <>
+          <span className="font-mono text-[10px] text-white/40">1.6 MB total</span>
+          <Signal on={on} before="Uploading" done="Received" delay={1300} />
+        </>
+      }
+    >
+      <ul className="px-5 py-1.5">
+        {FILES.map((f, i) => {
+          const d = i * 220;
+          return (
+            <li
+              key={f.name}
+              className={`relative flex items-center gap-3 border-t border-white/[0.05] py-3 first:border-t-0 ${rise(on)}`}
+              style={after(on, d)}
+            >
+              <Tag>{f.type}</Tag>
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-sans text-[13px] text-white/90">{f.name}</div>
+                <div className="mt-0.5 font-mono text-[10px] text-white/40">{f.size}</div>
+              </div>
+              <Tick on={on} delay={d + 850} />
+              <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-px">
+                <span
+                  className="block h-full bg-[#FF8A1F]"
+                  style={{
+                    width: on ? "100%" : "0%",
+                    opacity: on ? 0 : 1,
+                    transition: on ? `width 700ms ${curve} ${d + 100}ms, opacity 400ms ease ${d + 850}ms` : "none",
+                  }}
+                />
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </Sheet>
   );
 }
 
-/* 02 Price: the written quote fills its total and gets stamped; a notification says it's ready. */
+/* 02 Price: the quote's lines settle in, the total counts up, and it's marked fixed. */
 const QUOTE = [
   ["Tests", "t-test, ANOVA, regression"],
   ["Files", "APA tables, write-up, data"],
-  ["Timeline", "3–7 working days"],
-  ["Package", "Core Thesis"],
+  ["Ready in", "3 to 7 working days"],
 ];
-function QuoteScene({ on }: { on: boolean }) {
-  return (
-    <>
-      <div aria-hidden="true" className={`absolute left-[150px] top-[60px] h-[320px] w-[360px] rotate-[4deg] ${panel}`} />
-      <div className={`absolute left-[130px] top-[38px] h-[340px] w-[380px] -rotate-[1.5deg] p-6 ${solidPanel}`}>
-        <div className="flex items-center justify-between">
-          <span className={artLabel}>Written quote</span>
-          <span className="font-mono text-[10.5px] text-white/40">Example</span>
-        </div>
-        <ul className="mt-5 divide-y divide-white/[0.06] border-y border-white/[0.06]">
-          {QUOTE.map(([k, v]) => (
-            <li key={k} className="flex items-baseline justify-between gap-4 py-2.5">
-              <span className="font-mono text-[10.5px] uppercase tracking-wider text-white/45">{k}</span>
-              <span className="text-right font-sans text-[13px] text-white/85">{v}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4 flex items-baseline justify-between">
-          <span className="font-sans text-[14px] text-white/70">Fixed price</span>
-          <span className={`font-mono text-2xl font-bold transition-colors duration-500 ${on ? "text-white" : "text-white/25"}`}>
-            <Peso />
-            2,500
-          </span>
-        </div>
-        <span
-          className={`absolute right-5 top-[104px] -rotate-[9deg] bg-[#11112A] rounded-[3px] border-2 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider transition-[opacity,scale] duration-500 ${ease} ${
-            on ? "scale-100 border-[#FF8A1F] text-[#FFA040] opacity-100" : "scale-125 border-transparent opacity-0"
-          }`}
-          style={{ transitionDelay: on ? "350ms" : "0ms" }}
-        >
-          Fixed · In writing
-        </span>
-      </div>
-      <div
-        className={`absolute left-[404px] top-[6px] flex w-[220px] items-center gap-3 rounded-[4px] border border-white/[0.12] bg-[#16162F] px-3.5 py-3 shadow-[0_20px_40px_-16px_rgba(0,0,0,0.9)] transition-[opacity,translate] duration-500 ${ease} ${
-          on ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0"
-        }`}
-        style={{ transitionDelay: on ? "550ms" : "0ms" }}
-      >
-        <ChatCircleText size={18} weight="fill" className="shrink-0 text-[#FF8A1F]" />
-        <div>
-          <div className="font-sans text-[12.5px] font-medium text-white">Your price is ready</div>
-          <div className="font-mono text-[10px] text-white/45">Within 24 hours</div>
-        </div>
-      </div>
-    </>
-  );
+function useCountUp(target: number, on: boolean, ms: number, delay: number) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    let start = 0;
+    const frame = (t: number) => {
+      if (!start) start = t;
+      const p = Math.min(1, Math.max(0, (t - start - delay) / ms));
+      setValue(on ? Math.round((target * (1 - (1 - p) ** 3)) / 10) * 10 : 0);
+      if (on && p < 1) raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [target, on, ms, delay]);
+  return value;
 }
-
-/* 03 Deposit: the phone confirms the GCash deposit and a receipt slides out beside it. */
-function DepositScene({ on }: { on: boolean }) {
+function QuoteScene({ on }: { on: boolean }) {
+  const total = useCountUp(2500, on, 900, 550);
   return (
-    <>
-      <div
-        className={`absolute left-[392px] top-[110px] w-[210px] rounded-[4px] border border-white/[0.1] bg-[#15152C] p-4 shadow-[0_24px_48px_-20px_rgba(0,0,0,0.95)] transition-[opacity,translate,rotate] duration-700 ${ease} ${
-          on ? "translate-x-0 rotate-[5deg] opacity-100" : "-translate-x-24 rotate-0 opacity-0"
-        }`}
-        style={{ transitionDelay: on ? "400ms" : "0ms" }}
-      >
-        <div className="flex items-center justify-between">
-          <span className={artLabel}>Receipt</span>
-          <CheckCircle size={15} weight="fill" className="text-[#FF8A1F]" />
-        </div>
-        {[
-          ["Amount", "₱1,250"],
-          ["Method", "GCash"],
-          ["Ref no.", "7021 4418"],
-        ].map(([k, v]) => (
-          <div key={k} className="mt-2.5 flex justify-between border-t border-white/[0.06] pt-2.5 font-mono text-[11px]">
-            <span className="text-white/45">{k}</span>
-            <span className="text-white/85">{v}</span>
+    <Sheet
+      title="Your written quote"
+      meta={<Meta>Example</Meta>}
+      footer={
+        <>
+          <span className="font-mono text-[10px] text-white/40">Sent within 24 hours</span>
+          <span
+            className={`rounded-[2px] border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider transition-[opacity,scale,border-color] duration-500 ${ease} ${
+              on ? "scale-100 border-[#FF8A1F]/60 text-[#FFA040] opacity-100" : "scale-110 border-transparent opacity-0"
+            }`}
+            style={after(on, 1450)}
+          >
+            Fixed price
+          </span>
+        </>
+      }
+    >
+      <dl className="px-5 pt-1.5">
+        {QUOTE.map(([k, v], i) => (
+          <div
+            key={k}
+            className={`flex items-baseline justify-between gap-4 border-t border-white/[0.05] py-2.5 first:border-t-0 ${rise(on)}`}
+            style={after(on, i * 90)}
+          >
+            <dt className="font-mono text-[10px] uppercase tracking-wider text-white/40">{k}</dt>
+            <dd className="text-right font-sans text-[13px] text-white/85">{v}</dd>
           </div>
         ))}
-      </div>
-      <div className="absolute left-[150px] top-[30px] h-[380px] w-[210px] rounded-[26px] border border-white/[0.14] bg-[linear-gradient(180deg,#17172F,#0C0C1F)] p-4 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.95)]">
-        <span className="mx-auto block h-1.5 w-14 rounded-full bg-white/15" />
-        <div className={`${artLabel} mt-5 text-center`}>Deposit</div>
-        <div className="mt-2 text-center font-mono text-[28px] font-bold text-white">
+      </dl>
+      <div className="mx-5 mb-4 mt-1.5 flex items-center justify-between rounded-[3px] border border-white/[0.07] bg-white/[0.025] px-4 py-3">
+        <div>
+          <div className="font-sans text-[13px] text-white/80">Total</div>
+          <div className="mt-0.5 font-sans text-[11px] text-white/40">Core Thesis package</div>
+        </div>
+        <span className="font-mono text-[26px] font-bold tabular-nums text-white">
           <Peso />
-          1,250
-        </div>
-        <div className="mt-1 text-center font-mono text-[10px] text-white/45">50% of your fixed price</div>
-        <div className="mt-5 grid grid-cols-2 gap-2 font-sans text-[12px]">
-          <span className="rounded-[4px] border border-[#FF8A1F]/60 bg-[#21150F] py-2 text-center text-white">GCash</span>
-          <span className="rounded-[4px] border border-white/10 py-2 text-center text-white/50">Bank</span>
-        </div>
-        <div
-          className={`mt-4 flex items-center justify-center gap-1.5 rounded-[4px] py-2.5 font-sans text-[13px] font-medium transition-colors duration-500 ${
-            on ? "bg-[#CC6600] text-white" : "bg-white/[0.07] text-white/55"
-          }`}
-        >
-          {on ? <CheckCircle size={15} weight="fill" /> : null}
-          {on ? "Confirmed" : "Pay deposit"}
-        </div>
-        <div className="mt-4 text-center">
-          <Status on={on} before="Waiting" after="Work starts today" />
-        </div>
-      </div>
-    </>
-  );
-}
-
-/* 04 Analysis: the quality checklist ticks to 6 of 6 in front of a results chart. */
-const CHECKS = ["Data cleaned", "Assumptions checked", "Tests run", "Rerun by a second analyst", "Tables formatted", "Senior sign-off"];
-const BARS = [38, 62, 84, 70, 52, 30];
-function AnalysisScene({ on }: { on: boolean }) {
-  const done = on ? CHECKS.length : 0;
-  return (
-    <>
-      <div className={`absolute left-[330px] top-[40px] h-[230px] w-[270px] rotate-[3deg] p-4 ${panel}`}>
-        <span className={artLabel}>Results</span>
-        <div className="mt-4 flex h-[150px] items-end gap-2.5 border-b border-white/15 px-1">
-          {BARS.map((b, i) => (
-            <span
-              key={i}
-              className={`flex-1 origin-bottom rounded-t-[2px] transition-transform duration-700 ${ease} ${i === 2 ? "bg-[#CC6600]/70" : "bg-white/15"}`}
-              style={{ height: `${b}%`, transform: `scaleY(${on ? 1 : 0.25})`, transitionDelay: on ? `${i * 60}ms` : "0ms" }}
-            />
-          ))}
-        </div>
-      </div>
-      <div className={`absolute left-[70px] top-[58px] h-[320px] w-[330px] p-5 ${solidPanel}`}>
-        <div className="flex items-center justify-between">
-          <span className={artLabel}>Quality checks</span>
-          <span className={`font-mono text-[12px] font-bold transition-colors duration-300 ${on ? "text-[#FFA040]" : "text-white/40"}`}>
-            {done} / {CHECKS.length}
-          </span>
-        </div>
-        <ul className="mt-4 flex flex-col gap-3">
-          {CHECKS.map((c, i) => (
-            <li key={c} className="flex items-center gap-3">
-              <CheckCircle
-                size={16}
-                weight="fill"
-                className={`shrink-0 transition-colors duration-300 ${on ? "text-[#FF8A1F]" : "text-white/15"}`}
-                style={{ transitionDelay: on ? `${i * 160}ms` : "0ms" }}
-              />
-              <span className={`font-sans text-[13px] transition-colors duration-300 ${on ? "text-white/90" : "text-white/45"}`} style={{ transitionDelay: on ? `${i * 160}ms` : "0ms" }}>
-                {c}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </>
-  );
-}
-
-/* 05 Delivery: the files fan out of the study folder, the certificate glowing; everything is ready to download. */
-const DELIVERED = [
-  { name: "APA tables", icon: Table, x: -236, r: -10 },
-  { name: "Findings", icon: FileText, x: -118, r: -5 },
-  { name: "Certificate", icon: SealCheck, x: 0, r: 0, hot: true },
-  { name: "Cleaned data", icon: Database, x: 118, r: 5 },
-  { name: "Defense guide", icon: ChatCircleText, x: 236, r: 10 },
-];
-function DeliveryScene({ on }: { on: boolean }) {
-  return (
-    <>
-      {DELIVERED.map(({ name, icon: Icon, x, r, hot }, i) => (
-        <div
-          key={name}
-          className={`absolute left-[264px] top-[70px] flex h-[150px] w-[112px] flex-col items-center justify-center gap-3 rounded-[4px] border transition-[translate,rotate,opacity] duration-700 ${ease} ${
-            hot ? "border-[#FF8A1F]/70 bg-[#21150F] shadow-[0_0_32px_-6px_rgba(255,138,31,0.6)]" : "border-white/[0.12] bg-[#16162F]"
-          }`}
-          style={{
-            translate: on ? `${x}px ${Math.abs(x) * 0.12}px` : "0px 110px",
-            rotate: on ? `${r}deg` : "0deg",
-            opacity: on ? 1 : 0,
-            transitionDelay: on ? `${Math.abs(i - 2) * 90}ms` : "0ms",
-            zIndex: hot ? 5 : 5 - Math.abs(i - 2),
-          }}
-        >
-          <Icon size={26} weight="fill" className={hot ? "text-[#FF8A1F]" : "text-white/70"} />
-          <span className="font-sans text-[12px] font-medium text-white/90">{name}</span>
-        </div>
-      ))}
-      <div className="absolute left-[150px] top-[210px] z-10 h-[200px] w-[340px] rounded-[8px] border border-white/[0.12] bg-[linear-gradient(180deg,#1C1C3A,#101024)] shadow-[0_-20px_40px_-12px_rgba(0,0,0,0.9)]">
-        <span aria-hidden="true" className="absolute -top-4 left-6 h-4 w-28 rounded-t-[6px] border border-b-0 border-white/[0.12] bg-[#1C1C3A]" />
-        <div className="flex items-center justify-between px-6 pt-5">
-          <span className="flex items-center gap-2">
-            <FolderSimple size={18} weight="fill" className="text-white/70" />
-            <span className="font-sans text-[13px] font-medium text-white">Your study</span>
-          </span>
-          <Status on={on} before="Preparing" after="Ready" />
-        </div>
-        <div className="mx-6 mt-4">
-          <Bar on={on} />
-        </div>
-        <span
-          className={`mx-6 mt-4 inline-flex items-center gap-2 rounded-[4px] px-3 py-2 font-sans text-[12.5px] font-medium transition-colors duration-500 ${
-            on ? "bg-[#CC6600] text-white" : "bg-white/[0.07] text-white/50"
-          }`}
-        >
-          <DownloadSimple size={14} weight="bold" />
-          Download all · 5 files
+          {total.toLocaleString("en-US")}
         </span>
       </div>
-    </>
+    </Sheet>
+  );
+}
+
+/* 03 Deposit: GCash is picked and the deposit moves along paid, cleared, work starts. */
+const CLEARING = [
+  ["Paid", "2:14 PM"],
+  ["Cleared", "2:40 PM"],
+  ["Work starts", "Today"],
+];
+function DepositScene({ on }: { on: boolean }) {
+  return (
+    <Sheet
+      title="Pay your deposit"
+      meta={<Meta>Half now</Meta>}
+      footer={
+        <>
+          <span className="font-mono text-[10px] text-white/40">Ref 7021 4418</span>
+          <Signal on={on} before="Waiting" done="Work starts today" delay={1500} />
+        </>
+      }
+    >
+      <div className="px-5 pt-4">
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-wider text-white/40">Amount</div>
+            <div className="mt-1 font-mono text-[28px] font-bold leading-none text-white">
+              <Peso />
+              1,250
+            </div>
+          </div>
+          <div className="pb-0.5 text-right font-sans text-[11px] text-white/40">
+            of a <Peso />
+            2,500 fixed price
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-1 rounded-[3px] border border-white/[0.08] bg-black/20 p-1 font-sans text-[12.5px]">
+          <span className="rounded-[2px] bg-white/[0.08] py-1.5 text-center text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
+            GCash
+          </span>
+          <span className="py-1.5 text-center text-white/45">Bank transfer</span>
+        </div>
+      </div>
+      <ol className="relative mx-5 mb-5 mt-6 grid grid-cols-3">
+        <span aria-hidden="true" className="absolute left-[16.67%] right-[16.67%] top-[5px] h-px bg-white/10">
+          <span
+            className={`block h-full origin-left bg-[#FF8A1F] transition-transform duration-1000 ${ease}`}
+            style={{ transform: on ? "scaleX(1)" : "scaleX(0)", ...after(on, 450) }}
+          />
+        </span>
+        {CLEARING.map(([label, time], i) => (
+          <li key={label} className="relative flex flex-col items-center text-center">
+            <span
+              className={`h-[11px] w-[11px] rounded-full border-2 transition-[background-color,border-color,box-shadow] duration-300 ${
+                on ? "border-[#FF8A1F] bg-[#FF8A1F] shadow-[0_0_10px_rgba(255,138,31,0.7)]" : "border-white/20 bg-[#121229]"
+              }`}
+              style={after(on, 400 + i * 500)}
+            />
+            <span className={`mt-2.5 font-sans text-[12px] transition-colors duration-300 ${on ? "text-white/90" : "text-white/45"}`} style={after(on, 400 + i * 500)}>
+              {label}
+            </span>
+            <span className="mt-0.5 font-mono text-[10px] text-white/35">{time}</span>
+          </li>
+        ))}
+      </ol>
+    </Sheet>
+  );
+}
+
+/* 04 Analysis: a second analyst reruns everything; each number has to match the first run before sign-off. */
+const RUNS = [
+  ["t value", "3.42"],
+  ["p value", ".001"],
+  ["Effect size", "0.62"],
+  ["Reliability", ".87"],
+];
+function AnalysisScene({ on }: { on: boolean }) {
+  return (
+    <Sheet
+      title="Checked twice"
+      meta={<Meta>Both runs must match</Meta>}
+      footer={
+        <>
+          <span className="font-sans text-[12px] text-white/55">Senior reviewer</span>
+          <Signal on={on} before="Waiting" done="Signed off" delay={1500} />
+        </>
+      }
+    >
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="font-mono text-[9.5px] uppercase tracking-wider text-white/35">
+            <th className="py-2.5 pl-5 text-left font-normal">Result</th>
+            <th className="py-2.5 text-right font-normal">First run</th>
+            <th className="py-2.5 text-right font-normal">Second run</th>
+            <th className="w-12 pr-5" />
+          </tr>
+        </thead>
+        <tbody>
+          {RUNS.map(([name, value], i) => {
+            const d = 200 + i * 260;
+            return (
+              <tr key={name} className="border-t border-white/[0.05]">
+                <td className="py-2.5 pl-5 font-sans text-[13px] text-white/80">{name}</td>
+                <td className="py-2.5 text-right font-mono text-[12px] tabular-nums text-white/85">{value}</td>
+                <td className="py-2.5 text-right font-mono text-[12px] tabular-nums">
+                  <span className={`inline-block text-white ${rise(on)}`} style={after(on, d)}>
+                    {value}
+                  </span>
+                </td>
+                <td className="py-2.5 pr-5">
+                  <span className="flex justify-end">
+                    <Tick on={on} delay={d + 250} />
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Sheet>
+  );
+}
+
+/* 05 Delivery: the five files come in, the signed certificate among them, ready to download together. */
+function DeliveryScene({ on }: { on: boolean }) {
+  return (
+    <Sheet
+      title="Your study files"
+      meta={<Signal on={on} before="Preparing" done="Ready" delay={900} />}
+      footer={
+        <>
+          <span className="font-mono text-[10px] text-white/40">5 files</span>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-[2px] px-3 py-1.5 font-sans text-[12px] font-medium transition-colors duration-500 ${
+              on ? "bg-[#CC6600] text-white" : "bg-white/[0.06] text-white/50"
+            }`}
+            style={after(on, 1000)}
+          >
+            <DownloadSimple size={13} weight="bold" />
+            Download all
+          </span>
+        </>
+      }
+    >
+      <ul className="px-5 py-1">
+        {DELIVERABLES.map((f, i) => {
+          const cert = f.name.startsWith("Certificate");
+          return (
+            <li
+              key={f.name}
+              className={`flex items-center gap-3 border-t border-white/[0.05] py-2 first:border-t-0 ${rise(on)}`}
+              style={after(on, i * 110)}
+            >
+              <Tag>{f.format.split(" · ")[0]}</Tag>
+              <span className={`flex-1 truncate font-sans text-[13px] ${cert ? "text-white" : "text-white/80"}`}>{f.name}</span>
+              {cert ? (
+                <SealCheck
+                  size={16}
+                  weight="fill"
+                  className={`shrink-0 transition-[color,filter] duration-500 ${
+                    on ? "text-[#FF8A1F] drop-shadow-[0_0_6px_rgba(255,138,31,0.7)]" : "text-white/20"
+                  }`}
+                  style={after(on, 800)}
+                />
+              ) : (
+                <DownloadSimple size={14} weight="bold" className="shrink-0 text-white/30" />
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </Sheet>
   );
 }
 
