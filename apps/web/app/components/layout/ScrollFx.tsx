@@ -16,15 +16,13 @@ ScrollTrigger.config({ ignoreMobileResize: true });
 //   Lenis                 smooths mouse wheel and trackpad scrolling; on touch it also takes over the fling
 //                         (syncTouch) with a softer, slower glide so a quick swipe can't race past sections
 //   [data-hero]           hero copy drifts up and fades as you scroll away; its pixel field lags behind for depth
-//   [data-grid-draw]      a joined card grid draws its hairlines left to right, then its cards settle in
 //   [data-h-scroll]       on phones, a swipe row pins mid-screen and scrolling down moves it sideways, so every
 //                         card (and its picture) comes into view without a swipe. With data-h-snap it pages one
-//                         whole card at a time; without it the row glides continuously.
+//                         whole card at a time; without it the row glides continuously. The pin holds the nearest
+//                         card grid ([data-grid-draw]) or [data-h-pin] wrapper around the row.
 //   [data-tab-pin="5"]    a step list pins under the navbar and scrolling moves through its steps, both ways (it
 //                         gets "step-scroll" with the step index and --step-p for progress through the step, and
 //                         can send "step-jump" to scroll to a step)
-//   main > section        on large screens, each section recedes slightly as it scrolls out the top (not the first
-//                         or last section, nor any section with sticky content, which a transform would break)
 //   [data-split]          heading lines slide up out of a mask when scrolled into view
 //   [data-parallax="0.3"] element drifts against the scroll (value = strength)
 export default function ScrollFx() {
@@ -71,21 +69,6 @@ export default function ScrollFx() {
         if (content) handoff.to(content, { y: -90, opacity: 0, ease: "power1.in" }, 0);
         if (field) handoff.to(field, { y: 140, ease: "none" }, 0);
       }
-
-      gsap.utils.toArray<HTMLElement>("[data-grid-draw]").forEach((frame) => {
-        const cells = Array.from(frame.firstElementChild?.children ?? []);
-        gsap.set(frame, { "--draw": 0 });
-        gsap.set(cells, { autoAlpha: 0, y: 24 });
-        gsap
-          .timeline({ scrollTrigger: { trigger: frame, start: "top 82%", once: true } })
-          .to(frame, { "--draw": 1, duration: 1.1, ease: "power2.inOut" })
-          .to(
-            cells,
-            // Hand the cells back to their own classes afterwards (the step cards fade themselves on phones).
-            { autoAlpha: 1, y: 0, duration: 0.8, ease: "expo.out", stagger: 0.07, clearProps: "opacity,visibility,transform" },
-            0.25,
-          );
-      });
 
       if (phone) {
         gsap.utils.toArray<HTMLElement>("[data-h-scroll]").forEach((track) => {
@@ -182,19 +165,6 @@ export default function ScrollFx() {
       // Pins were created per feature, not in page order; sort so each accounts for the pins above it.
       ScrollTrigger.sort();
       ScrollTrigger.refresh();
-
-      const sections = wide ? gsap.utils.toArray<HTMLElement>("main > section") : [];
-      sections.forEach((section, i) => {
-        // A transform on the section would break anything pinned or sticky inside it.
-        if (i === 0 || i === sections.length - 1 || section.querySelector("[class*='sticky'], [data-tab-pin], [data-h-scroll]")) return;
-        gsap.to(section, {
-          scale: 0.97,
-          opacity: 0.5,
-          transformOrigin: "50% 100%",
-          ease: "none",
-          scrollTrigger: { trigger: section, start: "bottom 55%", end: "bottom top", scrub: true },
-        });
-      });
 
       const splits = gsap.utils.toArray<HTMLElement>("[data-split]").map((heading) =>
         SplitText.create(heading, {
