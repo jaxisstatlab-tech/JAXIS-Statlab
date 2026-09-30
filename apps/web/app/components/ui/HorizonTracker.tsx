@@ -8,6 +8,37 @@ const PAD = 240;
 const HAZE = 240;
 const GLINT = 140;
 
+// Soft glows without blur filters: a blurred stroke is rebuilt from nested strokes, widest first, each with just
+// enough opacity that the stacked result matches the Gaussian falloff of a stroke `width` wide blurred by `sigma`.
+// Blending ~20 strokes is far cheaper to redraw while the arch bends than a Gaussian blur over the same area.
+type Layer = { width: number; opacity: number };
+function erf(x: number) {
+  const t = 1 / (1 + 0.3275911 * Math.abs(x));
+  const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return x >= 0 ? y : -y;
+}
+function blurLayers(width: number, sigma: number, alpha: number, step: number): Layer[] {
+  const half = width / 2;
+  const cdf = (x: number) => 0.5 * (1 + erf(x / (sigma * Math.SQRT2)));
+  const target = (d: number) => alpha * (cdf(d + half) - cdf(d - half));
+  const reach = half + 2.6 * sigma;
+  const radii: number[] = [];
+  for (let r = reach; r > step / 2; r -= step) radii.push(r);
+  const layers: Layer[] = [];
+  let covered = 0;
+  radii.forEach((r, i) => {
+    // Opacity wanted just inside this layer's edge, given what the wider layers already contribute.
+    const want = target(Math.max(0, r - step / 2));
+    const opacity = i === 0 ? want : Math.max(0, 1 - (1 - want) / (1 - covered));
+    covered = 1 - (1 - covered) * (1 - opacity);
+    if (opacity > 0.002) layers.push({ width: Math.round(r * 2), opacity: +opacity.toFixed(4) });
+  });
+  return layers;
+}
+const HAZE_LAYERS = blurLayers(90, 46, 0.34, 10);
+const GLOW_LAYERS = blurLayers(8, 12, 0.6, 3);
+const INNER_LAYERS = blurLayers(36, 22, 0.45, 5);
+
 export type HorizonShape = { w: number; m: number; e: number };
 
 // Responsive peak height above the section floor and sagitta (drop from center to edge).
@@ -70,15 +101,6 @@ export default function HorizonTracker() {
       floor?.setAttribute("y", `${H - fadeH}`);
       floor?.setAttribute("height", `${fadeH + 40}`);
       gx = gxTarget = w / 2;
-      // Fit each blur's working area to the arch plus three blur radii. The default (a region as wide as twice the
-      // screen and three times the art) made every redraw blur several times more pixels than it needed to.
-      svg.querySelectorAll<SVGFilterElement>("filter[data-blur]").forEach((f) => {
-        const pad = Math.ceil(3 * Number(f.dataset.blur));
-        f.setAttribute("x", `${-PAD - pad}`);
-        f.setAttribute("y", `${-pad}`);
-        f.setAttribute("width", `${w + PAD * 2 + pad * 2}`);
-        f.setAttribute("height", `${H + 40 + pad * 2}`);
-      });
       drawn = "";
       glintAt = NaN;
     };
@@ -199,18 +221,6 @@ export default function HorizonTracker() {
       className="horizon pointer-events-none absolute inset-x-0 bottom-0 z-[3] w-full"
     >
       <defs>
-        <filter id="horizon-haze" data-blur="46" filterUnits="userSpaceOnUse">
-          <feGaussianBlur stdDeviation="46" />
-        </filter>
-        <filter id="horizon-glow" data-blur="12" filterUnits="userSpaceOnUse">
-          <feGaussianBlur stdDeviation="12" />
-        </filter>
-        <filter id="horizon-inner" data-blur="22" filterUnits="userSpaceOnUse">
-          <feGaussianBlur stdDeviation="22" />
-        </filter>
-        <filter id="horizon-soft" data-blur="1" filterUnits="userSpaceOnUse">
-          <feGaussianBlur stdDeviation="1" />
-        </filter>
         <clipPath id="horizon-body">
           <path data-body />
         </clipPath>
@@ -232,16 +242,23 @@ export default function HorizonTracker() {
         </linearGradient>
       </defs>
 
-      {/* Outer atmosphere above the rim */}
-      <path data-curve fill="none" stroke="rgba(204,102,0,0.34)" strokeWidth="90" filter="url(#horizon-haze)" />
-      <path data-curve fill="none" stroke="rgba(230,115,0,0.6)" strokeWidth="8" filter="url(#horizon-glow)" />
+      {/* Outer atmosphere above the rim. Stacked translucent strokes instead of blur filters: they build the same soft
+          falloff but are cheap to redraw while the arch bends (a Gaussian blur over this area caused scroll lag). */}
+      {HAZE_LAYERS.map((l) => (
+        <path key={`haze-${l.width}`} data-curve fill="none" stroke="rgb(204,102,0)" strokeOpacity={l.opacity} strokeWidth={l.width} />
+      ))}
+      {GLOW_LAYERS.map((l) => (
+        <path key={`glow-${l.width}`} data-curve fill="none" stroke="rgb(230,115,0)" strokeOpacity={l.opacity} strokeWidth={l.width} />
+      ))}
 
       {/* Planet body with its inner rim light */}
       <path data-body fill="#010114" />
       <g clipPath="url(#horizon-body)">
         <ellipse data-core rx="1600" ry="110" fill="url(#horizon-core)" />
-        <path data-curve fill="none" stroke="rgba(204,102,0,0.45)" strokeWidth="36" filter="url(#horizon-inner)" />
-        <path data-curve fill="none" stroke="rgba(255,190,120,0.5)" strokeWidth="6" filter="url(#horizon-soft)" />
+        {INNER_LAYERS.map((l) => (
+          <path key={`inner-${l.width}`} data-curve fill="none" stroke="rgb(204,102,0)" strokeOpacity={l.opacity} strokeWidth={l.width} />
+        ))}
+        <path data-curve fill="none" stroke="rgba(255,190,120,0.35)" strokeWidth="5" />
       </g>
 
       {/* Fade the body into the page before the footer. Clipped to the body so the halo above the rim keeps its full
@@ -252,7 +269,7 @@ export default function HorizonTracker() {
 
       {/* Crisp rim and the travelling glint */}
       <path data-curve fill="none" stroke="rgba(255,176,102,0.95)" strokeWidth="1" />
-      <path data-curve fill="none" stroke="url(#horizon-glint)" strokeWidth="2.5" filter="url(#horizon-soft)" />
+      <path data-curve fill="none" stroke="url(#horizon-glint)" strokeWidth="2.5" />
     </svg>
   );
 }
