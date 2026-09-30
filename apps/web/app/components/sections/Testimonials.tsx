@@ -1,32 +1,97 @@
-import { TESTIMONIALS } from "../../content/site";
+import { Quotes, SealCheck } from "@phosphor-icons/react/ssr";
+import { TESTIMONIALS, type Testimonial } from "../../content/site";
 import Reveal from "../ui/Reveal";
-import { container, heading, kicker } from "../ui/styles";
+import { container, heading, kicker, subtitle } from "../ui/styles";
+
+function Attribution({ t }: { t: Testimonial }) {
+  return (
+    <figcaption className="mt-6 flex items-end justify-between gap-4 border-t border-white/[0.08] pt-4">
+      <div className="min-w-0">
+        <div className="font-sans text-[13px] font-medium leading-snug text-white/85">{t.name || "Anonymous thesis group"}</div>
+        <div className="mt-1 font-mono text-[11px] text-white/55">
+          {t.name ? [t.program, t.school].filter(Boolean).join(" · ") : "Name withheld"}
+        </div>
+      </div>
+      {t.defended ? (
+        <span className="flex shrink-0 items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-wider text-white/70">
+          <SealCheck size={13} weight="fill" className="text-[#FF8A1F]" />
+          Defended
+        </span>
+      ) : null}
+    </figcaption>
+  );
+}
+
+function Translation({ text }: { text?: string }) {
+  if (!text) return null;
+  return (
+    <p className="mt-3 border-l border-white/15 pl-3 font-sans text-[13px] leading-relaxed text-white/55">
+      <span className="mr-1.5 font-mono text-[10px] uppercase tracking-wider text-white/40">In English</span>
+      {text}
+    </p>
+  );
+}
+
+const card = "flex flex-col rounded-[2px] border border-white/[0.08] bg-[#0A0A18] p-6 sm:p-7";
 
 export default function Testimonials() {
   if (TESTIMONIALS.length === 0) return null;
 
+  const [featured, ...rest] = TESTIMONIALS;
+  const side = rest.slice(0, 2);
+  const more = rest.slice(2);
+
   return (
-    <section className="relative py-16 lg:py-24">
+    <section id="testimonials" className="relative scroll-mt-16 py-16 lg:py-24">
       <div className={container}>
         <Reveal>
-          <div className={kicker}>From students</div>
-          <h2 data-split className={heading}>What students say after their defense</h2>
+          <div>
+            <div className={kicker}>From students</div>
+            <h2 data-split className={heading}>
+              In their own words
+            </h2>
+            <p className={subtitle}>Messages from thesis groups we&apos;ve worked with, kept as they sent them.</p>
+          </div>
         </Reveal>
-        <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-[2px] border border-white/10 bg-white/10 md:grid-cols-3">
-          {TESTIMONIALS.map((t, i) => (
-            <Reveal as="figure" key={t.name} delay={i * 80} className="flex flex-col bg-[#010114] p-6 sm:p-8">
-              <blockquote className="flex-1 font-sans text-[15px] leading-relaxed text-white/85">
-                &ldquo;{t.quote}&rdquo;
+
+        {featured ? (
+          <div className="mt-10 grid grid-cols-1 gap-4 lg:grid-cols-12">
+            <Reveal as="figure" className={`${card} relative overflow-hidden lg:col-span-7 lg:p-10`}>
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 bg-[radial-gradient(closest-side,rgba(204,102,0,0.14),transparent)]"
+              />
+              <Quotes size={32} weight="fill" className="relative text-[#CC6600]" aria-hidden="true" />
+              <blockquote className="relative mt-5 flex-1 text-pretty font-sans text-lg leading-relaxed text-white/90 lg:text-[1.35rem] lg:leading-[1.55] lg:tracking-[-0.01em]">
+                {featured.quote}
               </blockquote>
-              <figcaption className="mt-6 border-t border-white/[0.08] pt-4">
-                <div className="font-sans text-sm font-medium text-white">{t.name}</div>
-                <div className="font-mono text-[11px] text-white/55">
-                  {t.program} · {t.school}
-                </div>
-              </figcaption>
+              <Translation text={featured.translation} />
+              <Attribution t={featured} />
             </Reveal>
-          ))}
-        </div>
+
+            <div className="flex flex-col gap-4 lg:col-span-5">
+              {side.map((t, i) => (
+                <Reveal as="figure" key={t.quote} delay={(i + 1) * 80} className={`${card} flex-1`}>
+                  <blockquote className="flex-1 text-pretty font-sans text-[15px] leading-relaxed text-white/80">{t.quote}</blockquote>
+                  <Translation text={t.translation} />
+                  <Attribution t={t} />
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {more.length ? (
+          <div className="mt-4 gap-4 sm:columns-2 lg:columns-3">
+            {more.map((t, i) => (
+              <Reveal as="figure" key={t.quote} delay={(i % 3) * 80} className={`${card} mb-4 break-inside-avoid`}>
+                <blockquote className="text-pretty font-sans text-[15px] leading-relaxed text-white/80">{t.quote}</blockquote>
+                <Translation text={t.translation} />
+                <Attribution t={t} />
+              </Reveal>
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );

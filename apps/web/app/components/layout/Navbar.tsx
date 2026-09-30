@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LOGIN_URL, REGISTER_URL } from "@/lib/config";
+import { LOGIN_URL, SEND_STUDY_URL } from "@/lib/config";
 import { btnGhost, btnPrimary } from "../ui/styles";
 
 // The FAQ lives on /contact.
@@ -103,11 +103,11 @@ export default function Navbar() {
             Log in
           </a>
           <a
-            href={REGISTER_URL}
+            href={SEND_STUDY_URL}
             data-cta="nav-register"
             className={`${btnPrimary} h-9 px-4 text-[13px]`}
           >
-            Register
+            Send your study
           </a>
         </div>
 
@@ -158,8 +158,8 @@ export default function Navbar() {
           <a href={LOGIN_URL} data-cta="menu-login" className={btnGhost}>
             Log in
           </a>
-          <a href={REGISTER_URL} data-cta="menu-register" className={btnPrimary}>
-            Register
+          <a href={SEND_STUDY_URL} data-cta="menu-register" className={btnPrimary}>
+            Send your study
           </a>
         </div>
       </div>

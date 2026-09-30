@@ -4,6 +4,10 @@ export const APP_URL =
 export const REGISTER_URL = `${APP_URL}/register`;
 export const LOGIN_URL = `${APP_URL}/login`;
 
+// Where every "Send your study" button goes. New visitors need an account first, and the sign-up page has a
+// Log in tab for returning students.
+export const SEND_STUDY_URL = REGISTER_URL;
+
 export const CONTACT_EMAIL = "consult@jaxis-statlab.com";
 
 // Optional. Each item only appears on the site once its value is set.

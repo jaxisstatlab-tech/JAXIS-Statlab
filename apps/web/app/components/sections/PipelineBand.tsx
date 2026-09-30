@@ -1,57 +1,68 @@
-import { ChatCircleText, FolderSimple, ListChecks, ShieldCheck } from "@phosphor-icons/react/ssr";
-import type { Icon } from "@phosphor-icons/react";
-import { REGISTER_URL } from "@/lib/config";
+import { SEND_STUDY_URL } from "@/lib/config";
+import BentoCard from "../ui/BentoCard";
 import Reveal from "../ui/Reveal";
+import { ChatArt, LedgerArt } from "../ui/ServiceArt";
+import SpotlightGrid from "../ui/SpotlightGrid";
 import TrackerFeed from "../ui/TrackerFeed";
-import { btnInk, container } from "../ui/styles";
+import { btnPrimary, container, heading, kicker, subtitle } from "../ui/styles";
 
-const FEATURES: { icon: Icon; title: string; body: string }[] = [
-  { icon: ListChecks, title: "5-stage tracker", body: "Always know where your study is." },
-  { icon: ShieldCheck, title: "Two-analyst checks", body: "Every result rerun before release." },
-  { icon: ChatCircleText, title: "Chat inside your study", body: "No more random group chats." },
-  { icon: FolderSimple, title: "Every file in one place", body: "Download anytime you need it." },
-];
-
+// What the client account looks like, drawn in the same joined grid as Services.
 export default function PipelineBand() {
   return (
-    <section className="relative overflow-hidden bg-[#CC6600] py-20 lg:py-24">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:linear-gradient(rgba(1,1,20,0.4)_1px,transparent_1px),linear-gradient(90deg,rgba(1,1,20,0.4)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:radial-gradient(ellipse_at_80%_50%,black,transparent_70%)]"
-      />
-      <div className={`${container} relative grid grid-cols-1 items-center gap-12 lg:grid-cols-12`}>
-        <Reveal className="lg:col-span-5">
-          <h2 data-split className="max-w-md font-sans text-2xl font-medium leading-tight tracking-[-0.03em] text-[#010114] sm:text-3xl lg:text-[2rem]">
-            From raw data to defense-ready in one place
-          </h2>
-          <p className="mt-4 max-w-sm font-sans text-sm leading-relaxed text-[#010114]/80 sm:text-[15px]">
-            Every update on your study shows up in your tracker the moment it happens.
-          </p>
-
-          <ul className="mt-8 grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
-            {FEATURES.map(({ icon: FeatureIcon, title, body }) => (
-              <li key={title} className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] bg-[#010114]/10">
-                  <FeatureIcon size={16} weight="fill" className="text-[#010114]" />
-                </span>
-                <div>
-                  <div className="font-sans text-sm font-semibold text-[#010114]">{title}</div>
-                  <div className="mt-0.5 font-sans text-[13px] text-[#010114]/75">{body}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          <a href={REGISTER_URL} data-cta="band-signup" className={`${btnInk} mt-9`}>
-            Create a free account
+    <section id="account" className="relative scroll-mt-16 py-16 lg:py-24">
+      <div className={container}>
+        <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className={kicker}>Your account</div>
+            <h2 data-split className={heading}>
+              Always know where your study is
+            </h2>
+            <p className={subtitle}>Every message, check, payment, and file shows up the moment it happens.</p>
+          </div>
+          <a href={SEND_STUDY_URL} data-cta="band-signup" className={`${btnPrimary} shrink-0`}>
+            Send your study
           </a>
         </Reveal>
 
-        <Reveal delay={120} className="lg:col-span-6 lg:col-start-7">
-          <div data-parallax="0.2">
-            <TrackerFeed />
+        <SpotlightGrid className="mt-10">
+          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-[1px] lg:grid-cols-12">
+            <BentoCard
+              index="01"
+              title="Study tracker"
+              desc="Five stages, from proposal to delivery. Each update lands the moment it happens."
+              align="end"
+              className="lg:col-span-7 lg:row-span-2"
+            >
+              <div className="mt-6 w-full">
+                <TrackerFeed />
+              </div>
+            </BentoCard>
+
+            <BentoCard
+              index="02"
+              title="Chat inside your study"
+              desc="Ask your analyst about your results, right next to your files."
+              delay={90}
+              className="lg:col-span-5"
+            >
+              <div className="mt-6 w-full">
+                <ChatArt />
+              </div>
+            </BentoCard>
+
+            <BentoCard
+              index="03"
+              title="Price and payments"
+              desc="Your written price and every payment, on record."
+              delay={180}
+              className="lg:col-span-5"
+            >
+              <div className="mt-6 w-full">
+                <LedgerArt />
+              </div>
+            </BentoCard>
           </div>
-        </Reveal>
+        </SpotlightGrid>
       </div>
     </section>
   );

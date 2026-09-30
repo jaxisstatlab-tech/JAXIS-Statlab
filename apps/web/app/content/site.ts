@@ -34,7 +34,7 @@ export const FAQS: Faq[] = [
   },
   {
     q: "What files will I receive?",
-    a: "APA 7th edition tables ready for Word, a plain-English write-up of your findings, your cleaned dataset (.sav or .csv), and a signed statistical verification summary so you are fully prepared for your defense.",
+    a: "APA 7th edition tables ready for Word, a plain-English write-up of your findings, your cleaned dataset (.sav or .csv), and a signed Certificate of Statistical Audit showing a second analyst checked and approved your analysis.",
   },
   {
     pricing: true,
@@ -55,10 +55,79 @@ export const FAQS: Faq[] = [
 
 export type Testimonial = {
   quote: string;
+  /** English version for quotes written in Cebuano. */
+  translation?: string;
+  /** Empty for groups who asked to stay anonymous. */
   name: string;
   program: string;
   school: string;
+  /** The group says they defended their study. */
+  defended?: boolean;
 };
 
-// Add real, permission-granted quotes here. The section stays hidden while this list is empty.
-export const TESTIMONIALS: Testimonial[] = [];
+// Real messages from client groups, kept in their own words (emojis removed). The first one is featured.
+// The section stays hidden while this list is empty.
+export const TESTIMONIALS: Testimonial[] = [
+  {
+    quote:
+      "At first, we didn't know about JAXIS StatLab, but because of a recommendation, we reached out and we're very thankful we did. They offer affordable prices without compromising quality. They guided us to ensure that the service we wanted was aligned with our goals, and they made sure we truly understood the purpose of what we availed. What we appreciate most is that they are approachable and always ready to answer our questions whenever something is unclear. JAXIS StatLab truly helped us with our survey, allowing us to continue our studies with confidence. And in the end, we get the results that we needed.",
+    name: "",
+    program: "Thesis group",
+    school: "",
+    defended: true,
+  },
+  {
+    quote:
+      "They are very accommodating. Whenever we have inquiries or questions regarding the results, the statistician is always available to explain them in a way that we can easily understand. We would highly recommend JAXIS Lab.",
+    name: "Honeylet M. Mañanita, Jane Patrick R. Gamutan, Sophia Loren U. Alegria",
+    program: "BSBA Marketing Management",
+    school: "Central Mindanao University",
+  },
+  {
+    quote:
+      "Na-defend namo among study gamit ang results sa stats ninyu, mas na-clarify pud katung gi-discuss nimo. Pwede kaayo namo ma-recommend inyung StatLab sa next nga mag-thesis next academic year.",
+    translation:
+      "We defended our study using your stats results, and your explanation made it all clearer. We'd gladly recommend your StatLab to next year's thesis students.",
+    name: "",
+    program: "Thesis group",
+    school: "",
+    defended: true,
+  },
+  {
+    quote:
+      "We also thank you for guiding us in understanding and analyzing our thesis results. We truly appreciate your support po. Thank you kaayo.",
+    name: "Ruthchella Bettina Acosta, Rizamae Oño, Sofia Betina Tare",
+    program: "BSBA Financial Management",
+    school: "Central Mindanao University",
+  },
+  {
+    quote:
+      "Thank you so much, JAXIS StatLab Team! We truly appreciate your support and guidance throughout our research journey. Your assistance has been a huge help in completing our project.",
+    name: "Michelle Mae B. Quieta, Fritzy Wendy E. Borja, Sarah Dave L. Dionela",
+    program: "Department of Business Administration",
+    school: "Central Mindanao University",
+  },
+  {
+    quote: "Thank you so much for this! We already defended our thesis earlier. Thank you sainyung team.",
+    name: "Ryan Justine B. Atillo, Daisy Real D. Cambangay, Princess Mei M. Funchica",
+    program: "BSBA Marketing Management",
+    school: "Central Mindanao University",
+    defended: true,
+  },
+  {
+    quote:
+      "Thank you so much po saimong help for our statistical analysis, sir. Dako kaayong tabang. Thesis defended mi!",
+    translation: "Thank you so much for your help with our statistical analysis. It was a huge help. We defended our thesis!",
+    name: "",
+    program: "Thesis group",
+    school: "",
+    defended: true,
+  },
+  {
+    quote:
+      "From the bottom of our hearts, thank you, JAXIS StatLab Team, for the support and assistance throughout our research journey, especially to our statistician. We are truly grateful and blessed to have worked with your team.",
+    name: "",
+    program: "Thesis group",
+    school: "",
+  },
+];

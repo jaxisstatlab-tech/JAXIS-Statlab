@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "@phosphor-icons/react/ssr";
-import { LOGIN_URL, REGISTER_URL } from "@/lib/config";
+import { SEND_STUDY_URL } from "@/lib/config";
 import CtaField from "../ui/CtaField";
 import HorizonTracker from "../ui/HorizonTracker";
 import Reveal from "../ui/Reveal";
@@ -12,9 +13,8 @@ export default function FinalCTA() {
     <section id="final-cta" className="relative overflow-hidden pb-64 pt-24 lg:pb-72 lg:pt-32">
       <CtaField />
       <HorizonTracker />
-      {/* Seamless floor transition: dissolves any ambient halo into #010114 before the footer */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 lg:h-32 bg-gradient-to-b from-transparent via-[#010114]/80 to-[#010114] z-[2]" />
-      <div className={`${container} relative text-center`}>
+      {/* The floor fade into the footer now lives inside HorizonTracker, beneath the rim */}
+      <div className={`${container} relative z-[4] text-center`}>
         <Reveal>
           <div className="mb-3 font-mono text-xs font-medium uppercase tracking-[0.15em] text-white/55">Get started</div>
           <h2 data-split className="mx-auto font-sans text-3xl font-medium tracking-[-0.035em] text-white sm:text-4xl lg:text-[2.75rem]">
@@ -24,14 +24,14 @@ export default function FinalCTA() {
             Get a fixed written price within 24 hours. It&apos;s free to ask.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-6">
-            <a href={LOGIN_URL} data-cta="final-send" className={`${btnPrimary} h-11 px-6`}>
+            <a href={SEND_STUDY_URL} data-cta="final-send" className={`${btnPrimary} h-11 px-6`}>
               Send your study
               <ArrowRight size={15} weight="bold" />
             </a>
-            <a href={REGISTER_URL} data-cta="final-register" className={linkArrow}>
-              Create an account
+            <Link href="/contact" data-cta="final-contact" className={linkArrow}>
+              Ask us a question
               <ArrowUpRight size={14} weight="bold" />
-            </a>
+            </Link>
           </div>
           <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-mono text-[11px] text-white/55">
             {PROMISES.map((p, i) => (

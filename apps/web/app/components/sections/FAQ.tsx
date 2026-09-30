@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { ArrowUpRight, MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
 import { CONTACT_EMAIL } from "@/lib/config";
 import { FAQS, type Faq } from "../../content/site";
@@ -27,6 +28,10 @@ type FaqProps = {
   items?: Faq[];
   title?: string;
   description?: string;
+  /** Index of the answer shown open on load. */
+  defaultOpen?: number | null;
+  /** Adds a "See all questions" link (used when showing a subset, e.g. on the home page). */
+  moreHref?: string;
 };
 
 type Row = Faq & { i: number };
@@ -71,8 +76,10 @@ export default function FAQ({
   items = FAQS,
   title = "Frequently asked questions",
   description = "Delivery times, privacy, payment, and defending your results.",
+  defaultOpen = null,
+  moreHref,
 }: FaqProps) {
-  const [open, setOpen] = useState<number | null>(null);
+  const [open, setOpen] = useState<number | null>(defaultOpen);
   const [query, setQuery] = useState("");
   const input = useRef<HTMLInputElement>(null);
 
@@ -137,7 +144,18 @@ export default function FAQ({
               {title}
             </h2>
             <p className={subtitle}>{description}</p>
-            <div className="mt-6">{emailLink}</div>
+            <div className="mt-6 flex flex-col items-start gap-3">
+              {moreHref ? (
+                <Link
+                  href={moreHref}
+                  className="inline-flex items-center gap-1.5 font-mono text-xs text-white/70 transition-colors hover:text-white sm:text-sm"
+                >
+                  See all questions
+                  <ArrowUpRight size={13} weight="bold" />
+                </Link>
+              ) : null}
+              {emailLink}
+            </div>
           </div>
           <ul className="border-t border-white/10 lg:col-span-7">
             {matches.map((f) => (

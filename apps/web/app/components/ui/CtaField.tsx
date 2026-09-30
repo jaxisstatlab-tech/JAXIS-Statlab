@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { HorizonShape } from "./HorizonTracker";
 
 const GAP = 24;
 const RADIUS = 200;
@@ -19,7 +20,6 @@ export default function CtaField() {
     const ctx = canvas?.getContext("2d");
     if (!canvas || !section || !ctx) return;
 
-    const horizon = section.querySelector<HTMLElement>(".horizon");
     const interactive = window.matchMedia(
       "(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)",
     ).matches;
@@ -27,7 +27,7 @@ export default function CtaField() {
     let w = 0;
     let h = 0;
     let dpr = 1;
-    let rim = { cx: 0, cy: 0, r: 0 };
+    let rim: HorizonShape | null = null;
     const target = { x: 0, y: 0, on: 0 };
     const cur = { x: 0, y: 0, on: 0 };
     let frame = 0;
@@ -40,13 +40,10 @@ export default function CtaField() {
       dpr = Math.min(2, window.devicePixelRatio || 1);
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
-      if (horizon) {
-        const hr = horizon.getBoundingClientRect();
-        rim = { cx: hr.left - r.left + hr.width / 2, cy: hr.top - r.top + hr.height / 2, r: hr.width / 2 };
-      }
     };
 
-    const rimY = (x: number) => (rim.r ? rim.cy - Math.sqrt(Math.max(0, rim.r * rim.r - (x - rim.cx) ** 2)) : h);
+    // The horizon bends with scroll, so its rim is a parabola reported by HorizonTracker.
+    const rimY = (x: number) => (rim ? rim.m + (rim.e - rim.m) * ((2 * x - rim.w) / rim.w) ** 2 : h);
 
     const draw = () => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -132,7 +129,12 @@ export default function CtaField() {
       draw();
     });
     resize.observe(section);
-    if (horizon) resize.observe(horizon);
+
+    const onShape = (e: Event) => {
+      rim = (e as CustomEvent<HorizonShape>).detail;
+      if (visible && !frame) draw();
+    };
+    section.addEventListener("horizon:shape", onShape);
 
     const io = new IntersectionObserver(([entry]) => {
       visible = Boolean(entry?.isIntersecting);
@@ -149,6 +151,7 @@ export default function CtaField() {
       cancelAnimationFrame(frame);
       resize.disconnect();
       io.disconnect();
+      section.removeEventListener("horizon:shape", onShape);
       section.removeEventListener("pointermove", onMove);
       section.removeEventListener("pointerleave", onLeave);
     };

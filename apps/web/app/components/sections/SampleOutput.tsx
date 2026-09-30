@@ -1,83 +1,64 @@
+import Image from "next/image";
 import Link from "next/link";
+import { ArrowUpRight, ChatCircleText, Database, SealCheck, Table, TextAlignLeft } from "@phosphor-icons/react/ssr";
+import type { Icon } from "@phosphor-icons/react";
 import { SAMPLE_OUTPUT_URL } from "@/lib/config";
-import { FILE_CODE, FILE_DATA, FILE_DEFENSE, FILE_WRITEUP, IsoScene, type IsoShape } from "../ui/Iso";
+import { CORE_TEAM, EXPERT_TEAM, type TeamMember } from "../../content/about";
 import Reveal from "../ui/Reveal";
-import { btnGhost, cardDesc, container, heading, kicker } from "../ui/styles";
+import { FindingsPreview } from "../ui/ServiceArt";
+import { btnGhost, cardDesc, cardTitle, container, heading, kicker, subtitle } from "../ui/styles";
 
-const ROWS = [
+// The five files every study gets (matches "What files will I receive?" in the FAQ).
+const FILES: { icon: Icon; name: string; format: string; body: string }[] = [
+  { icon: Table, name: "APA tables", format: "DOCX", body: "Every table in APA 7th edition, ready to paste into Word." },
   {
-    name: "(Constant)",
-    b: "61.20",
-    se: "2.84",
-    beta: "",
-    t: "21.55",
-    p: "< .001",
+    icon: TextAlignLeft,
+    name: "Findings summary",
+    format: "DOCX",
+    body: "Each result explained in plain English, so you can write your own Chapter 4.",
   },
+  { icon: Database, name: "Cleaned dataset", format: "SAV · CSV", body: "Your data, cleaned and labeled, ready to reopen." },
   {
-    name: "Study habits",
-    b: "0.42",
-    se: "0.06",
-    beta: ".41",
-    t: "7.00",
-    p: "< .001",
+    icon: SealCheck,
+    name: "Certificate of Statistical Audit",
+    format: "PDF",
+    body: "Signed proof that a second analyst checked your analysis and approved it. Show it to your adviser or panel.",
   },
-  {
-    name: "Study hours per week",
-    b: "0.18",
-    se: "0.07",
-    beta: ".15",
-    t: "2.57",
-    p: ".011",
-  },
-  {
-    name: "Sleep hours",
-    b: "0.25",
-    se: "0.11",
-    beta: ".13",
-    t: "2.27",
-    p: ".024",
-  },
-  {
-    name: "Strand (STEM = 1)",
-    b: "0.61",
-    se: "0.39",
-    beta: ".09",
-    t: "1.56",
-    p: ".120",
-  },
+  { icon: ChatCircleText, name: "Defense guide", format: "PDF", body: "The questions panels ask most, answered in plain English." },
 ];
 
-const FILES: {
-  tag: string;
-  type: string;
-  title: string;
-  shapes: IsoShape[];
-}[] = [
-  {
-    tag: "Write-up",
-    type: "DOCX",
-    title: "Every result explained in plain English, ready for Chapter 4",
-    shapes: FILE_WRITEUP,
-  },
-  {
-    tag: "Data",
-    type: "SAV · CSV",
-    title: "Your cleaned dataset, labeled and ready to reopen",
-    shapes: FILE_DATA,
-  },
-  {
-    tag: "Audit",
-    type: "PDF · CERT",
-    title: "Signed statistical verification certificate confirming dual-analyst checks",
-    shapes: FILE_CODE,
-  },
-  {
-    tag: "Defense",
-    type: "PDF",
-    title: "The questions panels ask most, with answers in your own words",
-    shapes: FILE_DEFENSE,
-  },
-];
+// Featured on the home page; the full team is on /about.
+const FEATURED = ["Jobelle S. Sorino-Simblante", "Jerome P. Gallego"]
+  .map((name) => CORE_TEAM.find((m) => m.name === name))
+  .filter((m): m is TeamMember => m !== undefined);
+
+function Headshot({ member, size }: { member: TeamMember; size: number }) {
+  if (!member.photo) return <span className="block rounded-[2px] bg-white/10" style={{ width: size, height: size }} />;
+  return (
+    <Image
+      src={member.photo}
+      alt={member.name}
+      width={size}
+      height={size}
+      sizes={`${size}px`}
+      className="rounded-[2px] object-cover"
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
+// Faint text lines on the pages behind the front one.
+function Lines({ widths, className = "" }: { widths: number[]; className?: string }) {
+  return (
+    <div className={`flex flex-col gap-2 ${className}`}>
+      {widths.map((w, i) => (
+        <span key={i} className="block h-[5px] rounded-[1px] bg-white/[0.08]" style={{ width: `${w}%` }} />
+      ))}
+    </div>
+  );
+}
+
+const page = "absolute inset-x-0 top-0 mx-auto w-full max-w-[25rem] rounded-[2px] border";
 
 export default function SampleOutput() {
   return (
@@ -86,129 +67,110 @@ export default function SampleOutput() {
         <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className={kicker}>What you get</div>
-            <h2 data-split className={heading}>Files your adviser can open and check</h2>
+            <h2 data-split className={heading}>
+              Files your adviser can open and check
+            </h2>
+            <p className={subtitle}>Five files with every study, and the people who stand behind them.</p>
           </div>
           {SAMPLE_OUTPUT_URL ? (
-            <a
-              href={SAMPLE_OUTPUT_URL}
-              data-cta="sample-download"
-              className={`${btnGhost} shrink-0`}
-            >
+            <a href={SAMPLE_OUTPUT_URL} data-cta="sample-download" className={`${btnGhost} shrink-0`}>
               Download a full sample
             </a>
-          ) : (
-            <Link href="/pricing" className={`${btnGhost} shrink-0`}>
-              See pricing
-            </Link>
-          )}
+          ) : null}
         </Reveal>
 
-        <div className="mt-10 grid grid-cols-1 gap-px overflow-hidden rounded-[2px] border border-white/[0.08] bg-white/[0.08] lg:grid-cols-2">
-          <div className="flex flex-col bg-[#07071C]">
-            <Reveal className="flex flex-1 flex-col">
-              <div className="relative flex flex-1 items-center justify-center overflow-hidden px-6 pb-0 pt-10 sm:px-12">
-                <div className="absolute inset-x-10 bottom-0 h-24 rounded-[50%] bg-[#CC6600]/15 blur-3xl" />
-                <div data-parallax="0.2" className="glare glare-paper relative w-full max-w-xl translate-y-2 -rotate-1 overflow-hidden rounded-t-[2px] bg-[#F7F5F0] px-6 pb-8 pt-6 text-[#0B0B1A] shadow-[0_-10px_60px_-20px_rgba(204,102,0,0.35)]">
-                  <p className="font-apa text-[13px] font-bold">Table 4</p>
-                  <p className="font-apa text-[13px] italic">
-                    Multiple Regression Results Predicting GWA
-                  </p>
-                  <table className="mt-3 w-full border-collapse font-apa text-[12.5px]">
-                    <thead>
-                      <tr className="border-y border-[#0B0B1A]">
-                        <th className="py-1 text-left font-normal">
-                          Predictor
-                        </th>
-                        {["B", "β", "t", "p"].map((h) => (
-                          <th
-                            key={h}
-                            className="py-1 pl-3 text-right font-normal italic"
-                          >
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ROWS.map((r, i) => (
-                        <tr
-                          key={r.name}
-                          className={
-                            i === ROWS.length - 1
-                              ? "border-b border-[#0B0B1A]"
-                              : ""
-                          }
-                        >
-                          <td className="py-0.5">{r.name}</td>
-                          {[r.b, r.beta, r.t, r.p].map((v, j) => (
-                            <td
-                              key={j}
-                              className="py-0.5 pl-3 text-right tabular-nums"
-                            >
-                              {v}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <p className="mt-2 font-apa text-[11.5px]">
-                    <span className="italic">Note.</span>{" "}
-                    <span className="italic">N</span> = 220.{" "}
-                    <span className="italic">R</span>² = .38,{" "}
-                    <span className="italic">F</span>(4, 215) = 32.90,{" "}
-                    <span className="italic">p</span> &lt; .001.
-                  </p>
-                </div>
+        <div className="mt-10 grid grid-cols-1 gap-px overflow-hidden rounded-[2px] border border-white/[0.08] bg-white/[0.08] lg:grid-cols-12">
+          {/* A page from the findings summary, with the table and defense guide pages stacked behind it */}
+          <div data-art-card className="relative flex flex-col overflow-hidden bg-[#0A0A18] lg:col-span-7">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-[radial-gradient(ellipse_55%_60%_at_50%_100%,rgba(204,102,0,0.1),transparent)]"
+            />
+            <div className="relative flex items-start justify-between gap-4 px-7 pt-7 sm:px-8 sm:pt-8">
+              <div>
+                <h3 className={`${cardTitle} mb-1.5 lg:text-xl`}>Findings summary</h3>
+                <p className={`${cardDesc} max-w-[44ch]`}>A page from what you receive: the result, then what it means.</p>
               </div>
-              <div className="relative border-t border-white/[0.08] p-6 sm:p-8">
-                <div className="font-mono text-[11px] uppercase tracking-wider">
-                  <span className="text-[#FFA040]">Tables</span>
-                  <span className="text-white/50">
-                    {" "}
-                    · DOCX · APA 7th edition
-                  </span>
+              <span className="pt-1 font-mono text-[11px] uppercase tracking-wider text-white/40">Example</span>
+            </div>
+
+            <Reveal className="paper-stage relative mx-auto mt-4 h-[23rem] w-full max-w-[32rem] px-7 pt-10 sm:h-[24rem] sm:px-10">
+              <div className="relative h-full">
+                <div aria-hidden="true" className={`paper paper-c ${page} h-[17rem] border-white/[0.06] bg-[#0B0B1C] p-6`}>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-white/30">Defense guide</div>
+                  <Lines widths={[88, 72, 94, 60, 80]} className="mt-4" />
                 </div>
-                <h3 className="mt-2 font-sans text-lg font-medium tracking-[-0.02em] text-white sm:text-xl">
-                  Every table formatted to APA 7 and ready to paste
-                </h3>
-                <p className={`${cardDesc} mt-2 max-w-lg`}>
-                  Example from a practice dataset. Your tables follow your
-                  school&apos;s format, with notes and effect sizes included.
-                </p>
+                <div aria-hidden="true" className={`paper paper-b ${page} h-[17rem] border-white/[0.08] bg-[#0D0D20] p-6`}>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-white/35">Table 3</div>
+                  <div className="mt-3 border-y border-white/15 py-2">
+                    <Lines widths={[100, 100, 100, 100]} />
+                  </div>
+                </div>
+
+                <figure className={`paper paper-a ${page} border-white/[0.14] bg-[#101024] p-6 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.9)] sm:p-7`}>
+                  <FindingsPreview />
+                  <figcaption className="sr-only">
+                    Example page from a findings summary, explaining a t-test result in plain English.
+                  </figcaption>
+                </figure>
               </div>
             </Reveal>
           </div>
 
-          <ul className="grid grid-rows-4 gap-px bg-white/[0.08]">
-            {FILES.map((f, i) => (
-              <li key={f.tag} className="bg-[#07071C]">
-                <Reveal
-                  delay={60 + i * 60}
-                  className="group flex h-full items-center gap-5 p-5 sm:p-6"
-                >
-                  <div className="glare relative flex h-20 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[2px] bg-[#010114] sm:h-24 sm:w-32">
-                    <IsoScene
-                      id={`file-${f.tag}`}
-                      shapes={f.shapes}
-                      pad={16}
-                      label={`${f.tag} file illustration`}
-                      className="h-[78%] w-auto transition-transform duration-250 ease-out group-hover:-translate-y-1"
-                    />
-                  </div>
+          {/* What arrives */}
+          <div className="bg-[#0A0A18] lg:col-span-5">
+            <ul className="divide-y divide-white/[0.07]">
+              {FILES.map(({ icon: FileIcon, name, format, body }, i) => (
+                <Reveal as="li" key={name} delay={i * 60} className="flex gap-4 px-6 py-5 sm:px-8 lg:py-[1.4rem]">
+                  <FileIcon size={18} weight="fill" className="mt-0.5 shrink-0 text-white/55" aria-hidden="true" />
                   <div className="min-w-0 flex-1">
-                    <div className="font-mono text-[11px] uppercase tracking-wider">
-                      <span className="text-[#FFA040]">{f.tag}</span>
-                      <span className="text-white/50"> · {f.type}</span>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="font-sans text-[15px] font-medium text-white">{name}</span>
+                      <span className="shrink-0 font-mono text-[10.5px] uppercase tracking-wider text-white/55">{format}</span>
                     </div>
-                    <p className="mt-1.5 font-sans text-[15px] font-medium leading-snug text-white">
-                      {f.title}
-                    </p>
+                    <p className="mt-1 font-sans text-[13.5px] leading-relaxed text-white/60">{body}</p>
                   </div>
                 </Reveal>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </ul>
+          </div>
+
+          {/* Who checks it */}
+          <div className="bg-[#0A0A18] lg:col-span-12">
+            <Reveal className="grid grid-cols-1 gap-8 px-6 py-7 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] lg:items-center lg:gap-10">
+              <div>
+                <div className="font-mono text-[11px] uppercase tracking-wider text-white/55">Who checks your numbers</div>
+                <p className="mt-2 max-w-xs font-sans text-[14px] leading-relaxed text-white/70">
+                  Mathematicians and statisticians. One runs your tests, another reruns them from scratch.
+                </p>
+              </div>
+
+              {FEATURED.map((m) => (
+                <div key={m.name} className="flex items-center gap-4">
+                  <Headshot member={m} size={60} />
+                  <div className="min-w-0">
+                    <div className="font-sans text-[15px] font-medium leading-snug text-white">{m.name}</div>
+                    <div className="mt-0.5 font-mono text-[10.5px] uppercase tracking-wider text-white/55">{m.role}</div>
+                    {m.bio ? <p className="mt-1.5 font-sans text-[12.5px] leading-snug text-white/55">{m.bio}</p> : null}
+                  </div>
+                </div>
+              ))}
+
+              <Link href="/about" className="group flex items-center gap-3 lg:justify-self-end">
+                <span className="flex -space-x-2">
+                  {EXPERT_TEAM.map((m) => (
+                    <span key={m.name} className="rounded-[2px] ring-2 ring-[#0A0A18]">
+                      <Headshot member={m} size={34} />
+                    </span>
+                  ))}
+                </span>
+                <span className="font-mono text-[11px] text-white/70 transition-colors group-hover:text-white">
+                  +{EXPERT_TEAM.length} analysts
+                  <ArrowUpRight size={12} weight="bold" className="ml-1 inline" />
+                </span>
+              </Link>
+            </Reveal>
+          </div>
         </div>
       </div>
     </section>

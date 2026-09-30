@@ -2,80 +2,235 @@
 
 import { useEffect, useRef } from "react";
 
-// The horizon arc; its bright glint travels along the rim to sit under the cursor.
+// Extra curve drawn past each side edge so the glow never fades out at the viewport edges.
+const PAD = 240;
+// Room above the highest point of the curve for the outer glow.
+const HAZE = 240;
+const GLINT = 140;
+
+export type HorizonShape = { w: number; m: number; e: number };
+
+// Responsive peak height above the section floor and sagitta (drop from center to edge).
+// Mobile keeps a gentle sagitta so the arch stays wide instead of a steep half-circle.
+function geometry(w: number) {
+  if (w >= 1024) return { peakH: 230, s: 190 };
+  if (w >= 640) return { peakH: 180, s: 100 };
+  return { peakH: 140, s: Math.max(36, Math.min(56, Math.round(w * 0.13))) };
+}
+
+// The horizon arc. As the section scrolls into view it bends from a concave dip into a rising
+// dome, and its bright glint travels along the rim to sit under the cursor.
 export default function HorizonTracker() {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    const el = ref.current;
-    const section = el?.parentElement;
-    if (!el || !section) return;
+    const svg = ref.current;
+    const section = svg?.parentElement;
+    if (!svg || !section) return;
 
-    // Dynamically calculate the circle geometry so that the horizon arc spans
-    // edge-to-edge across the entire section width without cutting off or leaving flat bottom corners.
-    const updateGeometry = () => {
-      const w = section.getBoundingClientRect().width || window.innerWidth;
-      // Responsive peak height above floor and sagitta (curvature drop from center to edge).
-      // On mobile, keep sagitta gentle (20-30px) so the arch is stretched wide
-      // across the phone instead of curving steeply like a half-circle dome.
-      let peakH = 140;
-      let s = 28;
+    const curves = svg.querySelectorAll<SVGPathElement>("[data-curve]");
+    const body = svg.querySelectorAll<SVGPathElement>("[data-body]");
+    const core = svg.querySelector<SVGEllipseElement>("[data-core]");
+    const glint = svg.querySelector<SVGLinearGradientElement>("#horizon-glint");
+    const floor = svg.querySelector<SVGRectElement>("[data-floor]");
 
-      if (w >= 1024) {
-        peakH = 220;
-        s = 115;
-      } else if (w >= 640) {
-        peakH = 175;
-        s = 55;
-      } else {
-        s = Math.max(20, Math.min(30, Math.round(w * 0.07)));
-        peakH = 140;
-      }
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const pointer = window.matchMedia(
+      "(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)",
+    ).matches;
 
-      // Radius of circle passing through (0, peakH - s), (w/2, peakH), (w, peakH - s):
-      // (w/2)^2 + (R - s)^2 = R^2 => R = (w^2 / (8 * s)) + (s / 2)
-      const r = (w * w) / (8 * s) + s / 2;
-      const d = Math.round(2 * r);
-      const bottom = Math.round(peakH - d);
+    let w = 0;
+    let h = 0;
+    let H = 0;
+    let geo = geometry(0);
+    // Bend: 0 = concave dip, 1 = full dome.
+    let bend = reduced ? 1 : 0;
+    let bendTarget = bend;
+    let gx = 0;
+    let gxTarget = 0;
+    let frame = 0;
+    let visible = false;
 
-      // Desired glint linear width ~280px along the circumference
-      const glintDeg = Math.max(1.5, Math.min(12, (280 / r) * (180 / Math.PI)));
-
-      el.style.setProperty("--horizon-d", `${d}px`);
-      el.style.setProperty("--horizon-bottom", `${bottom}px`);
-      el.style.setProperty("--glint-angle", `${glintDeg.toFixed(2)}deg`);
+    const measure = () => {
+      const r = section.getBoundingClientRect();
+      w = r.width || window.innerWidth;
+      h = r.height;
+      geo = geometry(w);
+      H = geo.peakH + HAZE;
+      svg.setAttribute("viewBox", `0 0 ${w} ${H}`);
+      svg.style.height = `${H}px`;
+      // Same depth as the section's old floor fade (h-24, lg:h-32), now drawn under the rim instead of over it.
+      const fadeH = w >= 1024 ? 128 : 96;
+      floor?.setAttribute("x", `${-PAD}`);
+      floor?.setAttribute("width", `${w + PAD * 2}`);
+      floor?.setAttribute("y", `${H - fadeH}`);
+      floor?.setAttribute("height", `${fadeH + 40}`);
+      gx = gxTarget = w / 2;
     };
 
-    updateGeometry();
+    // Scroll progress, measured on the arch's lowest point in its starting (dipped) shape. It starts only once
+    // the whole curve is in view with some room below it, and completes when the page reaches its end (or when
+    // that point reaches 30% of the screen, if the page scrolls further than that).
+    const readProgress = () => {
+      if (reduced) return 1;
+      const vh = window.innerHeight;
+      const lowY = section.getBoundingClientRect().bottom - (geo.peakH - geo.s);
+      const se = document.scrollingElement;
+      const remaining = se ? Math.max(0, se.scrollHeight - vh - window.scrollY) : Infinity;
+      const end = Math.max(vh * 0.3, lowY - remaining);
+      // On short screens the arch may never fully clear the bottom; still give the bend its last 80px of scroll.
+      const start = Math.max(vh - Math.min(140, vh * 0.15), end + 80);
+      return Math.min(1, Math.max(0, (start - lowY) / (start - end)));
+    };
+
+    const render = () => {
+      const k = bend * 2 - 1;
+      const mid = geo.peakH - geo.s / 2;
+      // Heights above the section floor for the curve's center and side edges.
+      const centerH = mid + (k * geo.s) / 2;
+      const edgeH = mid - (k * geo.s) / 2;
+      const m = H - centerH;
+      const e = H - edgeH;
+      // Parabola through (0, e), (w/2, m), (w, e), extended PAD past each side.
+      const f = (x: number) => m + (e - m) * ((2 * x - w) / w) ** 2;
+      const x0 = -PAD;
+      const x1 = w + PAD;
+      const E = f(x0);
+      const curve = `M${x0} ${E.toFixed(2)} Q${w / 2} ${(2 * m - E).toFixed(2)} ${x1} ${E.toFixed(2)}`;
+      const fill = `${curve} L${x1} ${H + 40} L${x0} ${H + 40} Z`;
+
+      curves.forEach((p) => p.setAttribute("d", curve));
+      body.forEach((p) => p.setAttribute("d", fill));
+      core?.setAttribute("cx", `${w / 2}`);
+      core?.setAttribute("cy", m.toFixed(2));
+      glint?.setAttribute("x1", `${gx - GLINT}`);
+      glint?.setAttribute("x2", `${gx + GLINT}`);
+
+      section.dispatchEvent(
+        new CustomEvent<HorizonShape>("horizon:shape", { detail: { w, m: h - centerH, e: h - edgeH } }),
+      );
+    };
+
+    const step = () => {
+      bendTarget = readProgress();
+      bend += (bendTarget - bend) * 0.14;
+      gx += (gxTarget - gx) * 0.12;
+      const settled = Math.abs(bendTarget - bend) < 0.001 && Math.abs(gxTarget - gx) < 0.3;
+      if (settled) {
+        bend = bendTarget;
+        gx = gxTarget;
+      }
+      render();
+      frame = settled || !visible ? 0 : requestAnimationFrame(step);
+    };
+    const kick = () => {
+      if (!frame && visible) frame = requestAnimationFrame(step);
+    };
+
+    measure();
+    bend = bendTarget = readProgress();
+    render();
 
     const ro = new ResizeObserver(() => {
-      updateGeometry();
+      measure();
+      render();
+      kick();
     });
     ro.observe(section);
 
-    if (!window.matchMedia("(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)").matches) {
-      return () => ro.disconnect();
-    }
+    const io = new IntersectionObserver(([entry]) => {
+      visible = Boolean(entry?.isIntersecting);
+      if (visible) kick();
+    });
+    io.observe(section);
 
     const move = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect();
-      const radius = r.width / 2;
-      if (radius <= 0) return;
-      const dx = Math.max(-radius, Math.min(radius, e.clientX - (r.left + radius)));
-      el.style.setProperty("--ha", `${((Math.asin(dx / radius) * 180) / Math.PI).toFixed(2)}deg`);
+      gxTarget = Math.max(0, Math.min(w, e.clientX - section.getBoundingClientRect().left));
+      kick();
     };
-    const leave = () => el.style.removeProperty("--ha");
+    const leave = () => {
+      gxTarget = w / 2;
+      kick();
+    };
 
-    section.addEventListener("pointermove", move);
-    section.addEventListener("pointerleave", leave);
+    if (!reduced) window.addEventListener("scroll", kick, { passive: true });
+    if (pointer) {
+      section.addEventListener("pointermove", move);
+      section.addEventListener("pointerleave", leave);
+    }
 
     return () => {
+      cancelAnimationFrame(frame);
       ro.disconnect();
+      io.disconnect();
+      window.removeEventListener("scroll", kick);
       section.removeEventListener("pointermove", move);
       section.removeEventListener("pointerleave", leave);
     };
   }, []);
 
-  return <div ref={ref} aria-hidden="true" className="horizon pointer-events-none absolute left-1/2 -translate-x-1/2" />;
-}
+  return (
+    <svg
+      ref={ref}
+      aria-hidden="true"
+      overflow="visible"
+      className="horizon pointer-events-none absolute inset-x-0 bottom-0 z-[3] w-full"
+    >
+      <defs>
+        <filter id="horizon-haze" filterUnits="userSpaceOnUse" x="-50%" y="-100%" width="200%" height="300%">
+          <feGaussianBlur stdDeviation="46" />
+        </filter>
+        <filter id="horizon-glow" filterUnits="userSpaceOnUse" x="-50%" y="-100%" width="200%" height="300%">
+          <feGaussianBlur stdDeviation="12" />
+        </filter>
+        <filter id="horizon-inner" filterUnits="userSpaceOnUse" x="-50%" y="-100%" width="200%" height="300%">
+          <feGaussianBlur stdDeviation="22" />
+        </filter>
+        <filter id="horizon-soft" filterUnits="userSpaceOnUse" x="-50%" y="-100%" width="200%" height="300%">
+          <feGaussianBlur stdDeviation="1" />
+        </filter>
+        <clipPath id="horizon-body">
+          <path data-body />
+        </clipPath>
+        <radialGradient id="horizon-core">
+          <stop offset="0%" stopColor="rgb(230,115,0)" stopOpacity="0.42" />
+          <stop offset="20%" stopColor="rgb(180,80,0)" stopOpacity="0.22" />
+          <stop offset="45%" stopColor="rgb(90,35,4)" stopOpacity="0.08" />
+          <stop offset="100%" stopColor="#010114" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="horizon-glint" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="0" y2="0">
+          <stop offset="0%" stopColor="#ffd2a1" stopOpacity="0" />
+          <stop offset="50%" stopColor="#ffd2a1" stopOpacity="1" />
+          <stop offset="100%" stopColor="#ffd2a1" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="horizon-floor" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#010114" stopOpacity="0" />
+          <stop offset="50%" stopColor="#010114" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#010114" stopOpacity="1" />
+        </linearGradient>
+      </defs>
 
+      {/* Outer atmosphere above the rim */}
+      <path data-curve fill="none" stroke="rgba(204,102,0,0.34)" strokeWidth="90" filter="url(#horizon-haze)" />
+      <path data-curve fill="none" stroke="rgba(230,115,0,0.6)" strokeWidth="8" filter="url(#horizon-glow)" />
+
+      {/* Planet body with its inner rim light */}
+      <path data-body fill="#010114" />
+      <g clipPath="url(#horizon-body)">
+        <ellipse data-core rx="1600" ry="110" fill="url(#horizon-core)" />
+        <path data-curve fill="none" stroke="rgba(204,102,0,0.45)" strokeWidth="36" filter="url(#horizon-inner)" />
+        <path data-curve fill="none" stroke="rgba(255,190,120,0.5)" strokeWidth="6" filter="url(#horizon-soft)" />
+      </g>
+
+      {/* Fade the body into the page before the footer. Clipped to the body so the halo above the rim keeps its full
+          glow even where the dipped curve runs close to the floor. */}
+      <g clipPath="url(#horizon-body)">
+        <rect data-floor fill="url(#horizon-floor)" />
+      </g>
+
+      {/* Crisp rim and the travelling glint */}
+      <path data-curve fill="none" stroke="rgba(255,176,102,0.95)" strokeWidth="1" />
+      <path data-curve fill="none" stroke="url(#horizon-glint)" strokeWidth="2.5" filter="url(#horizon-soft)" />
+    </svg>
+  );
+}

@@ -65,18 +65,17 @@ export default function TrackerFeed() {
   return (
     <div
       ref={ref}
-      className="overflow-hidden rounded-[2px] border border-white/10 bg-[#010114] shadow-[0_30px_60px_-30px_rgba(1,1,20,0.8)]"
+      className="w-full overflow-hidden"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-3.5">
+      <div className="flex items-center justify-between gap-3 border-y border-white/[0.07] px-7 py-3 sm:px-8">
         <div className="flex items-center gap-2.5">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60 motion-reduce:hidden" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
           </span>
-          <span className="font-sans text-sm font-semibold text-white">Study tracker</span>
-          <span className="hidden font-mono text-[11px] text-white/50 sm:inline">JAXIS-202609-0142</span>
+          <span className="font-mono text-[11px] text-white/70">JAXIS-202609-0142</span>
         </div>
-        <span className="font-mono text-[9.5px] uppercase tracking-wider text-white/40">Example</span>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-white/40">Example</span>
       </div>
 
       <ul className="relative" style={{ height: VISIBLE * ROW }} aria-live="off">
@@ -87,8 +86,8 @@ export default function TrackerFeed() {
           return (
             <li
               key={item.id}
-              className={`feed-row absolute inset-x-0 flex items-center gap-4 border-b border-white/[0.06] px-5 ${
-                top ? "bg-[#06061D]" : "bg-[#010114]"
+              className={`feed-row absolute inset-x-0 flex items-center gap-4 border-b border-white/[0.06] px-7 sm:px-8 ${
+                top ? "bg-[#0E0E21]" : "bg-[#0A0A18]"
               } ${top && item.id > VISIBLE ? "feed-new" : ""}`}
               style={{
                 height: ROW,
@@ -96,9 +95,7 @@ export default function TrackerFeed() {
                 opacity: index >= VISIBLE ? 0 : 1,
               }}
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] bg-white/[0.06]">
-                <EventIcon size={17} weight="fill" className={top ? "text-[#CC6600]" : "text-white/60"} />
-              </span>
+              <EventIcon size={18} weight="fill" className={`shrink-0 ${top ? "text-[#FF8A1F]" : "text-white/50"}`} aria-hidden="true" />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-sans text-sm font-medium text-white">{ev.title}</div>
                 <div className="truncate font-sans text-[12.5px] text-white/55">{ev.meta}</div>
@@ -114,7 +111,7 @@ export default function TrackerFeed() {
         })}
       </ul>
 
-      <div className="flex items-center gap-3 px-5 py-3.5">
+      <div className="flex items-center gap-3 px-7 py-4 sm:px-8">
         <div className="flex flex-1 gap-1">
           {STAGES.map((s, i) => (
             <span
