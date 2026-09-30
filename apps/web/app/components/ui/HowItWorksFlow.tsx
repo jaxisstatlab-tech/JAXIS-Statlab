@@ -185,8 +185,12 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
           return (
             <div
               key={s.tag}
-              className={`bento-tile relative flex-col overflow-hidden transition-colors duration-300 max-lg:animate-[step-in_400ms_cubic-bezier(0.23,1,0.32,1)] lg:flex ${
-                on ? "flex bg-[#0E0E21]" : "hidden bg-[#0A0A18]"
+              data-step-card
+              // Below lg all five cards share one cell and cross-fade, so the pinned card never changes height.
+              className={`bento-tile relative flex flex-col overflow-hidden transition-[background-color,opacity,translate] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] max-lg:col-start-1 max-lg:row-start-2 ${
+                on
+                  ? "bg-[#0E0E21] max-lg:translate-y-0 max-lg:opacity-100"
+                  : "bg-[#0A0A18] max-lg:pointer-events-none max-lg:translate-y-2 max-lg:opacity-0"
               }`}
             >
               <button

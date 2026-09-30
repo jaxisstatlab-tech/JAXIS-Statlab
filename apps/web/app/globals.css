@@ -85,14 +85,6 @@ body,
   display: none;
 }
 
-/* How it works on phones: the step card that comes into view eases in */
-@keyframes step-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}
-
 /* Lenis smooth scrolling (from lenis/dist/lenis.css) */
 html.lenis,
 html.lenis body {
@@ -187,11 +179,12 @@ html[data-leaving] .exit-curtain {
     visibility 0s;
 }
 
-/* First-visit intro (about 1.35s): the hero grid lights up in a sweep and gathers into the centre, the JAXIS mark
-   assembles there, then flies into the navbar logo while the dark cover lifts off the hero underneath. */
+/* First-visit intro (about 1.35s): on a clean dark screen the logo rises into view, the wordmark settles in over a
+   thin hairline, then the logo glides into the navbar logo while the cover lifts off the hero underneath. */
 .intro {
   /* Where the navbar logo sits: its container is 90rem wide, centred, with a 1.5rem (2rem on lg) gutter. */
   --logo-x: calc(max(0px, (100% - 90rem) / 2) + 1.5rem + 11px);
+  --intro-ease: cubic-bezier(0.23, 1, 0.32, 1);
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -199,8 +192,8 @@ html[data-leaving] .exit-curtain {
   background: #010114;
   pointer-events: none;
   animation:
-    intro-cover 340ms ease 860ms forwards,
-    intro-end 1ms linear 1360ms forwards;
+    intro-cover 360ms ease 900ms forwards,
+    intro-end 1ms linear 1380ms forwards;
 }
 @media (min-width: 1024px) {
   .intro {
@@ -221,38 +214,18 @@ html[data-intro="done"] .intro {
     visibility: hidden;
   }
 }
-.intro-grid {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  clip-path: circle(0% at 50% 50%);
-  animation: intro-sweep 720ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
-}
-.intro-grid .px {
-  opacity: 0.11;
-}
-/* Out to the corners (75% of the reference radius covers them), then back into the centre */
-@keyframes intro-sweep {
-  50% {
-    clip-path: circle(75% at 50% 50%);
-  }
-  to {
-    clip-path: circle(0% at 50% 50%);
-  }
-}
 .intro-glow {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 300px;
-  height: 240px;
-  translate: -50% -50%;
-  background: radial-gradient(closest-side, rgba(204, 102, 0, 0.3), transparent);
+  width: 420px;
+  height: 320px;
+  translate: -50% -58%;
+  background: radial-gradient(closest-side, rgba(204, 102, 0, 0.13), transparent);
   opacity: 0;
   animation:
-    intro-fade 500ms ease 320ms forwards,
-    intro-out 300ms ease 860ms forwards;
+    intro-in 700ms ease 150ms forwards,
+    intro-out 300ms ease 900ms forwards;
 }
 .intro-mark {
   position: absolute;
@@ -261,26 +234,30 @@ html[data-intro="done"] .intro {
   width: 92px;
   height: 92px;
   translate: -50% -50%;
-  opacity: 0;
-  scale: 0.85;
+  clip-path: inset(100% 0 0 0);
+  filter: blur(8px);
+  scale: 0.96;
   animation:
-    intro-logo-in 420ms cubic-bezier(0.23, 1, 0.32, 1) 280ms forwards,
-    intro-fly 380ms cubic-bezier(0.65, 0, 0.35, 1) 860ms forwards,
-    intro-out 140ms ease 1220ms forwards;
+    intro-rise 620ms var(--intro-ease) 120ms forwards,
+    intro-fly 420ms cubic-bezier(0.65, 0, 0.35, 1) 900ms forwards,
+    intro-out 140ms ease 1260ms forwards;
 }
-@keyframes intro-logo-in {
+@keyframes intro-rise {
   to {
-    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    filter: blur(0);
     scale: 1;
   }
 }
 @keyframes intro-fly {
   from {
-    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    filter: blur(0);
     scale: 1;
   }
   to {
-    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    filter: blur(0);
     left: var(--logo-x);
     top: 32px;
     scale: 0.239;
@@ -289,22 +266,42 @@ html[data-intro="done"] .intro {
 .intro-word {
   position: absolute;
   left: 50%;
-  top: calc(50% + 62px);
+  top: calc(50% + 66px);
   translate: -50% 0;
   white-space: nowrap;
+  letter-spacing: 0.12em;
   opacity: 0;
   animation:
-    intro-fade 380ms cubic-bezier(0.23, 1, 0.32, 1) 440ms forwards,
-    intro-out 200ms ease 800ms forwards;
+    intro-word 700ms var(--intro-ease) 360ms forwards,
+    intro-out 220ms ease 860ms forwards;
 }
-@keyframes intro-fade {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
+@keyframes intro-word {
+  to {
+    letter-spacing: -0.01em;
+    opacity: 1;
   }
+}
+.intro-line {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 100px);
+  width: 72px;
+  height: 1px;
+  translate: -50% 0;
+  background: linear-gradient(90deg, transparent, #ff8a1f, transparent);
+  scale: 0 1;
+  animation:
+    intro-draw 600ms var(--intro-ease) 460ms forwards,
+    intro-out 220ms ease 860ms forwards;
+}
+@keyframes intro-draw {
+  to {
+    scale: 1 1;
+  }
+}
+@keyframes intro-in {
   to {
     opacity: 1;
-    transform: none;
   }
 }
 @keyframes intro-out {

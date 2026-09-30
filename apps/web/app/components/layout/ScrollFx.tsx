@@ -73,13 +73,19 @@ export default function ScrollFx() {
       }
 
       gsap.utils.toArray<HTMLElement>("[data-grid-draw]").forEach((frame) => {
-        const cells = Array.from(frame.firstElementChild?.children ?? []);
+        // Stacked step cards fade themselves below lg, so the draw-in leaves them alone there.
+        const cells = Array.from(frame.firstElementChild?.children ?? []).filter((c) => !(narrow && c.hasAttribute("data-step-card")));
         gsap.set(frame, { "--draw": 0 });
         gsap.set(cells, { autoAlpha: 0, y: 24 });
         gsap
           .timeline({ scrollTrigger: { trigger: frame, start: "top 82%", once: true } })
           .to(frame, { "--draw": 1, duration: 1.1, ease: "power2.inOut" })
-          .to(cells, { autoAlpha: 1, y: 0, duration: 0.8, ease: "expo.out", stagger: 0.07 }, 0.25);
+          .to(
+            cells,
+            // Hand the cells back to their own classes afterwards (the step cards fade themselves on phones).
+            { autoAlpha: 1, y: 0, duration: 0.8, ease: "expo.out", stagger: 0.07, clearProps: "opacity,visibility,transform" },
+            0.25,
+          );
       });
 
       if (phone) {
