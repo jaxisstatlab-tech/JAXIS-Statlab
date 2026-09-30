@@ -130,9 +130,17 @@ export default function CtaField() {
     });
     resize.observe(section);
 
+    // The arch reports its shape as it bends; redraw at most once per frame, and only if it actually moved.
+    let shapeFrame = 0;
     const onShape = (e: Event) => {
-      rim = (e as CustomEvent<HorizonShape>).detail;
-      if (visible && !frame) draw();
+      const next = (e as CustomEvent<HorizonShape>).detail;
+      if (rim && Math.abs(rim.m - next.m) < 0.5 && Math.abs(rim.e - next.e) < 0.5 && rim.w === next.w) return;
+      rim = next;
+      if (!visible || frame || shapeFrame) return;
+      shapeFrame = requestAnimationFrame(() => {
+        shapeFrame = 0;
+        if (!frame) draw();
+      });
     };
     section.addEventListener("horizon:shape", onShape);
 
@@ -149,6 +157,7 @@ export default function CtaField() {
 
     return () => {
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(shapeFrame);
       resize.disconnect();
       io.disconnect();
       section.removeEventListener("horizon:shape", onShape);

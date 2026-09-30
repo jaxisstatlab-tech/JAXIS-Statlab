@@ -50,6 +50,10 @@ export default function HorizonTracker() {
     let gxTarget = 0;
     let frame = 0;
     let visible = false;
+    // What was last written to the SVG, so frames where nothing changed cost nothing (the blurred layers are
+    // expensive to redraw, and scrolling alone used to redraw them every frame).
+    let drawn = "";
+    let glintAt = NaN;
 
     const measure = () => {
       const r = section.getBoundingClientRect();
@@ -66,6 +70,17 @@ export default function HorizonTracker() {
       floor?.setAttribute("y", `${H - fadeH}`);
       floor?.setAttribute("height", `${fadeH + 40}`);
       gx = gxTarget = w / 2;
+      // Fit each blur's working area to the arch plus three blur radii. The default (a region as wide as twice the
+      // screen and three times the art) made every redraw blur several times more pixels than it needed to.
+      svg.querySelectorAll<SVGFilterElement>("filter[data-blur]").forEach((f) => {
+        const pad = Math.ceil(3 * Number(f.dataset.blur));
+        f.setAttribute("x", `${-PAD - pad}`);
+        f.setAttribute("y", `${-pad}`);
+        f.setAttribute("width", `${w + PAD * 2 + pad * 2}`);
+        f.setAttribute("height", `${H + 40 + pad * 2}`);
+      });
+      drawn = "";
+      glintAt = NaN;
     };
 
     // Scroll progress, measured on the arch's lowest point in its starting (dipped) shape. It starts only once
@@ -84,7 +99,16 @@ export default function HorizonTracker() {
     };
 
     const render = () => {
-      const k = bend * 2 - 1;
+      if (Math.abs(gx - glintAt) >= 0.5) {
+        glintAt = gx;
+        glint?.setAttribute("x1", `${gx - GLINT}`);
+        glint?.setAttribute("x2", `${gx + GLINT}`);
+      }
+      // Steps of 1/400 are invisible but let an unchanged shape skip the redraw entirely.
+      const key = `${Math.round(bend * 400)}`;
+      if (key === drawn) return;
+      drawn = key;
+      const k = (Math.round(bend * 400) / 400) * 2 - 1;
       const mid = geo.peakH - geo.s / 2;
       // Heights above the section floor for the curve's center and side edges.
       const centerH = mid + (k * geo.s) / 2;
@@ -103,8 +127,6 @@ export default function HorizonTracker() {
       body.forEach((p) => p.setAttribute("d", fill));
       core?.setAttribute("cx", `${w / 2}`);
       core?.setAttribute("cy", m.toFixed(2));
-      glint?.setAttribute("x1", `${gx - GLINT}`);
-      glint?.setAttribute("x2", `${gx + GLINT}`);
 
       section.dispatchEvent(
         new CustomEvent<HorizonShape>("horizon:shape", { detail: { w, m: h - centerH, e: h - edgeH } }),
@@ -177,16 +199,16 @@ export default function HorizonTracker() {
       className="horizon pointer-events-none absolute inset-x-0 bottom-0 z-[3] w-full"
     >
       <defs>
-        <filter id="horizon-haze" filterUnits="userSpaceOnUse" x="-50%" y="-100%" width="200%" height="300%">
+        <filter id="horizon-haze" data-blur="46" filterUnits="userSpaceOnUse">
           <feGaussianBlur stdDeviation="46" />
         </filter>
-        <filter id="horizon-glow" filterUnits="userSpaceOnUse" x="-50%" y="-100%" width="200%" height="300%">
+        <filter id="horizon-glow" data-blur="12" filterUnits="userSpaceOnUse">
           <feGaussianBlur stdDeviation="12" />
         </filter>
-        <filter id="horizon-inner" filterUnits="userSpaceOnUse" x="-50%" y="-100%" width="200%" height="300%">
+        <filter id="horizon-inner" data-blur="22" filterUnits="userSpaceOnUse">
           <feGaussianBlur stdDeviation="22" />
         </filter>
-        <filter id="horizon-soft" filterUnits="userSpaceOnUse" x="-50%" y="-100%" width="200%" height="300%">
+        <filter id="horizon-soft" data-blur="1" filterUnits="userSpaceOnUse">
           <feGaussianBlur stdDeviation="1" />
         </filter>
         <clipPath id="horizon-body">
