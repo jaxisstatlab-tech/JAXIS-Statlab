@@ -50,7 +50,9 @@ export async function GET(req: NextRequest) {
     const isPublicAsset =
       storageKey.startsWith("avatars/") ||
       storageKey.startsWith("public/") ||
-      storageKey.startsWith("system/");
+      storageKey.startsWith("system/") ||
+      // GCash/bank QR codes from the payment settings: every client paying a deposit needs to see them.
+      storageKey.startsWith("treasury/payments/SYSTEM_CONFIG/");
 
     if (!isPublicAsset) {
       let isAuthorized = false;

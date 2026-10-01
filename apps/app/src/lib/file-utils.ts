@@ -320,20 +320,28 @@ export function formatFileCategory(category: string): { label: string; badgeClas
  * Generates an authentic client-side artifact payload in local development,
  * and executes secure URL streaming when connected to cloud object storage (R2/S3).
  */
+const STORED_FILE_PREFIXES = ["studies/", "deliverables/", "treasury/", "sows/", "disputes/", "uploads/", "intake-uploads/"];
+
+/**
+ * Where the browser should load a stored file from: always the signed-in preview route, which checks that the
+ * person may see it. The storage bucket's own public links skip that check, so they are never handed out.
+ * Local blob/data previews pass through, other web links are left as they are, and null means "not a file".
+ */
+export function resolveStoredFileUrl(filePath: string): string | null {
+  if (!filePath) return null;
+  if (filePath.startsWith("blob:") || filePath.startsWith("data:")) return filePath;
+  if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+    try {
+      return new URL(filePath).hostname.endsWith(".r2.dev") ? getFilePreviewUrl(filePath) : filePath;
+    } catch {
+      return null;
+    }
+  }
+  return STORED_FILE_PREFIXES.some((prefix) => filePath.startsWith(prefix)) ? getFilePreviewUrl(filePath) : null;
+}
+
 export async function triggerFileDownload(filePath: string, fileName: string): Promise<void> {
-  const R2_PUBLIC_DEV_URL = "https://pub-70de33883ce54230863841fbf74f07b3.r2.dev";
-  const downloadUrl =
-    filePath.startsWith("http://") || filePath.startsWith("https://") || filePath.startsWith("blob:")
-      ? filePath
-      : filePath.startsWith("studies/") ||
-        filePath.startsWith("deliverables/") ||
-        filePath.startsWith("treasury/") ||
-        filePath.startsWith("sows/") ||
-        filePath.startsWith("disputes/") ||
-        filePath.startsWith("uploads/") ||
-        filePath.startsWith("intake-uploads/")
-      ? `${R2_PUBLIC_DEV_URL}/${filePath}`
-      : null;
+  const downloadUrl = resolveStoredFileUrl(filePath);
 
   if (downloadUrl) {
     try {

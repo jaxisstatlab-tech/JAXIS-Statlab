@@ -22,7 +22,7 @@ import {
   } from "@tabler/icons-react";
 import { submitQaReview } from "../actions";
 import { getAnalysisFileDownloadUrl } from "@/features/analysis/actions";
-import { formatFileCategory } from "@/lib/file-utils";
+import { formatFileCategory, resolveStoredFileUrl } from "@/lib/file-utils";
 import {
   ERROR_CLASSIFICATION_METADATA,
   QA_DECISION_METADATA,
@@ -389,7 +389,7 @@ export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
                         </div>
                       </div>
                       <a
-                        href={file.filePath}
+                        href={resolveStoredFileUrl(file.filePath) ?? file.filePath}
                         download
                         target="_blank"
                         rel="noreferrer"

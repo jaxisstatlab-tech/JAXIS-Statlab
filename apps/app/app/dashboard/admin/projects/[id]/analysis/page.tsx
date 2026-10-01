@@ -11,6 +11,7 @@ import {
 } from "@tabler/icons-react";
 import type { RoleName } from "@prisma/client";
 import { StudySection } from "@/features/projects/components/StudySection";
+import { resolveStoredFileUrl } from "@/lib/file-utils";
 
 interface AdminAnalysisPageProps {
   params: Promise<{ id: string }>;
@@ -107,7 +108,7 @@ export default async function AdminAnalysisPage({ params }: AdminAnalysisPagePro
                   </div>
 
                   <a
-                    href={file.filePath}
+                    href={resolveStoredFileUrl(file.filePath) ?? file.filePath}
                     download={file.fileName}
                     target="_blank"
                     rel="noreferrer"

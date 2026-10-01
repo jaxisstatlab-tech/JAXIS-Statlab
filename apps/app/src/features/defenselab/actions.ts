@@ -771,6 +771,12 @@ export async function updateDefenseLabMeetingLink(
     return { success: false, error: { code: "UNAUTHORIZED", message: "Please log in." } };
   }
 
+  // Meeting links are set from the admin DefenseLab desk. Any signed-in user could change any session's link
+  // before (and the app then sent that link to the client and the expert).
+  if (session.user.role !== "ADMIN" && session.user.role !== "CEO") {
+    return { success: false, error: { code: "FORBIDDEN", message: "Only administrators can change meeting links." } };
+  }
+
   const parsed = UpdateDefenseLabMeetingLinkSchema.safeParse(input);
   if (!parsed.success) {
     return {

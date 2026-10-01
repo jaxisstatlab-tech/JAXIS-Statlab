@@ -26,6 +26,7 @@ import { formatEWalletNumber, formatBankAccountNumber } from "@/lib/formatters";
 import { uploadFileToR2 } from "@/lib/storage-client";
 import { getPaymentChannels, updatePaymentChannels } from "../actions";
 import type { PaymentChannelDetails } from "@/lib/payment-rules";
+import { resolveStoredFileUrl } from "@/lib/file-utils";
 
 interface PaymentChannelSettingsModalProps {
   open: boolean;
@@ -303,7 +304,7 @@ export function PaymentChannelSettingsModal({
                       <div className="flex flex-col items-center gap-1.5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={gcashChannel.qrImageUrl}
+                          src={resolveStoredFileUrl(gcashChannel.qrImageUrl) ?? gcashChannel.qrImageUrl}
                           alt="Custom GCash QR"
                           className="w-20 h-20 object-contain rounded-[2px] border border-white/20 bg-white p-1"
                         />

@@ -25,7 +25,7 @@ import {
 } from "@phosphor-icons/react";
 import { ANALYSIS_CATEGORY_METADATA } from "@/lib/analysis-rules";
 import { uploadAnalysisFile, getAnalysisFileDownloadUrl } from "../actions";
-import { formatFileCategory } from "@/lib/file-utils";
+import { formatFileCategory, resolveStoredFileUrl } from "@/lib/file-utils";
 import { VersionHistoryModal } from "./VersionHistoryModal";
 import { ScopeCreepModal } from "./ScopeCreepModal";
 import { SubmitForQAModal } from "./SubmitForQAModal";
@@ -609,7 +609,7 @@ export const AnalysisWorkbenchDesk: React.FC<AnalysisWorkbenchDeskProps> = ({ in
                         </div>
                       </div>
                       <a
-                        href={file.filePath}
+                        href={resolveStoredFileUrl(file.filePath) ?? file.filePath}
                         download
                         target="_blank"
                         rel="noreferrer"

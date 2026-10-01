@@ -13,7 +13,7 @@ import {
   IconCheck,
   IconArrowRight,
 } from "@tabler/icons-react";
-import { formatFileCategory } from "@/lib/file-utils";
+import { formatFileCategory, resolveStoredFileUrl } from "@/lib/file-utils";
 import { StudySection } from "@/features/projects/components/StudySection";
 
 interface QAProjectFilesPageProps {
@@ -183,7 +183,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
                       </div>
                     </div>
                     <a
-                      href={f.filePath}
+                      href={resolveStoredFileUrl(f.filePath) ?? f.filePath}
                       download
                       target="_blank"
                       rel="noreferrer"
@@ -239,7 +239,7 @@ export default async function QAProjectFilesPage({ params }: QAProjectFilesPageP
                     </div>
 
                     <a
-                      href={file.filePath}
+                      href={resolveStoredFileUrl(file.filePath) ?? file.filePath}
                       download={file.fileName}
                       target="_blank"
                       rel="noreferrer"

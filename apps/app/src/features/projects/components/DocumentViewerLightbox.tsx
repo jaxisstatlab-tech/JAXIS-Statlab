@@ -20,6 +20,7 @@ import {
 import {
   getFileMeta,
   formatFileCategory,
+  resolveStoredFileUrl,
   triggerFileDownload,
 } from "@/lib/file-utils";
 import type { ProjectFileItem } from "@/features/projects/schemas";
@@ -648,19 +649,8 @@ export function DocumentViewerLightbox({
   const category = formatFileCategory(file.fileCategory);
   const isPdf = file.fileName.toLowerCase().endsWith(".pdf");
 
-  const R2_PUBLIC_DEV_URL = "https://pub-70de33883ce54230863841fbf74f07b3.r2.dev";
-  const realFileUrl =
-    file.filePath.startsWith("http://") || file.filePath.startsWith("https://")
-      ? file.filePath
-      : file.filePath.startsWith("studies/") ||
-        file.filePath.startsWith("deliverables/") ||
-        file.filePath.startsWith("treasury/") ||
-        file.filePath.startsWith("sows/") ||
-        file.filePath.startsWith("disputes/") ||
-        file.filePath.startsWith("uploads/") ||
-        file.filePath.startsWith("intake-uploads/")
-      ? `${R2_PUBLIC_DEV_URL}/${file.filePath}`
-      : null;
+  // Loaded through the signed-in preview route, never the storage bucket's public link.
+  const realFileUrl = resolveStoredFileUrl(file.filePath);
 
   const isRealPdf = isPdf && Boolean(realFileUrl);
 

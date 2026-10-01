@@ -1,3 +1,5 @@
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
 import { db, withDbTimeout } from "@/lib/db";
 import type { RoleName } from "@prisma/client";
 import { ensureFreshAccountNotifications } from "@/features/notifications/actions";
@@ -11,9 +13,11 @@ interface UserCandidate {
 }
 
 /**
- * Resolves or automatically provisions a database user for any session user.
- * Guarantees that the returned userId exists in `public.users` so foreign key
- * constraints (e.g. `projects_clientId_fkey`, `audit_logs_actorId_fkey`) never fail.
+ * Resolves the signed-in person's own database user, creating it if it doesn't exist yet.
+ *
+ * It only ever returns that person's own account. If it can't be found or created, it returns the session's
+ * id and the caller's write fails safely; it never borrows another user's account, which used to file one
+ * client's study under someone else's account.
  */
 export async function resolveOrProvisionUser(
   userCandidate: UserCandidate,
@@ -74,20 +78,18 @@ export async function resolveOrProvisionUser(
         userCandidate.name ||
         (targetRole === "CLIENT" ? "Research Client" : "Staff User");
 
-      // Default bcrypt hash for fallback password (e.g. "JaxisClient2026!")
-      const defaultPasswordHash =
-        "$2a$12$K8yXv1eI0N2j/8hKzZ9O4.E6y7N0hQG9tB0aV/bV1mP4.E8jZ2m6K";
+      // A random password nobody knows: the person signs in the way they already do (e.g. Google) or sets
+      // one with "Forgot password". (A fixed default used to be shared by every account created here.)
+      const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 12);
 
       const newUser = await db.user.upsert({
         where: { email: candidateEmail },
-        update: {
-          fullName,
-          status: "ACTIVE",
-        },
+        // If the account appeared meanwhile, use it as it is: never reactivate a suspended account or rename it.
+        update: {},
         create: {
           email: candidateEmail,
           fullName,
-          passwordHash: defaultPasswordHash,
+          passwordHash,
           status: "ACTIVE",
           userRoles: {
             create: {
@@ -112,30 +114,8 @@ export async function resolveOrProvisionUser(
     }
   }
 
-  // 4. Fallback to existing client in DB if everything else failed
-  try {
-    const fallbackClient = await withDbTimeout(
-      db.user.findFirst({
-        where: {
-          OR: [
-            { email: "client@jaxis.dev" },
-            { userRoles: { some: { role: { name: "CLIENT" } } } },
-          ],
-        },
-        select: { id: true },
-      }),
-      1500
-    );
-    if (fallbackClient?.id) {
-      console.warn(
-        `[resolveOrProvisionUser] Using fallback client ID ${fallbackClient.id} for ${candidateEmail || candidateId}`
-      );
-      return fallbackClient.id;
-    }
-  } catch (fallbackErr) {
-    console.warn("[resolveOrProvisionUser] Fallback client lookup warning:", fallbackErr);
-  }
-
-  // 5. Ultimate fallback to candidateId
+  // 4. Not found and not created: return the session's own id. A write that needs a real user then fails
+  // with an error the caller reports, rather than landing in someone else's account.
+  console.warn(`[resolveOrProvisionUser] Could not resolve a database user for ${candidateEmail || candidateId}`);
   return candidateId;
 }

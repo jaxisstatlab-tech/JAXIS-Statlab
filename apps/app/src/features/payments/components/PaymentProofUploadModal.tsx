@@ -9,6 +9,7 @@ import { submitPaymentProof, getPaymentChannels } from "../actions";
 import type { PaymentItem } from "../schemas";
 import { OFFICIAL_PAYMENT_CHANNELS, type PaymentChannelDetails } from "@/lib/payment-rules";
 import type { PaymentMethod, PaymentType } from "@prisma/client";
+import { resolveStoredFileUrl } from "@/lib/file-utils";
 
 // "Upload your receipt": 1) what you're paying (only what's actually due), 2) where to send it,
 // 3) the reference number and a screenshot. The amount is fixed to the agreement.
@@ -256,7 +257,7 @@ export function PaymentProofUploadModal({
                   </div>
                   {c.qrImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={c.qrImageUrl} alt={`QR code for ${c.accountName}`} className="h-24 w-24 shrink-0 rounded-[2px] bg-white object-contain p-1.5" />
+                    <img src={resolveStoredFileUrl(c.qrImageUrl) ?? c.qrImageUrl} alt={`QR code for ${c.accountName}`} className="h-24 w-24 shrink-0 rounded-[2px] bg-white object-contain p-1.5" />
                   ) : null}
                 </li>
               ))

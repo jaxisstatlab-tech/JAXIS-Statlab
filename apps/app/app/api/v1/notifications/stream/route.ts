@@ -32,16 +32,14 @@ export async function GET() {
       // 2. Real-time broadcast listener
       const onNotification = (payload: RealtimeNotificationPayload) => {
         try {
+          // Every alert is addressed to one person, so only that person's browser gets it. (Matching on role
+          // used to hand one client's alert, with its study and message, to every other signed-in client.)
           const isTargetUser = Boolean(
             payload.targetUserIds?.includes(user.id) ||
             payload.alert.recipientId === user.id
           );
-          const isTargetRole = Boolean(
-            payload.targetRoles?.includes(user.role as any) ||
-            payload.alert.recipientRole === user.role
-          );
 
-          if (isTargetUser || isTargetRole) {
+          if (isTargetUser) {
             const data = JSON.stringify({
               ...payload.alert,
               title: payload.title || "New Notification",

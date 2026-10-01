@@ -1,7 +1,7 @@
 "use server";
 
 import { db, withDbTimeout } from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { auth, requireRole } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import {
   MarkAlertReadSchema,
@@ -755,10 +755,13 @@ export async function createInAppAlertAction(rawInput: CreateInAppAlertInput): P
       return { success: false, error: { message: parsed.error.issues[0]?.message || "Invalid alert parameters." } };
     }
 
+    // Only staff may post alerts into someone's bell (this action used to be open to anyone, signed in or not).
+    await requireRole("ADMIN", "CEO");
+
     const { recipientId, recipientRole, alertType, projectId, message, linkUrl } = parsed.data;
 
-    // Verify recipient user exists in DB to prevent foreign key violation
-    let targetRecipientId = recipientId;
+    // The alert goes to that exact person or nowhere; it is never handed to another user with the same role.
+    const targetRecipientId = recipientId;
     const recipientExists = await withDbTimeout(
       db.user.findUnique({
         where: { id: recipientId },
@@ -767,26 +770,7 @@ export async function createInAppAlertAction(rawInput: CreateInAppAlertInput): P
       1500
     );
     if (!recipientExists) {
-      const fallbackUser = await withDbTimeout(
-        db.user.findFirst({
-          where: {
-            userRoles: {
-              some: {
-                role: {
-                  name: recipientRole,
-                },
-              },
-            },
-          },
-          select: { id: true },
-        }),
-        1500
-      );
-      if (fallbackUser) {
-        targetRecipientId = fallbackUser.id;
-      } else {
-        return { success: false, error: { message: "Recipient user not found in database." } };
-      }
+      return { success: false, error: { message: "Recipient user not found in database." } };
     }
 
     const alert = await withDbTimeout(

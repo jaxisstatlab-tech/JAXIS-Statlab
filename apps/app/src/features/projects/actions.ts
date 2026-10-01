@@ -170,7 +170,7 @@ export async function createProject(
     resolveOrProvisionUser(session.user, "CLIENT"),
   ]);
 
-  let resolvedUserId = resolvedUserIdCandidate;
+  const resolvedUserId = resolvedUserIdCandidate;
 
   // Enforce server-side profile gate
   if (!profile || !profile.institutionSchool || !profile.contactNumber) {
@@ -294,63 +294,8 @@ export async function createProject(
   } catch (dbError: unknown) {
     console.error("[createProject] Database project creation error:", dbError);
 
-    const errObj = dbError as { code?: string; message?: string };
-    const isFkeyViolation =
-      errObj?.code === "P2003" ||
-      errObj?.message?.includes("projects_clientId_fkey") ||
-      errObj?.message?.includes("Foreign key constraint");
-
-    if (isFkeyViolation) {
-      console.warn("[createProject] Foreign key violation on clientId. Attempting recovery with verified client account...");
-      try {
-        const recoveryUser = await withDbTimeout(
-          db.user.findFirst({
-            where: {
-              OR: [
-                { email: "client@jaxis.dev" },
-                { userRoles: { some: { role: { name: "CLIENT" } } } },
-              ],
-            },
-            select: { id: true },
-          }),
-          1500
-        );
-
-        if (recoveryUser && recoveryUser.id !== resolvedUserId) {
-          resolvedUserId = recoveryUser.id;
-          project = await withDbTimeout(
-            db.project.create({
-              data: {
-                intakeId,
-                clientId: recoveryUser.id,
-                researchTitle: researchTitle.trim(),
-                researchQuestions: researchQuestions.trim(),
-                researchObjectives: researchObjectives.trim(),
-                hypotheses: hypotheses?.trim() || null,
-                deadlineRequested: deadlineDate,
-                chapters13: chapters13?.trim() || null,
-                questionnaire: questionnaire?.trim() || null,
-                masterStatus: "NEW_REQUEST",
-                files: files?.length
-                  ? {
-                      create: files.map((f) => ({
-                        fileName: f.fileName,
-                        filePath: f.filePath,
-                        fileType: f.fileType,
-                        fileCategory: f.fileCategory,
-                      })),
-                    }
-                  : undefined,
-              },
-              select: PROJECT_DETAIL_SELECT,
-            })
-          );
-        }
-      } catch (recoveryErr) {
-        console.error("[createProject] Recovery retry failed:", recoveryErr);
-      }
-    }
-
+    // The study is only ever saved to the signed-in client's own account. (A failed save used to be retried
+    // under another client's account, which would show one client's thesis and files to someone else.)
     if (!project && devProjectsEnabled()) {
       // Offline dev only: save to the local sample files instead of the database.
       const row = devCreateProject(session.user, {
@@ -1591,6 +1536,16 @@ export async function resolveMissingInfo(
     return {
       success: false,
       error: { code: "UNAUTHORIZED", message: "You must be logged in to update this study." },
+    };
+  }
+
+  // Only the study's own client (or an admin) may say the missing information was sent. This used to be
+  // open to any signed-in user, who also got the study's details back.
+  const access = await assertStudyAccess(projectId, session.user);
+  if (!access.hasAccess || !(access.isOwner || access.isManager)) {
+    return {
+      success: false,
+      error: { code: "FORBIDDEN", message: "You do not have access to this study." },
     };
   }
 
