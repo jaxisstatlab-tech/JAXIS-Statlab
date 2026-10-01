@@ -4,6 +4,7 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { env } from "@/lib/env";
 import { auth } from "@/lib/auth";
 import { db, withDbTimeout } from "@/lib/db";
+import { clientFilesUnlocked } from "@/lib/delivery-rules";
 
 /**
  * Resilient File Streaming & Preview Proxy
@@ -121,8 +122,18 @@ export async function GET(req: NextRequest) {
               deliverable.project.assignment?.isActive !== false;
 
             if (userRole === "CLIENT") {
+              // Released and fully paid (only confirmed payments count); checked here, not only on the page.
               if (isOwner && deliverable.isFinalReleased) {
-                isAuthorized = true;
+                const { unlocked } = await clientFilesUnlocked(deliverable.projectId);
+                if (unlocked) {
+                  isAuthorized = true;
+                } else {
+                  console.warn("[files] Blocked a client file preview: balance still due", {
+                    projectId: deliverable.projectId,
+                    userId,
+                  });
+                  return new NextResponse("Pay the rest of your balance to open your files.", { status: 403 });
+                }
               }
             } else if (isAssignedStat || isAssignedQa || isFinance) {
               isAuthorized = true;
@@ -263,10 +274,9 @@ export async function GET(req: NextRequest) {
     );
 
     // Transform stream to Web ReadableStream for Next.js response
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stream = s3Res.Body.transformToWebStream
       ? s3Res.Body.transformToWebStream()
-      : (s3Res.Body as any);
+      : (s3Res.Body as unknown as ReadableStream);
 
     return new NextResponse(stream, {
       status: 200,

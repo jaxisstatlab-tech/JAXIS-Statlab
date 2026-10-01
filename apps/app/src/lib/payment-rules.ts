@@ -148,3 +148,45 @@ export function calculateProjectBalance(
     totalPaidPercentage,
   };
 }
+
+/**
+ * Whether a new payment's amount is allowed (a plain message when it isn't, null when it is).
+ * Clients can send exactly what the payment page offers: what's left of the deposit before it's confirmed, or
+ * everything that's left ("Pay in full" / "The rest"), and nothing while an earlier receipt is still being
+ * checked. Admin and CEO, who record payments for a client, can record any amount up to what's left.
+ * Only confirmed payments (VERIFIED / FULLY_PAID) count as paid.
+ */
+export function paymentAmountProblem(input: {
+  total: number;
+  deposit: number;
+  confirmedPaid: number;
+  hasPendingReceipt: boolean;
+  paymentType: string;
+  amount: number;
+  isStaff: boolean;
+}): string | null {
+  const left = Math.max(0, input.total - input.confirmedPaid);
+  const same = (a: number, b: number) => Math.abs(a - b) < 0.01;
+
+  if (left <= 0) return "This study is already paid in full.";
+  if (!(input.amount > 0)) return "Please enter the amount you paid.";
+  if (input.amount > left + 0.005) return "That's more than what's left to pay on this study.";
+  if (input.isStaff) return null;
+
+  if (input.hasPendingReceipt) {
+    return "We're still checking your last receipt. You can send the next one once we've confirmed it.";
+  }
+  const depositLeft = Math.max(0, input.deposit - input.confirmedPaid);
+  const depositOpen = depositLeft > 0 && input.deposit < input.total;
+  if (input.paymentType === "DOWNPAYMENT") {
+    return depositOpen && same(input.amount, depositLeft)
+      ? null
+      : "The deposit amount doesn't match your agreement. Please refresh the page and try again.";
+  }
+  if (input.paymentType === "FULL" || input.paymentType === "BALANCE") {
+    return same(input.amount, left)
+      ? null
+      : "The amount doesn't match what's left to pay. Please refresh the page and try again.";
+  }
+  return "Please choose the deposit or the full amount left to pay.";
+}

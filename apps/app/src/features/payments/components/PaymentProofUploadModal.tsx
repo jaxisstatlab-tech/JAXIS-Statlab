@@ -45,13 +45,16 @@ export function PaymentProofUploadModal({
   onSuccess,
 }: PaymentProofUploadModalProps) {
   const total = totalAmount && totalAmount > 0 ? totalAmount : remainingBalance;
+  // Amounts match what the server accepts: what's left of the deposit, or everything that's left.
+  const left = remainingBalance > 0 ? remainingBalance : total;
+  const depositLeft = Math.max(0, downpaymentRequired - (total - left));
   const options: Option[] = isDownpaymentCleared
-    ? [{ type: "BALANCE", label: "The rest", hint: "What's left to pay on your agreement", amount: remainingBalance }]
+    ? [{ type: "BALANCE", label: "The rest", hint: "What's left to pay on your agreement", amount: left }]
     : [
-        ...(downpaymentRequired > 0 && downpaymentRequired < total
-          ? [{ type: "DOWNPAYMENT" as PaymentType, label: "Deposit", hint: "Starts your analysis", amount: downpaymentRequired }]
+        ...(depositLeft > 0 && downpaymentRequired < total
+          ? [{ type: "DOWNPAYMENT" as PaymentType, label: "Deposit", hint: "Starts your analysis", amount: depositLeft }]
           : []),
-        { type: "FULL", label: "Pay in full", hint: "Nothing left to pay later", amount: total },
+        { type: "FULL", label: "Pay in full", hint: "Nothing left to pay later", amount: left },
       ];
 
   const [channels, setChannels] = useState<PaymentChannelDetails[]>(OFFICIAL_PAYMENT_CHANNELS);

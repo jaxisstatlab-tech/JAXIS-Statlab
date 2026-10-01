@@ -27,15 +27,15 @@ export async function GET(req: NextRequest) {
 
   try {
     const deliverablesData = await getClientDeliverables(studyId);
-    if (!deliverablesData.qaCertificate) {
-      return new NextResponse("There's no certificate for this study yet.", {
-        status: 404,
-      });
-    }
     // Clients get the certificate with their files: only once they're released (i.e. paid and checked).
     if (session.user.role === "CLIENT" && !deliverablesData.isReleased) {
       return new NextResponse("Your certificate is available once your files are released.", {
         status: 403,
+      });
+    }
+    if (!deliverablesData.qaCertificate) {
+      return new NextResponse("There's no certificate for this study yet.", {
+        status: 404,
       });
     }
 

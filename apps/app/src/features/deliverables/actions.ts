@@ -31,6 +31,7 @@ import {
 } from "./schemas";
 import { Deliverable, RevisionRequest, RoleName, DeliverableCategory } from "@prisma/client";
 import { assertStudyAccess } from "@/lib/access-control";
+import { clientFilesUnlocked } from "@/lib/delivery-rules";
 import { clientPackageName } from "@/features/projects/client-packages";
 import { devStudyDataEnabled, devAdminDeliverables, devClientDeliverables, devDeliverableDownload, devSubmitRevision } from "@/features/projects/dev-study-store";
 
@@ -380,9 +381,25 @@ export async function releaseDeliverables(rawInput: ReleaseDeliverablesInput): P
 }
 
 /**
+ * What a client may see of their files. This loader is a server action anyone can call from the browser, so
+ * until the files are released (paid and checked) the client gets no file list or certificate details at all,
+ * not just hidden buttons. Storage paths are never sent to clients (downloads go by file ID and are checked).
+ */
+function forClient(data: ClientDeliverablesDTO): ClientDeliverablesDTO {
+  if (!data.isReleased) return { ...data, deliverables: [], qaCertificate: null };
+  return { ...data, deliverables: data.deliverables.map((d) => ({ ...d, filePath: "" })) };
+}
+
+/**
  * Retrieves Client Deliverables Portal bundle
  */
 export async function getClientDeliverables(projectId: string): Promise<ClientDeliverablesDTO> {
+  const data = await loadClientDeliverables(projectId);
+  const role = (await auth())?.user?.role;
+  return role === "CLIENT" ? forClient(data) : data;
+}
+
+async function loadClientDeliverables(projectId: string): Promise<ClientDeliverablesDTO> {
   const session = await auth();
   if (!session?.user?.id) {
     throw new Error("Authentication required.");
@@ -392,6 +409,14 @@ export async function getClientDeliverables(projectId: string): Promise<ClientDe
   const isClient = userRole === "CLIENT";
 
   try {
+    // Staff see a study's files only if they work on it (clients are checked against the study's owner below).
+    if (!isClient) {
+      const access = await assertStudyAccess(projectId, session.user);
+      if (!access.hasAccess) {
+        throw new Error(access.error?.message || "Unauthorized: You do not have access to this study's files.");
+      }
+    }
+
     let project = await db.project.findUnique({
       where: { id: projectId },
       include: {
@@ -741,8 +766,20 @@ export async function getDeliverableDownloadUrl(
     throw new Error(access.error?.message || "Unauthorized: You do not have access to this deliverable.");
   }
 
-  if (session.user.role === "CLIENT" && !deliverable.isFinalReleased) {
-    throw new Error("This file has not been released by the administration yet.");
+  if (session.user.role === "CLIENT") {
+    if (!deliverable.isFinalReleased) {
+      throw new Error("This file isn't ready for you yet.");
+    }
+    // Checked here too, not only on the page: a released file still waits for the last payment.
+    const { unlocked } = await clientFilesUnlocked(deliverable.projectId);
+    if (!unlocked) {
+      console.warn("[files] Blocked a client download: balance still due", {
+        projectId: deliverable.projectId,
+        deliverableId,
+        userId: session.user.id,
+      });
+      throw new Error("Pay the rest of your balance to download your files.");
+    }
   }
 
   // Increment download counter
@@ -791,6 +828,11 @@ export async function submitClientRevision(rawInput: SubmitRevisionRequestInput)
 
   if (!isRevisionWindowActive(project.revisionWindowExpiresAt)) {
     throw new Error("The 3-day revision window for this study has expired.");
+  }
+
+  // Changes are asked about files the client has received, so the balance must be paid first.
+  if (!(await clientFilesUnlocked(project.id)).unlocked) {
+    throw new Error("Pay the rest of your balance first. You can ask for changes once you have your files.");
   }
 
   if (project.revisionRequests.length > 0) {

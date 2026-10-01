@@ -94,6 +94,15 @@ export interface ReleaseEligibilityResult {
 }
 
 /**
+ * Clients get their delivered files only when nothing is owed (only payments finance has confirmed count).
+ * Checked on the server wherever a client can reach a file, so hiding a button is never the only lock.
+ */
+export async function clientFilesUnlocked(projectId: string): Promise<{ unlocked: boolean; remainingBalance: number }> {
+  const gate = await assertReleaseEligibility(projectId);
+  return { unlocked: gate.financialGatePassed, remainingBalance: gate.remainingBalance };
+}
+
+/**
  * Validates Dual Release Gates (RULE_REL_01 & RULE_REL_02):
  * - RULE_REL_01: Project must be 100% fully paid (remainingBalance <= 0)
  * - RULE_REL_02: Tier 2 packages (JX_03_CORE, JX_04_ADVANCED) require QA Approval (qaApproved = true)
@@ -104,7 +113,6 @@ export async function assertReleaseEligibility(projectId: string): Promise<Relea
     include: {
       quotations: {
         orderBy: { expiresAt: "desc" },
-        take: 1,
       },
       payments: true,
       deliverables: true,
@@ -115,7 +123,8 @@ export async function assertReleaseEligibility(projectId: string): Promise<Relea
     throw new Error(`Project ${projectId} not found.`);
   }
 
-  const latestQuote = project.quotations[0];
+  // The price the client accepted (same as payments); a newer draft or extra-work quote doesn't change it.
+  const latestQuote = project.quotations.find((q) => q.status === "CLIENT_APPROVED") ?? project.quotations[0];
   const totalAmount = latestQuote ? Number(latestQuote.totalAmount) : 0;
   const downpaymentRequired = latestQuote ? Number(latestQuote.downpaymentRequired) : 0;
 

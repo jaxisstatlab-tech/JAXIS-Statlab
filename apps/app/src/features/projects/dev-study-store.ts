@@ -501,6 +501,7 @@ export function devDeliverableDownload(deliverableId: string, user: User): { url
   if (!d) throw new Error("File not found.");
   const isClient = (user.role ?? "CLIENT") === "CLIENT";
   if (isClient && (!who(user, d.project).isClient || !item.isFinalReleased)) throw new Error("This file isn't available to you yet.");
+  if (isClient && money(d).remainingBalance > 0) throw new Error("Pay the rest of your balance to download your files.");
   const text = `Offline sample file: ${item.fileName}\nReal files are only available in the live app.\n`;
   return { url: `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`, fileName: item.fileName };
 }
@@ -563,6 +564,9 @@ export function devSubmitRevision(
   const p = d.project;
   if (!who(user, p).isClient) throw new Error("Only the client who sent this study can ask for changes.");
   if (!isRevisionWindowActive(revisionExpiry(p))) throw new Error("The free-change window for this study has closed.");
+  if (money(d).remainingBalance > 0) {
+    throw new Error("Pay the rest of your balance first. You can ask for changes once you have your files.");
+  }
   const all = readJson<DevRevision>(FILES.revisions);
   if (all.some((r) => r.projectId === p.id && (r.status === "PENDING_REVIEW" || r.status === "INCLUDED"))) {
     throw new Error("You already sent a change request for this study.");

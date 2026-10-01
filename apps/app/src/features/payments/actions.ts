@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { db, withDbTimeout, DatabaseUnavailableError } from "@/lib/db";
+import { devProjectsEnabled } from "@/features/projects/dev-projects-store";
 import { checkUploadedFilePaths } from "@/lib/upload-claims";
 import { revalidatePath, unstable_cache } from "next/cache";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
@@ -19,6 +20,7 @@ import {
 import {
   assertCanVerifyPayment,
   calculateProjectBalance,
+  paymentAmountProblem,
   type PaymentChannelDetails,
   OFFICIAL_PAYMENT_CHANNELS,
 } from "@/lib/payment-rules";
@@ -65,6 +67,36 @@ function writePersistedPaymentChannels(channels: PaymentChannelDetails[]): void 
   } catch {
     // ignore
   }
+}
+
+class PaymentAmountError extends Error {}
+
+type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
+
+/** Loads what's been paid on the study and applies `paymentAmountProblem` (see payment-rules). */
+async function checkPaymentAmount(
+  tx: Tx,
+  input: { projectId: string; quotationId: string; paymentType: string; amount: number; isStaff: boolean }
+): Promise<string | null> {
+  const quote = await tx.quotation.findUnique({
+    where: { id: input.quotationId },
+    select: { totalAmount: true, downpaymentRequired: true },
+  });
+  const payments = await tx.payment.findMany({
+    where: { projectId: input.projectId },
+    select: { amountSubmitted: true, paymentStatus: true },
+  });
+  return paymentAmountProblem({
+    total: Number(quote?.totalAmount ?? 0),
+    deposit: Number(quote?.downpaymentRequired ?? 0),
+    confirmedPaid: payments
+      .filter((p) => p.paymentStatus === "VERIFIED" || p.paymentStatus === "FULLY_PAID")
+      .reduce((sum, p) => sum + Number(p.amountSubmitted), 0),
+    hasPendingReceipt: payments.some((p) => p.paymentStatus === "PROOF_SUBMITTED"),
+    paymentType: input.paymentType,
+    amount: input.amount,
+    isStaff: input.isStaff,
+  });
 }
 
 function readPersistedDevPayments(): PaymentItem[] {
@@ -170,6 +202,18 @@ export async function submitPaymentProof(
         }
         const resolvedQuotationId = approvedQuote.id;
 
+        // The amount must be what's due, worked out here from confirmed payments (not taken on trust from the page).
+        const amountProblem = await checkPaymentAmount(tx, {
+          projectId,
+          quotationId: resolvedQuotationId,
+          paymentType,
+          amount: amountSubmitted,
+          isStaff: isAdmin,
+        });
+        if (amountProblem) {
+          throw new PaymentAmountError(amountProblem);
+        }
+
         // Create Payment record
         const payment = await tx.payment.create({
           data: {
@@ -206,10 +250,10 @@ export async function submitPaymentProof(
       })
     );
 
-    // Mirror to dev payments cache for instant hydration
+    // Mirror to the offline sample payments (offline development only)
     try {
-      const devPayments = readPersistedDevPayments();
-      if (!devPayments.some((p) => p.id === result.id || (p.referenceNumber && p.referenceNumber === result.referenceNumber))) {
+      const devPayments = devProjectsEnabled() ? readPersistedDevPayments() : null;
+      if (devPayments && !devPayments.some((p) => p.id === result.id || (p.referenceNumber && p.referenceNumber === result.referenceNumber))) {
         devPayments.unshift({
           id: result.id,
           projectId: result.projectId,
@@ -294,6 +338,9 @@ export async function submitPaymentProof(
       },
     };
   } catch (err) {
+    if (err instanceof PaymentAmountError) {
+      return { success: false, error: { code: "INVALID_AMOUNT", message: err.message } };
+    }
     const reason = err instanceof Error ? err.message : "";
     if (reason === "NO_APPROVED_QUOTE") {
       return {
@@ -832,7 +879,6 @@ export async function getPaymentsByProject(
           quotations: {
             where: { status: { in: ["CLIENT_APPROVED", "DRAFT", "QUOTE_SENT"] } },
             orderBy: { createdAt: "desc" },
-            take: 1,
           },
           payments: {
             include: { proofs: true },
@@ -846,7 +892,8 @@ export async function getPaymentsByProject(
       throw new Error("Project not found.");
     }
 
-    const activeQuote = project.quotations[0];
+    // The accepted price when there is one (a newer draft doesn't change what the client owes).
+    const activeQuote = project.quotations.find((q) => q.status === "CLIENT_APPROVED") ?? project.quotations[0];
     const totalAmount = activeQuote ? Number(activeQuote.totalAmount) : 0;
     const downpaymentRequired = activeQuote ? Number(activeQuote.downpaymentRequired) : 0;
 
@@ -875,8 +922,8 @@ export async function getPaymentsByProject(
       })),
     }));
 
-    // Merge DB payments with any dev-persisted payments for this project
-    const devPayments = readPersistedDevPayments().filter((p) => p.projectId === projectId);
+    // Offline development only: add the sample payments for this study.
+    const devPayments = devProjectsEnabled() ? readPersistedDevPayments().filter((p) => p.projectId === projectId) : [];
     const combinedPayments = [...formattedPayments];
     for (const dp of devPayments) {
       if (
@@ -906,7 +953,15 @@ export async function getPaymentsByProject(
       },
     };
   } catch (err) {
-    // Dev fallback
+    // The sample-data fallback is for offline development only. On the live site it used to show a made-up
+    // price (₱2,750) and no payments when the database had a hiccup.
+    if (!devProjectsEnabled()) {
+      console.error("[getPaymentsByProject] Error:", err);
+      return {
+        success: false,
+        error: { code: "SERVER_ERROR", message: "We couldn't load your payments. Please refresh the page." },
+      };
+    }
     console.warn("Using dev fallback for getPaymentsByProject:", err);
     const devPayments = readPersistedDevPayments().filter((p) => p.projectId === projectId);
 

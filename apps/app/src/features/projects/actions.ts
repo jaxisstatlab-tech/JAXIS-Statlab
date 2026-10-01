@@ -1284,6 +1284,24 @@ export async function markIntakeComplete(
 /**
  * 7. Remove an uploaded project file (Allowed pre-SOW signing only).
  */
+// A client can add or remove study files only until the agreement is signed (the study page uses the same list).
+const CLIENT_FILE_STAGES = new Set<string>([
+  "NEW_REQUEST",
+  "AWAITING_INFORMATION",
+  "UNDER_EVALUATION",
+  "QUOTE_SENT",
+  "CLIENT_APPROVED",
+  "SOW_PENDING",
+]);
+// Admin and CEO keep their earlier rule: no changes once the work is agreed and under way or delivered.
+const MANAGER_LOCKED_STAGES = new Set<string>(["SOW_SIGNED", "ACTIVE", "IN_PROGRESS", "DELIVERED"]);
+const FILES_LOCKED_MESSAGE =
+  "Files can't be changed after the agreement is signed. Message your team if you need to add something.";
+
+function canChangeStudyFiles(status: string, isManager: boolean): boolean {
+  return isManager ? !MANAGER_LOCKED_STAGES.has(status) : CLIENT_FILE_STAGES.has(status);
+}
+
 export async function deleteProjectFile(
   projectId: string,
   fileId: string
@@ -1318,18 +1336,18 @@ export async function deleteProjectFile(
       };
     }
 
-    if (
-      project.masterStatus === "SOW_SIGNED" ||
-      project.masterStatus === "ACTIVE" ||
-      project.masterStatus === "IN_PROGRESS" ||
-      project.masterStatus === "DELIVERED"
-    ) {
+    if (!canChangeStudyFiles(project.masterStatus, isManager)) {
       return {
         success: false,
-        error: {
-          code: "IMMUTABLE_PRE_SOW",
-          message: "Files cannot be removed after SOW has been signed and commissioned.",
-        },
+        error: { code: "IMMUTABLE_PRE_SOW", message: FILES_LOCKED_MESSAGE },
+      };
+    }
+
+    // The file must belong to this study (the check above is on the study, not the file).
+    if (!project.files.some((f) => f.id === fileId)) {
+      return {
+        success: false,
+        error: { code: "NOT_FOUND", message: "That file isn't part of this study." },
       };
     }
 
@@ -1345,6 +1363,14 @@ export async function deleteProjectFile(
       data: { deletedFileId: fileId },
     };
   } catch (dbError) {
+    // The local sample files are for offline development only; anywhere else a failure is reported as one.
+    if (!devProjectsEnabled()) {
+      console.error("[deleteProjectFile] Error:", dbError);
+      return {
+        success: false,
+        error: { code: "SERVER_ERROR", message: "We couldn't remove the file. Please try again in a moment." },
+      };
+    }
     console.warn("[deleteProjectFile] DB offline, deleting from dev cache.", dbError);
 
     const devProjects = readPersistedDevProjects();
@@ -1421,18 +1447,10 @@ export async function addProjectFile(
       }
     }
 
-    if (
-      project.masterStatus === "SOW_SIGNED" ||
-      project.masterStatus === "ACTIVE" ||
-      project.masterStatus === "IN_PROGRESS" ||
-      project.masterStatus === "DELIVERED"
-    ) {
+    if (!canChangeStudyFiles(project.masterStatus, isManager)) {
       return {
         success: false,
-        error: {
-          code: "IMMUTABLE_PRE_SOW",
-          message: "Files cannot be added after SOW has been signed and commissioned.",
-        },
+        error: { code: "IMMUTABLE_PRE_SOW", message: FILES_LOCKED_MESSAGE },
       };
     }
 
@@ -1496,6 +1514,14 @@ export async function addProjectFile(
       data: created as unknown as ProjectFileItem,
     };
   } catch (dbError) {
+    // The local sample files are for offline development only; anywhere else a failure is reported as one.
+    if (!devProjectsEnabled()) {
+      console.error("[addProjectFile] Error:", dbError);
+      return {
+        success: false,
+        error: { code: "SERVER_ERROR", message: "We couldn't add the file. Please try again in a moment." },
+      };
+    }
     console.warn("[addProjectFile] DB offline, saving to dev cache.", dbError);
 
     const devProjects = readPersistedDevProjects();
@@ -1640,6 +1666,21 @@ export async function resolveMissingInfo(
       data: updated as ProjectDetailItem,
     };
   } catch (dbError) {
+    const reason = dbError instanceof Error ? dbError.message : "";
+    if (reason.startsWith("INVALID_STATUS_TRANSITION")) {
+      return {
+        success: false,
+        error: { code: "INVALID_STATE", message: "This study isn't waiting for anything from you right now." },
+      };
+    }
+    // The local sample files are for offline development only; anywhere else a failure is reported as one.
+    if (!devProjectsEnabled()) {
+      console.error("[resolveMissingInfo] Error:", dbError);
+      return {
+        success: false,
+        error: { code: "SERVER_ERROR", message: "We couldn't update your study. Please try again in a moment." },
+      };
+    }
     console.warn("[resolveMissingInfo] DB offline, updating in dev cache.", dbError);
 
     const devProjects = readPersistedDevProjects();

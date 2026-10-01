@@ -614,10 +614,13 @@ export async function markAlertReadAction(rawInput: MarkAlertReadInput): Promise
     }
 
     const { alertId } = parsed.data;
+    const resolvedRecipientId = await resolveDbUserId(user.id, user.email);
+    const recipientIds = Array.from(new Set([resolvedRecipientId, user.id].filter(Boolean)));
 
+    // Only the person the alert was sent to can mark it read.
     await withDbTimeout(
-      db.inAppAlert.update({
-        where: { id: alertId },
+      db.inAppAlert.updateMany({
+        where: { id: alertId, recipientId: { in: recipientIds } },
         data: {
           isRead: true,
           readAt: new Date(),
