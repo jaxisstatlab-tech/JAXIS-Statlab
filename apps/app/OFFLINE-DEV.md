@@ -44,8 +44,37 @@ This rebuilds 8 sample studies for Ana Cruz: quotes, agreements, payments, notif
 | --- | --- | --- |
 | 3001 | `npm run dev` | **Real database (production).** No sample data. |
 | 3011 | `npm run dev:offline` | Sample data from local files. Safe to click anything. |
+| 3013 | `npm run dev:localdb` | A real database on this computer with test accounts. Safe to click anything. |
 
-Both can run at the same time.
+All three can run at the same time.
+
+## Local database mode (real database, on your computer)
+
+Offline mode skips the database, so it can't show everything (saving, who can see what, payment rules). For that, use a real database that runs on your own computer:
+
+```
+npm run dev:localdb
+```
+
+Then open **http://localhost:3013**. The first run takes about a minute (it creates the database and adds test data).
+
+| Role | Email |
+| --- | --- |
+| Client (has 6 studies at different stages) | clienta@local.test |
+| Second client (to check clients can't see each other) | clientb@local.test |
+| Admin | admin@local.test |
+| CEO | ceo@local.test |
+| Finance | finance@local.test |
+| Statistician | stat@local.test |
+| QA Lead | qa@local.test |
+
+Every account's password is `LocalTest123!`.
+
+- **Stop it:** press Ctrl+C in the terminal. Your data is kept for next time.
+- **Start fresh:** `npm run dev:localdb -- --reset` deletes the local data and adds the test data again.
+- It never touches the live database: the address is fixed to this computer (port 54329), and the data lives in `apps/app/.local-db` (ignored by git).
+- Email, file storage and live chat updates are switched off, so uploading new files doesn't work here.
+- After a change to `prisma/schema.prisma`, just restart it; new tables and columns are added automatically.
 
 ## Good to know
 

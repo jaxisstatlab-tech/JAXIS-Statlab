@@ -8,6 +8,7 @@
     "dev": "powershell -ExecutionPolicy Bypass -File scripts/clean-processes.ps1 && turbo run dev --concurrency=3",
     "dev:web": "powershell -ExecutionPolicy Bypass -File scripts/clean-processes.ps1 && turbo run dev --filter=web",
     "dev:app": "powershell -ExecutionPolicy Bypass -File scripts/clean-processes.ps1 && turbo run dev --filter=app",
+    "dev:localdb": "npm run dev:localdb --workspace=app --",
     "clean": "powershell -ExecutionPolicy Bypass -File scripts/clean-processes.ps1",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
