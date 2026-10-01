@@ -32,6 +32,14 @@ if (process.env.VERCEL) {
   }
 }
 
+/**
+ * Whether the demo accounts (src/lib/mock-data/users.data.ts) may sign in with their built-in passwords.
+ * Never in production: those passwords are in the repository. DISABLE_DEV_LOGINS=true turns them off locally too.
+ */
+export function devLoginsAllowed(): boolean {
+  return process.env.NODE_ENV !== "production" && process.env.DISABLE_DEV_LOGINS !== "true";
+}
+
 export const authConfig: NextAuthConfig = {
   ...baseAuthConfig,
   trustHost: true,
@@ -68,10 +76,8 @@ export const authConfig: NextAuthConfig = {
         const { email, password, rememberMe } = parsed.data;
         const isRemembered = Boolean(rememberMe);
         const normalizedEmail = email.toLowerCase().trim();
-        const isDemoAccount = normalizedEmail.endsWith("@jaxis.dev");
-        const allowDevLogins =
-          process.env.DISABLE_DEV_LOGINS !== "true" &&
-          (process.env.NODE_ENV !== "production" || isDemoAccount);
+        // Demo accounts and their passwords live in the repo, so they only ever work on a local machine.
+        const allowDevLogins = devLoginsAllowed();
 
         // 1. Attempt DB Lookup with fast timeout fallback
         try {
@@ -444,10 +450,7 @@ export async function requireRole(...roles: RoleName[]) {
   }
 
   // 2. Demo Presets & Dev User Fallback
-  const isDemoAccount = session.user.email?.endsWith("@jaxis.dev");
-  const allowDevLogins =
-    process.env.DISABLE_DEV_LOGINS !== "true" &&
-    (process.env.NODE_ENV !== "production" || isDemoAccount);
+  const allowDevLogins = devLoginsAllowed();
 
   if (allowDevLogins && session.user.email) {
     const devUser = getDevUserByEmail(session.user.email) || DEV_USERS[session.user.email];

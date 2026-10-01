@@ -3,7 +3,7 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { db, withDbTimeout } from "@/lib/db";
-import { requireRole } from "@/lib/auth";
+import { devLoginsAllowed, requireRole } from "@/lib/auth";
 import {
   RegisterClientSchema,
   ForgotPasswordSchema,
@@ -112,7 +112,7 @@ export async function registerClient(
     }
 
     // Sync to dev user store for offline / employee QA testing
-    const allowDevLogins = process.env.DISABLE_DEV_LOGINS !== "true";
+    const allowDevLogins = devLoginsAllowed();
     if (allowDevLogins) {
       registerDevUser({
         id: user.id,
@@ -143,7 +143,7 @@ export async function registerClient(
       data: user,
     };
   } catch (dbError) {
-    const allowDevLogins = process.env.DISABLE_DEV_LOGINS !== "true";
+    const allowDevLogins = devLoginsAllowed();
     if (!allowDevLogins && process.env.NODE_ENV === "production") {
       console.error("[Register] Database user creation failed in production:", dbError);
       return {
@@ -509,7 +509,7 @@ export async function resetPasswordAction(
     }
 
     // Dev fallback if active
-    const allowDevLogins = process.env.DISABLE_DEV_LOGINS !== "true";
+    const allowDevLogins = devLoginsAllowed();
     if (allowDevLogins && record.email) {
       const dev = getDevUserByEmail(record.email) || DEV_USERS[record.email];
       if (dev && dev.password === password) {
@@ -646,7 +646,7 @@ export async function changePasswordAction(
     }
 
     // Dev fallback if active
-    const allowDevLogins = process.env.DISABLE_DEV_LOGINS !== "true";
+    const allowDevLogins = devLoginsAllowed();
     if (!isCurrentValid && allowDevLogins && user.email) {
       const dev = getDevUserByEmail(user.email) || DEV_USERS[user.email];
       if (dev && dev.password === currentPassword) {
