@@ -108,6 +108,7 @@ const PROJECT_DETAIL_SELECT = {
   researchTitle: true,
   researchQuestions: true,
   researchObjectives: true,
+  analysisGoals: true,
   hypotheses: true,
   deadlineRequested: true,
   chapters13: true,
@@ -235,6 +236,7 @@ export async function createProject(
     deadlineRequested,
     chapters13,
     questionnaire,
+    analysisGoals,
     files,
   } = parsed.data;
 
@@ -287,6 +289,7 @@ export async function createProject(
           deadlineRequested: deadlineDate,
           chapters13: chapters13?.trim() || null,
           questionnaire: questionnaire?.trim() || null,
+          analysisGoals: Array.from(new Set(analysisGoals)),
           masterStatus: "NEW_REQUEST",
           files: files?.length
             ? {
@@ -318,6 +321,7 @@ export async function createProject(
         deadlineRequested: deadlineDate,
         chapters13: chapters13?.trim() || null,
         questionnaire: questionnaire?.trim() || null,
+        analysisGoals: Array.from(new Set(analysisGoals)),
         files: files ?? [],
       });
       return { success: true, data: row as unknown as ProjectDetailItem };
@@ -443,6 +447,7 @@ const fetchCachedProjectsDb = unstable_cache(
           researchTitle: true,
           researchQuestions: true,
           researchObjectives: true,
+          analysisGoals: true,
           hypotheses: true,
           deadlineRequested: true,
           chapters13: true,
@@ -527,6 +532,7 @@ const fetchCachedProjectDetailDb = unstable_cache(
           researchTitle: true,
           researchQuestions: true,
           researchObjectives: true,
+          analysisGoals: true,
           hypotheses: true,
           deadlineRequested: true,
           chapters13: true,

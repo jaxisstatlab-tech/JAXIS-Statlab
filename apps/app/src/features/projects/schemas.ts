@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ProjectStatus, FileCategory } from "@prisma/client";
+import { ANALYSIS_GOAL_CODES } from "./analysis-goals";
 
 export const FileCategoryEnum = z.enum([
   "RESEARCH_DOCUMENT",
@@ -33,6 +34,8 @@ export const CreateProjectSchema = z.object({
   deadlineRequested: z.string().or(z.date()),
   chapters13: z.string().optional().nullable(),
   questionnaire: z.string().optional().nullable(),
+  // Optional on the server so a tab still showing the older form can submit; the form itself requires one.
+  analysisGoals: z.array(z.enum(ANALYSIS_GOAL_CODES)).max(ANALYSIS_GOAL_CODES.length).optional().default([]),
   files: z.array(ProjectFileSchema).optional().default([]),
 });
 
@@ -81,6 +84,8 @@ export interface ProjectDetailItem {
   researchQuestions: string;
   researchObjectives: string;
   hypotheses: string | null;
+  /** Analysis goal codes chosen on the intake form (see analysis-goals.ts). */
+  analysisGoals?: string[];
   chapters13: string | null;
   questionnaire: string | null;
   deadlineRequested: Date | string;

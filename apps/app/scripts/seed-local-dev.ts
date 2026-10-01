@@ -212,6 +212,8 @@ for (const s of SEEDS) {
     researchTitle: s.title,
     researchQuestions: questions,
     researchObjectives: objectives,
+    // Intake-form analysis goals: one new request is "Not sure yet" so both looks appear on the admin intake page.
+    analysisGoals: s.intakeId === "JAXIS-202609-0055" ? ["UNSURE"] : ["DESCRIBE", "RELATIONSHIP", "PREDICT"],
     hypotheses: "There is no significant relationship between the main variables and the outcome.",
     chapters13: null,
     questionnaire: null,

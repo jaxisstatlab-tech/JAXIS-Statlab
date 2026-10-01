@@ -262,6 +262,9 @@ model Project {
   hypotheses              String?
   chapters13              String?
   questionnaire           String?
+  // What the client wants the analysis to do (intake form), used by staff to choose tests and price the study:
+  // DESCRIBE, COMPARE, RELATIONSHIP, PREDICT, VALIDATE, UNSURE.
+  analysisGoals           String[]      @default([])
   deadlineRequested       DateTime
   masterStatus            ProjectStatus @default(NEW_REQUEST)
   packageName             String?

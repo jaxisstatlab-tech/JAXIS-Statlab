@@ -30,6 +30,7 @@ import {
   issueQuotation,
 } from "@/features/quotations/actions";
 import type { QuotationDetailItem } from "@/features/quotations/schemas";
+import { AnalysisGoalsList } from "@/features/projects/components/AnalysisGoalsList";
 import type { PackageName, AddOnName } from "@prisma/client";
 
 interface QuotationBuilderModalProps {
@@ -39,6 +40,8 @@ interface QuotationBuilderModalProps {
   projectIntakeId?: string;
   projectTitle?: string;
   clientName?: string;
+  /** What the client wants the analysis to do (intake form), shown while choosing the package. */
+  analysisGoals?: string[] | null;
   existingQuotation?: QuotationDetailItem | null;
   customCatalog?: CommercialCatalogData;
   onSuccess?: () => void;
@@ -51,6 +54,7 @@ export function QuotationBuilderModal({
   projectIntakeId,
   projectTitle,
   clientName,
+  analysisGoals,
   existingQuotation,
   customCatalog,
   onSuccess,
@@ -357,6 +361,12 @@ export function QuotationBuilderModal({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch py-8 px-8 sm:px-10 flex-1">
           {/* ── Left Column: Configuration Controls (7 cols) ── */}
           <div className="lg:col-span-7 flex flex-col justify-between space-y-7">
+            {/* What the client asked the analysis to do: the basis for the tier and price */}
+            <div className="rounded-[2px] border border-white/[0.08] bg-[#0A0A18]/80 p-4">
+              <p className="mb-3 text-xs font-semibold text-white/80">What the client wants the analysis to do</p>
+              <AnalysisGoalsList codes={analysisGoals} compact />
+            </div>
+
             {/* 1. Analytical Package Tier Selection */}
             <div className="space-y-3.5">
               <div className="flex items-center justify-between">

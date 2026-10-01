@@ -24,6 +24,7 @@ export function devCreateProject(
     deadlineRequested: Date;
     chapters13: string | null;
     questionnaire: string | null;
+    analysisGoals?: string[];
     files: Array<{ fileName: string; filePath: string; fileType: string; fileCategory: string }>;
   }
 ) {
@@ -41,6 +42,7 @@ export function devCreateProject(
     hypotheses: input.hypotheses,
     chapters13: input.chapters13,
     questionnaire: input.questionnaire,
+    analysisGoals: input.analysisGoals ?? [],
     deadlineRequested: input.deadlineRequested.toISOString(),
     masterStatus: "NEW_REQUEST",
     packageName: null,

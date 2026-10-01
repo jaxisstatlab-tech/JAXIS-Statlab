@@ -3,9 +3,10 @@
 import React, { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PageHeader, FormInput, FormTextarea, Button, Toast, LoadingState } from "@repo/ui";
-import { ArrowLeft, ArrowRight, Check, CloudArrowUp, Database, FileText, GraduationCap, ListChecks } from "@phosphor-icons/react";
+import { PageHeader, FormInput, FormTextarea, Button, Toast, LoadingState, Label } from "@repo/ui";
+import { ArrowLeft, ArrowRight, Check, CloudArrowUp, Database, FileText, GraduationCap, ListChecks, Warning } from "@phosphor-icons/react";
 import { createProject } from "@/features/projects/actions";
+import { ANALYSIS_GOALS, analysisGoalsFor, type AnalysisGoalCode } from "@/features/projects/analysis-goals";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { QuickProfileModal } from "@/features/client-profile/components/QuickProfileModal";
 import { uploadFileToR2 } from "@/lib/storage-client";
@@ -122,6 +123,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
   const [researchQuestions, setResearchQuestions] = useState("");
   const [researchObjectives, setResearchObjectives] = useState("");
   const [hypotheses, setHypotheses] = useState("");
+  const [analysisGoals, setAnalysisGoals] = useState<AnalysisGoalCode[]>([]);
   const [deadlineRequested, setDeadlineRequested] = useState("");
 
   const [filesList, setFilesList] = useState<UploadedFileItem[]>([]);
@@ -255,6 +257,15 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
   };
 
   // ── Steps ────────────────────────────────────────────────────────────────────
+  // "Not sure yet" stands on its own: picking it clears the others, and picking any other goal clears it.
+  const toggleAnalysisGoal = (code: AnalysisGoalCode) => {
+    setFieldErrors((prev) => (prev.analysisGoals ? { ...prev, analysisGoals: [] } : prev));
+    setAnalysisGoals((prev) => {
+      if (prev.includes(code)) return prev.filter((c) => c !== code);
+      return code === "UNSURE" ? ["UNSURE"] : [...prev.filter((c) => c !== "UNSURE"), code];
+    });
+  };
+
   const handleProceedToStep2 = (e?: React.FormEvent) => {
     e?.preventDefault();
     setFieldErrors({});
@@ -262,6 +273,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
     if (!researchTitle.trim() || researchTitle.trim().length < 3) errors.researchTitle = ["Add a title (at least 3 characters)."];
     if (!researchQuestions.trim() || researchQuestions.trim().length < 5) errors.researchQuestions = ["Add your research questions."];
     if (!researchObjectives.trim() || researchObjectives.trim().length < 5) errors.researchObjectives = ["Add your research objectives."];
+    if (analysisGoals.length === 0) errors.analysisGoals = ['Pick at least one, or choose "Not sure yet".'];
     if (!deadlineRequested) {
       errors.deadlineRequested = ["Pick the date you need it by."];
     } else {
@@ -306,6 +318,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
         deadlineRequested,
         chapters13: filesList.find((f) => f.category === "RESEARCH_DOCUMENT")?.storageUrl || null,
         questionnaire: filesList.find((f) => f.category === "QUESTIONNAIRE")?.storageUrl || null,
+        analysisGoals,
         files: filesList.map((f) => ({
           fileName: f.name,
           filePath: f.storageUrl || `intake-uploads/${f.name}`,
@@ -429,7 +442,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
           {/* Step 1 */}
           {currentStep === 1 ? (
             <Panel as="div">
-              <form onSubmit={handleProceedToStep2} className="flex flex-col gap-6 px-5 py-6 sm:px-6" noValidate>
+              <form onSubmit={handleProceedToStep2} className="flex flex-col gap-6 px-5 py-6 sm:px-6" noValidate autoComplete="off">
                 <div>
                   <h2 className="text-base font-semibold text-white">About your study</h2>
                   <p className="mt-1 text-[13px] text-white/55">Copy these from your Chapter 1 if you have it.</p>
@@ -437,6 +450,10 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 <FormInput
                   label="Study title"
                   required
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-form-type="other"
+                  name="study_research_title_no_autofill"
                   placeholder="e.g. Social media use and academic performance of Grade 12 students"
                   value={researchTitle}
                   onChange={(e) => setResearchTitle(e.target.value)}
@@ -445,6 +462,8 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 <FormTextarea
                   label="Research questions"
                   required
+                  autoComplete="off"
+                  data-lpignore="true"
                   rows={4}
                   placeholder={"1. What is the profile of the respondents?\n2. Is there a significant relationship between study habits and exam scores?"}
                   value={researchQuestions}
@@ -454,15 +473,60 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 <FormTextarea
                   label="Research objectives"
                   required
+                  autoComplete="off"
+                  data-lpignore="true"
                   rows={3}
                   placeholder="What do you want to find out?"
                   value={researchObjectives}
                   onChange={(e) => setResearchObjectives(e.target.value)}
                   error={fieldErrors.researchObjectives?.[0]}
                 />
+                <fieldset className="flex flex-col gap-2.5">
+                  <legend className="contents">
+                    <Label required className="px-0.5">What should the analysis do?</Label>
+                  </legend>
+                  <p className="-mt-1 px-0.5 text-xs text-white/50">
+                    Pick all that apply. This helps us choose the right tests and price your study.
+                  </p>
+                  <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
+                    {ANALYSIS_GOALS.map((goal) => {
+                      const checked = analysisGoals.includes(goal.code);
+                      return (
+                        <label
+                          key={goal.code}
+                          className={`flex cursor-pointer gap-3 rounded-[2px] border p-4 transition-colors ${
+                            checked ? "border-[#CC6600]/50 bg-[#CC6600]/[0.06]" : "border-white/12 hover:border-white/25"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            name="analysisGoals"
+                            value={goal.code}
+                            checked={checked}
+                            onChange={() => toggleAnalysisGoal(goal.code)}
+                            className="mt-0.5 h-4 w-4 shrink-0 accent-[#CC6600]"
+                          />
+                          <span className="flex flex-col gap-1">
+                            <span className="text-[13px] font-medium text-white">{goal.title}</span>
+                            <span className="text-xs leading-relaxed text-white/60">{goal.description}</span>
+                            <span className="text-xs text-white/40">e.g. {goal.example}</span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {fieldErrors.analysisGoals?.[0] ? (
+                    <div className="mt-0.5 flex items-center gap-2 px-0.5">
+                      <Warning size={14} weight="fill" className="shrink-0 text-[#EF4444]" />
+                      <span className="text-xs font-medium text-[#EF4444]">{fieldErrors.analysisGoals[0]}</span>
+                    </div>
+                  ) : null}
+                </fieldset>
                 <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
                   <FormTextarea
                     label="Hypotheses (optional)"
+                    autoComplete="off"
+                    data-lpignore="true"
                     rows={3}
                     placeholder="e.g. There is no significant relationship between study habits and exam scores."
                     value={hypotheses}
@@ -545,6 +609,9 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   </Summary>
                   <Summary label="Research objectives" onEdit={() => setCurrentStep(1)}>
                     <span className="whitespace-pre-wrap">{researchObjectives}</span>
+                  </Summary>
+                  <Summary label="Analysis goals" onEdit={() => setCurrentStep(1)}>
+                    {analysisGoalsFor(analysisGoals).map((g) => g.title).join(", ")}
                   </Summary>
                   {hypotheses ? (
                     <Summary label="Hypotheses" onEdit={() => setCurrentStep(1)}>

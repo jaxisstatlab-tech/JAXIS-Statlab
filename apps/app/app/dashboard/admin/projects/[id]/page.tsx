@@ -34,6 +34,7 @@ import {
 } from "@/features/projects/actions";
 import { getQuotationByProject, getCommercialCatalog } from "@/features/quotations/actions";
 import { QuotationBuilderModal } from "@/features/quotations/components/QuotationBuilderModal";
+import { AnalysisGoalsList } from "@/features/projects/components/AnalysisGoalsList";
 import type { CommercialCatalogData } from "@/lib/pricing-rules";
 import { getSOWByProject } from "@/features/sow/actions";
 import type { SOWDetailItem } from "@/features/sow/schemas";
@@ -729,6 +730,18 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
               </div>
             </div>
 
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-mono uppercase text-white/40 font-bold">
+                Analysis Goals
+              </span>
+              <div
+                className="p-4 rounded-[2px] bg-[#10101E] border border-white/[0.08]"
+                style={{ padding: "1rem" }}
+              >
+                <AnalysisGoalsList codes={project.analysisGoals} />
+              </div>
+            </div>
+
             {project.hypotheses && (
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-mono uppercase text-white/40 font-bold">
@@ -981,6 +994,7 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
           projectIntakeId={project.intakeId}
           projectTitle={project.researchTitle}
           clientName={project.client.fullName}
+          analysisGoals={project.analysisGoals}
           existingQuotation={quotation}
           customCatalog={catalog}
           onSuccess={loadProject}
