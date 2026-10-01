@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { db, withDbTimeout } from "@/lib/db";
+import { checkUploadedFilePaths } from "@/lib/upload-claims";
 import { revalidatePath, unstable_cache } from "next/cache";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
 import {
@@ -124,6 +125,15 @@ export async function submitPaymentProof(
     receiptFileName,
     receiptFileSize,
   } = parsed.data;
+
+  // The receipt must be the client's own fresh upload, never a path that is already someone else's.
+  const isStaffSubmitter = session.user.role === "ADMIN" || session.user.role === "CEO";
+  if (!isStaffSubmitter) {
+    const uploadCheck = await checkUploadedFilePaths([receiptFilePath], session.user.id, "receipt");
+    if (!uploadCheck.ok) {
+      return { success: false, error: { code: "INVALID_FILE", message: uploadCheck.message } };
+    }
+  }
 
   try {
     const result = await withDbTimeout(

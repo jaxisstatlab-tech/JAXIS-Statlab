@@ -20,11 +20,16 @@ export const r2Client = new S3Client({
   },
 });
 
-export async function getR2UploadUrl(key: string, contentType: string): Promise<string> {
+/**
+ * A 5-minute upload link for exactly one file of exactly `contentLength` bytes. The size is part of the
+ * signature, so storage rejects a larger (or different) upload: the size limit can't be skipped by uploading
+ * straight to the link.
+ */
+export async function getR2UploadUrl(key: string, contentType: string, contentLength: number): Promise<string> {
   return getSignedUrl(
     r2Client,
-    new PutObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key, ContentType: contentType }),
-    { expiresIn: 300 } // 5 minutes
+    new PutObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key, ContentType: contentType, ContentLength: contentLength }),
+    { expiresIn: 300, signableHeaders: new Set(["content-length"]) }
   );
 }
 

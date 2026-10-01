@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const result = await registerClient(parsed.data);
 
     if (!result.success) {
-      const status = result.error.code === "EMAIL_TAKEN" ? 409 : 400;
+      const status = result.error.code === "EMAIL_TAKEN" ? 409 : result.error.code === "RATE_LIMITED" ? 429 : 400;
       return NextResponse.json(result, { status });
     }
 

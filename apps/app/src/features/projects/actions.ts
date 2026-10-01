@@ -34,6 +34,7 @@ import {
   sanitizeProjectForSpecialist,
 } from "@/lib/access-control";
 import { getDevUserByEmail } from "@/lib/mock-data/users.data";
+import { checkUploadedFilePaths } from "@/lib/upload-claims";
 import { devProjectsEnabled, devCreateProject } from "./dev-projects-store";
 
 const DEV_PROJECTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
@@ -236,6 +237,16 @@ export async function createProject(
     questionnaire,
     files,
   } = parsed.data;
+
+  // Every file must be the client's own fresh upload, never a path that is already someone else's.
+  const uploadCheck = await checkUploadedFilePaths(
+    [...(files ?? []).map((f) => f.filePath), chapters13, questionnaire].filter((p): p is string => Boolean(p)),
+    resolvedUserId,
+    "study"
+  );
+  if (!uploadCheck.ok) {
+    return { success: false, error: { code: "INVALID_FILE", message: uploadCheck.message } };
+  }
 
   const intakeId = generateIntakeId();
   const deadlineDate = new Date(deadlineRequested);
@@ -1395,6 +1406,13 @@ export async function addProjectFile(
         success: false,
         error: { code: "FORBIDDEN", message: "Only the study owner or administrator can upload study intake files." },
       };
+    }
+
+    if (!isManager) {
+      const uploadCheck = await checkUploadedFilePaths([fileData.filePath], project.clientId, "study");
+      if (!uploadCheck.ok) {
+        return { success: false, error: { code: "INVALID_FILE", message: uploadCheck.message } };
+      }
     }
 
     if (

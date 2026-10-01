@@ -17,6 +17,7 @@ import {
   registerDevUser,
 } from "@/lib/mock-data/users.data";
 import { sendEmail } from "@/lib/email";
+import { callerIp, isRateLimited } from "@/lib/rate-limit";
 import { APP_URL } from "@/lib/site";
 import { ensureFreshAccountNotifications } from "@/features/notifications/actions";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
@@ -39,6 +40,20 @@ export async function registerClient(
   const { firstName, lastName, email, password } = parsed.data;
   const fullName = `${firstName.trim()} ${lastName.trim()}`;
   const normalizedEmail = email.toLowerCase().trim();
+
+  // Slow down mass sign-ups and checking which emails already have accounts. Generous per address because
+  // students on one campus network share an IP.
+  const HOUR = 60 * 60 * 1000;
+  const ip = await callerIp();
+  if (isRateLimited(`register:ip:${ip}`, 10, HOUR) || isRateLimited(`register:email:${normalizedEmail}`, 5, HOUR)) {
+    return {
+      success: false,
+      error: {
+        code: "RATE_LIMITED",
+        message: "Too many sign-up attempts. Please wait a few minutes and try again.",
+      },
+    };
+  }
 
   try {
     const existing = await withDbTimeout(

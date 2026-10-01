@@ -53,7 +53,9 @@ function writePersistedDevSows(sows: SOWDetailItem[]): void {
  * Core internal Statement of Work generator.
  * Used during automatic generation on quotation approval and manual compile by Admin/CEO.
  */
-export async function createOrUpdateSOWInternal({
+// Not exported: in a "use server" file every export can be called from a browser, and this one has no access
+// check of its own. Only generateSOW (admin/CEO) calls it.
+async function createOrUpdateSOWInternal({
   projectId,
   quotationId,
   generatedBy,

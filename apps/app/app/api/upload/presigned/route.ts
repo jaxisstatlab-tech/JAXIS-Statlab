@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!fileSize || typeof fileSize !== "number" || fileSize <= 0) {
+    if (!fileSize || typeof fileSize !== "number" || !Number.isInteger(fileSize) || fileSize <= 0) {
       return NextResponse.json(
         { success: false, error: { code: "INVALID_FILE_SIZE", message: "A valid file size is required." } },
         { status: 400 }
@@ -96,7 +96,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate Cloudflare R2 Presigned PUT URL (5-minute expiration)
-    const uploadUrl = await getR2UploadUrl(storageKey, contentType);
+    // The link only accepts a file of exactly this (already size-checked) length.
+    const uploadUrl = await getR2UploadUrl(storageKey, contentType, fileSize);
 
     const publicUrl = env.R2_PUBLIC_URL
       ? `${env.R2_PUBLIC_URL.replace(/\/$/, "")}/${storageKey}`
