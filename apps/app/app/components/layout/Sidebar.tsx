@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import type { RoleName } from "@prisma/client";
@@ -664,19 +664,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [pathname, pendingHref]);
 
-  // Safety watchdog: clear pending state ONLY if navigation takes longer than 20s (e.g. network failure)
+  const settlePending = useCallback(() => {
+    setPendingHref(null);
+    try {
+      window.dispatchEvent(new CustomEvent("jaxis:navigating-end"));
+    } catch {
+      // Safe fallback
+    }
+  }, []);
+
+  // Last-resort watchdog only. A slow page must never snap the highlight back to the old page while it is still
+  // loading (that looked like the click had been cancelled), so the clicked link's own status (NavSettle below)
+  // is what ends the pending state; this just covers a link that never reports back.
   useEffect(() => {
     if (!pendingHref) return;
-    const timeout = setTimeout(() => {
-      setPendingHref(null);
-      try {
-        window.dispatchEvent(new CustomEvent("jaxis:navigating-end"));
-      } catch {
-        // Safe fallback
-      }
-    }, 20000);
+    const timeout = setTimeout(settlePending, 120000);
     return () => clearTimeout(timeout);
-  }, [pendingHref]);
+  }, [pendingHref, settlePending]);
 
   const handleNavClick = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -830,7 +834,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             } ${isCollapsed ? "w-10" : "w-full px-4"}`}
           >
             {pendingHref === NEW_STUDY_HREF ? (
-              <CircleNotch size={16} weight="bold" className="animate-spin shrink-0" />
+              <>
+                <NavSettle onSettle={settlePending} />
+                <CircleNotch size={16} weight="bold" className="animate-spin shrink-0" />
+              </>
             ) : (
               <Plus size={16} weight="bold" className="shrink-0" />
             )}
@@ -900,6 +907,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       isCollapsed ? "w-10 justify-center" : "w-full gap-3 px-2.5"
                     } ${active ? "bg-white/[0.08] text-white" : "text-white/60 hover:text-white hover:bg-white/[0.04]"}`}
                   >
+                    {isPending ? <NavSettle onSettle={settlePending} /> : null}
                     <span
                       className={`flex items-center justify-center shrink-0 transition-colors duration-150 ${
                         active ? "text-white" : "text-white/40 group-hover:text-white/80"
@@ -1094,6 +1102,22 @@ const ROLE_HOMES = new Set([
   "/dashboard/qa",
   "/dashboard/finance",
 ]);
+
+// Rendered inside the clicked link while it is pending. Next reports that link's navigation as pending until it
+// either lands or is dropped; when it stops, the sidebar's pending state ends too, however long the page took.
+function NavSettle({ onSettle }: { onSettle: () => void }) {
+  const { pending } = useLinkStatus();
+  const started = useRef(false);
+  useEffect(() => {
+    if (pending) {
+      started.current = true;
+    } else if (started.current) {
+      started.current = false;
+      onSettle();
+    }
+  }, [pending, onSettle]);
+  return null;
+}
 
 const MENU_ITEM =
   "flex items-center gap-2.5 w-full px-2.5 py-2 rounded-[2px] font-sans text-[13px] text-white/80 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer outline-none focus-visible:bg-white/[0.06]";
