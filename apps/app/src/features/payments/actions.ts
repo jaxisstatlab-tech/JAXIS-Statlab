@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { db, withDbTimeout } from "@/lib/db";
+import { db, withDbTimeout, DatabaseUnavailableError } from "@/lib/db";
 import { checkUploadedFilePaths } from "@/lib/upload-claims";
 import { revalidatePath, unstable_cache } from "next/cache";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
@@ -23,7 +23,7 @@ import {
   OFFICIAL_PAYMENT_CHANNELS,
 } from "@/lib/payment-rules";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
-import type { PaymentStatus, PackageName, ProjectStatus } from "@prisma/client";
+import type { PaymentStatus, ProjectStatus } from "@prisma/client";
 import { assertStudyAccess } from "@/lib/access-control";
 import fs from "fs";
 import path from "path";
@@ -154,34 +154,21 @@ export async function submitPaymentProof(
           throw new Error("Unauthorized: Only the project owner can submit payment proofs.");
         }
 
-        // Resolve valid quotation in DB
-        let resolvedQuotationId = quotationId;
-        const existingQuote = await tx.quotation.findFirst({
+        // A payment always belongs to the study's approved price. (With no quote, this used to create an
+        // approved quote priced from the amount the client typed, letting a client set their own price.)
+        const approvedQuote = await tx.quotation.findFirst({
           where: {
             projectId,
+            status: "CLIENT_APPROVED",
             ...(quotationId && quotationId !== projectId ? { id: quotationId } : {}),
           },
           orderBy: { createdAt: "desc" },
+          select: { id: true },
         });
-
-        if (existingQuote) {
-          resolvedQuotationId = existingQuote.id;
-        } else {
-          // Provision fallback quotation in DB so foreign key constraint passes
-          const fallbackQuote = await tx.quotation.create({
-            data: {
-              projectId,
-              createdBy: project.clientId || session.user.id,
-              packageName: (project.packageName as PackageName) || "JX_03_CORE",
-              basePrice: amountSubmitted * 2,
-              totalAmount: amountSubmitted * 2,
-              downpaymentRequired: amountSubmitted,
-              status: "CLIENT_APPROVED",
-              expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            },
-          });
-          resolvedQuotationId = fallbackQuote.id;
+        if (!approvedQuote) {
+          throw new Error("NO_APPROVED_QUOTE");
         }
+        const resolvedQuotationId = approvedQuote.id;
 
         // Create Payment record
         const payment = await tx.payment.create({
@@ -307,7 +294,34 @@ export async function submitPaymentProof(
       },
     };
   } catch (err) {
-    // Fallback for dev mode
+    const reason = err instanceof Error ? err.message : "";
+    if (reason === "NO_APPROVED_QUOTE") {
+      return {
+        success: false,
+        error: {
+          code: "NO_APPROVED_QUOTE",
+          message: "This study doesn't have an approved price yet, so a payment can't be recorded. Approve your quote first.",
+        },
+      };
+    }
+    if (reason === "Project record not found." || reason.startsWith("Unauthorized")) {
+      return {
+        success: false,
+        error: { code: "FORBIDDEN", message: "You can't submit a payment for this study." },
+      };
+    }
+
+    // The local sample-data fallback is for development without a database only. Anywhere else a failure is
+    // reported as one: it used to answer "submitted" (and alert finance) for payments that were never saved.
+    const devDatabaseDown = process.env.NODE_ENV !== "production" && err instanceof DatabaseUnavailableError;
+    if (!devDatabaseDown) {
+      console.error("[submitPaymentProof] Error:", err);
+      return {
+        success: false,
+        error: { code: "SERVER_ERROR", message: "We couldn't record your payment. Please try again in a moment." },
+      };
+    }
+
     console.warn("Using dev fallback for submitPaymentProof:", err);
     const devPayments = readPersistedDevPayments();
     const newPayment: PaymentItem = {

@@ -1,11 +1,12 @@
 import crypto from "crypto";
 import { cache } from "react";
-import NextAuth, { type NextAuthConfig } from "next-auth";
+import NextAuth, { CredentialsSignin, type NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import type { RoleName, UserStatus } from "@prisma/client";
 import { db, withDbTimeout } from "@/lib/db";
+import { ipFrom, isLoginThrottled, recordAuthEvent } from "@/lib/auth-throttle";
 import { LoginSchema } from "@/features/auth/schemas";
 import { DEV_USERS, getDevUserByEmail } from "@/lib/mock-data/users.data";
 import { authConfig as baseAuthConfig } from "@/lib/auth.config";
@@ -13,6 +14,17 @@ import { ensureFreshAccountNotifications } from "@/features/notifications/action
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 
 export type Role = RoleName;
+
+/**
+ * A sign-in refusal the login page can explain. Auth.js passes `code` back to signIn() on the client; any other
+ * error thrown from authorize() reaches the page as a generic failure.
+ */
+class LoginError extends CredentialsSignin {
+  constructor(code: "too_many_attempts" | "account_suspended" | "account_terminated") {
+    super();
+    this.code = code;
+  }
+}
 
 /**
  * Computes a secure 16-character SHA-256 fingerprint of a password hash.
@@ -67,7 +79,7 @@ export const authConfig: NextAuthConfig = {
         password: { label: "Password", type: "password" },
         rememberMe: { label: "Remember Me", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const parsed = LoginSchema.safeParse(credentials);
         if (!parsed.success) {
           return null;
@@ -78,59 +90,34 @@ export const authConfig: NextAuthConfig = {
         const normalizedEmail = email.toLowerCase().trim();
         // Demo accounts and their passwords live in the repo, so they only ever work on a local machine.
         const allowDevLogins = devLoginsAllowed();
+        const ip = ipFrom(request);
+
+        // Too many wrong passwords for this email (or from this network) recently: pause before checking at all.
+        if (await isLoginThrottled(normalizedEmail, ip)) {
+          throw new LoginError("too_many_attempts");
+        }
+
+        let accountExists = false;
 
         // 1. Attempt DB Lookup with fast timeout fallback
         try {
           const user = await withDbTimeout(
             db.user.findUnique({
               where: { email: normalizedEmail },
-              include: {
-                userRoles: {
-                  include: { role: true },
-                },
+              select: {
+                id: true,
+                email: true,
+                fullName: true,
+                status: true,
+                passwordHash: true,
+                userRoles: { select: { role: { select: { name: true } } } },
               },
             }),
             8000
           );
 
           if (user) {
-            if (user.status === "SUSPENDED") {
-              try {
-                await withDbTimeout(
-                  db.authAuditLog.create({
-                    data: {
-                      userId: user.id,
-                      email: user.email,
-                      event: "ACCOUNT_SUSPENDED_BLOCK",
-                      metadata: { reason: "ACCOUNT_SUSPENDED" },
-                    },
-                  }),
-                  1000
-                );
-              } catch (e) {
-                void e;
-              }
-              throw new Error("ACCOUNT_SUSPENDED");
-            }
-
-            if (user.status === "TERMINATED") {
-              try {
-                await withDbTimeout(
-                  db.authAuditLog.create({
-                    data: {
-                      userId: user.id,
-                      email: user.email,
-                      event: "ACCOUNT_TERMINATED_BLOCK",
-                      metadata: { reason: "ACCOUNT_TERMINATED" },
-                    },
-                  }),
-                  1000
-                );
-              } catch (e) {
-                void e;
-              }
-              throw new Error("ACCOUNT_TERMINATED");
-            }
+            accountExists = true;
 
             let isValidPassword = false;
             try {
@@ -146,36 +133,40 @@ export const authConfig: NextAuthConfig = {
             }
 
             if (!isValidPassword) {
-              try {
-                await withDbTimeout(
-                  db.authAuditLog.create({
-                    data: {
-                      userId: user.id,
-                      email: user.email,
-                      event: "LOGIN_FAILED",
-                      metadata: { reason: "INVALID_PASSWORD" },
-                    },
-                  }),
-                  1000
-                );
-              } catch (e) {
-                void e;
-              }
+              await recordAuthEvent({
+                event: "LOGIN_FAILED",
+                email: user.email,
+                userId: user.id,
+                ip,
+                metadata: { reason: "INVALID_PASSWORD" },
+              });
               return null;
             }
 
+            // Only someone with the right password learns that an account is suspended or closed.
+            if (user.status === "SUSPENDED" || user.status === "TERMINATED") {
+              const suspended = user.status === "SUSPENDED";
+              await recordAuthEvent({
+                event: suspended ? "ACCOUNT_SUSPENDED_BLOCK" : "ACCOUNT_TERMINATED_BLOCK",
+                email: user.email,
+                userId: user.id,
+                ip,
+                metadata: { reason: suspended ? "ACCOUNT_SUSPENDED" : "ACCOUNT_TERMINATED" },
+              });
+              throw new LoginError(suspended ? "account_suspended" : "account_terminated");
+            }
+
             const primaryRole: RoleName =
-              user.userRoles[0]?.role.name ?? devFallback?.role ?? "CLIENT";
+              (user.userRoles[0]?.role.name as RoleName | undefined) ?? devFallback?.role ?? "CLIENT";
 
             // Fire-and-forget: do not block the user login response on telemetry audit writes
-            db.authAuditLog.create({
-              data: {
-                userId: user.id,
-                email: user.email,
-                event: "LOGIN_SUCCESS",
-                metadata: { role: primaryRole },
-              },
-            }).catch(() => {});
+            void recordAuthEvent({
+              event: "LOGIN_SUCCESS",
+              email: user.email,
+              userId: user.id,
+              ip,
+              metadata: { role: primaryRole },
+            });
 
             return {
               id: user.id,
@@ -188,7 +179,7 @@ export const authConfig: NextAuthConfig = {
             };
           }
         } catch (dbError) {
-          if ((dbError as Error)?.message === "ACCOUNT_SUSPENDED" || (dbError as Error)?.message === "ACCOUNT_TERMINATED") {
+          if (dbError instanceof LoginError) {
             throw dbError;
           }
           // If DB is offline/unreachable, fallback to dev user store
@@ -198,28 +189,29 @@ export const authConfig: NextAuthConfig = {
         // 2. Demo Presets & Development Fallback (Handles DB cold starts / offline demo testing)
         if (allowDevLogins) {
           const devUser = getDevUserByEmail(normalizedEmail) || DEV_USERS[normalizedEmail];
-          if (devUser) {
+          if (devUser && devUser.password === password) {
             if (devUser.status === "SUSPENDED") {
-              throw new Error("ACCOUNT_SUSPENDED");
+              throw new LoginError("account_suspended");
             }
             if (devUser.status === "TERMINATED") {
-              throw new Error("ACCOUNT_TERMINATED");
+              throw new LoginError("account_terminated");
             }
-
-            if (devUser.password === password) {
-              return {
-                id: devUser.id,
-                email: devUser.email,
-                fullName: devUser.fullName,
-                role: devUser.role,
-                status: devUser.status,
-                pwdFp: computePasswordFingerprint(devUser.password),
-                rememberMe: isRemembered,
-              };
-            }
+            return {
+              id: devUser.id,
+              email: devUser.email,
+              fullName: devUser.fullName,
+              role: devUser.role,
+              status: devUser.status,
+              pwdFp: computePasswordFingerprint(devUser.password),
+              rememberMe: isRemembered,
+            };
           }
         }
 
+        // An unknown email counts like a wrong password, so the pause can't reveal which emails have accounts.
+        if (!accountExists) {
+          await recordAuthEvent({ event: "LOGIN_FAILED", email: normalizedEmail, ip, metadata: { reason: "UNKNOWN_EMAIL" } });
+        }
         return null;
       },
     }),

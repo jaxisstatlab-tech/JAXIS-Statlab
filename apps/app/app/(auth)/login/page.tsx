@@ -97,9 +97,12 @@ function LoginForm() {
         });
 
         if (res?.error) {
-          if (res.error.includes("ACCOUNT_SUSPENDED")) {
+          // Auth.js passes the reason as `code` (see LoginError in src/lib/auth.ts).
+          if (res.code === "too_many_attempts") {
+            setErrorMessage("Too many tries. Wait 15 minutes and try again, or reset your password.");
+          } else if (res.code === "account_suspended") {
             setErrorMessage("Your account is suspended. Email us and we'll help you sort it out.");
-          } else if (res.error.includes("ACCOUNT_TERMINATED")) {
+          } else if (res.code === "account_terminated") {
             setErrorMessage("This account has been closed.");
           } else {
             setErrorMessage("That email and password don't match. Try again, or reset your password.");
