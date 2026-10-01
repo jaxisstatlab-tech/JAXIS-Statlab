@@ -110,4 +110,8 @@ export interface ClientDisputeEligibilityDTO {
   remainingMs: number;
   reason?: string;
   existingDispute?: DisputeDTO | null;
+  /** End of the free-change window (Request changes); null when it was never opened. */
+  revisionWindowExpiresAt?: string | null;
+  /** A change request is waiting for us or being worked on, so another can't be sent yet. */
+  hasOpenChangeRequest?: boolean;
 }

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import type { MessageDTO } from "../schemas";
-import { getProjectMessages, sendMessage } from "../actions";
+import { getProjectMessages, markMessagesAsRead, sendMessage } from "../actions";
 import { MessageBubble, type ChatMessage } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
 import { LoadingState, CopyButton, Toast } from "@repo/ui";
@@ -37,6 +37,8 @@ export interface InitialThreadData {
   nextCursor?: string | null;
   currentUserId?: string | null;
   currentUserName?: string | null;
+  /** Loaded without marking it read (not on screen yet); it's marked read once `active`. */
+  readPending?: boolean;
 }
 
 type ProjectInfo = NonNullable<InitialThreadData["projectInfo"]>;
@@ -64,6 +66,13 @@ interface MessageThreadProps {
   onLatestMessage?: (message: MessageDTO) => void;
   /** Shown inside a study page that already shows the study title and ID above. */
   inStudy?: boolean;
+  /**
+   * Whether the chat is on screen. While false (e.g. behind the inbox list on phones) it doesn't
+   * mark anything read or pull new messages (pulling marks them read on the server).
+   */
+  active?: boolean;
+  /** Called after messages that were waiting are marked read (when the chat comes on screen). */
+  onRead?: () => void;
 }
 
 // How often the chat checks the server for new messages.
@@ -128,8 +137,16 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   framed = true,
   onLatestMessage,
   inStudy = false,
+  active = true,
+  onRead,
 }) => {
   const hasInitial = Boolean(initialThreadData?.projectInfo);
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const onReadRef = useRef(onRead);
+  onReadRef.current = onRead;
+  // Server-loaded but not yet marked read: wait until the chat is on screen.
+  const readPendingRef = useRef(Boolean(initialThreadData?.readPending));
 
   const [messages, setMessages] = useState<ChatMessage[]>(initialThreadData?.messages ?? []);
   const [project, setProject] = useState<ProjectInfo | null>(initialThreadData?.projectInfo ?? null);
@@ -311,6 +328,11 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 
     if (hasInitial) {
       saveCache(messagesRef.current);
+      if (readPendingRef.current || !activeRef.current) {
+        // Not on screen yet: the effect below reads it and catches up when it is.
+        pendingSyncRef.current = true;
+        return;
+      }
       const unread = messagesRef.current.filter((m) => !m.isMine && m.status !== "seen").map((m) => m.id);
       announceSeen(unread);
       void catchUp(); // the page may have been served from cache: pick up anything newer
@@ -408,7 +430,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     const cleanup = subscribeToProjectMessages(projectId, {
       onNewMessage: () => {
         // A doorbell only: fetch the real message from the server.
-        if (document.visibilityState === "hidden") pendingSyncRef.current = true;
+        if (document.visibilityState === "hidden" || !activeRef.current) pendingSyncRef.current = true;
         else void catchUp();
       },
       onDelivered: ({ messageId }) =>
@@ -444,14 +466,14 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 
     let ticks = 0;
     const timer = setInterval(() => {
-      if (document.visibilityState === "hidden") return;
+      if (document.visibilityState === "hidden" || !activeRef.current) return;
       ticks += 1;
       const every = liveRef.current ? CHECK_EVERY_LIVE_MS / CHECK_EVERY_MS : 1;
       if (ticks % every === 0) void catchUp();
     }, CHECK_EVERY_MS);
 
     const onVisible = () => {
-      if (document.visibilityState !== "visible") return;
+      if (document.visibilityState !== "visible" || !activeRef.current) return;
       pendingSyncRef.current = false;
       void catchUp();
       const unseen = messagesRef.current.filter((m) => !m.isMine && m.status !== "seen").map((m) => m.id);
@@ -465,6 +487,25 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [projectId, catchUp, announceSeen]);
+
+  // Coming on screen: mark what was waiting as read, then pick up anything that arrived meanwhile.
+  useEffect(() => {
+    if (!active) return;
+    if (readPendingRef.current) {
+      readPendingRef.current = false;
+      const ids = messagesRef.current.filter((m) => !m.isMine && !isPending(m)).map((m) => m.id);
+      void markMessagesAsRead(projectId, ids)
+        .catch(() => null)
+        .finally(() => {
+          announceSeen(messagesRef.current.filter((m) => !m.isMine && m.status !== "seen").map((m) => m.id));
+          onReadRef.current?.();
+        });
+    }
+    if (pendingSyncRef.current && readyRef.current) {
+      pendingSyncRef.current = false;
+      void catchUp();
+    }
+  }, [active, projectId, announceSeen, catchUp]);
 
   // Hide "… is typing" a few seconds after the last signal.
   useEffect(() => {

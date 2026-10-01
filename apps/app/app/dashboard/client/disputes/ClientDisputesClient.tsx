@@ -63,6 +63,17 @@ const day = (iso: string | null | undefined) =>
 const MIN = 20;
 const MAX = 3000;
 
+/** The free-change window for one study: open with the time left, or when it closed. */
+function changeWindow(p: ClientDisputeEligibilityDTO): { open: boolean; left: string; closedOn: string | null } {
+  if (!p.revisionWindowExpiresAt) return { open: false, left: "", closedOn: null };
+  const ms = new Date(p.revisionWindowExpiresAt).getTime() - Date.now();
+  if (ms <= 0) return { open: false, left: "", closedOn: p.revisionWindowExpiresAt };
+  const hours = Math.ceil(ms / 3_600_000);
+  const days = Math.floor(hours / 24);
+  const left = days >= 1 ? `${days} ${days === 1 ? "day" : "days"} left` : `${hours} ${hours === 1 ? "hour" : "hours"} left`;
+  return { open: true, left, closedOn: null };
+}
+
 export function ClientDisputesClient({ initialData }: ClientDisputesClientProps) {
   const [eligibleProjects, setEligibleProjects] = useState<ClientDisputeEligibilityDTO[]>(initialData?.eligibleProjects || []);
   const [disputes, setDisputes] = useState<DisputeDTO[]>(initialData?.clientDisputes || []);
@@ -115,7 +126,8 @@ export function ClientDisputesClient({ initialData }: ClientDisputesClientProps)
 
   const openEligibleProjects = eligibleProjects.filter((p) => p.isEligible && !p.existingDispute);
   const paginatedDisputes = disputes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const firstDelivered = eligibleProjects[0] ?? null;
+  const changeWindows = new Map(eligibleProjects.map((p) => [p.projectId, changeWindow(p)]));
+  const canRequestChanges = eligibleProjects.filter((p) => changeWindows.get(p.projectId)?.open && !p.hasOpenChangeRequest);
 
   const handleOpenFilingModal = (projectId?: string) => {
     if (projectId) setSelectedProjectId(projectId);
@@ -212,12 +224,16 @@ export function ClientDisputesClient({ initialData }: ClientDisputesClientProps)
           title="Request changes"
           body="Free fixes within your agreed scope, like a table format or a missing label. Open for 3 working days after delivery."
           action={
-            firstDelivered ? (
-              <Link href={`/dashboard/client/projects/${firstDelivered.projectId}/deliverables`} className={linkButton}>
-                Go to Your Files <ArrowRight size={13} weight="fill" />
+            canRequestChanges.length === 1 ? (
+              <Link href={`/dashboard/client/projects/${canRequestChanges[0]!.projectId}/revision`} className={linkButton}>
+                Request Changes <ArrowRight size={13} weight="fill" />
               </Link>
+            ) : canRequestChanges.length > 1 ? (
+              <span className="text-xs text-white/55">Choose the study below.</span>
             ) : (
-              <span className="text-xs text-white/40">Available once your files are delivered.</span>
+              <span className="text-xs text-white/40">
+                {eligibleProjects.length ? "No studies are inside the free-change window." : "Available once your files are delivered."}
+              </span>
             )
           }
         />
@@ -241,7 +257,11 @@ export function ClientDisputesClient({ initialData }: ClientDisputesClientProps)
 
       {/* Delivered studies */}
       <Panel aria-label="Your delivered studies">
-        <PanelHeader title="Your delivered studies" subtitle="Claims can be filed up to 7 days after delivery." count={eligibleProjects.length} />
+        <PanelHeader
+          title="Your delivered studies"
+          subtitle="Free changes are open for 3 working days after delivery; claims for 7 days."
+          count={eligibleProjects.length}
+        />
         {isLoading ? (
           <div className="py-10">
             <LoadingState variant="inline" label="Checking delivery dates..." />
@@ -256,6 +276,8 @@ export function ClientDisputesClient({ initialData }: ClientDisputesClientProps)
           <ul className="divide-y divide-white/[0.06]">
             {eligibleProjects.map((p) => {
               const claim = p.existingDispute;
+              const changes = changeWindows.get(p.projectId)!;
+              const changesOpen = changes.open && !p.hasOpenChangeRequest;
               return (
                 <li key={p.projectId} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                   <div className="min-w-0">
@@ -269,28 +291,49 @@ export function ClientDisputesClient({ initialData }: ClientDisputesClientProps)
                       <span className="font-mono">{p.intakeId}</span>
                       <span className="text-white/20">·</span>
                       <span>Delivered {day(p.deliveredAt)}</span>
-                      <span className="text-white/20">·</span>
-                      {claim ? (
-                        <StatusTag status={claim.status} />
-                      ) : p.isEligible ? (
-                        <span className="text-white/75">
-                          {p.remainingDays} {p.remainingDays === 1 ? "day" : "days"} left to file a claim
-                        </span>
-                      ) : (
-                        <span>Claim window closed {day(p.windowExpiresAt)}</span>
-                      )}
                     </p>
+                    <dl className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <dt className="text-white/45">Free changes:</dt>
+                        <dd className={changesOpen ? "text-white/80" : "text-white/50"} suppressHydrationWarning>
+                          {p.hasOpenChangeRequest
+                            ? "Your request is with us"
+                            : changes.open
+                              ? `${changes.left}, until ${day(p.revisionWindowExpiresAt)}`
+                              : changes.closedOn
+                                ? `Closed ${day(changes.closedOn)}`
+                                : "Closed"}
+                        </dd>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <dt className="text-white/45">Claims:</dt>
+                        <dd className={claim ? "" : p.isEligible ? "text-white/80" : "text-white/50"}>
+                          {claim ? (
+                            <StatusTag status={claim.status} />
+                          ) : p.isEligible ? (
+                            `${p.remainingDays} ${p.remainingDays === 1 ? "day" : "days"} left`
+                          ) : (
+                            `Closed ${day(p.windowExpiresAt)}`
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <Button asChild variant="outline" size="sm">
                       <Link href={`/dashboard/client/projects/${p.projectId}/deliverables`}>View Files</Link>
                     </Button>
+                    {changesOpen ? (
+                      <Button asChild variant="secondary" size="sm">
+                        <Link href={`/dashboard/client/projects/${p.projectId}/revision`}>Request Changes</Link>
+                      </Button>
+                    ) : null}
                     {claim ? (
                       <Button variant="outline" size="sm" onClick={() => setSelectedDispute(claim)}>
                         View Claim
                       </Button>
                     ) : p.isEligible ? (
-                      <Button variant="secondary" size="sm" onClick={() => handleOpenFilingModal(p.projectId)}>
+                      <Button variant="outline" size="sm" onClick={() => handleOpenFilingModal(p.projectId)}>
                         File a Claim
                       </Button>
                     ) : null}

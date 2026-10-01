@@ -63,6 +63,11 @@ export async function getClientEligibleDisputesAction(): Promise<{
             orderBy: { createdAt: "desc" },
             take: 1,
           },
+          revisionRequests: {
+            where: { clientId: user.id, status: { in: ["PENDING_REVIEW", "INCLUDED"] } },
+            select: { id: true },
+            take: 1,
+          },
         },
         orderBy: { deliveredAt: "desc" },
       })
@@ -130,6 +135,8 @@ export async function getClientEligibleDisputesAction(): Promise<{
         remainingMs,
         reason,
         existingDispute,
+        revisionWindowExpiresAt: p.revisionWindowExpiresAt ? p.revisionWindowExpiresAt.toISOString() : null,
+        hasOpenChangeRequest: p.revisionRequests.length > 0,
       };
     });
 
@@ -246,6 +253,9 @@ function readDevDeliveredStudies(userId: string, email?: string | null): ClientD
         remainingMs: isEligible ? remainingMs : 0,
         reason: isEligible ? undefined : "7-day post-delivery dispute window expired",
         existingDispute: null,
+        // Offline the free-change window is simply delivery + 3 days (as in dev-study-store).
+        revisionWindowExpiresAt: new Date(new Date(p.deliveredAt!).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        hasOpenChangeRequest: false,
       };
     });
 }

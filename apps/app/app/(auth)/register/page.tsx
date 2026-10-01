@@ -24,6 +24,21 @@ import { SITE_PRIVACY_URL, SITE_TERMS_URL } from "@/lib/site";
 import { PasswordRequirements } from "@/components/auth/PasswordRequirements";
 import { registerClient } from "@/features/auth/actions";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Our own messages for empty or mistyped fields (instead of the browser's pop-up). */
+function checkFields(f: { firstName: string; lastName: string; email: string; password: string; confirmPassword: string }) {
+  const errors: Record<string, string[]> = {};
+  if (!f.firstName.trim()) errors.firstName = ["Enter your first name."];
+  if (!f.lastName.trim()) errors.lastName = ["Enter your last name."];
+  if (!f.email.trim()) errors.email = ["Enter your email."];
+  else if (!EMAIL_RE.test(f.email.trim())) errors.email = ["That email doesn't look right. Check for typos."];
+  if (!f.password) errors.password = ["Choose a password."];
+  if (!f.confirmPassword) errors.confirmPassword = ["Type your password again."];
+  else if (f.password && f.password !== f.confirmPassword) errors.confirmPassword = ["Passwords don't match."];
+  return errors;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
@@ -37,13 +52,23 @@ export default function RegisterPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const clearError = (field: string) => {
+    if (!fieldErrors[field]) return;
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
     setFieldErrors({});
 
-    if (password !== confirmPassword) {
-      setFieldErrors({ confirmPassword: ["Passwords do not match."] });
+    const errors = checkFields({ firstName, lastName, email, password, confirmPassword });
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
@@ -93,7 +118,7 @@ export default function RegisterPage() {
       />
       <AuthDivider>or with email</AuthDivider>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         <div className="grid grid-cols-2 gap-3">
           <FormInput
             label="First name"
@@ -104,7 +129,10 @@ export default function RegisterPage() {
             variant="auth"
             placeholder="Juan"
             value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
+            onChange={(e) => {
+              setFirstName(e.target.value);
+              clearError("firstName");
+            }}
             error={fieldErrors.firstName?.[0]}
             disabled={isPending}
             autoComplete="given-name"
@@ -120,7 +148,10 @@ export default function RegisterPage() {
             variant="auth"
             placeholder="Dela Cruz"
             value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
+            onChange={(e) => {
+              setLastName(e.target.value);
+              clearError("lastName");
+            }}
             error={fieldErrors.lastName?.[0]}
             disabled={isPending}
             autoComplete="family-name"
@@ -138,7 +169,10 @@ export default function RegisterPage() {
           leftIcon={<Envelope size={16} weight="fill" />}
           placeholder="you@example.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            clearError("email");
+          }}
           error={fieldErrors.email?.[0]}
           disabled={isPending}
           autoComplete="email"
@@ -159,13 +193,7 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                if (fieldErrors.password) {
-                  setFieldErrors((prev) => {
-                    const next = { ...prev };
-                    delete next.password;
-                    return next;
-                  });
-                }
+                clearError("password");
               }}
               error={fieldErrors.password?.[0]}
               errorVariant="banner"
@@ -200,13 +228,7 @@ export default function RegisterPage() {
               value={confirmPassword}
               onChange={(e) => {
                 setConfirmPassword(e.target.value);
-                if (fieldErrors.confirmPassword) {
-                  setFieldErrors((prev) => {
-                    const next = { ...prev };
-                    delete next.confirmPassword;
-                    return next;
-                  });
-                }
+                clearError("confirmPassword");
               }}
               error={fieldErrors.confirmPassword?.[0]}
               errorVariant="banner"

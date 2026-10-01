@@ -33,7 +33,7 @@ export async function upsertClientProfile(
       return {
         success: false,
         error: {
-          message: "Invalid profile data",
+          message: "Please check the highlighted fields.",
           fieldErrors: parsed.error.flatten().fieldErrors,
         },
       };
@@ -98,7 +98,7 @@ export async function upsertClientProfile(
     return { success: true };
   } catch (error) {
     console.error("[upsertClientProfile]", error);
-    return { success: false, error: { message: "Internal server error" } };
+    return { success: false, error: { message: "We couldn't save your details. Please try again." } };
   }
 }
 

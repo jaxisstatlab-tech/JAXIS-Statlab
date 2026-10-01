@@ -57,10 +57,11 @@ export function MessagesInbox({
   const searchParams = useSearchParams();
   const queryProjectId = searchParams.get("projectId");
 
-  // The chat loaded on the server was marked read while loading, so it starts with no badge.
+  // A chat loaded on the server already marked read starts with no badge; one left unread
+  // (`readPending`, the automatic first chat) keeps its badge until it's on screen.
   const [threads, setThreads] = useState<ProjectThreadSummaryDTO[]>(() =>
     sortThreads(initialThreads).map((t) =>
-      t.projectId === initialThreadData?.projectInfo?.id ? { ...t, unreadCount: 0 } : t
+      t.projectId === initialThreadData?.projectInfo?.id && !initialThreadData?.readPending ? { ...t, unreadCount: 0 } : t
     )
   );
   const [selectedId, setSelectedId] = useState<string | null>(
@@ -69,6 +70,18 @@ export function MessagesInbox({
   const selectedRef = useRef(selectedId);
   selectedRef.current = selectedId;
   const [mobileView, setMobileView] = useState<"list" | "chat">(queryProjectId ? "chat" : "list");
+  // Wide screens show the chat beside the list; phones show one or the other.
+  const [isWide, setIsWide] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setIsWide(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  const chatOnScreen = isWide || mobileView === "chat";
+  const chatOnScreenRef = useRef(chatOnScreen);
+  chatOnScreenRef.current = chatOnScreen;
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const searchRef = useRef<HTMLInputElement>(null);
@@ -105,7 +118,9 @@ export function MessagesInbox({
         if (!res.success || !res.data) return;
         const fresh = res.data;
         setThreads(
-          sortThreads(fresh.map((t) => (t.projectId === selectedRef.current ? { ...t, unreadCount: 0 } : t)))
+          sortThreads(
+            fresh.map((t) => (t.projectId === selectedRef.current && chatOnScreenRef.current ? { ...t, unreadCount: 0 } : t))
+          )
         );
       } catch {
         // keep the current list
@@ -125,6 +140,10 @@ export function MessagesInbox({
     // Opening a chat reads it.
     setThreads((prev) => prev.map((t) => (t.projectId === projectId ? { ...t, unreadCount: 0 } : t)));
   };
+
+  const markThreadRead = useCallback((projectId: string) => {
+    setThreads((prev) => prev.map((t) => (t.projectId === projectId ? { ...t, unreadCount: 0 } : t)));
+  }, []);
 
   // Keep the open chat's preview line in step with what happens in it.
   const handleLatest = useCallback((projectId: string, m: MessageDTO) => {
@@ -340,6 +359,8 @@ export function MessagesInbox({
                   initialThreadData?.projectInfo?.id === selected.projectId ? initialThreadData : null
                 }
                 onLatestMessage={(m) => handleLatest(selected.projectId, m)}
+                active={chatOnScreen}
+                onRead={() => markThreadRead(selected.projectId)}
                 className="h-full min-h-0"
                 onBack={() => setMobileView("list")}
               />

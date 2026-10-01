@@ -430,13 +430,15 @@ export async function markMessagesAsRead(
 
 /**
  * 2. Retrieve chronological messages for a project thread with reverse cursor pagination.
- * Automatically marks all delivered messages as read for the caller.
+ * Marks the loaded messages as read for the caller unless `markRead` is false (a chat loaded
+ * before it is on screen, e.g. the first chat behind the phone inbox list).
  */
 export async function getProjectMessages(
   projectId: string,
   options?: {
     cursor?: string;
     limit?: number;
+    markRead?: boolean;
   }
 ): Promise<
   MessagingActionResult<{
@@ -585,7 +587,7 @@ export async function getProjectMessages(
         .filter((m) => m.senderId !== userId && !m.readReceipts.some((r) => r.userId === userId))
         .map((m) => m.id);
 
-      if (unreadMsgIds.length > 0 && userId) {
+      if (unreadMsgIds.length > 0 && userId && options?.markRead !== false) {
         db.messageReadReceipt
           .createMany({
             data: unreadMsgIds.map((mId) => ({

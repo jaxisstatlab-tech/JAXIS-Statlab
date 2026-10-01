@@ -549,16 +549,25 @@ function StudyCard({
         <p className="text-[13px] leading-relaxed text-white/65">{stage.now}</p>
 
         {f && f.totalAmount > 0 ? (
+          // Same wording as All studies: the price until a payment is confirmed, then paid so far.
           <div className="max-w-sm">
             <div className="flex items-baseline justify-between gap-3 text-xs">
-              <span className="text-white/50">{f.isFullyPaid ? "Paid in full" : "Paid"}</span>
+              <span className="text-white/50">{f.isFullyPaid ? "Paid in full" : f.verifiedPaid > 0 ? "Paid" : "Price"}</span>
               <span className="font-mono text-white/70">
                 <Peso />
-                {money(f.verifiedPaid)} <span className="text-white/35">of</span> <Peso />
-                {money(f.totalAmount)}
+                {money(f.verifiedPaid > 0 || f.isFullyPaid ? f.verifiedPaid : f.totalAmount)}
+                {f.isFullyPaid || f.verifiedPaid <= 0 ? null : (
+                  <>
+                    {" "}
+                    <span className="text-white/35">of</span> <Peso />
+                    {money(f.totalAmount)}
+                  </>
+                )}
               </span>
             </div>
-            <Meter value={f.verifiedPaid} max={f.totalAmount} label={`Paid on ${study.intakeId}`} className="mt-1.5" />
+            {f.verifiedPaid > 0 ? (
+              <Meter value={f.verifiedPaid} max={f.totalAmount} label={`Paid on ${study.intakeId}`} className="mt-1.5" />
+            ) : null}
           </div>
         ) : null}
 

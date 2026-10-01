@@ -2,7 +2,7 @@
 
 import React, { useState, useTransition } from "react";
 import { Card, FormInput, Button, Toast } from "@repo/ui";
-import { Key, Eye, EyeSlash, CheckCircle, LockSimple } from "@phosphor-icons/react";
+import { Key, Eye, EyeSlash, CheckCircle } from "@phosphor-icons/react";
 import { changePasswordAction } from "../actions";
 
 interface ChangePasswordCardProps {
@@ -47,8 +47,8 @@ export function ChangePasswordCard({ className = "" }: ChangePasswordCardProps) 
 
         if (res.success) {
           setToastMessage({
-            message: "Password Updated",
-            description: "Your login credentials have been changed successfully.",
+            message: "Password changed",
+            description: "Use your new password the next time you log in.",
             variant: "success",
           });
           // Reset fields on success
@@ -61,16 +61,16 @@ export function ChangePasswordCard({ className = "" }: ChangePasswordCardProps) 
             setFieldErrors(res.error.fieldErrors);
           }
           setToastMessage({
-            message: "Unable to Change Password",
-            description: res.error.message || "Please check the entered values and try again.",
+            message: "Couldn't change your password",
+            description: res.error.message || "Please check what you typed and try again.",
             variant: "danger",
           });
         }
       } catch (err) {
         console.error(err);
         setToastMessage({
-          message: "Request Failed",
-          description: "An unexpected error occurred while updating your password.",
+          message: "Couldn't change your password",
+          description: "Something went wrong. Please try again in a moment.",
           variant: "danger",
         });
       }
@@ -91,24 +91,16 @@ export function ChangePasswordCard({ className = "" }: ChangePasswordCardProps) 
       <Card
         className={`p-6 md:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl animate-card-reveal ${className}`}
       >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
           {/* Canonical Section Card Header Anatomy (Rule 21) */}
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <div className="flex items-center gap-2.5">
-              <Key size={18} weight="fill" className="text-[#CC6600] shrink-0" />
-              <div>
-                <h2 className="text-base font-bold text-white font-sans">
-                  Change Password
-                </h2>
-                <p className="text-xs text-white/60 font-sans mt-1">
-                  Update your login password to maintain security across your research sessions.
-                </p>
-              </div>
+          <div className="flex items-center gap-2.5 border-b border-white/10 pb-4">
+            <Key size={18} weight="fill" className="text-[#CC6600] shrink-0" />
+            <div>
+              <h2 className="text-base font-bold text-white font-sans">Change Password</h2>
+              <p className="text-xs text-white/60 font-sans mt-1">
+                Type your current password, then choose a new one.
+              </p>
             </div>
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] bg-white/[0.06] border border-white/10 text-xs font-mono text-white/70 uppercase font-semibold">
-              <LockSimple size={12} weight="fill" className="text-white/50" />
-              Security
-            </span>
           </div>
 
           {/* Form Fields */}
@@ -176,31 +168,31 @@ export function ChangePasswordCard({ className = "" }: ChangePasswordCardProps) 
                   <span
                     className={`inline-flex items-center gap-1 text-[11px] font-sans px-2 py-0.5 rounded-[2px] transition-colors ${
                       hasMinLength
-                        ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                        ? "bg-white/[0.07] text-white border border-white/20"
                         : "bg-white/[0.04] text-white/40 border border-white/[0.08]"
                     }`}
                   >
-                    {hasMinLength && <CheckCircle size={12} weight="fill" className="text-emerald-400" />}
+                    {hasMinLength && <CheckCircle size={12} weight="fill" className="text-white/80" />}
                     8+ characters
                   </span>
                   <span
                     className={`inline-flex items-center gap-1 text-[11px] font-sans px-2 py-0.5 rounded-[2px] transition-colors ${
                       hasUppercase
-                        ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                        ? "bg-white/[0.07] text-white border border-white/20"
                         : "bg-white/[0.04] text-white/40 border border-white/[0.08]"
                     }`}
                   >
-                    {hasUppercase && <CheckCircle size={12} weight="fill" className="text-emerald-400" />}
+                    {hasUppercase && <CheckCircle size={12} weight="fill" className="text-white/80" />}
                     1 uppercase letter
                   </span>
                   <span
                     className={`inline-flex items-center gap-1 text-[11px] font-sans px-2 py-0.5 rounded-[2px] transition-colors ${
                       hasNumber
-                        ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                        ? "bg-white/[0.07] text-white border border-white/20"
                         : "bg-white/[0.04] text-white/40 border border-white/[0.08]"
                     }`}
                   >
-                    {hasNumber && <CheckCircle size={12} weight="fill" className="text-emerald-400" />}
+                    {hasNumber && <CheckCircle size={12} weight="fill" className="text-white/80" />}
                     1 number
                   </span>
                 </div>
@@ -238,12 +230,12 @@ export function ChangePasswordCard({ className = "" }: ChangePasswordCardProps) 
                     <span
                       className={`inline-flex items-center gap-1 text-[11px] font-sans px-2 py-0.5 rounded-[2px] transition-colors ${
                         passwordsMatch
-                          ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-                          : "bg-amber-500/10 text-amber-300 border border-amber-500/20"
+                          ? "bg-white/[0.07] text-white border border-white/20"
+                          : "bg-white/[0.04] text-white/55 border border-white/[0.08]"
                       }`}
                     >
-                      {passwordsMatch && <CheckCircle size={12} weight="fill" className="text-emerald-400" />}
-                      {passwordsMatch ? "Passwords match" : "Passwords do not match yet"}
+                      {passwordsMatch && <CheckCircle size={12} weight="fill" className="text-white/80" />}
+                      {passwordsMatch ? "Passwords match" : "Passwords don't match yet"}
                     </span>
                   </div>
                 )}

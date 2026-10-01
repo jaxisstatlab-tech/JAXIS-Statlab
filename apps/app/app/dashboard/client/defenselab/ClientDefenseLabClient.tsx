@@ -936,16 +936,22 @@ function NextSession({
   return (
     <Panel aria-label="Next session" className="border-[#CC6600]/35">
       <div className="grid grid-cols-1 gap-6 px-5 py-6 sm:px-6 md:grid-cols-[auto_minmax(0,1fr)] md:gap-8">
-        <div className="flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-[2px] border border-white/10 bg-white/[0.03]">
-          <span className="font-mono text-[11px] uppercase tracking-wider text-[#FFA040]">
+        {/* A small calendar page; the full date is spelled out beside it, so screen readers skip this */}
+        <div
+          aria-hidden="true"
+          className="w-24 shrink-0 self-start overflow-hidden rounded-[2px] border border-white/10 bg-[#0F0F1D] text-center"
+        >
+          <div className="border-b border-[#CC6600]/30 bg-[#CC6600]/[0.14] py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#FFA040]">
             {at.toLocaleDateString("en-PH", { month: "short" })}
-          </span>
-          <span className="font-mono text-4xl font-bold leading-none text-white">
-            {at.getDate()}
-          </span>
-          <span className="mt-1 text-[11px] text-white/50">
-            {at.toLocaleDateString("en-PH", { weekday: "short" })}
-          </span>
+          </div>
+          <div className="flex flex-col items-center px-2 pb-3 pt-2.5">
+            <span className="font-sans text-[2.5rem] font-semibold leading-none tracking-[-0.03em] tabular-nums text-white">
+              {at.getDate()}
+            </span>
+            <span className="mt-2 text-[11px] font-medium text-white/55">
+              {at.toLocaleDateString("en-PH", { weekday: "long" })}
+            </span>
+          </div>
         </div>
 
         <div className="min-w-0">

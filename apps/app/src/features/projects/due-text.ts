@@ -28,5 +28,6 @@ export function useDueText(due: string | Date, stage: ClientStage, deliveredAt?:
   if (days > 1) return `${date} · ${days} days left`;
   if (days === 1) return `${date} · tomorrow`;
   if (days === 0) return `${date} · today`;
-  return `${date} · ${Math.abs(days)} days past`;
+  const past = Math.abs(days);
+  return `${date} · ${past} ${past === 1 ? "day" : "days"} past`;
 }

@@ -53,6 +53,7 @@ import { IconUserCheck } from "@tabler/icons-react";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 import type { QuotationDetailItem } from "@/features/quotations/schemas";
 import type { ProjectStatus } from "@prisma/client";
+import { regionLabel } from "@/features/client-profile/regions";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -802,7 +803,7 @@ export default function AdminProjectInspectionPage({ params }: PageProps) {
                   <div>
                     <span className="text-white/40 block">Philippine Region</span>
                     <span className="text-white font-semibold font-sans">
-                      {project.client.clientProfile.region}
+                      {regionLabel(project.client.clientProfile.region)}
                     </span>
                   </div>
                 </>

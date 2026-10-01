@@ -176,12 +176,12 @@ export function devUnreadCount(user: DevUser): number {
 export function devProjectMessages(
   projectId: string,
   user: DevUser,
-  options?: { cursor?: string; limit?: number }
+  options?: { cursor?: string; limit?: number; markRead?: boolean }
 ) {
   const project = readProjects().find((p) => p.id === projectId || p.intakeId === projectId);
   if (!project || !canSee(project, user)) return null;
   const rows = readMessages();
-  if (markRead(rows, project.id, user)) writeMessages(rows);
+  if (options?.markRead !== false && markRead(rows, project.id, user)) writeMessages(rows);
 
   const limit = options?.limit ?? 20;
   let thread = rows.filter((m) => m.projectId === project.id).sort((a, b) => a.sentAt.localeCompare(b.sentAt));

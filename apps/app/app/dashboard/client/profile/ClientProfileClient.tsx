@@ -10,26 +10,7 @@ import { upsertClientProfile } from "@/features/client-profile/actions";
 import { ClientProfileFormData } from "@/features/client-profile/schemas";
 import { formatPhilippinePhoneNumber } from "@/lib/formatters";
 import { Panel } from "@/components/dashboard/Panel";
-
-const REGION_OPTIONS = [
-  { value: "NCR", label: "National Capital Region (NCR / Metro Manila)" },
-  { value: "CAR", label: "Cordillera Administrative Region (CAR)" },
-  { value: "REGION_1", label: "Region I – Ilocos Region" },
-  { value: "REGION_2", label: "Region II – Cagayan Valley" },
-  { value: "REGION_3", label: "Region III – Central Luzon" },
-  { value: "REGION_4A", label: "Region IV-A – CALABARZON" },
-  { value: "MIMAROPA", label: "MIMAROPA Region (Region IV-B)" },
-  { value: "REGION_5", label: "Region V – Bicol Region" },
-  { value: "REGION_6", label: "Region VI – Western Visayas" },
-  { value: "REGION_7", label: "Region VII – Central Visayas" },
-  { value: "REGION_8", label: "Region VIII – Eastern Visayas" },
-  { value: "REGION_9", label: "Region IX – Zamboanga Peninsula" },
-  { value: "REGION_10", label: "Region X – Northern Mindanao" },
-  { value: "REGION_11", label: "Region XI – Davao Region" },
-  { value: "REGION_12", label: "Region XII – SOCCSKSARGEN" },
-  { value: "REGION_13", label: "Region XIII – Caraga" },
-  { value: "BARMM", label: "BARMM – Bangsamoro Autonomous Region in Muslim Mindanao" },
-];
+import { REGION_OPTIONS, regionValue } from "@/features/client-profile/regions";
 
 export interface ClientProfileClientProps {
   initialProfile: {
@@ -59,13 +40,35 @@ export function ClientProfileClient({ initialProfile, sessionUser }: ClientProfi
     institutionSchool: initialProfile?.institutionSchool || "",
     academicProgram: initialProfile?.academicProgram || "",
     contactNumber: formatPhilippinePhoneNumber(initialProfile?.contactNumber || ""),
-    region: initialProfile?.region || "NCR",
+    region: regionValue(initialProfile?.region),
   });
   const isComplete = Boolean(initialProfile?.institutionSchool && initialProfile?.contactNumber);
 
+  // Our own messages for empty fields (instead of the browser's pop-up).
+  const checkFields = () => {
+    const errors: Record<string, string[]> = {};
+    if (formData.institutionSchool.trim().length < 2) errors.institutionSchool = ["Enter your school or university."];
+    if (formData.academicProgram.trim().length < 2) errors.academicProgram = ["Enter your program."];
+    if (formData.contactNumber.replace(/\D/g, "").length < 5) errors.contactNumber = ["Enter your mobile number."];
+    return errors;
+  };
+
+  const update = (field: keyof ClientProfileFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFieldErrors({});
+    const errors = checkFields();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
     startTransition(async () => {
       const res = await upsertClientProfile(formData);
       if (!res.success) {
@@ -151,7 +154,7 @@ export function ClientProfileClient({ initialProfile, sessionUser }: ClientProfi
         </TabsList>
 
         <TabsContent value="profile" className="outline-none">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <Panel as="div">
               <div className="flex flex-col gap-8 px-5 py-6 sm:px-6">
                 <div className="grid grid-cols-1 gap-8 2xl:grid-cols-2 2xl:gap-12">
@@ -171,7 +174,7 @@ export function ClientProfileClient({ initialProfile, sessionUser }: ClientProfi
                         required
                         placeholder="e.g. University of the Philippines Diliman"
                         value={formData.institutionSchool}
-                        onChange={(e) => setFormData({ ...formData, institutionSchool: e.target.value })}
+                        onChange={(e) => update("institutionSchool", e.target.value)}
                         error={fieldErrors.institutionSchool?.[0]}
                         disabled={isPending}
                       />
@@ -180,7 +183,7 @@ export function ClientProfileClient({ initialProfile, sessionUser }: ClientProfi
                         required
                         placeholder="e.g. BS Psychology or MA in Education"
                         value={formData.academicProgram}
-                        onChange={(e) => setFormData({ ...formData, academicProgram: e.target.value })}
+                        onChange={(e) => update("academicProgram", e.target.value)}
                         error={fieldErrors.academicProgram?.[0]}
                         disabled={isPending}
                       />
@@ -205,14 +208,14 @@ export function ClientProfileClient({ initialProfile, sessionUser }: ClientProfi
                         required
                         placeholder="09XX XXX XXXX"
                         value={formData.contactNumber}
-                        onChange={(e) => setFormData({ ...formData, contactNumber: formatPhilippinePhoneNumber(e.target.value) })}
+                        onChange={(e) => update("contactNumber", formatPhilippinePhoneNumber(e.target.value))}
                         error={fieldErrors.contactNumber?.[0]}
                         disabled={isPending}
                       />
                       <FormSelect
                         label="Region"
                         value={formData.region}
-                        onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                        onChange={(e) => update("region", e.target.value)}
                         options={REGION_OPTIONS}
                         disabled={isPending}
                       />

@@ -117,7 +117,10 @@ export function NotificationDrawer({
     if (isInitial) setIsLoading(true);
     try {
       // A plain GET (not a server action) so background checks never hold up page navigation.
-      const response = await fetch("/api/v1/alerts", { cache: "no-store" });
+      // Offline, server restarting, or signed out: skip quietly; the next check (every 15 s, or on return to the
+      // tab) tries again. A rejected fetch used to be logged as an error, which the dev overlay shows on screen.
+      const response = await fetch("/api/v1/alerts", { cache: "no-store" }).catch(() => null);
+      if (!response?.ok) return;
       const res = (await response.json()) as Awaited<ReturnType<typeof getInAppAlertsAction>>;
       if (res.success && res.data) {
         const freshAlerts = res.data.alerts;
