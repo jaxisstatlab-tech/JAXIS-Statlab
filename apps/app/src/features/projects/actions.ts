@@ -1622,7 +1622,14 @@ export async function resolveMissingInfo(
       };
     }
 
-    // Ensure state transition legality (AWAITING_INFORMATION -> UNDER_EVALUATION)
+    // Only while we're waiting on the client (moving a status to itself counts as "valid", so check it here;
+    // otherwise the button could be sent again and again, alerting the team each time).
+    if (existing.masterStatus !== "AWAITING_INFORMATION") {
+      return {
+        success: false,
+        error: { code: "INVALID_STATE", message: "This study isn't waiting for anything from you right now." },
+      };
+    }
     assertValidStatusTransition(existing.masterStatus, "UNDER_EVALUATION");
 
     const updated = await db.project.update({
