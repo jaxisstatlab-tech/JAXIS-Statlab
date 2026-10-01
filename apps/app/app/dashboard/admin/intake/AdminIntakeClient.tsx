@@ -4,7 +4,6 @@ import React, { useState, useEffect, useTransition, useMemo, useRef } from "reac
 import Link from "next/link";
 import {
   PageHeader,
-  Card,
   KpiCard,
   FilterToolbar,
   StatusBadge,
@@ -20,29 +19,29 @@ import {
   Pagination,
 } from "@repo/ui";
 import {
-  IconDownload,
-  IconExternalLink,
-  IconHelpCircle,
-  IconCheck,
-  IconCopy,
-  IconInbox,
-  IconShieldCheck,
-  IconCalculator,
-  IconFileCertificate,
-  IconRefresh,
-} from "@tabler/icons-react";
+  ArrowSquareOut,
+  ArrowsClockwise,
+  Calculator,
+  CheckCircle,
+  Copy,
+  DownloadSimple,
+  Eye,
+  FileText,
+  Hourglass,
+  PaperPlaneTilt,
+  Question,
+  Tray,
+} from "@phosphor-icons/react";
 import {
   getProjects,
   markIntakeComplete,
   requestMissingInfo,
 } from "@/features/projects/actions";
 import { MISSING_INFO_TEMPLATES, getProjectDisplayStatus } from "@/lib/project-rules";
-import {
-  getFileMeta,
-  formatFileCategory,
-  triggerFileDownload,
-} from "@/lib/file-utils";
+import { getFileMeta, formatFileCategory, triggerFileDownload } from "@/lib/file-utils";
 import { QuotationBuilderModal } from "@/features/quotations/components/QuotationBuilderModal";
+import { AnalysisGoalsList } from "@/features/projects/components/AnalysisGoalsList";
+import { analysisGoalsFor } from "@/features/projects/analysis-goals";
 import { getCommercialCatalog } from "@/features/quotations/actions";
 import {
   PACKAGES_CATALOG,
@@ -54,6 +53,56 @@ import type { ProjectDetailItem } from "@/features/projects/schemas";
 interface AdminIntakeClientProps {
   initialProjects?: ProjectDetailItem[];
   initialCatalog?: CommercialCatalogData;
+}
+
+const DAY = 86_400_000;
+
+const shortDate = (value: Date | string) =>
+  new Date(value).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
+
+const shortTime = (value: Date | string) =>
+  new Date(value).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit", hour12: true });
+
+/** "in 12 days", "tomorrow", "today", "3 days late" — or nothing until the page has loaded in the browser. */
+function dueHint(due: Date | string, now: number | null): string | null {
+  if (now === null) return null;
+  const days = Math.ceil((new Date(due).getTime() - now) / DAY);
+  if (days > 1) return `in ${days} days`;
+  if (days === 1) return "tomorrow";
+  if (days === 0) return "today";
+  return days === -1 ? "1 day late" : `${-days} days late`;
+}
+
+type RowAction = { label: string; icon: React.ReactNode } & (
+  | { kind: "quick-look" }
+  | { kind: "quote" }
+  | { kind: "link"; href: string }
+);
+
+// The one button each row shows: the next thing staff do for a study at that stage. Everything else is in the menu.
+function nextStepFor(p: ProjectDetailItem): RowAction {
+  switch (p.masterStatus) {
+    case "NEW_REQUEST":
+      return { kind: "quick-look", label: "Review", icon: <Eye size={14} weight="fill" /> };
+    case "UNDER_EVALUATION":
+      return { kind: "quote", label: "Build Quote", icon: <Calculator size={14} weight="fill" /> };
+    case "CLIENT_APPROVED":
+      return {
+        kind: "link",
+        href: `/dashboard/admin/projects/${p.id}/sow`,
+        label: "Draft Agreement",
+        icon: <FileText size={14} weight="fill" />,
+      };
+    case "AWAITING_INFORMATION":
+      return { kind: "quick-look", label: "Quick Look", icon: <Eye size={14} weight="fill" /> };
+    default:
+      return {
+        kind: "link",
+        href: `/dashboard/admin/projects/${p.id}`,
+        label: "Open",
+        icon: <ArrowSquareOut size={14} weight="fill" />,
+      };
+  }
 }
 
 export function AdminIntakeClient({
@@ -92,6 +141,13 @@ export function AdminIntakeClient({
     variant: "info" | "success" | "warning" | "danger";
   } | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // "Now" only exists in the browser; set after mount so server and browser render the same first.
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setNow(Date.now()));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -153,15 +209,11 @@ export function AdminIntakeClient({
     };
   }, [initialProjects.length]);
 
-  // Filter projects based on STATUS dropdown and search query
+  // Filter by status and search
   const filteredProjects = useMemo(() => {
     return projects.filter((p) => {
-      // 1. Status Filter
       if (selectedStatus === "TRIAGE") {
-        if (
-          p.masterStatus !== "NEW_REQUEST" &&
-          p.masterStatus !== "AWAITING_INFORMATION"
-        ) {
+        if (p.masterStatus !== "NEW_REQUEST" && p.masterStatus !== "AWAITING_INFORMATION") {
           return false;
         }
       } else if (selectedStatus !== "ALL") {
@@ -170,32 +222,22 @@ export function AdminIntakeClient({
         }
       }
 
-      // 2. Search Filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchesTitle = p.researchTitle.toLowerCase().includes(q);
-        const matchesId = p.intakeId.toLowerCase().includes(q);
-        const matchesClient = p.client.fullName.toLowerCase().includes(q);
-        const matchesEmail = p.client.email.toLowerCase().includes(q);
-        const matchesSchool =
+        const matches =
+          p.researchTitle.toLowerCase().includes(q) ||
+          p.intakeId.toLowerCase().includes(q) ||
+          p.client.fullName.toLowerCase().includes(q) ||
+          p.client.email.toLowerCase().includes(q) ||
           (p.client.clientProfile?.institutionSchool || "").toLowerCase().includes(q);
-
-        if (
-          !matchesTitle &&
-          !matchesId &&
-          !matchesClient &&
-          !matchesEmail &&
-          !matchesSchool
-        ) {
-          return false;
-        }
+        if (!matches) return false;
       }
 
       return true;
     });
   }, [projects, selectedStatus, searchQuery]);
 
-  // Sort projects: default Newest First (resolves Issue #5), with Oldest First and Closest Deadline options
+  // Newest first by default, with oldest first and closest deadline
   const sortedFilteredProjects = useMemo(() => {
     return [...filteredProjects].sort((a, b) => {
       if (sortBy === "oldest") {
@@ -205,56 +247,66 @@ export function AdminIntakeClient({
         const timeA = a.deadlineRequested ? new Date(a.deadlineRequested).getTime() : Infinity;
         const timeB = b.deadlineRequested ? new Date(b.deadlineRequested).getTime() : Infinity;
         if (timeA !== timeB) return timeA - timeB;
-        // Secondary sort: newest first
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
-      // Default: "newest" (newest submissions on top)
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }, [filteredProjects, sortBy]);
 
   const paginatedProjects = useMemo(() => {
-    return sortedFilteredProjects.slice(
-      (currentPage - 1) * pageSize,
-      currentPage * pageSize
-    );
+    return sortedFilteredProjects.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   }, [sortedFilteredProjects, currentPage, pageSize]);
 
-  // Comprehensive Master Status & KPI calculations
   const kpis = useMemo(() => {
-    const total = projects.length;
-    const newRequests = projects.filter(
-      (p) => p.masterStatus === "NEW_REQUEST"
-    ).length;
-    const awaitingInfo = projects.filter(
-      (p) => p.masterStatus === "AWAITING_INFORMATION"
-    ).length;
-    const underEvaluation = projects.filter(
-      (p) => p.masterStatus === "UNDER_EVALUATION"
-    ).length;
-
+    const count = (status: string) => projects.filter((p) => p.masterStatus === status).length;
+    const newRequests = count("NEW_REQUEST");
+    const awaitingInfo = count("AWAITING_INFORMATION");
     return {
-      total,
-      activeTriage: newRequests + awaitingInfo,
+      total: projects.length,
+      toCheck: newRequests + awaitingInfo,
       newRequests,
       awaitingInfo,
-      underEvaluation,
+      underEvaluation: count("UNDER_EVALUATION"),
+      quoteSent: count("QUOTE_SENT"),
     };
   }, [projects]);
+
+  const filtersActive = selectedStatus !== "ALL" || sortBy !== "newest" || searchQuery.trim() !== "";
+  const clearFilters = () => {
+    setSelectedStatus("ALL");
+    setSortBy("newest");
+    setSearchQuery("");
+    setCurrentPage(1);
+  };
+
+  const openQuote = (p: ProjectDetailItem) => {
+    setSelectedStudyForInspect(null);
+    setSelectedStudyForQuote(p);
+    setIsQuoteModalOpen(true);
+  };
+
+  const openMissingInfo = (p: ProjectDetailItem) => {
+    setSelectedStudyForInspect(null);
+    setSelectedForMissingInfo(p);
+    setMissingInfoReasonText(p.missingInfoReason || "");
+    setSelectedTemplateId("");
+    setMissingInfoError(null);
+  };
 
   const handleMarkComplete = (projectId: string, intakeId: string) => {
     startTransition(async () => {
       const res = await markIntakeComplete(projectId);
       if (res.success) {
+        setSelectedStudyForInspect(null);
         setToastMessage({
-          message: "Intake Evaluation Complete",
-          description: `Study ${intakeId} has been transitioned to UNDER_EVALUATION.`,
+          message: "Ready to price",
+          description: `${intakeId} is ready for a quote.`,
           variant: "success",
         });
         loadData();
       } else {
         setToastMessage({
-          message: "Evaluation Update Failed",
+          message: "Couldn't update the study",
           description: res.error.message,
           variant: "danger",
         });
@@ -273,13 +325,8 @@ export function AdminIntakeClient({
 
   const handleRequestMissingInfoSubmit = () => {
     if (!selectedForMissingInfo) return;
-    if (
-      !missingInfoReasonText.trim() ||
-      missingInfoReasonText.trim().length < 5
-    ) {
-      setMissingInfoError(
-        "Please provide a clear description of the missing information (min 5 characters)."
-      );
+    if (!missingInfoReasonText.trim() || missingInfoReasonText.trim().length < 5) {
+      setMissingInfoError("Tell the client what's missing (at least 5 characters).");
       return;
     }
 
@@ -292,9 +339,9 @@ export function AdminIntakeClient({
 
       if (res.success) {
         setToastMessage({
-          message: "Information Request Sent",
-          description: `Requested missing artifacts from ${selectedForMissingInfo.client.fullName} (${selectedForMissingInfo.intakeId}).`,
-          variant: "warning",
+          message: "Request sent",
+          description: `We asked ${selectedForMissingInfo.client.fullName} for the missing information (${selectedForMissingInfo.intakeId}).`,
+          variant: "success",
         });
         setSelectedForMissingInfo(null);
         setMissingInfoReasonText("");
@@ -303,7 +350,7 @@ export function AdminIntakeClient({
       } else {
         setMissingInfoError(res.error.message);
         setToastMessage({
-          message: "Request Failed",
+          message: "Request not sent",
           description: res.error.message,
           variant: "danger",
         });
@@ -314,34 +361,36 @@ export function AdminIntakeClient({
   const handleCopyId = (intakeId: string) => {
     navigator.clipboard.writeText(intakeId);
     setToastMessage({
-      message: "Copied to Clipboard",
-      description: `Intake ID "${intakeId}" has been copied to your clipboard.`,
+      message: "Study ID copied",
+      description: intakeId,
       variant: "info",
     });
+  };
+
+  const runRowAction = (p: ProjectDetailItem, action: RowAction) => {
+    if (action.kind === "quick-look") setSelectedStudyForInspect(p);
+    else if (action.kind === "quote") openQuote(p);
   };
 
   if (isLoading && projects.length === 0) {
     return (
       <div className="flex-1 w-full min-h-full flex items-center justify-center animate-content-fade my-auto font-sans">
-        <LoadingState
-          variant="page"
-          label="Loading Intake Queue..."
-          description="Retrieving new study requests and pricing triage."
-        />
+        <LoadingState variant="page" label="Loading new study requests..." />
       </div>
     );
   }
 
+  const inspect = selectedStudyForInspect;
+
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
-      {/* ── Page Header ── */}
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       <PageHeader
-        title="Project Intake Triage & Evaluation Queue"
-        description="Evaluate incoming research submissions, verify methodology feasibility, request missing dataset artifacts, and approve complete studies for pricing quotation."
+        title="New study requests"
+        description="Read what each client sent, ask for anything missing, and price the study."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Admin Command", href: "/dashboard/admin" },
-          { label: "Intake Triage" },
+          { label: "Admin", href: "/dashboard/admin" },
+          { label: "New study requests" },
         ]}
         actions={
           <Button
@@ -349,379 +398,337 @@ export function AdminIntakeClient({
             size="sm"
             onClick={loadData}
             disabled={isLoading}
-            className="flex items-center gap-1.5 font-mono text-xs font-semibold"
+            className="flex items-center gap-1.5 text-xs"
           >
-            <IconRefresh size={14} className={isLoading ? "animate-spin" : ""} stroke={2} />
+            <ArrowsClockwise size={14} weight="fill" className={isLoading ? "animate-spin" : ""} />
             <span>Refresh</span>
           </Button>
         }
       />
 
-      {/* ── KPI Metrics Ribbon ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+      {/* Where the requests are in the pipeline */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
         <KpiCard
-          label="ACTIVE TRIAGE QUEUE"
-          value={kpis.activeTriage}
-          variant="amber"
-          badge="ACTION REQUIRED"
-          badgeColor="amber"
-          description="Awaiting administrator evaluation"
-        />
-
-        <KpiCard
-          label="NEW SUBMISSIONS"
+          label="New"
           value={kpis.newRequests}
-          variant="sky"
-          badge="INITIAL REVIEW"
-          badgeColor="sky"
-          description="Fresh student & faculty intakes"
+          description="Read the study and check the files"
+          icon={<Tray size={18} weight="fill" />}
+          info="Requests no one has reviewed yet."
         />
-
         <KpiCard
-          label="AWAITING INFO"
+          label="Waiting on client"
           value={kpis.awaitingInfo}
-          variant="orange"
-          badge="CLIENT ACTION"
-          badgeColor="orange"
-          description="Clarification or dataset pending"
+          description="We asked for something missing"
+          icon={<Hourglass size={18} weight="fill" />}
+          info="The client was asked to add or fix something and hasn't replied yet."
         />
-
         <KpiCard
-          label="UNDER EVALUATION"
+          label="Ready to price"
           value={kpis.underEvaluation}
-          variant="emerald"
-          badge="QUOTATION READY"
-          badgeColor="emerald"
-          description="Feasibility approved for pricing"
+          description="Build and send the quote"
+          icon={<Calculator size={18} weight="fill" />}
+          info="Checked and complete; next step is the quote."
+        />
+        <KpiCard
+          label="Quote sent"
+          value={kpis.quoteSent}
+          description="The client is deciding on the price"
+          icon={<PaperPlaneTilt size={18} weight="fill" />}
+          info="Waiting for the client to accept or ask for changes."
         />
       </div>
 
-      {/* ── Main Triage & Queue Glass Card ── */}
-      <Card
-        className="p-0 border-white/[0.08] overflow-hidden bg-gradient-to-b from-[#0A0A18]/90 via-[#060614]/95 to-[#040412] shadow-2xl"
-        style={{ padding: 0 }}
-      >
-        {/* Filter Toolbar */}
+      <div className="rounded-[2px] border border-white/[0.08] bg-[#0A0A18] overflow-hidden">
         <FilterToolbar
           searchQuery={searchQuery}
-          onSearchChange={(q) => { setSearchQuery(q); setCurrentPage(1); }}
-          searchPlaceholder="Search study title, client, or JAXIS ID..."
+          onSearchChange={(q) => {
+            setSearchQuery(q);
+            setCurrentPage(1);
+          }}
+          searchPlaceholder="Search title, client, school, or study ID"
           filters={[
             {
               key: "status",
-              label: "STATUS",
+              label: "Show",
               value: selectedStatus,
               defaultValue: "ALL",
               options: [
-                { value: "ALL", label: `All Intakes (${kpis.total})` },
-                { value: "TRIAGE", label: `Active Triage (${kpis.activeTriage})` },
-                { value: "NEW_REQUEST", label: `New Requests (${kpis.newRequests})` },
-                { value: "AWAITING_INFORMATION", label: `Awaiting Info (${kpis.awaitingInfo})` },
-                { value: "UNDER_EVALUATION", label: `Under Evaluation (${kpis.underEvaluation})` },
+                { value: "ALL", label: `All (${kpis.total})` },
+                { value: "TRIAGE", label: `To check (${kpis.toCheck})` },
+                { value: "NEW_REQUEST", label: `New (${kpis.newRequests})` },
+                { value: "AWAITING_INFORMATION", label: `Waiting on client (${kpis.awaitingInfo})` },
+                { value: "UNDER_EVALUATION", label: `Ready to price (${kpis.underEvaluation})` },
+                { value: "QUOTE_SENT", label: `Quote sent (${kpis.quoteSent})` },
               ],
             },
             {
               key: "sort",
-              label: "SORT",
+              label: "Sort",
               value: sortBy,
               defaultValue: "newest",
               options: [
-                { value: "newest", label: "Newest First" },
-                { value: "oldest", label: "Oldest First" },
-                { value: "deadline", label: "Closest Deadline" },
+                { value: "newest", label: "Newest first" },
+                { value: "oldest", label: "Oldest first" },
+                { value: "deadline", label: "Due soonest" },
               ],
             },
           ]}
           onFilterChange={(key, value) => {
-            if (key === "status") {
-              setSelectedStatus(value);
-              setCurrentPage(1);
-            } else if (key === "sort") {
-              setSortBy(value);
-              setCurrentPage(1);
-            }
-          }}
-          onClear={() => {
-            setSelectedStatus("ALL");
-            setSortBy("newest");
-            setSearchQuery("");
+            if (key === "status") setSelectedStatus(value);
+            else if (key === "sort") setSortBy(value);
             setCurrentPage(1);
           }}
+          onClear={clearFilters}
         />
 
-        {/* ── Table Container ── */}
-        <div style={{ padding: "1.25rem 1.75rem 1.75rem 1.75rem" }}>
-          <div className="w-full overflow-x-auto rounded-[3px] border border-white/[0.08]">
-            <table className="data-table">
-              <thead>
+        <div className="w-full overflow-x-auto border-t border-white/[0.08]">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Study</th>
+                <th className="w-[220px] whitespace-nowrap">Client</th>
+                <th className="w-[150px] whitespace-nowrap">Due</th>
+                <th className="w-[170px] whitespace-nowrap">Status</th>
+                <th className="w-[150px] text-right whitespace-nowrap">
+                  <span className="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
                 <tr>
-                  <th>Research Study &amp; Intake</th>
-                  <th className="w-[200px] whitespace-nowrap">Lead Researcher</th>
-                  <th className="w-[140px] whitespace-nowrap">Target Deadline</th>
-                  <th className="w-[130px] whitespace-nowrap">Status</th>
-                  <th className="w-[120px] text-right whitespace-nowrap">Actions</th>
+                  <td colSpan={5} className="py-16 text-center">
+                    <LoadingState variant="table" label="Loading new study requests..." />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="py-16 text-center">
-                      <LoadingState variant="table" label="Loading intake queue..." />
-                    </td>
-                  </tr>
-                ) : filteredProjects.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-16 text-center">
-                      <EmptyState
-                        icon={IconInbox}
-                        title="No Intakes Found"
-                        description="No research project records match the active filter criteria."
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedProjects.map((p) => {
-                    const isForQa = p.masterStatus === "FOR_QA";
-                    const isNewRequest = p.masterStatus === "NEW_REQUEST";
-                    const isRevision = p.masterStatus === "QA_REVISION" || p.masterStatus === "REVISION_REQUESTED";
+              ) : filteredProjects.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-16 text-center">
+                    <EmptyState
+                      icon={Tray}
+                      title={projects.length === 0 ? "No study requests yet" : "No studies match"}
+                      description={
+                        projects.length === 0
+                          ? "New requests from clients will show up here."
+                          : "Try another search or show all studies."
+                      }
+                      action={
+                        filtersActive ? (
+                          <Button variant="secondary" size="sm" onClick={clearFilters}>
+                            Clear Filters
+                          </Button>
+                        ) : undefined
+                      }
+                    />
+                  </td>
+                </tr>
+              ) : (
+                paginatedProjects.map((p) => {
+                  const goals = analysisGoalsFor(p.analysisGoals);
+                  const action = nextStepFor(p);
+                  const displayStatus = getProjectDisplayStatus(p);
+                  const hint = p.deadlineRequested ? dueHint(p.deadlineRequested, now) : null;
+                  const late = hint?.endsWith("late");
 
-                    return (
-                      <tr
-                        key={p.id}
-                        className={`group transition-colors ${
-                          isForQa
-                            ? "bg-[#10B981]/[0.04] hover:bg-[#10B981]/[0.08] border-l-2 border-l-[#10B981]"
-                            : isNewRequest
-                            ? "bg-[#CC6600]/[0.04] hover:bg-[#CC6600]/[0.08] border-l-2 border-l-[#CC6600]"
-                            : isRevision
-                            ? "bg-[#F59E0B]/[0.04] hover:bg-[#F59E0B]/[0.08] border-l-2 border-l-[#F59E0B]"
-                            : "hover:bg-white/[0.02]"
-                        }`}
-                      >
-                        {/* Research Study & Intake */}
-                        <td className="max-w-[440px] min-w-0">
-                          <div className="flex flex-col gap-1 min-w-0 pr-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={() => handleCopyId(p.intakeId)}
-                                title="Click to copy Intake ID"
-                                className="text-xs font-mono font-bold text-[#FF9433] bg-[#CC6600]/15 hover:bg-[#CC6600]/25 border border-[#CC6600]/30 hover:border-[#CC6600] px-2 py-0.5 rounded-[2px] whitespace-nowrap cursor-pointer transition-all inline-flex items-center gap-1 group/btn"
-                              >
-                                <span>{p.intakeId}</span>
-                                <IconCopy size={11} stroke={1.5} className="opacity-40 group-hover/btn:opacity-100 transition-opacity" />
-                              </button>
-                              {p.files.length > 0 && (
-                                <span className="text-[0.6875rem] font-mono text-sky-300 bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded-[2px] whitespace-nowrap">
-                                  {p.files.length} doc{p.files.length === 1 ? "" : "s"}
-                                </span>
-                              )}
-                              <span className="text-[0.6875rem] font-mono text-white/40 whitespace-nowrap">
-                                Submitted {new Date(p.createdAt).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })} · {new Date(p.createdAt).toLocaleTimeString("en-US", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                })}
-                              </span>
-                            </div>
-                            <Link
-                              href={`/dashboard/admin/projects/${p.id}`}
-                              className="text-xs font-semibold text-white group-hover:text-sky-300 transition-colors line-clamp-2 leading-snug"
-                              title={p.researchTitle}
+                  return (
+                    <tr key={p.id} className="group align-top">
+                      {/* Study */}
+                      <td className="max-w-[520px] min-w-[280px]">
+                        <div className="flex flex-col gap-1.5 min-w-0 py-0.5 pr-2">
+                          <Link
+                            href={`/dashboard/admin/projects/${p.id}`}
+                            className="text-[13px] font-semibold text-white hover:text-white/80 leading-snug line-clamp-2"
+                            title={p.researchTitle}
+                          >
+                            {p.researchTitle}
+                          </Link>
+                          <div className="flex items-center gap-x-2 gap-y-1 flex-wrap text-[11px] text-white/45">
+                            <button
+                              type="button"
+                              onClick={() => handleCopyId(p.intakeId)}
+                              title="Copy study ID"
+                              className="inline-flex items-center gap-1 font-mono text-white/70 hover:text-white cursor-pointer"
                             >
-                              {p.researchTitle}
+                              {p.intakeId}
+                              <Copy size={11} weight="fill" className="opacity-50" />
+                            </button>
+                            <span aria-hidden="true">·</span>
+                            <span>
+                              Sent {shortDate(p.createdAt)}, {shortTime(p.createdAt)}
+                            </span>
+                            <span aria-hidden="true">·</span>
+                            <span>
+                              {p.files.length} file{p.files.length === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                          {goals.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {goals.map((goal) => (
+                                <span
+                                  key={goal.code}
+                                  title={`${goal.title}. Usual tests: ${goal.typicalTests}`}
+                                  className={`text-[11px] px-1.5 py-0.5 rounded-[2px] border whitespace-nowrap ${
+                                    goal.code === "UNSURE"
+                                      ? "border-[#CC6600]/40 text-[#FFA040] bg-[#CC6600]/[0.06]"
+                                      : "border-white/10 text-white/75 bg-white/[0.04]"
+                                  }`}
+                                >
+                                  {goal.shortTitle}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-white/35">Analysis goals: not asked</span>
+                          )}
+                          {p.missingInfoReason && p.masterStatus === "AWAITING_INFORMATION" ? (
+                            <p className="text-[11px] leading-relaxed text-white/55 line-clamp-2" title={p.missingInfoReason}>
+                              <span className="text-white/75">We asked:</span> {p.missingInfoReason}
+                            </p>
+                          ) : null}
+                        </div>
+                      </td>
+
+                      {/* Client */}
+                      <td>
+                        <div className="flex flex-col gap-0.5 min-w-0 py-0.5">
+                          <span className="text-[13px] font-medium text-white truncate">{p.client.fullName}</span>
+                          <span className="text-[11px] text-white/50 truncate">
+                            {p.client.clientProfile?.institutionSchool || p.client.email}
+                          </span>
+                          {p.client.clientProfile?.contactNumber ? (
+                            <span className="text-[11px] text-white/40 font-mono">{p.client.clientProfile.contactNumber}</span>
+                          ) : null}
+                        </div>
+                      </td>
+
+                      {/* Due */}
+                      <td>
+                        <div className="flex flex-col gap-0.5 whitespace-nowrap py-0.5">
+                          {p.deadlineRequested ? (
+                            <>
+                              <span className="text-[13px] text-white">{shortDate(p.deadlineRequested)}</span>
+                              {hint ? (
+                                <span className={`text-[11px] ${late ? "text-red-400" : "text-white/45"}`}>{hint}</span>
+                              ) : null}
+                            </>
+                          ) : (
+                            <span className="text-[11px] text-white/40">No date given</span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td>
+                        <div className="py-0.5">
+                          <StatusBadge
+                            status={displayStatus.status}
+                            label={displayStatus.label}
+                            pulse={displayStatus.pulse}
+                          />
+                        </div>
+                      </td>
+
+                      {/* Next step + more */}
+                      <td className="text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {action.kind === "link" ? (
+                            <Link href={action.href}>
+                              <Button variant="secondary" size="sm" className="text-xs gap-1.5">
+                                {action.icon}
+                                <span>{action.label}</span>
+                              </Button>
                             </Link>
-                            {p.missingInfoReason && p.masterStatus === "AWAITING_INFORMATION" && (
-                              <span
-                                className="text-[0.6875rem] text-amber-300/80 font-mono truncate italic block min-w-0"
-                                title={`Pending info: ${p.missingInfoReason}`}
+                          ) : (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="text-xs gap-1.5"
+                              onClick={() => runRowAction(p, action)}
+                            >
+                              {action.icon}
+                              <span>{action.label}</span>
+                            </Button>
+                          )}
+
+                          <DropdownMenu
+                            trigger={
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 p-0 rounded-[2px] border-white/10"
+                                aria-label={`More for ${p.intakeId}`}
                               >
-                                Pending info: {p.missingInfoReason}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Lead Researcher */}
-                        <td>
-                          <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="font-semibold text-white group-hover:text-[#CC6600] transition-colors whitespace-nowrap truncate text-[0.8125rem]">
-                              {p.client.fullName}
-                            </span>
-                            <span className="text-[0.6875rem] text-white/40 font-mono truncate">
-                              {p.client.clientProfile?.institutionSchool ||
-                                p.client.email}
-                            </span>
-                            {p.client.clientProfile?.contactNumber && (
-                              <span className="text-[0.6875rem] text-white/30 font-mono">
-                                {p.client.clientProfile.contactNumber}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Target Deadline */}
-                        <td>
-                          <div className="flex flex-col gap-0.5 whitespace-nowrap font-mono text-xs">
-                            {p.deadlineRequested ? (
-                              <>
-                                <span className="text-white font-medium">
-                                  {new Date(p.deadlineRequested).toLocaleDateString("en-US", {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  })}
-                                </span>
-                                <span className="text-[0.6875rem] text-white/40">
-                                  Target Delivery
-                                </span>
-                              </>
-                            ) : (
-                              <span className="text-white/30 italic font-sans text-xs">
-                                Open Timeline
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Status */}
-                        <td>
-                          <div className="flex flex-col gap-1 items-start whitespace-nowrap">
-                            {(() => {
-                              const displayStatus = getProjectDisplayStatus(p);
-                              return (
-                                <StatusBadge
-                                  status={displayStatus.status}
-                                  label={
-                                    p.masterStatus === "FOR_QA"
-                                      ? "FOR QA • READY"
-                                      : displayStatus.label
-                                  }
-                                  pulse={displayStatus.pulse}
-                                />
-                              );
-                            })()}
-                            {(p as unknown as { serviceType?: string }).serviceType && (
-                              <span className="text-[0.6875rem] text-white/40 font-mono">
-                                {(p as unknown as { serviceType?: string }).serviceType!.replace(/_/g, " ")}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {p.masterStatus === "CLIENT_APPROVED" ? (
-                              <Link href={`/dashboard/admin/projects/${p.id}/sow`}>
-                                <Button
-                                  variant="primary"
-                                  size="sm"
-                                  className="font-sans text-xs font-semibold py-1 px-2.5 rounded-[2px] bg-[#CC6600] text-white hover:bg-[#E67300] flex items-center gap-1"
-                                >
-                                  <IconFileCertificate size={13} stroke={2} />
-                                  <span>Draft SOW →</span>
-                                </Button>
-                              </Link>
-                            ) : (
-                              <Link href={`/dashboard/admin/projects/${p.id}`}>
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  className="font-sans text-xs font-semibold py-1 px-2.5 rounded-[2px]"
-                                >
-                                  <span>Inspect</span>
-                                </Button>
-                              </Link>
-                            )}
-
-                            <DropdownMenu
-                              trigger={
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 w-7 p-0 rounded-[2px] border-white/10"
-                                >
-                                  ···
-                                </Button>
-                              }
-                              items={[
-                                ...(p.masterStatus === "CLIENT_APPROVED"
-                                  ? [
-                                      {
-                                        label: "Draft Statement of Work",
-                                        subtitle: "Compile SOW and issue to client",
-                                        icon: <IconFileCertificate size={16} stroke={1.5} />,
-                                        onClick: () => {
-                                          window.location.href = `/dashboard/admin/projects/${p.id}/sow`;
-                                        },
+                                ···
+                              </Button>
+                            }
+                            items={[
+                              {
+                                label: "Quick look",
+                                subtitle: "Goals, questions and files",
+                                icon: <Eye size={16} weight="fill" />,
+                                onClick: () => setSelectedStudyForInspect(p),
+                              },
+                              {
+                                label: "Open study page",
+                                subtitle: "Everything about this study",
+                                icon: <ArrowSquareOut size={16} weight="fill" />,
+                                onClick: () => {
+                                  window.location.href = `/dashboard/admin/projects/${p.id}`;
+                                },
+                              },
+                              ...(p.masterStatus === "CLIENT_APPROVED"
+                                ? [
+                                    {
+                                      label: "Draft agreement",
+                                      subtitle: "Prepare it and send it to the client",
+                                      icon: <FileText size={16} weight="fill" />,
+                                      onClick: () => {
+                                        window.location.href = `/dashboard/admin/projects/${p.id}/sow`;
                                       },
-                                    ]
-                                  : []),
-                                {
-                                  label: "Open Inspection Desk",
-                                  subtitle: "Full study workspace and data files",
-                                  icon: <IconExternalLink size={16} stroke={1.5} />,
-                                  onClick: () => {
-                                    window.location.href = `/dashboard/admin/projects/${p.id}`;
-                                  },
-                                },
-                                {
-                                  label: "Prepare Commercial Proposal",
-                                  subtitle: "Launch proposal builder",
-                                  variant: "default" as const,
-                                  icon: <IconCalculator size={16} stroke={1.5} />,
-                                  onClick: () => {
-                                    setSelectedStudyForQuote(p);
-                                    setIsQuoteModalOpen(true);
-                                  },
-                                },
-                                {
-                                  label: "Request Missing Artifacts",
-                                  subtitle: "Prompt client for clarifications",
-                                  variant: "warning" as const,
-                                  icon: <IconHelpCircle size={16} stroke={1.5} />,
-                                  onClick: () => {
-                                    setSelectedForMissingInfo(p);
-                                    setMissingInfoReasonText(
-                                      p.missingInfoReason || ""
-                                    );
-                                  },
-                                },
-                                ...(p.masterStatus === "NEW_REQUEST"
-                                  ? [
-                                      {
-                                        label: "Approve & Mark Complete",
-                                        subtitle: "Transition to UNDER_EVALUATION",
-                                        variant: "success" as const,
-                                        icon: <IconCheck size={16} stroke={2} />,
-                                        onClick: () =>
-                                          handleMarkComplete(p.id, p.intakeId),
-                                      },
-                                    ]
-                                  : []),
-                                {
-                                  label: "Copy Intake ID",
-                                  subtitle: p.intakeId,
-                                  dividerBefore: true,
-                                  icon: <IconCopy size={16} stroke={1.5} />,
-                                  onClick: () => handleCopyId(p.intakeId),
-                                },
-                              ]}
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                                    },
+                                  ]
+                                : []),
+                              {
+                                label: "Build quote",
+                                subtitle: "Choose the package and price",
+                                icon: <Calculator size={16} weight="fill" />,
+                                onClick: () => openQuote(p),
+                              },
+                              {
+                                label: "Ask for missing info",
+                                subtitle: "Message the client what to add",
+                                variant: "warning" as const,
+                                icon: <Question size={16} weight="fill" />,
+                                onClick: () => openMissingInfo(p),
+                              },
+                              ...(p.masterStatus === "NEW_REQUEST"
+                                ? [
+                                    {
+                                      label: "Mark ready to price",
+                                      subtitle: "Everything needed is here",
+                                      variant: "success" as const,
+                                      icon: <CheckCircle size={16} weight="fill" />,
+                                      onClick: () => handleMarkComplete(p.id, p.intakeId),
+                                    },
+                                  ]
+                                : []),
+                              {
+                                label: "Copy study ID",
+                                subtitle: p.intakeId,
+                                dividerBefore: true,
+                                icon: <Copy size={16} weight="fill" />,
+                                onClick: () => handleCopyId(p.intakeId),
+                              },
+                            ]}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
 
         {filteredProjects.length > 0 && (
@@ -731,234 +738,216 @@ export function AdminIntakeClient({
             pageSize={pageSize}
             onPageChange={setCurrentPage}
             onPageSizeChange={setPageSize}
-            itemLabel="intakes"
+            itemLabel="studies"
           />
         )}
-      </Card>
+      </div>
 
-      {/* ── 1. Quick Study Overview Modal ── */}
-      {selectedStudyForInspect && (
+      {/* ── Quick look: read a request without leaving the list ── */}
+      {inspect && (
         <Modal
-          open={Boolean(selectedStudyForInspect)}
+          open={Boolean(inspect)}
           onClose={() => setSelectedStudyForInspect(null)}
-          title={`Intake Evaluation: ${selectedStudyForInspect.intakeId}`}
-          description={selectedStudyForInspect.researchTitle}
+          title={inspect.researchTitle}
+          description={`${inspect.intakeId} · Sent ${shortDate(inspect.createdAt)}, ${shortTime(inspect.createdAt)}`}
           size="xl"
           footer={
-            <div className="flex items-center justify-between w-full flex-wrap gap-2">
-              <span className="text-xs font-mono text-white/50">
-                Submitted on {new Date(selectedStudyForInspect.createdAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })} at {new Date(selectedStudyForInspect.createdAt).toLocaleTimeString("en-US", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                })}
-              </span>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="secondary"
-                  onClick={() => setSelectedStudyForInspect(null)}
-                >
-                  CLOSE
+            <div className="flex w-full flex-wrap items-center justify-between gap-3">
+              <Link
+                href={`/dashboard/admin/projects/${inspect.id}`}
+                className="inline-flex items-center gap-1.5 text-xs text-white/60 hover:text-white"
+              >
+                <ArrowSquareOut size={14} weight="fill" />
+                Open study page
+              </Link>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => openMissingInfo(inspect)}>
+                  Ask for Missing Info
                 </Button>
-                <Link
-                  href={`/dashboard/admin/projects/${selectedStudyForInspect.id}`}
-                >
-                  <Button variant="primary">
-                    OPEN FULL PROJECT DESK →
+                {inspect.masterStatus === "NEW_REQUEST" ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    loading={isPending}
+                    onClick={() => handleMarkComplete(inspect.id, inspect.intakeId)}
+                  >
+                    Mark Ready to Price
                   </Button>
-                </Link>
+                ) : (
+                  <Button variant="primary" size="sm" onClick={() => openQuote(inspect)}>
+                    Build Quote
+                  </Button>
+                )}
               </div>
             </div>
           }
         >
           <div className="flex flex-col gap-6 font-sans">
-            {/* Researcher & Institution Card */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 sm:px-7 rounded-[3px] bg-[#0F0F1D] border border-white/10">
-              <div className="flex flex-col gap-1">
-                <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
-                  Lead Researcher
-                </span>
-                <p className="text-sm font-semibold text-white">
-                  {selectedStudyForInspect.client.fullName}
-                </p>
-                <p className="text-xs text-white/50">
-                  {selectedStudyForInspect.client.email}
-                </p>
+            {/* Client */}
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-3 rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4 sm:grid-cols-2">
+              <div>
+                <dt className="text-[11px] text-white/45">Client</dt>
+                <dd className="text-[13px] font-medium text-white">{inspect.client.fullName}</dd>
+                <dd className="text-xs text-white/55">{inspect.client.email}</dd>
+                {inspect.client.clientProfile?.contactNumber ? (
+                  <dd className="text-xs font-mono text-white/45">{inspect.client.clientProfile.contactNumber}</dd>
+                ) : null}
               </div>
-              <div className="flex flex-col gap-1">
-                <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
-                  Academic Institution & Program
-                </span>
-                <p className="text-sm font-semibold text-white">
-                  {selectedStudyForInspect.client.clientProfile?.institutionSchool ||
-                    "Institution Not Specified"}
-                </p>
-                <p className="text-xs text-white/50">
-                  {selectedStudyForInspect.client.clientProfile?.academicProgram ||
-                    "Graduate / Faculty Research"}
-                </p>
+              <div>
+                <dt className="text-[11px] text-white/45">School and program</dt>
+                <dd className="text-[13px] font-medium text-white">
+                  {inspect.client.clientProfile?.institutionSchool || "Not given"}
+                </dd>
+                <dd className="text-xs text-white/55">{inspect.client.clientProfile?.academicProgram || "Not given"}</dd>
               </div>
-            </div>
+              <div>
+                <dt className="text-[11px] text-white/45">Needed by</dt>
+                <dd className="text-[13px] text-white">
+                  {inspect.deadlineRequested ? shortDate(inspect.deadlineRequested) : "No date given"}
+                  {inspect.deadlineRequested && dueHint(inspect.deadlineRequested, now) ? (
+                    <span className="text-white/45"> · {dueHint(inspect.deadlineRequested, now)}</span>
+                  ) : null}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] text-white/45">Status</dt>
+                <dd className="pt-0.5">
+                  {(() => {
+                    const s = getProjectDisplayStatus(inspect);
+                    return <StatusBadge status={s.status} label={s.label} pulse={s.pulse} />;
+                  })()}
+                </dd>
+              </div>
+            </dl>
 
-            {/* Research Scope & Objectives */}
-            <div className="flex flex-col gap-2">
-              <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
-                Core Research Objectives
-              </span>
-              <p
-                className="text-xs text-slate-300 bg-white/[0.02] p-4 rounded-[3px] border border-white/10 leading-relaxed whitespace-pre-wrap"
-                style={{ padding: "1rem" }}
-              >
-                {selectedStudyForInspect.researchObjectives}
+            {inspect.missingInfoReason && inspect.masterStatus === "AWAITING_INFORMATION" ? (
+              <section className="flex flex-col gap-2">
+                <h3 className="text-sm font-semibold text-white">What we asked for</h3>
+                <p className="whitespace-pre-wrap rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4 text-[13px] leading-relaxed text-white/75">
+                  {inspect.missingInfoReason}
+                </p>
+              </section>
+            ) : null}
+
+            <section className="flex flex-col gap-2">
+              <h3 className="text-sm font-semibold text-white">What the analysis should do</h3>
+              <div className="rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4">
+                <AnalysisGoalsList codes={inspect.analysisGoals} />
+              </div>
+            </section>
+
+            <section className="flex flex-col gap-2">
+              <h3 className="text-sm font-semibold text-white">Research objectives</h3>
+              <p className="whitespace-pre-wrap rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4 text-[13px] leading-relaxed text-white/75">
+                {inspect.researchObjectives}
               </p>
-            </div>
+            </section>
 
-            {/* Research Questions */}
-            <div className="flex flex-col gap-2">
-              <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
-                Key Research Questions
-              </span>
-              <p
-                className="text-xs text-slate-300 bg-white/[0.02] p-4 rounded-[3px] border border-white/10 leading-relaxed whitespace-pre-wrap"
-                style={{ padding: "1rem" }}
-              >
-                {selectedStudyForInspect.researchQuestions}
+            <section className="flex flex-col gap-2">
+              <h3 className="text-sm font-semibold text-white">Research questions</h3>
+              <p className="whitespace-pre-wrap rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4 text-[13px] leading-relaxed text-white/75">
+                {inspect.researchQuestions}
               </p>
-            </div>
+            </section>
 
-            {/* Uploaded Artifacts & Files */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[0.6875rem] text-white/40 uppercase tracking-wider">
-                  Submitted Artifacts ({selectedStudyForInspect.files.length})
-                </span>
-                <span className="font-mono text-[0.625rem] text-emerald-400/80 uppercase flex items-center gap-1">
-                  <IconShieldCheck size={12} stroke={2} />
-                  Cloud Encrypted
-                </span>
-              </div>
-              {selectedStudyForInspect.files.length === 0 ? (
-                <div
-                  className="text-xs text-white/40 italic p-4 bg-white/[0.02] border border-white/10 rounded-[3px]"
-                  style={{ padding: "1rem" }}
-                >
-                  No files or dataset packages attached to this intake record.
-                </div>
+            {inspect.hypotheses ? (
+              <section className="flex flex-col gap-2">
+                <h3 className="text-sm font-semibold text-white">Hypotheses</h3>
+                <p className="whitespace-pre-wrap rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4 text-[13px] leading-relaxed text-white/75">
+                  {inspect.hypotheses}
+                </p>
+              </section>
+            ) : null}
+
+            <section className="flex flex-col gap-2">
+              <h3 className="text-sm font-semibold text-white">Files ({inspect.files.length})</h3>
+              {inspect.files.length === 0 ? (
+                <p className="rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4 text-[13px] text-white/50">
+                  The client hasn&apos;t added any files yet.
+                </p>
               ) : (
-                <div className="flex flex-col gap-3 max-h-64 overflow-y-auto pr-1">
-                  {selectedStudyForInspect.files.map((file) => {
+                <ul className="flex flex-col divide-y divide-white/[0.06] rounded-[2px] border border-white/[0.08]">
+                  {inspect.files.map((file) => {
                     const meta = getFileMeta(file.fileName, file.fileType);
                     const category = formatFileCategory(file.fileCategory);
                     return (
-                      <div
-                        key={file.id}
-                        className="rounded-[2px] bg-[#10101E] border border-white/[0.08] hover:border-white/20 px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between gap-4 transition-colors"
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div
-                            className={`h-9 w-9 rounded-[2px] ${meta.theme.bg} ${meta.theme.border} border flex flex-col items-center justify-center flex-shrink-0`}
-                          >
-                            <span className={`text-[0.625rem] font-mono font-bold uppercase ${meta.theme.text}`}>
-                              {meta.ext}
-                            </span>
-                          </div>
-                          <div className="flex flex-col gap-0.5 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold text-white truncate max-w-[200px] sm:max-w-xs md:max-w-sm">
-                                {file.fileName}
-                              </span>
-                              <span
-                                className={`text-[0.5625rem] font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded-[2px] border ${category.badgeClass}`}
-                              >
-                                {category.label}
-                              </span>
-                            </div>
-                            <span className="text-[0.688rem] text-white/40 font-mono">
-                              {meta.friendlyType} · {new Date(file.uploadedAt).toLocaleDateString()}
+                      <li key={file.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="inline-flex w-12 shrink-0 justify-center rounded-[2px] border border-white/10 bg-white/[0.04] py-1 font-mono text-[10px] font-semibold uppercase text-white/65">
+                            {meta.ext}
+                          </span>
+                          <div className="flex min-w-0 flex-col">
+                            <span className="truncate text-[13px] text-white">{file.fileName}</span>
+                            <span className="text-[11px] text-white/45">
+                              {category.label} · added {shortDate(file.uploadedAt)}
                             </span>
                           </div>
                         </div>
-
-                        <button
-                          type="button"
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="shrink-0 gap-1.5 text-xs"
                           onClick={() => {
                             triggerFileDownload(file.filePath, file.fileName);
                             setToastMessage({
-                              message: "Download Initiated",
-                              description: `Transferring "${file.fileName}" to your local device.`,
+                              message: "Download started",
+                              description: file.fileName,
                               variant: "info",
                             });
                           }}
-                          className="px-5 py-2 rounded-[2px] bg-[#CC6600]/20 hover:bg-[#CC6600]/35 text-white border border-[#CC6600]/80 hover:border-[#CC6600] text-xs font-mono font-bold tracking-wider uppercase transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer"
                         >
-                          <IconDownload size={14} stroke={1.5} className="text-[#FFA040]" />
-                          <span>DOWNLOAD</span>
-                        </button>
-                      </div>
+                          <DownloadSimple size={14} weight="fill" />
+                          Download
+                        </Button>
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               )}
-            </div>
+            </section>
           </div>
         </Modal>
       )}
 
-      {/* ── 2. Request Missing Information Modal ── */}
+      {/* ── Ask the client for missing information ── */}
       {selectedForMissingInfo && (
         <Modal
           open={Boolean(selectedForMissingInfo)}
           onClose={() => setSelectedForMissingInfo(null)}
-          title={`Request Missing Artifacts: ${selectedForMissingInfo.intakeId}`}
-          description={selectedForMissingInfo.researchTitle}
+          title="Ask for missing information"
+          description={`${selectedForMissingInfo.intakeId} · ${selectedForMissingInfo.researchTitle}`}
           size="lg"
         >
           <div className="flex flex-col gap-6 font-sans">
-            <div className="p-5 sm:px-7 rounded-[3px] bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 leading-relaxed">
-              <strong>GOVERNANCE NOTICE:</strong> Specify the missing raw dataset files, validated survey instrument, or statistical scope clarification required from{" "}
-              <strong className="text-white">
-                {selectedForMissingInfo.client.fullName}
-              </strong>
-              . Submitting this request will automatically transition the intake to{" "}
-              <code className="text-amber-300 font-mono font-bold">
-                AWAITING_INFORMATION
-              </code>{" "}
-              and notify the client.
-            </div>
+            <p className="text-[13px] leading-relaxed text-white/65">
+              {selectedForMissingInfo.client.fullName} gets this message, and the study shows as{" "}
+              <span className="text-white">Waiting on client</span> until they add what you asked for.
+            </p>
 
-            {/* Template Selector Dropdown */}
-            <div className="flex flex-col gap-1.5">
-              <FormSelect
-                label="Pre-Configured Request Template (Optional)"
-                monoLabel
-                value={selectedTemplateId}
-                onChange={(e) => handleTemplateChange(e.target.value)}
-                options={[
-                  { value: "", label: "-- Select a Standard Request Template (Auto-fills note) --" },
-                  ...MISSING_INFO_TEMPLATES.map((t) => ({
-                    value: t.id,
-                    label: `[${t.category.toUpperCase()}] ${t.label}`,
-                  })),
-                ]}
-              />
-            </div>
+            <FormSelect
+              label="Start from a common request (optional)"
+              value={selectedTemplateId}
+              onChange={(e) => handleTemplateChange(e.target.value)}
+              options={[
+                { value: "", label: "Choose a common request…" },
+                ...MISSING_INFO_TEMPLATES.map((t) => ({
+                  value: t.id,
+                  label: `${t.category}: ${t.label}`,
+                })),
+              ]}
+            />
 
             <FormTextarea
-              label="Mandatory Information Request / Missing Items Note"
+              label="What do you need from the client?"
               required
-              rows={4}
-              placeholder="e.g. Please attach the raw SPSS / Excel survey responses with column codebook and confirm whether demographic covariates are required in Chapter 4."
+              rows={5}
+              placeholder="e.g. Please upload your raw survey responses as an Excel or CSV file, one column per question."
               value={missingInfoReasonText}
               onChange={(e) => {
                 setMissingInfoReasonText(e.target.value);
                 if (selectedTemplateId) setSelectedTemplateId("");
               }}
               error={missingInfoError || undefined}
-              monoLabel
             />
 
             <ModalFooter>
@@ -977,14 +966,14 @@ export function AdminIntakeClient({
                 loading={isPending}
                 disabled={missingInfoReasonText.trim().length < 5}
               >
-                SEND REQUEST TO CLIENT →
+                Send to Client
               </Button>
             </ModalFooter>
           </div>
         </Modal>
       )}
 
-      {/* Commercial Quotation Builder Modal */}
+      {/* Quote builder */}
       {selectedStudyForQuote && (
         <QuotationBuilderModal
           isOpen={isQuoteModalOpen}
@@ -996,6 +985,7 @@ export function AdminIntakeClient({
           projectIntakeId={selectedStudyForQuote.intakeId}
           projectTitle={selectedStudyForQuote.researchTitle}
           clientName={selectedStudyForQuote.client.fullName}
+          analysisGoals={selectedStudyForQuote.analysisGoals}
           customCatalog={catalog}
           onSuccess={() => {
             loadData();
