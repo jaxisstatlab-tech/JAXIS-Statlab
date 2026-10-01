@@ -82,3 +82,26 @@ Module 20 provides enterprise-grade data retrieval speed, eliminates client-side
     - `/dashboard/finance/ledger` & `/dashboard/finance/leaves`: Accounting ledger and leave approval queues pre-populated with 0ms client wait.
     - `/dashboard/ceo/attendance`: Raw shift logs and duty policy controls pre-populated with zero layout shift.
     - **Router Cache Preservation**: Removed `revalidatePath('/', 'layout')` in staff actions; soft sidebar navigation latency dropped below 50ms.
+
+---
+
+## 4. 2026-10-01 Speed Pass Verification (`PERF-F22` to `PERF-F26`)
+
+| Check | Method | Result |
+|---|---|---|
+| Database region | Host of `DATABASE_URL` | `aws-0-ap-southeast-1.pooler.supabase.com` (Singapore) |
+| Function region | `apps/app/vercel.json` → `"regions": ["sin1"]`; owner checked live pages | Pages noticeably faster after deploy |
+| Join loading | Read-only benchmark of the finance summary query, per-relation vs `relationLoadStrategy: "join"`, from a local machine (~250 ms per round trip) | ~645 ms → ~254 ms |
+| Narrowed selects | Ran each changed query shape once against the live database, read-only | Finance summary, ledger, payouts, and staff capacity all returned rows without error |
+| Server preloading | `tsc`, lint (same 21 pre-existing `any` warnings, none new), `npx next build` | Passed; all ten routes compile as dynamic server routes |
+| Sidebar navigation | Owner tested slow pages on the live admin desk | No longer snaps back to the previous page |
+| Data safety | Reviewed every preloaded loader for writes | Only existing first-load writes (default retention row, payout-rate seeding, storage warning alert); no deletes |
+
+### Key files
+
+- `apps/app/vercel.json`, `apps/app/prisma/schema.prisma` (`previewFeatures = ["relationJoins"]`)
+- `src/features/{payments,assignments,finance,messaging}/actions.ts`
+- `src/hooks/use-load-unless-preloaded.ts` and the ten `page.tsx` / `*Client.tsx` pairs under `app/dashboard/{admin,ceo,finance}`
+- `app/dashboard/{admin,ceo,client,finance,qa,statistician,staff}/loading.tsx`, `app/components/layout/Sidebar.tsx`
+- `src/features/attendance/components/DutyClockWidget.tsx`, `app/dashboard/admin/intake/AdminIntakeClient.tsx`, `app/dashboard/client/ClientDashboardClient.tsx`
+

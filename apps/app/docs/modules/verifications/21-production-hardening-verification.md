@@ -65,3 +65,37 @@ Module 21 resolves all Vercel deployment failures, Turborepo build warnings, and
 3. **Turborepo Monorepo Build**:
    - `npx turbo run build --filter=app` succeeded with **exit code 0** in 59.7s.
    - Zero environment variable warnings emitted.
+
+---
+
+## 4. Phase 2 Verification — Security Audit Fixes (2026-10-01)
+
+Covers `PROD-F18` to `PROD-F31` in the spec. Every commit passed `tsc --noEmit` with 0 errors, introduced no new lint warnings (each changed file was compared against its previous version), and the larger changes passed `npx next build`. The dashboard needs a login, so screens were checked by the owner on the live site; the checks below were run directly.
+
+| Check | Method | Result |
+|---|---|---|
+| Client files public before the fix | Requested two real study files (research document, dataset) from the `r2.dev` URL with no login | HTTP 206: downloadable (the vulnerability) |
+| Client files after disabling the public URL | Same requests | HTTP 401: blocked |
+| Preview route without a session | `GET /api/files/preview` on the live site | HTTP 401 |
+| Files still open in the app | Owner opened a study's documents as admin after the change | Opened |
+| Demo accounts in production | Read-only query of the seven `@jaxis.dev` users, then a single transaction setting them to `SUSPENDED` with an audit entry each | All seven `SUSPENDED`; users total unchanged (25); no data deleted |
+| Demo accounts had no live work attached | Read-only count of active assignments and owned studies | 0 and 0 |
+| Upload-claim check (`checkUploadedFilePaths`) | Seven cases against real data, read-only | Owner's own file and new upload paths accepted; another client's file, a deliverable path, an outside website link, and the payment-QR folder used as a receipt all rejected |
+| Size-locked upload URLs on R2 | Presigned a 100-byte URL for a test key under `system/healthcheck/`, then deleted the test object | Larger upload → 403; exact size → 200 (also when sent as a browser `Blob`); test object removed |
+| Real document viewer | Generated sample `.docx` and `.xlsx` files (no client data) and rendered them with the same libraries and options in headless Chrome | Word heading, paragraph, and table rendered as a page; a `javascript:` link was stripped and an `https:` link kept; both Excel sheets read (621 and 2 rows) |
+| Security headers | `curl -I` on the live login page | HSTS, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` present; no Content-Security-Policy yet |
+| Login messages through Auth.js (`PROD-F33`) | Signed in against a separate offline test server (no database) the way `next-auth/react` does | Suspended account + correct password → `code=account_suspended`; same account + wrong password → generic `code=credentials`; unknown email → generic `code=credentials` |
+| Payment and login fixes (`PROD-F32`, `PROD-F33`, shared limits) | `tsc`, lint compared per file, `npx next build` | Passed. The 15-minute pause was not triggered against the live database, to avoid writing test entries to the audit log; it counts existing `LOGIN_FAILED` rows with the indexed `email` and `createdAt` columns |
+
+### Key files
+
+- `src/lib/auth.ts` (`devLoginsAllowed`), `src/features/auth/actions.ts`
+- `src/lib/user-healing.ts`, `src/features/projects/actions.ts`
+- `app/api/v1/notifications/stream/route.ts`, `src/features/notifications/actions.ts`
+- `src/features/defenselab/actions.ts`, `src/features/sow/actions.ts`
+- `app/api/files/preview/route.ts`, `src/lib/file-utils.ts` (`resolveStoredFileUrl`)
+- `src/features/projects/components/DocumentViewerLightbox.tsx`, `src/features/projects/components/FileContentPreview.tsx`
+- `src/lib/upload-claims.ts`, `src/lib/storage.ts` (`getR2UploadUrl`), `app/api/upload/presigned/route.ts`
+- `src/lib/auth-throttle.ts` (replaced `src/lib/rate-limit.ts`), `app/api/v1/auth/register/route.ts`, `app/(auth)/login/page.tsx`
+- `src/features/payments/actions.ts` (`submitPaymentProof`)
+

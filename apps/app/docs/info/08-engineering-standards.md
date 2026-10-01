@@ -24,6 +24,8 @@ Before shipping any new feature, updating existing modules, or refactoring code,
    - Always use Prisma `include` or batch queries (`in: [...]`) instead of looping over records to make individual database calls.
 3. **Strict Column Selection**:
    - Avoid indiscriminate `findMany()` calls that retrieve entire rows. Use Prisma `select` to fetch only the fields required by the view.
+   - Never load a whole `User` row (`client: true`, `statistician: true`, `include: { client: ... }`) to show a name or email: it carries `passwordHash`. Select `{ id, fullName, email }`. Never put whole user rows in `unstable_cache`.
+   - Nested relations load in one SQL query (`previewFeatures = ["relationJoins"]` in `schema.prisma`). Keep it on; each extra `include` level otherwise costs a database round trip.
 4. **Pagination by Default**:
    - Never load unbounded datasets. Tables and feeds (payslips, attendance records, study ledgers, logs) must support cursor-based or limit-offset pagination (`take: 50, skip: ...`).
 5. **Connection Pooling**:
@@ -59,6 +61,25 @@ Before shipping any new feature, updating existing modules, or refactoring code,
    - All operational mutations and data retrieval must pass through centralized access control assertion functions (`assertStudyAccess`, `assertProjectParticipant`, `assertAdminOrCeo`, `assertFinanceAccess`, `assertCanDownloadDeliverable`). Never duplicate ad-hoc permission checks in individual route handlers.
 8. **Secure Server-Side File & PDF Streaming**:
    - Deliverables, audit certificates, and research files must be served via authenticated server-side streaming endpoints (`/api/deliverables/certificate`, `/api/files/preview`) with verified session checks and security headers. Direct public exposure of Cloudflare R2 bucket keys or raw unauthenticated URLs is strictly prohibited.
+   - The bucket's public `r2.dev` URL is disabled. In UI code, open, download, or display stored files only through `resolveStoredFileUrl()` / `getFilePreviewUrl()` (`src/lib/file-utils.ts`); never build links from `R2_PUBLIC_URL`. Deliverable downloads use short-lived signed URLs (`getR2DownloadUrl`).
+   - `/api/files/preview` decides `Content-Type` from the file extension (a fixed list of PDF, image, and plain-text types; everything else is `application/octet-stream` with `nosniff`). Never echo the type stored with the upload: the uploader chose it.
+9. **Every Exported Server Action Is a Public Endpoint**:
+   - Any `export async function` in a `"use server"` file can be called from a browser with any arguments. Each one must check the session, the role, and (for anything taking a study, session, payment, or file ID) that the caller owns or is assigned to that record. Helpers without their own checks must not be exported.
+10. **Never Fall Back to Someone Else's Account**:
+    - If the signed-in user's database record can't be found, fail with an error. Never substitute a demo account, "the first client", or "the first admin" for a write, an alert, or a file. `resolveOrProvisionUser` (`src/lib/user-healing.ts`) returns only the caller's own account and never reactivates or renames an existing one.
+11. **Demo Accounts Stay Local**:
+    - Demo logins (`*@jaxis.dev`, `src/lib/mock-data/users.data.ts`) are allowed only where `devLoginsAllowed()` is true, which is never in production. Their passwords are in a public repository; the production demo accounts are suspended and must not be reactivated without new private passwords.
+12. **Client-Supplied File Paths Must Be Their Own Uploads**:
+    - A saved file path decides who may open that file. Any action that saves a path sent by a client must call `checkUploadedFilePaths()` (`src/lib/upload-claims.ts`), which requires the app's own upload location for that kind of file and rejects paths already on file for someone else. Presigned upload URLs must sign the exact `Content-Length` (`getR2UploadUrl`).
+13. **Real-Time Delivery Is Per Person**:
+    - Alerts and live events go to their recipient's user ID only. Never broadcast a person-specific alert to everyone with the same role.
+14. **Rate Limits**:
+    - Login and registration limits are counted in `auth_audit_logs` (`src/lib/auth-throttle.ts`), so every server shares the same numbers: never count in memory alone on serverless. Keep per-network limits generous, because students on one campus network share an address, and count unknown emails like failures so limits don't reveal which accounts exist.
+    - Sign-in refusals the user should understand are thrown as `CredentialsSignin` errors with a `code` (`LoginError` in `src/lib/auth.ts`). A plain `Error` reaches the login page as a generic failure. Reveal account status only after the correct password.
+15. **A Failure Is Never Reported as Success**:
+    - Offline sample-data fallbacks run only outside production and only when the database is unreachable (`DatabaseUnavailableError`). Ownership, validation, and business-rule errors are returned to the caller, never swallowed into a "success" path, and never trigger alerts.
+16. **Money Follows the Approved Price**:
+    - Payments attach to the study's `CLIENT_APPROVED` quote. Never create or change a price from client-supplied amounts.
 
 ---
 
@@ -83,6 +104,14 @@ Before shipping any new feature, updating existing modules, or refactoring code,
    - Interactive actions (clock-in, status changes, badge updates) must update the UI immediately (0ms) and reconcile in the background.
 5. **Single-Track Arc Loading & Anti-Double-Loading**:
    - Always use `<LoadingState variant="..." />`. Never show secondary card spinners or skeletons while a page-level loader is running.
+6. **Functions Run Next to the Database**:
+   - The app's server functions are pinned to Singapore (`apps/app/vercel.json`, `"regions": ["sin1"]`) because the database is in `ap-southeast-1`. Keep them in the same region; a cross-region query costs ~200 ms each.
+7. **Preload, Then Skip the First Client Fetch**:
+   - When a page's server component loads its default view, the client component starts from that data and uses `useLoadUnlessPreloaded` (`src/hooks/use-load-unless-preloaded.ts`) so it fetches again only when a filter changes. Server actions called from the browser run one at a time, so `Promise.all` over them does not run in parallel.
+8. **Every Role Folder Has a `loading.tsx`**:
+   - New sidebar sections must sit under a folder with a `loading.tsx`, so clicks land immediately on the page loader instead of holding the previous page.
+9. **Background Refreshes Are Throttled**:
+   - Focus- or visibility-triggered refreshes run at most about once a minute, never show a page loader, and reload only what changes. They share the same one-at-a-time queue as the person's clicks.
 
 ---
 

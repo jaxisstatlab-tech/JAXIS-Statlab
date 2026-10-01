@@ -44,6 +44,11 @@ Module 20 establishes sub-100ms perceived latency across JAXIS StatLab through a
 | `PERF-F19` | **Instant Real-Time WebSocket Messaging (< 100ms)** — Elimination of the 22-second page re-render waterfall via direct Phoenix peer broadcast and 0ms receiver state injection. |
 | `PERF-F20` | **Client-Side Router Cache Preservation** — Removed indiscriminate `revalidatePath('/', 'layout')` calls that previously wiped the entire Next.js router cache on mutations. |
 | `PERF-F21` | **Hover-Intent Route Pre-Fetching** — Prefetching operational route chunks and server component payloads on navigation link hover/focus. |
+| `PERF-F22` | **Functions Run Next to the Database** — `apps/app/vercel.json` pins server functions to Singapore (`sin1`), where the Supabase database is. They ran in Vercel's default US East region, so every query crossed the Pacific (~200 ms each). |
+| `PERF-F23` | **One Query per Read & Only the Fields Shown** — Prisma `relationJoins` loads nested relations in one SQL query instead of one round trip per relation, and the heaviest reads (finance summary, workloads, staff capacity, inbox, ledger, payouts, assignment lookup) `select` only the fields they render. |
+| `PERF-F24` | **Ten More Pages Preloaded on the Server** — Admin Reports, Archive, Disputes, Activity Log, and Email Delivery Logs; CEO Finance, Reports, Disputes, and Storage & Retention; Finance Reports. The server loads the default view (paired loads in parallel) and the client starts from it via `useLoadUnlessPreloaded` (`src/hooks/use-load-unless-preloaded.ts`). |
+| `PERF-F25` | **Sidebar Clicks Land Immediately** — Each role folder has a `loading.tsx`, so a click switches to the new page and shows the page loader instead of holding the old page. The sidebar's pending state follows the link's real status (`useLinkStatus`) instead of a 20-second timer that made slow pages look cancelled. |
+| `PERF-F26` | **Lighter Refreshes on Tab Return** — Server actions run one at a time, so focus-triggered refreshes used to queue ahead of the next click. The duty clock shares one shift check across its two instances, at most once a minute; New Study Requests quietly refreshes only its list, at most once a minute; the client home re-renders at most once a minute. |
 
 ---
 
@@ -117,4 +122,24 @@ Production performance auditing revealed that sending a message on `/dashboard/c
 | **Staff HR Portal (`/staff/hr`)** | 2,790 ms (Waterfall) | **0 ms spinner wait** | **Instant (RSC)** |
 | **Admin Intake Queue (`/admin/intake`)** | 1,400 ms | **0 ms spinner wait** | **Instant (RSC)** |
 | **Soft Sidebar Route Navigation** | 400–800 ms (Cache nuked) | **< 50 ms** | **Instant SPA** |
+
+---
+
+## 6. 2026-10-01 Speed Pass: What Changed and Why
+
+Admin, CEO, finance, statistician, and QA pages were slow to load. An audit found the causes below, in order of impact.
+
+1. **Distance to the database (`PERF-F22`).** The database is in `ap-southeast-1` (Singapore) and functions ran in `iad1` (US East). A page making 6–10 queries in sequence spent 1.5–2 s just on travel. Pinning functions to `sin1` was the largest single improvement, and the owner confirmed pages became fast. It changed no data.
+2. **Round trips per query (`PERF-F23`).** Without `relationJoins`, an `include` of project → client → profile → files issues one query per level. Measured on the finance summary: ~645 ms → ~254 ms from a local machine, with one round trip instead of three.
+3. **Spinner then fetch (`PERF-F24`).** Ten pages rendered a loader and then fetched from the browser. Where they used `Promise.all` on server actions, the calls still ran one after another.
+4. **Navigation feel (`PERF-F25`, `PERF-F26`).** See the feature table.
+
+### Investigated and not adopted
+
+- **Native bcrypt for faster logins.** `@node-rs/bcrypt` read every existing hash correctly but was only ~10% faster than `bcryptjs` at cost 12 (~205–255 ms against ~235 ms). Lowering the cost would weaken stored passwords and sign people out on re-hash, so login keeps `bcryptjs` at cost 12.
+
+### Still to do
+
+- **Paginate the admin and CEO project lists.** `getProjects` returns every project with its files. KPI totals must move to count queries so they keep counting everything.
+- **Faster login.** The form makes three requests (CSRF, credentials, session) before a full-page redirect; a server-side sign-in could do it in one. Make sure Vercel Fluid Compute is on to reduce cold starts.
 

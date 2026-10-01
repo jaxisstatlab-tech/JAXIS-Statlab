@@ -276,6 +276,32 @@
 ---
 
 
+## Phase 7 — Production Audit: Speed & Security (2026-10-01)
+
+Details: `docs/modules/specs/20-performance.md` §6 and `docs/modules/specs/21-production-hardening.md` §3.
+
+### Task 7.1 — Speed
+- [x] Pin server functions to Singapore next to the database (`vercel.json`, `sin1`) — `d8b951c`
+- [x] Prisma `relationJoins` + narrow `select` on the heaviest reads — `13c3d35`
+- [x] Preload ten admin/CEO/finance pages on the server (`useLoadUnlessPreloaded`) — `637c9f7`
+- [x] `loading.tsx` per role folder; sidebar pending state follows `useLinkStatus` — `e538e29`
+- [x] Throttle focus refreshes (duty clock, intake list, client home) — `6d8f447`
+- [ ] Paginate the admin and CEO project lists (KPIs via count queries)
+- [ ] Single-request server-side login; confirm Vercel Fluid Compute is on
+
+### Task 7.2 — Security
+- [x] Demo logins off in production; demo accounts suspended — `7e8e5d7`
+- [x] No cross-account fallbacks; recipient-only alerts; ownership checks on missing-info and DefenseLab links — `487b737`
+- [x] Files only through `/api/files/preview`; R2 public URL disabled — `487b737`
+- [x] Extension-based content types; real `.docx`/`.xlsx`/CSV viewer — `9fce329`
+- [x] Upload-claim check, size-locked upload URLs, sign-up rate limits, internal SOW helper — `01fdc1a`
+- [x] Payments attach only to the approved quote; payment errors returned as errors — `8d5ef41`
+- [x] Failed-login limits, honest login messages, shared login/sign-up counts — `8d5ef41`
+- [ ] Look-back checks: `Using fallback client ID` in logs, demo-login IPs (22–26 Sep), accounts on the old default password
+- [ ] Review the payment flow end to end, dependency updates, and a Content-Security-Policy
+
+---
+
 ## 🔒 Verification & Quality Gate Checklist
 Before marking any task complete:
 - [x] `npm run check-types` passes with **0 errors**.
