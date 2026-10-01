@@ -698,22 +698,36 @@ export async function getMyProjectThreads(): Promise<
 
       const projects = await db.project.findMany({
         where: projectsWhere,
-        include: {
-          client: true,
+        // Just what the inbox list shows; whole project and user rows were loaded here before.
+        select: {
+          id: true,
+          intakeId: true,
+          researchTitle: true,
+          masterStatus: true,
+          packageName: true,
+          clientId: true,
+          client: { select: { fullName: true } },
           assignment: {
-            include: {
-              statistician: true,
-              qaLead: true,
+            select: {
+              statisticianId: true,
+              qaLeadId: true,
+              statistician: { select: { fullName: true } },
+              qaLead: { select: { fullName: true } },
             },
           },
           messages: {
             where: { isBlocked: false },
             take: 1,
             orderBy: { sentAt: "desc" },
-            include: {
+            select: {
+              content: true,
+              sentAt: true,
+              senderId: true,
+              senderRole: true,
               sender: { select: { fullName: true } },
               readReceipts: {
                 where: { userId },
+                select: { userId: true },
               },
             },
           },

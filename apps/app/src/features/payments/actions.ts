@@ -1117,24 +1117,38 @@ export async function getFinanceReceivablesSummary(): Promise<ActionResponse<Fin
   }
 
   try {
-    const projects = await withDbTimeout(
-      db.project.findMany({
-        include: {
-          client: {
-            include: { clientProfile: true },
+    // Only the fields the summary reads (full project and user rows were loaded before, password hashes
+    // included), and the pending-proof count runs alongside instead of after.
+    const [projects, pendingProofCount] = await withDbTimeout(
+      Promise.all([
+        db.project.findMany({
+          select: {
+            id: true,
+            intakeId: true,
+            researchTitle: true,
+            masterStatus: true,
+            client: {
+              select: {
+                fullName: true,
+                clientProfile: { select: { institutionSchool: true } },
+              },
+            },
+            quotations: {
+              where: { status: "CLIENT_APPROVED" },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { totalAmount: true, basePrice: true, downpaymentRequired: true },
+            },
+            payments: {
+              where: { paymentStatus: { in: ["VERIFIED", "FULLY_PAID"] } },
+              orderBy: { createdAt: "desc" },
+              select: { id: true, amountSubmitted: true, referenceNumber: true, createdAt: true },
+            },
           },
-          quotations: {
-            where: { status: "CLIENT_APPROVED" },
-            orderBy: { createdAt: "desc" },
-            take: 1,
-          },
-          payments: {
-            where: { paymentStatus: { in: ["VERIFIED", "FULLY_PAID"] } },
-            orderBy: { createdAt: "desc" },
-          },
-        },
-        orderBy: { updatedAt: "desc" },
-      })
+          orderBy: { updatedAt: "desc" },
+        }),
+        db.payment.count({ where: { paymentStatus: "PROOF_SUBMITTED" } }),
+      ])
     );
 
     const devPayments = readPersistedDevPayments();
@@ -1243,8 +1257,7 @@ export async function getFinanceReceivablesSummary(): Promise<ActionResponse<Fin
     }
 
     const pendingClearancesCount =
-      (await db.payment.count({ where: { paymentStatus: "PROOF_SUBMITTED" } })) +
-      devPayments.filter((p) => p.paymentStatus === "PROOF_SUBMITTED").length;
+      pendingProofCount + devPayments.filter((p) => p.paymentStatus === "PROOF_SUBMITTED").length;
 
     return {
       success: true,

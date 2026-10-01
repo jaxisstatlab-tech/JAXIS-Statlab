@@ -3,6 +3,7 @@
 import { revalidatePath, unstable_cache } from "next/cache";
 import { auth } from "@/lib/auth";
 import { db, withDbTimeout } from "@/lib/db";
+import type { Prisma } from "@prisma/client";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
 import {
   assertCanManageAssignments,
@@ -633,6 +634,28 @@ export async function resumeSla(
 /**
  * Module-scoped cached query for staff directory and capacity
  */
+// The staff fields the assignment desk reads. This result is stored in the data cache, so it must never hold
+// whole user rows (password hashes included), which a plain include used to put there.
+const ASSIGNED_PROJECT = { select: { id: true, intakeId: true, researchTitle: true, masterStatus: true } } as const;
+const STAFF_CAPACITY_SELECT = {
+  id: true,
+  fullName: true,
+  email: true,
+  status: true,
+  leaveUntil: true,
+  leaveReason: true,
+  staffProfile: { select: { specializations: true } },
+  userRoles: { select: { role: { select: { name: true } } } },
+  statisticianAssignments: {
+    where: { isActive: true },
+    select: { slaDueAt: true, slaPausedAt: true, project: ASSIGNED_PROJECT },
+  },
+  qaAssignments: {
+    where: { isActive: true },
+    select: { slaDueAt: true, slaPausedAt: true, project: ASSIGNED_PROJECT },
+  },
+} satisfies Prisma.UserSelect;
+
 const fetchCachedStaffUsers = unstable_cache(
   async () => {
     return withDbTimeout(
@@ -647,41 +670,12 @@ const fetchCachedStaffUsers = unstable_cache(
             },
           },
         },
-        include: {
-          staffProfile: true,
-          userRoles: { include: { role: true } },
-          statisticianAssignments: {
-            where: { isActive: true },
-            include: {
-              project: {
-                select: {
-                  id: true,
-                  intakeId: true,
-                  researchTitle: true,
-                  masterStatus: true,
-                },
-              },
-            },
-          },
-          qaAssignments: {
-            where: { isActive: true },
-            include: {
-              project: {
-                select: {
-                  id: true,
-                  intakeId: true,
-                  researchTitle: true,
-                  masterStatus: true,
-                },
-              },
-            },
-          },
-        },
+        select: STAFF_CAPACITY_SELECT,
       }),
       10000
     );
   },
-  ["staff-capacity-users-cache"],
+  ["staff-capacity-users-v2"],
   { tags: [CACHE_TAGS.STAFF_CAPACITY], revalidate: 30 }
 );
 
@@ -709,7 +703,7 @@ export async function getStaffCapacity(
     if (projectIntakeId) {
       const project = await db.project.findFirst({
         where: { OR: [{ id: projectIntakeId }, { intakeId: projectIntakeId }] },
-        include: { client: { include: { clientProfile: true } } },
+        select: { packageName: true, client: { select: { clientProfile: { select: { academicProgram: true } } } } },
       });
       if (project) {
         targetMethod = project.packageName;
@@ -766,36 +760,7 @@ export async function getStaffCapacity(
                 },
               },
             },
-            include: {
-              staffProfile: true,
-              userRoles: { include: { role: true } },
-              statisticianAssignments: {
-                where: { isActive: true },
-                include: {
-                  project: {
-                    select: {
-                      id: true,
-                      intakeId: true,
-                      researchTitle: true,
-                      masterStatus: true,
-                    },
-                  },
-                },
-              },
-              qaAssignments: {
-                where: { isActive: true },
-                include: {
-                  project: {
-                    select: {
-                      id: true,
-                      intakeId: true,
-                      researchTitle: true,
-                      masterStatus: true,
-                    },
-                  },
-                },
-              },
-            },
+            select: STAFF_CAPACITY_SELECT,
           }),
           10000
         )) as StaffUserWithRelations[];
@@ -918,6 +883,34 @@ export async function getStaffCapacity(
   }
 }
 
+// What the statistician and QA workbenches show, and nothing more: whole user rows (password hashes
+// included) and every project column used to be loaded here.
+const WORKLOAD_SELECT = {
+  id: true,
+  projectId: true,
+  assignedAt: true,
+  slaStartAt: true,
+  slaDueAt: true,
+  slaPausedAt: true,
+  slaPauseReason: true,
+  slaPausedBy: true,
+  project: {
+    select: {
+      intakeId: true,
+      researchTitle: true,
+      packageName: true,
+      masterStatus: true,
+      researchObjectives: true,
+      researchQuestions: true,
+      hypotheses: true,
+      client: { select: { clientProfile: { select: { academicProgram: true } } } },
+      files: { select: { id: true, fileName: true, fileType: true, fileCategory: true } },
+    },
+  },
+  statistician: { select: { id: true, fullName: true, email: true } },
+  qaLead: { select: { id: true, fullName: true, email: true } },
+} satisfies Prisma.AssignmentSelect;
+
 /**
  * 7. Retrieves assigned studies for the currently logged-in Statistician.
  */
@@ -937,16 +930,7 @@ export async function getStatisticianWorkload(): Promise<ActionResponse<Assignme
         statisticianId: session.user.id,
         isActive: true,
       },
-      include: {
-        project: {
-          include: {
-            client: { include: { clientProfile: true } },
-            files: true,
-          },
-        },
-        statistician: true,
-        qaLead: true,
-      },
+      select: WORKLOAD_SELECT,
       orderBy: { slaDueAt: "asc" },
     });
 
@@ -1020,16 +1004,7 @@ export async function getQaWorkload(): Promise<ActionResponse<AssignmentDetailIt
         qaLeadId: session.user.id,
         isActive: true,
       },
-      include: {
-        project: {
-          include: {
-            client: { include: { clientProfile: true } },
-            files: true,
-          },
-        },
-        statistician: true,
-        qaLead: true,
-      },
+      select: WORKLOAD_SELECT,
       orderBy: { slaDueAt: "asc" },
     });
 
@@ -1109,12 +1084,28 @@ export async function getProjectAssignment(
         OR: [{ projectId }, { project: { intakeId: projectId } }],
         isActive: true,
       },
-      include: {
+      select: {
+        id: true,
+        projectId: true,
+        assignedAt: true,
+        slaStartAt: true,
+        slaDueAt: true,
+        slaPausedAt: true,
+        slaPauseReason: true,
+        slaPausedBy: true,
+        reassignedAt: true,
+        reassignReason: true,
         project: {
-          include: { client: { include: { clientProfile: true } } },
+          select: {
+            intakeId: true,
+            researchTitle: true,
+            packageName: true,
+            masterStatus: true,
+            client: { select: { clientProfile: { select: { academicProgram: true } } } },
+          },
         },
-        statistician: true,
-        qaLead: true,
+        statistician: { select: { id: true, fullName: true, email: true } },
+        qaLead: { select: { id: true, fullName: true, email: true } },
       },
     });
 

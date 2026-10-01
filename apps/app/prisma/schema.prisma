@@ -12,7 +12,10 @@
 // ============================================================================
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  // Loads nested relations (include/select) in one SQL query with joins instead of one query per relation,
+  // so a list with its project, client, and files costs one database round trip instead of several.
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {

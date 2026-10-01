@@ -69,12 +69,12 @@ export async function getFinancePayoutQueue(
           include: {
             project: {
               include: {
-                client: true,
+                client: { select: { fullName: true } },
                 payments: { orderBy: { createdAt: "desc" }, take: 1 },
                 quotations: { where: { status: "CLIENT_APPROVED" }, take: 1 },
               },
             },
-            recipient: true,
+            recipient: { select: { fullName: true, email: true } },
           },
           orderBy: { createdAt: "desc" },
         })
@@ -453,9 +453,13 @@ export async function getFinancialLedgerAction(
       (client as any).financialLedger.findMany({
         include: {
           project: {
-            include: {
-              client: true,
-              quotations: { where: { status: "CLIENT_APPROVED" }, take: 1 },
+            select: {
+              intakeId: true,
+              researchTitle: true,
+              packageName: true,
+              masterStatus: true,
+              client: { select: { fullName: true } },
+              quotations: { where: { status: "CLIENT_APPROVED" }, take: 1, select: { packageName: true } },
             },
           },
         },
