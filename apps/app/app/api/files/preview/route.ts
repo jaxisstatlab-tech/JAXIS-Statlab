@@ -235,24 +235,31 @@ export async function GET(req: NextRequest) {
       return new NextResponse("File body not found in storage bucket", { status: 404 });
     }
 
-    const contentType =
-      s3Res.ContentType ||
-      (storageKey.endsWith(".png")
-        ? "image/png"
-        : storageKey.endsWith(".jpg") || storageKey.endsWith(".jpeg")
-        ? "image/jpeg"
-        : storageKey.endsWith(".webp")
-        ? "image/webp"
-        : storageKey.endsWith(".pdf")
-        ? "application/pdf"
-        : "application/octet-stream");
+    // The type comes only from the file's extension, from a short list of types that can't run code. The type
+    // stored with the upload was chosen by the uploader, so a "PDF" uploaded as text/html would have run as a page
+    // on this site when an admin opened it. Anything else (including SVG) is sent as plain bytes.
+    const ext = storageKey.toLowerCase().split(".").pop() ?? "";
+    const SAFE_TYPES: Record<string, string> = {
+      pdf: "application/pdf",
+      png: "image/png",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      webp: "image/webp",
+      gif: "image/gif",
+      csv: "text/plain; charset=utf-8",
+      tsv: "text/plain; charset=utf-8",
+      txt: "text/plain; charset=utf-8",
+    };
+    const contentType = SAFE_TYPES[ext] ?? "application/octet-stream";
+    const fileName = storageKey.split("/").pop() || "preview";
 
     const headers = new Headers();
     headers.set("Content-Type", contentType);
+    headers.set("X-Content-Type-Options", "nosniff");
     headers.set("Cache-Control", "private, max-age=3600");
     headers.set(
       "Content-Disposition",
-      `inline; filename="${storageKey.split("/").pop() || "preview"}"`
+      `inline; filename="${fileName.replace(/[^\w.-]/g, "_")}"; filename*=UTF-8''${encodeURIComponent(fileName)}`
     );
 
     // Transform stream to Web ReadableStream for Next.js response

@@ -25,11 +25,13 @@
     "@tabler/icons-react": "^3.46.0",
     "@trigger.dev/sdk": "^4.5.14",
     "bcryptjs": "^3.0.3",
+    "docx-preview": "^0.4.1",
     "next": "16.2.0",
     "next-auth": "^5.0.0-beta.32",
     "pdf-lib": "^1.17.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "read-excel-file": "^9.3.10",
     "resend": "^6.21.0",
     "zod": "^3.25.76"
   },
