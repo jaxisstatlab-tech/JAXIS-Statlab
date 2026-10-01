@@ -15,7 +15,7 @@ Order: **Client → Statistician → QA Lead → Admin → Finance → CEO → S
 - **Pointer cursor on everything clickable.** Covered globally in `apps/app/app/globals.css` (and `apps/web`) for links, buttons, tabs, radios, checkboxes, menu items and labels. Anything else made clickable with `onClick` (a `div`, `tr`, card) must be a `button`/`Link` or get `role="button"` + `cursor-pointer`. Disabled items show `not-allowed`.
 - **Shared first:** when several pages repeat a pattern (study header, empty state, table, filter bar), build or fix it once in `@repo/ui` / a shared component, then reuse.
 
-## Progress (2026-09-28)
+## Progress (2026-10-01)
 
 | Area | Done | Left |
 |---|---|---|
@@ -23,13 +23,15 @@ Order: **Client → Statistician → QA Lead → Admin → Finance → CEO → S
 | 1. Client | **16 of 16 pages (done)** | — |
 | 2. Statistician | 2 of 6 | dashboard, workbench, payouts, profile |
 | 3. QA Lead | 1 of 6 | desk, review, files, payouts, profile |
-| 4. Admin | 0 of 15 | all |
+| 4. Admin | 1 of 15 (New study requests) | overview, quotes, assignments, revisions, DefenseLab, staff, claims, logs, reports, archive, study pages, profile |
 | 5. Finance | 0 of 11 | all |
 | 6. CEO | 0 of 10 | all |
 | 7. Staff | 0 of 2 | all |
 | 8. Sign-in and system | 2 of 8 | forgot/reset password, no access, not found, error, loading |
 
 **Next up:** the Statistician pass (dashboard, workbench, payouts, profile), including its checklist under **Performance and optimization**.
+
+**Since 2026-09-28 (outside the page-by-page passes):** a production speed and security pass across all roles. Details and commits: `docs/modules/specs/20-performance.md` §6 and `docs/modules/specs/21-production-hardening.md` §3. Items below are marked where they overlap with this tracker.
 
 ---
 
@@ -46,7 +48,7 @@ Order: **Client → Statistician → QA Lead → Admin → Finance → CEO → S
 **Result (client, offline dev, warm):** before 0.5–1.9 s with frequent 30–58 s stalls and up to 4 browser calls per page → after **0.5–1.1 s on all 13 pages, no stalls, 0 browser calls on load**. Feature tests re-run after the change: payment + receipts, signing, overview, change requests (71/72; the one miss is a known test-script pattern, screen checked by eye).
 
 **For production (not code):**
-- **Check the Vercel function region.** The database is in Singapore (`aws-0-ap-southeast-1` pooler). With no `vercel.json`, Vercel runs functions in Washington (iad1) unless the project settings say otherwise; then every database read crosses the Pacific (~200 ms each), and a page with 3–5 reads in a row waits 1 s+ before anything shows. Set Project → Settings → Functions → Region to **Singapore (sin1)**. (The Vercel account linked here has no JAXIS project, so it wasn't checked.)
+- [x] **Vercel function region (done 2026-10-01, `d8b951c`):** `apps/app/vercel.json` pins functions to Singapore (`sin1`), next to the database. Before, they ran in Washington (iad1) and every read crossed the Pacific (~200 ms each). The owner confirmed pages got noticeably faster.
 - Keep using the Supabase pooler URL (`:6543`, `pgbouncer=true`) for `DATABASE_URL` on Vercel.
 
 ### Performance standards (every page, all roles)
@@ -61,7 +63,8 @@ Use this as the checklist for each page in each role's pass (the client pages no
 - [ ] **Loading boundaries:** sections with their own header/tabs get a `loading.tsx` so the frame stays and only the content waits (also lets Next prefetch the frame).
 - [ ] **Refresh only on real change:** after a change, fire `jaxis:study-updated` (or a similar event) instead of re-reading on every click.
 - [ ] **Heavy code loads on demand:** big libraries (PDF, viewers, charts) are `next/dynamic` or `await import()` inside the action that needs them, never imported at the top of a page component.
-- [ ] **Queries:** `select` only the fields shown, paginate long lists, no query inside a loop (N+1); keep the per-request study cache.
+- [ ] **Queries:** `select` only the fields shown, paginate long lists, no query inside a loop (N+1); keep the per-request study cache. Nested relations load in one query (`relationJoins`, on since 2026-10-01).
+- [ ] **Preloaded pages skip the first browser fetch:** when `page.tsx` passes initial data, the client view uses `useLoadUnlessPreloaded` (`src/hooks/use-load-unless-preloaded.ts`) so it only fetches again when a filter changes.
 - [ ] **Measure:** warm load under ~1 s on the offline app for every page, 0 browser server calls on open (script: `pp/perf-client.mjs`, run on a separate check server so your own isn't disturbed).
 
 ### More optimizations found (not done yet)
@@ -89,11 +92,11 @@ Shared shell fixes above (layout, bell, unread count, stream) already apply to e
 
 - [ ] **Statistician:** load on the server: `statistician/profile`; check `StatisticianPayoutsClient` (reloads in the browser); workbench: check for browser-side loads and sequential reads; add `loading.tsx` in `statistician/projects/[id]`; measure all pages.
 - [ ] **QA Lead:** load on the server: `qa/profile`; check `QaPayoutsClient`; review/files desks: check browser-side loads; `loading.tsx` in `qa/projects/[id]`; measure.
-- [ ] **Admin:** load on the server: `admin/archive`, `audit`, `defenselab`, `disputes`, `notifications`, `profile`, `reports`, `projects/[id]`, `projects/[id]/payment`, `projects/[id]/sow`; check `AssignmentsClient`, `AdminIntakeClient`; `loading.tsx` in `admin/projects/[id]`; measure.
-- [ ] **Finance:** load on the server: `finance/profile`, `reports`, `projects/[id]/payment`, `payroll/payslips/[id]/print`; check `AttendanceReviewClient`, `FinanceDisputesClient`, `SpecialistLeaveApprovalsClient`, `FinancePayoutsClient`, `FinancePayrollClient`; measure.
-- [ ] **CEO:** load on the server: `ceo/disputes`, `finance`, `payroll`, `profile`, `reports`, `retention`; check `CeoAttendanceAuditClient`; measure.
+- [~] **Admin:** done 2026-10-01 (`637c9f7`): `archive`, `audit`, `disputes`, `notifications`, `reports` load on the server; `admin/loading.tsx` covers every page in the folder (`e538e29`); New study requests refreshes only its list, quietly, at most once a minute on tab return (`6d8f447`). Left: `defenselab`, `profile`, `projects/[id]`, `projects/[id]/payment`, `projects/[id]/sow`; check `AssignmentsClient`; `loading.tsx` in `admin/projects/[id]`; measure.
+- [~] **Finance:** `reports` loads on the server (`637c9f7`); `finance/loading.tsx` added (`e538e29`). Left: load on the server: `finance/profile`, `projects/[id]/payment`, `payroll/payslips/[id]/print`; check `AttendanceReviewClient`, `FinanceDisputesClient`, `SpecialistLeaveApprovalsClient`, `FinancePayoutsClient`, `FinancePayrollClient`; measure.
+- [~] **CEO:** `disputes`, `finance`, `reports`, `retention` load on the server (`637c9f7`); `ceo/loading.tsx` added (`e538e29`). Left: `payroll`, `profile`; check `CeoAttendanceAuditClient`; measure.
 - [ ] **Staff (shared):** load on the server: `staff/hr/payslips/[id]/print`; check `StaffAttendanceClient`, `HrPortalClient`; measure.
-- [ ] **Staff-only shell parts:** `DutyClockWidget` polls with a server action (`getActiveShift`); move its background refresh to a GET endpoint like the bell.
+- [~] **Staff-only shell parts:** `DutyClockWidget` now checks the shift at most once a minute on tab return, shared by its two copies (`6d8f447`). Still a server action (`getActiveShift`); move it to a GET endpoint like the bell.
 - [ ] **Messages (all roles):** the open chat and inbox refresh with server actions (`getProjectMessages`, `getMyProjectThreads`) every few seconds; move those background refreshes to GET (`/api/v1/messages` already exists for the chat) so they never hold up clicks.
 
 ---
@@ -121,6 +124,9 @@ Shared shell fixes above (layout, bell, unread count, stream) already apply to e
 - [x] **One page width for every role (2026-09-28):** `max-w-7xl` inside the dashboard is 1600px (`[--container-7xl:100rem]` on `<main>` in `DashboardShell.tsx`), so pages fill laptops and full-HD screens and centre at 1600px on bigger ones; client pages that capped themselves at 896–1024px now use it too. Rule written into `AGENTS.md`, `.agents/AGENTS.md` and the dashdark skill. Only printable paper documents keep their own width. Checked on 14 pages across client, statistician, QA, admin, finance and CEO: all fill the width at 1920px (1552px of 1552px), no sideways scroll on phone.
 - [x] **Printing fixed (2026-09-28):** printing gave a blank sheet, because the print rules hid the page whenever a dialog existed and the closed notification drawer is always a hidden dialog (`globals.css` now ignores `.invisible` dialogs). Printable documents are white A4 "paper" sheets that look the same on screen, on paper and in Save as PDF (`SowDocument`, `PaymentReceiptDocument`, `StatisticalAuditCertificate`; class `print-sheet`), and name the PDF file.
 - [x] Toasts sit above modals and drawers (z 10000), so errors from a modal are readable
+- [x] **KPI cards, all pages (2026-10-01):** `KpiCard` (`packages/ui`) redesigned after an analytics-card reference: icon tile + title + subtitle, optional info icon, big number with a change line or tag, and an optional chart in the corner (`trend` with `trendStyle` area / bars / dots; drawn only from real data, orange only). Colour restraint: numbers white, zeros dimmed, tiles and tags neutral, red kept for `variant="red"`. Older ALL-CAPS labels keep a compact mono style until each page is redesigned; old props (`badgeColor`, `monoLabel`) still compile. Checked on New study requests and Admin overview. New props: `info`, `change`, `trendStyle`.
+- [x] **Sidebar clicks (2026-10-01, `e538e29`):** a slow page no longer snaps the highlight back to the previous page after 20 s; the pending state follows the clicked link's real status (`useLinkStatus`), and every role folder has a `loading.tsx`, so a click lands on the page loader straight away.
+- [x] **Document viewer shows the real file (2026-10-01, `9fce329`):** `FileContentPreview.tsx` renders the actual `.docx` (pages, tables, images), `.xlsx` (a tab per sheet, first 500 rows), CSV/TSV/TXT, PDF and images; other types get a plain note and Download. It used to show a built-in sample manuscript for every Word file and made-up rows for CSVs. All files load through `/api/files/preview`.
 - [~] Shared empty state + table + filter bar patterns — done so far: neutral `CopyButton` badge (was orange), `FilterToolbar` mobile layout (search row + filters/reset row), `ClientStageMeter`
 - [ ] Error / loading states per page follow the single `LoadingState` standard
 
@@ -140,6 +146,7 @@ Shared shell fixes above (layout, bell, unread count, stream) already apply to e
 - [x] `client/projects` — All studies, v3 **order list** (2026-09-28): dropped the 4 count cards (they repeated the tab counts and pushed the list below the fold on phones) and the table; now tabs (All / Needs you / In progress / Completed / Stopped) + search (`/` to jump in, Esc to clear) + sort on one line, then one order card per study: ID copy + sent date + status tag, title, what is happening, our note, the 5-step tracker with due text, then files, price/paid, Message link, quick view, ask-to-delete (new here, same window as My Studies) and one button (orange only when the study needs you). Header line says how many need you. Browser tab title fixed ("My Research Projects" → "All studies"). `useDueText` moved to `src/features/projects/due-text.ts` (shared with My Studies). Verified 21 checks offline incl. tabs, search, sort, copy, quick view, delete window (not sent), links, phone.
 - [x] Client "How it works" guide (`HowToUseModal`, opened from My Studies) — 2026-09-27: rewritten to match the real flow and the website terms: 6 plain steps (Send your study → Get your price → Sign your agreement → Pay your deposit → We analyze your data → Get your files) tagged with the tracker names clients see on study pages; "Before you start: add your school" note when the profile is incomplete; 6 plain questions; one main button (Add Your School First / Send a Study). Removed misleading claims: "100% money-back escrow protection", "50% deposit", Maya, "Senior QA", named universities. Verified 8 checks incl. the school-form button, desktop + phone.
 - [x] `client/projects/new` — Send a new study (2026-09-27): 3 plain steps (About your study → Your files → Check and send) with a step bar you can only move back on (fixed: it used to let you jump to Check and send without filling anything in); side panel "What happens next" + your school; one shared `FileSlot` for the 3 files (was 3 copies of ~160 lines) with drop zone, progress, Replace / Remove; review with Edit per section; a real confirmation checkbox. All rules kept (title 3+, questions/objectives 5+, future date, Chapters 1–3 + data file required, file types, 15 MB). School gate reworded ("First, tell us about your school"). Guide fixed to match: Chapters 1–3 required, no Google Sheets (download as Excel/CSV). Offline stand-ins so it can be tested: `/api/dev/upload-sink` (keeps nothing) and `dev-projects-store.ts` (saves the study locally), both `JAXIS_OFFLINE` only. Verified 15 checks end to end incl. school form, wrong file type, missing files, send and listing on My Studies.
+- [~] `client/projects/new` — **Analysis goals (2026-10-01, built, not live yet):** step 1 asks "What should the analysis do?" (Describe and summarize data, Compare groups, Test relationships, Predict outcomes, Validate a survey or instrument, Not sure yet; pick at least one; "Not sure yet" stands alone) and Check and send shows the choice. Saved as `analysisGoals` on the study; staff see it in New study requests, the quote builder and the admin study page. Needs one new database column (`projects.analysisGoals`, add-only) before the deploy. Verified offline: 6 boxes, required check, "Not sure yet" behaviour.
 - [x] `client/projects/[id]` — Study overview (2026-09-28): replaced 6 coloured banners (amber/sky/emerald), repeated buttons ("View Signed Contract", "Payment History", "Proceed to Payment" twice) and the client "Academic Profile" / "Dispute Flag" boxes with: one "What's happening" panel (title, what's going on, Next, and the one button; orange only when it's the client's turn; special cases for needs-info, receipt being checked, balance due before download, open claim), "Your research questions", "Files you sent" (preview, download, download all, add/remove until the agreement is signed, locked note after), and a side column with Details (due + days left, sent, last update, package, school), Payment (paid of total, meter, deposit, left to pay) and Need help (message your team, Revisions & help after delivery, ask to delete). New plain "Add a file" window (4 types, drop zone, 15 MB, type rules match the server; "Something else" no longer offers Excel/CSV, which the server rejected). Fixed: a failed "I've Added Everything" used to swap the whole page for the "couldn't load" screen. Verified 20 checks offline across all 8 sample stages, add/wrong type/remove/finish, preview, ask-to-delete, phone.
 - [x] `client/projects/[id]/quote` — "Your Price" as a checkout: status line, What you get, Delivery speed (radio incl. Standard), Extras (DefenseLab), note from our team; sticky Price summary with How you pay + Accept / Ask for changes; phone checkout bar; plain names for add-ons (catalog untouched for staff). Verified live totals, one-speed rule, accept + decline flows.
 - [x] `client/projects/[id]/sow` — Agreement (2026-09-28): the agreement is now a white A4 paper sheet (logo letterhead, dark ink) that looks the same on screen, in print and in Save as PDF; plain headings (Service Agreement, Who this agreement is between, Your study, Price and payments, Terms, Signatures); signing moved to a checkout-style side panel (summary of total / deposit / delivery, type your full name with live signature and match check, real checkbox with Terms link, Sign Agreement + confirm, "Message your team" to change something). After signing: "You signed this agreement" + Pay Deposit button (the old one sent you to the Overview) and the study header tag updates straight away (header now listens for `jaxis:study-updated`). **Print fixed:** printing gave a blank page, because the print rules hid the page whenever a dialog existed and the closed notification drawer is always a hidden dialog (`globals.css`: ignore `.invisible` dialogs). PDF file name is "JAXIS Agreement <study ID>". Also fixed: price lines didn't add up (add-ons were priced from the catalog, e.g. ₱2,500 + ₱250 = ₱3,000); now the extras line is total minus package. Now shows the refund policy, hypotheses and payment method, which are saved in every agreement but were never shown. Website package and add-on names; contact is consult@jaxisstatlab.com (was ops@jaxis.dev); provider signature no longer says "Governance". `SowDocument` is shared, so the admin Agreement page gets the same sheet. Verified: 14 signing checks offline (wrong name, any-case match, box, confirm, signed panel, pay link, header update, phone) + printed PDFs (2 A4 pages, signed and unsigned).
@@ -175,7 +182,7 @@ Shared shell fixes above (layout, bell, unread count, stream) already apply to e
 ## 4. Admin
 
 - [ ] `admin` — Overview
-- [ ] `admin/intake` — New study requests
+- [x] `admin/intake` — New study requests (2026-10-01): plain title and wording (was "Project Intake Triage & Evaluation Queue", "Request Missing Artifacts", "Governance notice", "Prepare Commercial Proposal"); 4 neutral cards New / Waiting on client / Ready to price / Quote sent with icons and an info note each (was 4 differently coloured cards incl. a duplicate "active triage" count); filter Show (All, To check, New, Waiting on client, Ready to price, Quote sent) + sort + search (title, client, school, study ID); rows without coloured tints: title, copy ID, sent date and time, file count, the client's analysis goal tags (hover for usual tests; "Not sure yet" outlined in orange; "not asked" for older studies), "We asked: …" while waiting on the client, client + school + phone, due date with "in N days" / "N days late", status, and **one next-step button per stage** (Review / Quick Look / Build Quote / Draft Agreement / Open) plus the menu (Quick look, Open study page, Draft agreement, Build quote, Ask for missing info, Mark ready to price, Copy study ID). **Quick look** (was built but never opened): client, school, due, status, what we asked for, analysis goals with usual tests, objectives, questions, hypotheses, files with Download; footer Ask for Missing Info and Mark Ready to Price / Build Quote. Ask-for-missing-info window in plain words with the same templates and 5-character rule. No-match state with Clear Filters. Browser tab title added. All actions, refreshes and paging kept. Verified offline: 9 rows, row buttons per stage, search → no match → Clear Filters, Quick look sections and buttons, missing-info window, phone (390 px, no sideways scroll). Analysis goals need the `projects.analysisGoals` database column before this goes live.
 - [ ] `admin/quotations` — Pricing & quotes
 - [ ] `admin/assignments` — Assign experts
 - [ ] `admin/revisions`
@@ -187,7 +194,7 @@ Shared shell fixes above (layout, bell, unread count, stream) already apply to e
 - [ ] `admin/notifications` — Email delivery logs
 - [ ] `admin/reports`
 - [ ] `admin/archive`
-- [ ] `admin/projects/[id]` (+ `analysis`, `deliverables`, `payment`, `sow`)
+- [ ] `admin/projects/[id]` (+ `analysis`, `deliverables`, `payment`, `sow`) — analysis goals panel added under the objectives (2026-10-01); page not yet redesigned
 - [ ] `admin/profile`
 
 ## 5. Finance
@@ -242,27 +249,30 @@ Tracker coverage checked 2026-09-27: all 78 pages in `apps/app/app` are listed (
 
 ### Needs a decision from the owner
 
-1. **Data bug (backend):** `createProject` (`src/features/projects/actions.ts`), on a foreign-key error, retries by saving the study under *another* client account (the first `client@jaxis.dev` or any CLIENT user it finds). A client's thesis could land in someone else's list. Fix: return a clear error instead.
-2. **User lookup can create accounts or borrow another client's (backend, security):** `resolveOrProvisionUser` (`src/lib/user-healing.ts`, used by `getClientProfile` and others) — if the id and email lookups fail, it auto-creates a user with a fixed default password hash, and as a last resort returns *another* client's id (`client@jaxis.dev` or any CLIENT). Same kind of bug as #1. Fix: return an error instead.
-3. **Offline fallbacks run in production (backend):** `addProjectFile`, `deleteProjectFile`, `resolveMissingInfo` and `getPaymentsByProject` fall back to the local offline files on *any* database error (not gated on `JAXIS_OFFLINE`). A live database hiccup would report success without saving. Gate them like the other offline fallbacks.
-4. **Server rules (backend):** file add/remove is blocked only for SOW_SIGNED, ACTIVE, IN_PROGRESS and DELIVERED (the page allows it only before the agreement is signed; block every later stage too). `submitPaymentProof` accepts any amount and type; it could check the amount against what's due.
+0. **KPI card rules (2026-10-01):** the redesigned `KpiCard` uses a sans title and number and an icon tile; `AGENTS.md` rule 9 still describes uppercase mono labels and mono metrics, and rule 16 says informational KPI cards shouldn't show icons. Update those rules to match, or say which parts to change back.
+1. **Fixed 2026-10-01 (`487b737`):** `createProject` saves a study only to the signed-in client's own account; it no longer retries under another client.
+2. **Fixed 2026-10-01 (`487b737`):** `resolveOrProvisionUser` never borrows another account, never reactivates or renames one, and new accounts get a random password.
+3. **Partly fixed:** `submitPaymentProof`'s fallback now runs only in local development (`8d5ef41`); the rest is still open. **Offline fallbacks run in production (backend):** `addProjectFile`, `deleteProjectFile`, `resolveMissingInfo` and `getPaymentsByProject` fall back to the local offline files on *any* database error (not gated on `JAXIS_OFFLINE`). A live database hiccup would report success without saving. Gate them like the other offline fallbacks.
+4. **Server rules (backend):** file add/remove is blocked only for SOW_SIGNED, ACTIVE, IN_PROGRESS and DELIVERED (the page allows it only before the agreement is signed; block every later stage too). `submitPaymentProof` now only takes a payment against the study's approved quote (`8d5ef41`); checking the amount against what's due is still open.
 5. **Agreement wording (contract text, not changed):** saved terms (`src/lib/sow-rules.ts`) say free changes within **7 business days**; the website, guide and Revisions page say **3**. The terms are jargon-heavy ("SLA timeline commences", "Supplemental Statement of Work"); rewrite the defaults in plain English for new agreements (signed ones keep what they say). The agreement says the final balance is "paid after you review and accept the final results", but the app asks for it before files can be downloaded; align the wording or the flow.
 6. **Certificate wording (changed 2026-09-28, please confirm):** it now says the analysis was "checked by a second statistical analyst and approved for release" and lists what was checked, instead of "certified compliant with academic research standards". Already-downloaded certificates keep the old text. `public/signatures/qa-lead-maria.png` is only used when a reviewer's own signature is that file; upload each reviewer's signature in their profile to have it printed.
 7. **Receipts:** the new receipt is titled "Acknowledgement Receipt" on purpose. If JAXIS issues BIR official receipts, we can add the OR number / TIN; if not, consider adding "This is not an official receipt".
-8. **Sample logins in production:** `@jaxis.dev` accounts (incl. admin and CEO; passwords are in the public repo) work in production unless `DISABLE_DEV_LOGINS=true` is set in hosting. Set it now; a code fix (dev/offline only) is waiting on a yes.
+8. **Fixed 2026-10-01 (`7e8e5d7`):** sample logins never work in production (`devLoginsAllowed()`), whatever the hosting settings, and the seven `@jaxis.dev` accounts are suspended in the live database. Don't reactivate them without new private passwords.
 9. **Messages on phones:** opening Messages marks the newest chat read on the server (`loadInbox` → `getProjectMessages`); on phones only the list shows, so it's marked read unseen. Fix: mark read when the chat is actually shown.
 10. Website About page: Kim's middle name is spelled "Ric"; the request said "Rick". Confirm.
 
 ### Before deploying
 
-- **Speed:** set the Vercel function region to Singapore (sin1) to sit next to the database (see **Performance and optimization**). Leave `NEXT_PUBLIC_NOTIFICATIONS_STREAM` unset (stream off).
-- Hosting (Vercel): paste the new `SUPABASE_SERVICE_ROLE_KEY` (the one there is the old, deleted key; the code no longer uses it, but `env.ts` requires it) and add `DISABLE_DEV_LOGINS=true` if missing.
+- **Speed:** done (functions in Singapore, `d8b951c`). Leave `NEXT_PUBLIC_NOTIFICATIONS_STREAM` unset (stream off).
+- **Analysis goals:** add the `projects.analysisGoals` column (`TEXT[]`, default empty) **before** deploying that code; the new queries read it.
+- Hosting (Vercel): paste the new `SUPABASE_SERVICE_ROLE_KEY` (the one there is the old, deleted key; the code no longer uses it, but `env.ts` requires it) (`DISABLE_DEV_LOGINS` is no longer needed in production; demo logins are off there in code).
 - Test live chat, typing and online dots with two accounts on staging (offline can't reach Supabase Realtime).
 - Everyone already logged in will be asked to log in once (new session rules).
 - Last release check (2026-09-27): production build passes with no warnings, type check clean, no secrets in browser code. Re-run before the next deploy (many pages changed since).
 
 ### Security
 
+- 2026-10-01: a client-side security audit and its fixes are listed with commits in `docs/modules/specs/21-production-hardening.md` §3.
 - Fixed 2026-09-27: hard-coded Supabase service-role key removed from `src/lib/supabase.ts` (key rotated); hard-coded auth secret is now development-only (production stops if `AUTH_SECRET` is missing; Vercel has it set).
 - Open: `markAlertReadAction` doesn't check the alert's owner. Plaintext dev passwords in source and `.dev-users.json`.
 
