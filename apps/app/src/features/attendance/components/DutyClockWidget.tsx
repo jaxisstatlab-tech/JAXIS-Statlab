@@ -15,6 +15,25 @@ import { Button, Modal, Toast } from "@repo/ui";
 import { clockIn, clockOut, getActiveShift } from "../actions";
 import type { ActiveShiftStatus } from "../schemas";
 
+// Coming back to the tab re-checks the shift at most once a minute. The check is shared by every mounted
+// clock (the sidebar and the phone header both render one, the header just hidden on desktop), so a tab
+// switch costs one server call instead of two. Server actions run one at a time, so each of these used to
+// queue ahead of whatever page the person clicked next.
+const FOCUS_SYNC_GAP_MS = 60_000;
+const FOCUS_SHARE_MS = 2_000;
+let focusSync: { at: number; promise: Promise<ActiveShiftStatus> } | null = null;
+
+function shiftForFocus(): Promise<ActiveShiftStatus> | null {
+  const now = Date.now();
+  if (focusSync && now - focusSync.at < FOCUS_SYNC_GAP_MS) {
+    // The other clock asked a moment ago for this same focus: share its answer. Otherwise skip; replaying an
+    // older answer could undo a clock in or out made since.
+    return now - focusSync.at < FOCUS_SHARE_MS ? focusSync.promise : null;
+  }
+  focusSync = { at: now, promise: getActiveShift() };
+  return focusSync.promise;
+}
+
 interface DutyClockWidgetProps {
   userRole?: string;
   initialActiveShift?: ActiveShiftStatus | null;
@@ -77,7 +96,8 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
   }, []);
 
   // 1. Fetch initial or refreshed status (silent background sync)
-  const refreshStatus = useCallback(async (force = false) => {
+  // `pending` is an answer already on its way (the shared focus check), so it isn't asked for twice.
+  const refreshStatus = useCallback(async (force = false, pending?: Promise<ActiveShiftStatus>) => {
     if (!isInternal) return;
     const now = Date.now();
     if (!force && now - lastFetchRef.current < 5000) {
@@ -85,7 +105,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
     }
     lastFetchRef.current = now;
     try {
-      const status = await getActiveShift();
+      const status = await (pending ?? getActiveShift());
       updateShiftState(status);
       if (status.isOnDuty && status.clockInAt) {
         setSeconds(Math.max(0, Math.floor((Date.now() - new Date(status.clockInAt).getTime()) / 1000)));
@@ -110,7 +130,9 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
       refreshStatus(true);
     };
     const handleFocus = () => {
-      refreshStatus(false);
+      if (!isInternal) return;
+      const pending = shiftForFocus();
+      if (pending) refreshStatus(true, pending);
     };
 
     window.addEventListener("leave-status-updated", handleGlobalUpdate);
@@ -122,7 +144,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
       window.removeEventListener("shift-status-updated", handleGlobalUpdate);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [refreshStatus]);
+  }, [refreshStatus, isInternal]);
 
   // 2. High-Precision Wall-Clock Live Timer Tick (Immune to sleep or background tab drift)
   useEffect(() => {

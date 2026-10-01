@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useTransition, useMemo } from "react";
+import React, { useState, useEffect, useTransition, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   PageHeader,
@@ -113,17 +113,35 @@ export function AdminIntakeClient({
     }
   };
 
+  // Background refresh of the list alone: the table stays on screen until the new rows arrive (no loading
+  // state), and the price catalog, which barely changes, isn't fetched again. Server actions run one at a
+  // time, so a full reload on every tab switch used to sit in front of the next click.
+  const lastQuietRefreshRef = useRef(Date.now());
+  const refreshQueueQuietly = async () => {
+    lastQuietRefreshRef.current = Date.now();
+    try {
+      const res = await getProjects();
+      if (res.success) {
+        setProjects(res.data);
+      }
+    } catch (e) {
+      console.error("Failed to refresh intake projects", e);
+    }
+  };
+
   useEffect(() => {
     if (initialProjects.length === 0) {
       loadData();
     }
 
-    // Auto-refresh when new intake alerts arrive via SSE or when the admin tab regains focus
+    // New intake alerts refresh the list right away; coming back to the tab does at most once a minute.
     const handleStudyUpdated = () => {
-      loadData();
+      refreshQueueQuietly();
     };
     const handleFocus = () => {
-      loadData();
+      if (Date.now() - lastQuietRefreshRef.current >= 60_000) {
+        refreshQueueQuietly();
+      }
     };
 
     window.addEventListener("jaxis:study-updated", handleStudyUpdated);

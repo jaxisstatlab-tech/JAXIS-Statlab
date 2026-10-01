@@ -172,14 +172,18 @@ export function ClientDashboardClient({
 
   // Listen to SSE updates and tab visibility (silent sync without flashing loading screen)
   useEffect(() => {
+    let lastVisibleRefreshAt = Date.now();
     const handleStudyUpdated = () => {
       loadData(false);
     };
 
+    // Coming back to the tab re-renders the page from the server at most once a minute (study changes still
+    // arrive right away through the event above).
     const handleVisibilityChange = () => {
-      if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        router.refresh();
-      }
+      if (typeof document === "undefined" || document.visibilityState !== "visible") return;
+      if (Date.now() - lastVisibleRefreshAt < 60_000) return;
+      lastVisibleRefreshAt = Date.now();
+      router.refresh();
     };
 
     window.addEventListener("jaxis:study-updated", handleStudyUpdated);
