@@ -41,6 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 # local offline dev stores (seeded by `npm run seed:local-dev`, read only when the DB is unreachable)
+/.dev-uploads/
 /.dev-projects.json
 /.dev-quotations.json
 /.dev-sows.json

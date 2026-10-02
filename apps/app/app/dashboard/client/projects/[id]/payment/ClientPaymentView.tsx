@@ -5,16 +5,17 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Button, CopyButton, LoadingState, Modal, Toast } from "@repo/ui";
 import { Peso } from "@repo/ui/MoneyDisplay";
-import { ArrowRight, ArrowSquareOut, ChatCenteredText, DownloadSimple, FileText, Receipt, WarningCircle } from "@phosphor-icons/react";
+import { ArrowRight, ArrowSquareOut, Bank, ChatCenteredText, DeviceMobile, DownloadSimple, FileText, Receipt, WarningCircle } from "@phosphor-icons/react";
 import { getPaymentsByProject } from "@/features/payments/actions";
 import { getProjectById } from "@/features/projects/actions";
 import { StudySection } from "@/features/projects/components/StudySection";
 import { PAYMENT_TYPE_LABEL, receiptNumber } from "@/features/payments/components/PaymentReceiptDocument";
 import { PAYMENT_TONE_LABEL, isConfirmed, paymentTone } from "@/features/payments/client-payments";
-import { getFilePreviewUrl, triggerFileDownload } from "@/lib/file-utils";
+import { getFilePreviewUrl, resolveStoredFileUrl, triggerFileDownload } from "@/lib/file-utils";
 import { Meter, Panel, PanelHeader } from "@/components/dashboard/Panel";
 import type { PaymentItem, ProjectPaymentsData } from "@/features/payments/schemas";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
+import { clientNote, type PaymentChannelDetails } from "@/lib/payment-rules";
 
 // The Payment tab, like a checkout's order summary: what to pay now (one button), your payments
 // with a printable receipt for each confirmed one, and the totals and how to pay on the side.
@@ -37,9 +38,11 @@ export interface ClientPaymentViewProps {
   /** Loaded on the server so the tab opens with its content; refreshed here after an upload. */
   initialProject: ProjectDetailItem | null;
   initialData: ProjectPaymentsData | null;
+  /** Our GCash and bank accounts (enabled ones), loaded on the server. Null if they couldn't be read. */
+  channels: PaymentChannelDetails[] | null;
 }
 
-export function ClientPaymentView({ projectId, initialProject, initialData }: ClientPaymentViewProps) {
+export function ClientPaymentView({ projectId, initialProject, initialData, channels }: ClientPaymentViewProps) {
   const preloaded = Boolean(initialProject && initialData);
   const [project, setProject] = useState<ProjectDetailItem | null>(initialProject);
   const [data, setData] = useState<ProjectPaymentsData | null>(initialData);
@@ -67,8 +70,8 @@ export function ClientPaymentView({ projectId, initialProject, initialData }: Cl
 
   const handleUploaded = (payment: PaymentItem) => {
     setToast({
-      message: "Receipt sent",
-      description: `We got your receipt${payment.referenceNumber ? ` (ref ${payment.referenceNumber})` : ""}. We'll confirm it within one working day.`,
+      message: "Payment details sent",
+      description: `We got your payment details${payment.referenceNumber ? ` (ref ${payment.referenceNumber})` : ""}. We'll confirm it within one working day.`,
       variant: "success",
     });
     setData((prev) => (prev ? { ...prev, payments: [payment, ...prev.payments.filter((p) => p.id !== payment.id)] } : prev));
@@ -108,11 +111,19 @@ export function ClientPaymentView({ projectId, initialProject, initialData }: Cl
     <div className="flex flex-col gap-6 pb-24">
       {toast ? <Toast message={toast.message} description={toast.description} variant={toast.variant} onClose={() => setToast(null)} /> : null}
 
-      <StudySection title="Payment" description="Pay by GCash or bank transfer, then upload your receipt. Every confirmed payment gets a receipt you can print." />
+      <StudySection title="Payment" description="Every confirmed payment gets a receipt you can print." />
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         <div className="flex min-w-0 flex-col gap-6 lg:col-span-8">
-          <PayNowPanel project={project} data={data} latest={sorted[0] ?? null} onUpload={() => setIsUploadOpen(true)} />
+          <PayNowPanel
+            project={project}
+            data={data}
+            latest={sorted[0] ?? null}
+            channels={channels}
+            messagesHref={`${base}/messages`}
+            onUpload={() => setIsUploadOpen(true)}
+            onCopied={(what) => setToast({ message: `${what} copied`, description: "Paste it in GCash or your bank app.", variant: "info" })}
+          />
 
           <Panel aria-label="Your payments">
             <PanelHeader
@@ -122,7 +133,7 @@ export function ClientPaymentView({ projectId, initialProject, initialData }: Cl
             />
             {sorted.length === 0 ? (
               <p className="mx-5 mb-6 mt-4 rounded-[2px] border border-dashed border-white/10 px-4 py-6 text-center text-[13px] text-white/45 sm:mx-6">
-                No payments yet. They&apos;ll show up here after you upload a receipt.
+                No payments yet. They&apos;ll show up here after you send your payment details.
               </p>
             ) : (
               <ul className="mt-4 divide-y divide-white/[0.06] border-t border-white/[0.06]">
@@ -173,31 +184,13 @@ export function ClientPaymentView({ projectId, initialProject, initialData }: Cl
             </div>
           </Panel>
 
-          <Panel aria-label="How to pay">
-            <PanelHeader title="How to pay" />
-            <ol className="flex flex-col gap-3 px-5 pb-5 pt-4 text-[13px] text-white/65 sm:px-6">
-              {[
-                "Send the amount by GCash or bank transfer. The accounts are in the upload window.",
-                "Put your study ID in the message so we can match it.",
-                "Upload a screenshot of your receipt with the reference number.",
-                "We confirm it within one working day, and your receipt appears here.",
-              ].map((step, i) => (
-                <li key={step} className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-[2px] bg-white/[0.07] font-mono text-[11px] text-white/70">
-                    {i + 1}
-                  </span>
-                  <span className="leading-relaxed">{step}</span>
-                </li>
-              ))}
-            </ol>
-            <div className="border-t border-white/[0.06] px-5 py-3 text-[13px] text-white/55 sm:px-6">
-              Questions?{" "}
-              <Link href={`${base}/messages`} className="inline-flex items-center gap-1 text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">
-                <ChatCenteredText size={13} weight="fill" />
-                Message your team
-              </Link>
-            </div>
-          </Panel>
+          <p className="px-1 text-[13px] text-white/55">
+            Questions about paying?{" "}
+            <Link href={`${base}/messages`} className="inline-flex items-center gap-1 text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">
+              <ChatCenteredText size={13} weight="fill" />
+              Message your team
+            </Link>
+          </p>
         </aside>
       </div>
 
@@ -212,6 +205,7 @@ export function ClientPaymentView({ projectId, initialProject, initialData }: Cl
           downpaymentRequired={summary.downpaymentRequired}
           remainingBalance={summary.remainingBalance}
           isDownpaymentCleared={summary.isDownpaymentCleared}
+          initialChannels={channels}
           onSuccess={handleUploaded}
         />
       ) : null}
@@ -227,12 +221,18 @@ function PayNowPanel({
   project,
   data,
   latest,
+  channels,
+  messagesHref,
   onUpload,
+  onCopied,
 }: {
   project: ProjectDetailItem;
   data: ProjectPaymentsData;
   latest: PaymentItem | null;
+  channels: PaymentChannelDetails[] | null;
+  messagesHref: string;
   onUpload: () => void;
+  onCopied: (what: string) => void;
 }) {
   const s = data.summary;
   const delivered = project.masterStatus === "DELIVERED" || project.masterStatus === "REVISION_REQUESTED";
@@ -244,6 +244,7 @@ function PayNowPanel({
   let body: React.ReactNode;
   let action: React.ReactNode = null;
   let yourTurn = false;
+  let payAmount = 0;
 
   const uploadButton = (label: string, primary: boolean) => (
     <Button variant={primary ? "primary" : "outline"} size="sm" onClick={onUpload} className="gap-1.5">
@@ -257,7 +258,7 @@ function PayNowPanel({
     title = "Paid in full";
     body = "Thank you. Nothing is left to pay. Your receipts are below.";
   } else if (s.pendingVerification > 0) {
-    title = "We're checking your receipt";
+    title = "We're checking your payment";
     body = (
       <>
         You sent{" "}
@@ -270,19 +271,21 @@ function PayNowPanel({
     title = "Pay your deposit";
     body = (
       <>
-        Send <Amount n={depositDue} /> by GCash or bank transfer, then upload your receipt. Your analysis starts once we confirm it.
+        Your analysis starts once we confirm it.
       </>
     );
-    action = uploadButton("Upload Receipt", true);
+    payAmount = depositDue;
+    action = uploadButton("I've Paid", true);
   } else if (delivered) {
     yourTurn = true;
     title = "Pay the rest to get your files";
     body = (
       <>
-        Your files are ready. Send the remaining <Amount n={s.remainingBalance} />, then upload your receipt to unlock the downloads.
+        Your files are ready. Pay the rest to unlock the downloads.
       </>
     );
-    action = uploadButton("Upload Receipt", true);
+    payAmount = s.remainingBalance;
+    action = uploadButton("I've Paid", true);
   } else {
     eyebrow = "Deposit confirmed";
     title = "Nothing to pay right now";
@@ -291,7 +294,7 @@ function PayNowPanel({
         The rest, <Amount n={s.remainingBalance} />, is due when your files are ready. You can pay it early if you like.
       </>
     );
-    action = uploadButton("Pay the Rest Early", false);
+    action = uploadButton("Paid Early? Tell Us", false);
   }
 
   return (
@@ -307,13 +310,227 @@ function PayNowPanel({
         </div>
         {rejected && !s.isFullyPaid ? (
           <div className="rounded-[2px] border border-white/[0.08] border-l-2 border-l-[#CC6600] bg-white/[0.02] px-4 py-3">
-            <p className="text-xs font-medium text-white/50">We couldn&apos;t accept your last receipt</p>
+            <p className="text-xs font-medium text-white/50">We couldn&apos;t confirm your last payment</p>
             <p className="mt-1 text-sm leading-relaxed text-white/85">{rejected.rejectionReason || "Please check the amount and reference number, then send it again."}</p>
           </div>
         ) : null}
-        {action ? <div className="flex flex-wrap gap-2 border-t border-white/[0.06] pt-4">{action}</div> : null}
+        {yourTurn ? (
+          <SendTo amount={payAmount} intakeId={project.intakeId} channels={channels} messagesHref={messagesHref} onCopied={onCopied} />
+        ) : null}
+        {action ? (
+          <div className="flex flex-col gap-3 border-t border-white/[0.06] pt-4 sm:flex-row sm:items-center sm:justify-between">
+            {yourTurn ? <p className="text-[13px] text-white/55">Sent it? Tap I&apos;ve Paid and type the reference number.</p> : null}
+            {action}
+          </div>
+        ) : null}
+        {!yourTurn && action ? (
+          <details className="text-[13px] text-white/60">
+            <summary className="cursor-pointer select-none text-white/70 hover:text-white">Where to send a payment</summary>
+            <div className="mt-3">
+              <SendTo amount={s.remainingBalance} intakeId={project.intakeId} channels={channels} messagesHref={messagesHref} onCopied={onCopied} />
+            </div>
+          </details>
+        ) : null}
       </div>
     </Panel>
+  );
+}
+
+/** Our accounts, right where the client decides to pay: the amount, where to send it, and what to write. */
+function SendTo({
+  amount,
+  intakeId,
+  channels,
+  messagesHref,
+  onCopied,
+}: {
+  amount: number;
+  intakeId: string;
+  channels: PaymentChannelDetails[] | null;
+  messagesHref: string;
+  onCopied: (what: string) => void;
+}) {
+  const [openAccount, setOpenAccount] = useState<PaymentChannelDetails | null>(null);
+  if (!channels || channels.length === 0) {
+    return (
+      <div className="rounded-[2px] border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-[13px] text-white/70">
+        We couldn&apos;t load our payment details.{" "}
+        <Link href={messagesHref} className="text-white underline decoration-white/30 underline-offset-4 hover:decoration-white">
+          Message your team
+        </Link>{" "}
+        and we&apos;ll send them to you.
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-[13px] font-medium text-white">
+        Send <Amount n={amount} /> to {channels.length === 1 ? "this account" : "one of these accounts"}
+      </p>
+      <ul className={`grid grid-cols-1 gap-3 ${channels.length > 1 ? "md:grid-cols-2" : ""}`}>
+        {channels.map((c) => {
+          const gcash = c.id === "GCASH";
+          return (
+            <li key={`${c.id}-${c.accountNumber}`} className="flex gap-4 rounded-[2px] border border-white/[0.1] bg-white/[0.02] p-4">
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-white/60">
+                  {gcash ? <DeviceMobile size={14} weight="fill" /> : <Bank size={14} weight="fill" />}
+                  {gcash ? "GCash" : c.institution || "Bank transfer"}
+                </p>
+                <p className="mt-2 break-all font-mono text-lg font-semibold tracking-wide text-white">{c.accountNumber}</p>
+                <p className="mt-0.5 text-[13px] text-white/70">
+                  {c.accountName}
+                  {!gcash && c.branchOrProvider ? <span className="text-white/45">{` · ${c.branchOrProvider}`}</span> : null}
+                </p>
+                {clientNote(c.notes) ? <p className="mt-1.5 text-xs leading-relaxed text-white/50">{clientNote(c.notes)}</p> : null}
+                <CopyButton
+                  value={c.accountNumber.replace(/[\s-]/g, "")}
+                  label={gcash ? "Copy Number" : "Copy Account Number"}
+                  copiedLabel="Copied"
+                  onCopy={() => onCopied(gcash ? "GCash number" : "Account number")}
+                  className="mt-3"
+                />
+              </div>
+              {c.qrImageUrl && resolveStoredFileUrl(c.qrImageUrl) ? (
+                <button
+                  type="button"
+                  onClick={() => setOpenAccount(c)}
+                  className="group flex shrink-0 flex-col items-center gap-1 self-start text-[11px] text-white/50 transition-colors hover:text-white"
+                  aria-label={`Show the ${gcash ? "GCash" : c.institution || "bank"} QR code and payment details`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={resolveStoredFileUrl(c.qrImageUrl)!}
+                    alt=""
+                    className="h-24 w-24 rounded-[2px] bg-white object-contain p-1.5 transition-transform group-hover:scale-[1.03] group-active:scale-[0.97]"
+                  />
+                  Tap to enlarge
+                </button>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+      <div className="flex flex-col gap-2 rounded-[2px] border border-white/[0.08] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[13px] text-white/70">
+          Write your study ID <span className="font-mono text-white">{intakeId}</span> in the message so we can match your payment.
+        </p>
+        <CopyButton value={intakeId} label="Copy ID" copiedLabel="Copied" variant="badge" onCopy={() => onCopied("Study ID")} className="shrink-0 self-start whitespace-nowrap sm:self-auto" />
+      </div>
+      {openAccount ? (
+        <PayAccountModal account={openAccount} amount={amount} intakeId={intakeId} onCopied={onCopied} onClose={() => setOpenAccount(null)} />
+      ) : null}
+    </div>
+  );
+}
+
+/** One account, big: the QR to scan or save, and everything needed to send the payment, each with a copy button. */
+function PayAccountModal({
+  account: c,
+  amount,
+  intakeId,
+  onCopied,
+  onClose,
+}: {
+  account: PaymentChannelDetails;
+  amount: number;
+  intakeId: string;
+  onCopied: (what: string) => void;
+  onClose: () => void;
+}) {
+  const gcash = c.id === "GCASH";
+  const qrUrl = c.qrImageUrl ? resolveStoredFileUrl(c.qrImageUrl) : null;
+  const [saving, setSaving] = useState(false);
+  const where = gcash ? "GCash" : c.institution || "your bank";
+  const ext = (c.qrImageUrl || "").toLowerCase().match(/\.(png|jpe?g)$/)?.[1] ?? "png";
+
+  const save = async () => {
+    if (!c.qrImageUrl || saving) return;
+    setSaving(true);
+    try {
+      await triggerFileDownload(c.qrImageUrl, `JAXIS-${gcash ? "GCash" : (c.institution || "Bank").replace(/[^a-z0-9]+/gi, "-")}-QR.${ext}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const Row = (props: Omit<PayRowProps, "onCopied">) => <PayRow {...props} onCopied={onCopied} />;
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={gcash ? "Pay with GCash" : `Pay by bank transfer (${c.institution || "bank"})`}
+      description="Send the amount below, then tap I've Paid and type the reference number."
+      size="lg"
+      footer={
+        <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+          {qrUrl ? (
+            <Button variant="outline" size="sm" onClick={save} loading={saving} className="gap-1.5">
+              <DownloadSimple size={14} weight="bold" />
+              Save QR Code
+            </Button>
+          ) : (
+            <span />
+          )}
+          <Button variant="primary" size="sm" onClick={onClose}>
+            Done
+          </Button>
+        </div>
+      }
+    >
+      <div className={`grid grid-cols-1 gap-6 font-sans ${qrUrl ? "sm:grid-cols-[minmax(0,240px)_1fr]" : ""}`}>
+        {qrUrl ? (
+          <div className="flex flex-col items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={qrUrl}
+              alt={`QR code for ${c.accountName}`}
+              className="aspect-square w-full max-w-[240px] rounded-[2px] bg-white object-contain p-3"
+            />
+            <p className="text-center text-xs leading-relaxed text-white/50">
+              {gcash
+                ? "In GCash, tap Pay QR and scan this. On this phone? Save it, then use Upload QR."
+                : "Scan it in your bank app, or save it and upload it there."}
+            </p>
+          </div>
+        ) : null}
+        <div className="flex flex-col">
+          <Row label="Amount to send" value={<Amount n={amount} />} copy={String(Math.round(amount * 100) / 100)} copyLabel="Amount" />
+          <Row label={gcash ? "GCash number" : "Account number"} value={c.accountNumber} copy={c.accountNumber.replace(/[\s-]/g, "")} copyLabel={gcash ? "GCash number" : "Account number"} mono />
+          <Row label={gcash ? "Name shown in GCash" : "Account name"} value={c.accountName} />
+          {!gcash ? <Row label="Bank" value={`${c.institution || "Bank"}${c.branchOrProvider ? ` · ${c.branchOrProvider}` : ""}`} /> : null}
+          <Row label="Write this in the message" value={intakeId} copy={intakeId} copyLabel="Study ID" mono />
+          {clientNote(c.notes) ? <p className="pt-3 text-xs leading-relaxed text-white/55">{clientNote(c.notes)}</p> : null}
+          <p className="pt-3 text-xs leading-relaxed text-white/45">
+            Check that the name {where} shows matches before you send.
+          </p>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+interface PayRowProps {
+  label: string;
+  value: React.ReactNode;
+  copy?: string;
+  copyLabel?: string;
+  mono?: boolean;
+  onCopied: (what: string) => void;
+}
+
+function PayRow({ label, value, copy, copyLabel, mono = false, onCopied }: PayRowProps) {
+  return (
+    <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] py-3 last:border-b-0">
+      <div className="min-w-0">
+        <p className="text-xs text-white/45">{label}</p>
+        <p className={`mt-0.5 break-all text-white ${mono ? "font-mono text-base font-semibold tracking-wide" : "text-sm"}`}>{value}</p>
+      </div>
+      {copy ? (
+        <CopyButton value={copy} label="Copy" copiedLabel="Copied" variant="badge" onCopy={() => onCopied(copyLabel || label)} className="mt-1 shrink-0" />
+      ) : null}
+    </div>
   );
 }
 

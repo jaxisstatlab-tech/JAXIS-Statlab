@@ -1,3 +1,4 @@
+import { paymentAccountProblems, referenceProblem } from "@/lib/payment-rules";
 import { z } from "zod";
 
 export const PaymentTypeEnum = z.enum([
@@ -20,15 +21,18 @@ export const SubmitPaymentProofSchema = z.object({
     .refine((val) => !isNaN(val) && val > 0, {
       message: "Amount deposited must be a valid positive amount in PHP.",
     }),
+  // Required: finance confirms the payment by finding this number in the JAXIS GCash or bank history.
   referenceNumber: z
     .string()
     .trim()
-    .min(3, "Reference/Transaction number is required (at least 3 characters).")
-    .max(100, "Reference number cannot exceed 100 characters."),
-  receiptFilePath: z
-    .string()
-    .min(1, "Receipt document or screenshot is required."),
-  receiptFileName: z.string().min(1, "File name is required."),
+    .max(60, "Type only the reference number.")
+    .superRefine((val, ctx) => {
+      const problem = referenceProblem(val);
+      if (problem) ctx.addIssue({ code: z.ZodIssueCode.custom, message: problem });
+    }),
+  // Optional since 2026-10-02: a screenshot helps finance find the payment but isn't proof on its own.
+  receiptFilePath: z.string().trim().min(1).optional(),
+  receiptFileName: z.string().trim().min(1).optional(),
   receiptFileSize: z.number().optional(),
 });
 
@@ -53,20 +57,31 @@ export type RejectPaymentInput = z.infer<typeof RejectPaymentSchema>;
 
 export const PaymentChannelConfigSchema = z.object({
   id: PaymentMethodEnum,
-  name: z.string().min(1, "Name is required"),
-  badge: z.string().default("VERIFIED"),
-  accountName: z.string().min(1, "Account name is required"),
-  accountNumber: z.string().min(1, "Account number is required"),
-  institution: z.string().min(1, "Institution name is required"),
-  branchOrProvider: z.string().default("Official Merchant"),
-  notes: z.string().default(""),
-  qrImageUrl: z.string().nullable().optional(),
+  name: z.string().trim().max(100).default(""),
+  badge: z.string().trim().max(60).default(""),
+  accountName: z.string().trim().min(1, "Account name is required").max(100),
+  accountNumber: z.string().trim().min(1, "Account number is required").max(40),
+  institution: z.string().trim().max(100).default(""),
+  branchOrProvider: z.string().trim().max(100).default(""),
+  notes: z.string().trim().max(300).default(""),
+  qrImageUrl: z.string().trim().max(500).nullable().optional(),
   isEnabled: z.boolean().default(true),
 });
 
-export const UpdatePaymentChannelsSchema = z.object({
-  channels: z.array(PaymentChannelConfigSchema),
-});
+// Same checks as the editor (paymentAccountProblems), so a wrong number can't be saved by any route.
+export const UpdatePaymentChannelsSchema = z
+  .object({
+    channels: z.array(PaymentChannelConfigSchema),
+  })
+  .superRefine((value, ctx) => {
+    for (const problem of paymentAccountProblems(value.channels)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: problem.message,
+        path: problem.index >= 0 ? ["channels", problem.index, problem.field] : ["channels"],
+      });
+    }
+  });
 
 export type PaymentChannelConfigInput = z.infer<typeof PaymentChannelConfigSchema>;
 export type UpdatePaymentChannelsInput = z.infer<typeof UpdatePaymentChannelsSchema>;
@@ -154,6 +169,14 @@ export interface FinanceOverviewData {
     completedStudiesCount: number;
   };
   receivables: StudyReceivableItem[];
+  /** Last 6 months, oldest first (e.g. "May" … "Oct"), with checked client payments and staff pay sent out per month. */
+  months?: string[];
+  collectedByMonth?: number[];
+  paidOutByMonth?: number[];
+  /** Checked client payments by how they were sent (all time). */
+  byMethod?: Array<{ method: string; count: number; amount: number }>;
+  /** Receipts clients sent that nobody has checked yet. */
+  pendingProofAmount?: number;
 }
 
 export type ActionResponse<T> =

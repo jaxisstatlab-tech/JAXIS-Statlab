@@ -4,6 +4,7 @@ import { r2Client, generateR2StorageKey } from "@/lib/storage";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { env } from "@/lib/env";
 import type { FileCategory } from "@prisma/client";
+import { canVerifyPayment } from "@/lib/payment-rules";
 
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
 
@@ -31,6 +32,14 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File | null;
     const category = (formData.get("category") as FileCategory) || "RESEARCH_DOCUMENT";
     const studyId = (formData.get("studyId") as string) || "general";
+
+    // Payment QR codes are shown to every client, so only the people who manage payment accounts may upload them.
+    if (String(studyId) === "SYSTEM_CONFIG" && !canVerifyPayment(session.user.role)) {
+      return NextResponse.json(
+        { success: false, error: { code: "FORBIDDEN", message: "Only finance, admin, or the CEO can upload payment QR codes." } },
+        { status: 403 }
+      );
+    }
 
     if (!file) {
       return NextResponse.json(

@@ -8,6 +8,7 @@ import { getAppSetting, isOfflineDev, setAppSetting, SETTING_KEYS } from "@/lib/
 import { checkUploadedFilePaths } from "@/lib/upload-claims";
 import { revalidatePath, unstable_cache } from "next/cache";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
+import { bucketByMonth, monthWindow } from "@/lib/month-buckets";
 import {
   SubmitPaymentProofSchema,
   VerifyPaymentSchema,
@@ -23,11 +24,13 @@ import {
   assertCanVerifyPayment,
   calculateProjectBalance,
   paymentAmountProblem,
+  normalizeReference,
   type PaymentChannelDetails,
   OFFICIAL_PAYMENT_CHANNELS,
 } from "@/lib/payment-rules";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
-import type { PaymentStatus, ProjectStatus } from "@prisma/client";
+import type { PaymentStatus, ProjectStatus, RoleName } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { assertStudyAccess } from "@/lib/access-control";
 import fs from "fs";
 import path from "path";
@@ -138,11 +141,12 @@ export async function submitPaymentProof(
 
   const parsed = SubmitPaymentProofSchema.safeParse(input);
   if (!parsed.success) {
+    const refIssue = parsed.error.issues.find((i) => i.path[0] === "referenceNumber");
     return {
       success: false,
       error: {
         code: "VALIDATION_ERROR",
-        message: "Invalid payment proof submission parameters.",
+        message: refIssue?.message || "Some payment details are missing. Please check the form and try again.",
         fieldErrors: parsed.error.flatten().fieldErrors,
       },
     };
@@ -154,15 +158,17 @@ export async function submitPaymentProof(
     paymentType,
     paymentMethod,
     amountSubmitted,
-    referenceNumber,
     receiptFilePath,
-    receiptFileName,
     receiptFileSize,
   } = parsed.data;
+  // Stored without spaces or dashes, so the same payment can't be sent twice in a different format.
+  const referenceNumber = normalizeReference(parsed.data.referenceNumber);
+  const receiptFileName = parsed.data.receiptFileName || receiptFilePath?.split("/").pop() || "receipt";
 
-  // The receipt must be the client's own fresh upload, never a path that is already someone else's.
+  // A screenshot is optional. When there is one, it must be the client's own fresh upload, never a path that
+  // is already someone else's.
   const isStaffSubmitter = session.user.role === "ADMIN" || session.user.role === "CEO";
-  if (!isStaffSubmitter) {
+  if (receiptFilePath && !isStaffSubmitter) {
     const uploadCheck = await checkUploadedFilePaths([receiptFilePath], session.user.id, "receipt");
     if (!uploadCheck.ok) {
       return { success: false, error: { code: "INVALID_FILE", message: uploadCheck.message } };
@@ -216,6 +222,21 @@ export async function submitPaymentProof(
           throw new PaymentAmountError(amountProblem);
         }
 
+        // One payment, one reference number. A rejected payment frees its number, so a client whose payment
+        // wasn't found can send the same (correct) number again.
+        const reused = await tx.payment.findFirst({
+          where: {
+            paymentStatus: { not: "REJECTED" },
+            OR: [{ referenceNumber }, { referenceNumber: parsed.data.referenceNumber.trim() }],
+          },
+          select: { id: true },
+        });
+        if (reused) {
+          throw new PaymentAmountError(
+            "This reference number was already used for another payment. Check the number in your GCash or bank text."
+          );
+        }
+
         // Create Payment record
         const payment = await tx.payment.create({
           data: {
@@ -227,13 +248,9 @@ export async function submitPaymentProof(
             balancePaidTotal: 0,
             referenceNumber,
             paymentStatus: "PROOF_SUBMITTED",
-            proofs: {
-              create: {
-                filePath: receiptFilePath,
-                fileName: receiptFileName,
-                fileSize: receiptFileSize,
-              },
-            },
+            ...(receiptFilePath
+              ? { proofs: { create: { filePath: receiptFilePath, fileName: receiptFileName, fileSize: receiptFileSize } } }
+              : {}),
           },
           include: {
             proofs: true,
@@ -388,16 +405,18 @@ export async function submitPaymentProof(
       verifiedAt: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      proofs: [
-        {
-          id: `proof_dev_${Date.now()}`,
-          paymentId: `pay_dev_${Date.now()}`,
-          filePath: receiptFilePath,
-          fileName: receiptFileName,
-          fileSize: receiptFileSize,
-          uploadedAt: new Date().toISOString(),
-        },
-      ],
+      proofs: receiptFilePath
+        ? [
+            {
+              id: `proof_dev_${Date.now()}`,
+              paymentId: `pay_dev_${Date.now()}`,
+              filePath: receiptFilePath,
+              fileName: receiptFileName,
+              fileSize: receiptFileSize,
+              uploadedAt: new Date().toISOString(),
+            },
+          ]
+        : [],
     };
 
     devPayments.push(newPayment);
@@ -1202,7 +1221,8 @@ export async function getFinanceReceivablesSummary(): Promise<ActionResponse<Fin
   try {
     // Only the fields the summary reads (full project and user rows were loaded before, password hashes
     // included), and the pending-proof count runs alongside instead of after.
-    const [projects, pendingProofCount] = await withDbTimeout(
+    const { keys, labels, start } = monthWindow(new Date());
+    const [projects, pendingProofCount, pendingProofSum, recentPaid, paidOut, methodGroups] = await withDbTimeout(
       Promise.all([
         db.project.findMany({
           select: {
@@ -1231,13 +1251,30 @@ export async function getFinanceReceivablesSummary(): Promise<ActionResponse<Fin
           orderBy: { updatedAt: "desc" },
         }),
         db.payment.count({ where: { paymentStatus: "PROOF_SUBMITTED" } }),
+        db.payment.aggregate({ where: { paymentStatus: "PROOF_SUBMITTED" }, _sum: { amountSubmitted: true } }),
+        db.payment.findMany({
+          where: { paymentStatus: { in: ["VERIFIED", "FULLY_PAID"] }, verifiedAt: { gte: start } },
+          select: { amountSubmitted: true, verifiedAt: true },
+        }),
+        db.payout.findMany({
+          where: { payoutStatus: "DISBURSED", disbursedAt: { gte: start } },
+          select: { payoutAmount: true, disbursedAt: true },
+        }),
+        db.payment.groupBy({
+          by: ["paymentMethod"],
+          where: { paymentStatus: { in: ["VERIFIED", "FULLY_PAID"] } },
+          _count: { _all: true },
+          _sum: { amountSubmitted: true },
+        }),
       ])
     );
 
-    const devPayments = readPersistedDevPayments();
+    // Sample studies and payments from local files belong to offline development only, never to real totals.
+    const offline = isOfflineDev();
+    const devPayments = offline ? readPersistedDevPayments() : [];
     let devProjects: DevProjectRecord[] = [];
     try {
-      if (fs.existsSync(DEV_PROJECTS_FILE)) {
+      if (offline && fs.existsSync(DEV_PROJECTS_FILE)) {
         devProjects = JSON.parse(fs.readFileSync(DEV_PROJECTS_FILE, "utf-8"));
       }
     } catch {
@@ -1250,11 +1287,16 @@ export async function getFinanceReceivablesSummary(): Promise<ActionResponse<Fin
     let totalContractVolume = 0;
     let completedStudiesCount = 0;
 
-    // Process DB projects
+    // Process DB projects. A study only has a price once the client accepts one; before that it's not money
+    // anyone owes (it used to be counted as ₱4,650 each). Stopped studies owe nothing more.
+    const STOPPED: ProjectStatus[] = ["CANCELLED", "EXPIRED", "HALTED", "ETHICAL_BREACH"];
     for (const p of projects) {
       const quote = p.quotations[0];
-      const totalContract = quote ? Math.max(Number(quote.totalAmount), Number(quote.basePrice)) : 4650;
-      const downpaymentReq = quote ? Number(quote.downpaymentRequired) : totalContract * 0.5;
+      if (!quote && p.payments.length === 0) continue;
+      const totalContract = quote ? Number(quote.totalAmount) : 0;
+      const downpaymentReq = quote ? Number(quote.downpaymentRequired) : 0;
+      const stopped = STOPPED.includes(p.masterStatus);
+      if (stopped && p.payments.length === 0) continue;
 
       const verifiedDbTotal = p.payments.reduce((sum, pay) => sum + Number(pay.amountSubmitted), 0);
       const verifiedDevTotal = devPayments
@@ -1263,7 +1305,7 @@ export async function getFinanceReceivablesSummary(): Promise<ActionResponse<Fin
         .reduce((sum, dp) => sum + dp.amountSubmitted, 0);
 
       const totalPaid = verifiedDbTotal + verifiedDevTotal;
-      const remainingBalance = Math.max(0, totalContract - totalPaid);
+      const remainingBalance = stopped ? 0 : Math.max(0, totalContract - totalPaid);
       const isOverpaid = totalContract > 0 && totalPaid > totalContract;
       const overpaidAmount = isOverpaid ? totalPaid - totalContract : 0;
       const isDownpaymentCleared = totalPaid >= downpaymentReq && downpaymentReq > 0;
@@ -1271,7 +1313,7 @@ export async function getFinanceReceivablesSummary(): Promise<ActionResponse<Fin
 
       totalVaultCleared += totalPaid;
       totalOutstandingReceivables += remainingBalance;
-      totalContractVolume += totalContract;
+      if (!stopped) totalContractVolume += totalContract;
       if (isFullyPaid || p.masterStatus === "CLOSED" || p.masterStatus === "DELIVERED") {
         completedStudiesCount++;
       }
@@ -1285,8 +1327,8 @@ export async function getFinanceReceivablesSummary(): Promise<ActionResponse<Fin
         id: p.id,
         intakeId: p.intakeId,
         researchTitle: p.researchTitle,
-        clientName: p.client?.fullName || "Lead Researcher",
-        university: p.client?.clientProfile?.institutionSchool || "State University",
+        clientName: p.client?.fullName || "",
+        university: p.client?.clientProfile?.institutionSchool || "",
         masterStatus: p.masterStatus,
         totalContractAmount: totalContract,
         totalPaidAmount: totalPaid,
@@ -1353,9 +1395,31 @@ export async function getFinanceReceivablesSummary(): Promise<ActionResponse<Fin
           completedStudiesCount,
         },
         receivables,
+        months: labels,
+        collectedByMonth: bucketByMonth(
+          keys,
+          recentPaid.filter((x) => x.verifiedAt).map((x) => ({ at: x.verifiedAt!, value: Number(x.amountSubmitted) }))
+        ),
+        paidOutByMonth: bucketByMonth(
+          keys,
+          paidOut.filter((x) => x.disbursedAt).map((x) => ({ at: x.disbursedAt!, value: Number(x.payoutAmount) }))
+        ),
+        byMethod: methodGroups
+          .map((g) => ({ method: g.paymentMethod ?? "UNKNOWN", count: g._count._all, amount: Number(g._sum.amountSubmitted ?? 0) }))
+          .sort((a, b) => b.amount - a.amount),
+        pendingProofAmount: Number(pendingProofSum._sum.amountSubmitted ?? 0),
       },
     };
   } catch (err) {
+    // Only offline development falls back to the sample files; on the live site a failed read says so
+    // instead of showing sample figures as if they were real.
+    if (!isOfflineDev()) {
+      console.error("[getFinanceReceivablesSummary] Couldn't read payments:", err);
+      return {
+        success: false,
+        error: { code: "FETCH_ERROR", message: "We couldn't load the payment totals. Please try again." },
+      };
+    }
     console.warn("Using dev fallback for getFinanceReceivablesSummary:", err);
     const devPayments = readPersistedDevPayments();
     let devProjects: DevProjectRecord[] = [];
@@ -1483,21 +1547,51 @@ export async function updatePaymentChannels(
       success: false,
       error: {
         code: "VALIDATION_ERROR",
-        message: "Invalid payment channel parameters.",
+        message: parsed.error.issues[0]?.message || "Check the payment accounts and try again.",
         fieldErrors: parsed.error.flatten().fieldErrors,
       },
     };
   }
 
   try {
-    const updatedChannels = parsed.data.channels as PaymentChannelDetails[];
+    // Standard labels so every screen shows the same names; the editor only asks for what clients need.
+    const updatedChannels: PaymentChannelDetails[] = parsed.data.channels.map((c) => {
+      const gcash = c.id === "GCASH";
+      const institution = gcash ? "GCash" : c.institution;
+      return {
+        ...c,
+        institution,
+        name: gcash ? "GCash" : institution,
+        badge: c.badge || "",
+        branchOrProvider: c.branchOrProvider || "",
+        qrImageUrl: c.qrImageUrl || null,
+      };
+    });
+    const previous = await getPaymentChannels().then((r) => (r.success ? r.data : [])).catch(() => []);
     // Saved in the database: the file this used to write can't change on the server, so edits were lost.
     if (isOfflineDev()) writePersistedPaymentChannels(updatedChannels);
-    else await setAppSetting(SETTING_KEYS.paymentChannels, updatedChannels, session.user.id);
+    else {
+      await setAppSetting(SETTING_KEYS.paymentChannels, updatedChannels, session.user.id);
+      // Changing where clients send money is sensitive, so every change is kept in the activity log.
+      const summary = (list: PaymentChannelDetails[]) =>
+        list.map((c) => `${c.institution || c.id} ${c.accountNumber}${c.isEnabled === false ? " (off)" : ""}`).join("; ");
+      await db.auditLog
+        .create({
+          data: {
+            actorId: session.user.id,
+            actorRole: session.user.role as RoleName,
+            action: "PAYMENT_ACCOUNTS_CHANGED",
+            oldValue: summary(previous).slice(0, 1000),
+            newValue: summary(updatedChannels).slice(0, 1000),
+            metadata: { before: previous, after: updatedChannels } as unknown as Prisma.InputJsonValue,
+          },
+        })
+        .catch((err) => console.error("[updatePaymentChannels] Couldn't write the activity log:", err));
+    }
 
     revalidatePath("/dashboard/finance");
     revalidatePath("/dashboard/finance/payments");
-    revalidatePath("/dashboard/client");
+    revalidatePath("/dashboard/client", "layout");
 
     return {
       success: true,

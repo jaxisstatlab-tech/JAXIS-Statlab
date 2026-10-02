@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { getR2UploadUrl, generateR2StorageKey } from "@/lib/storage";
 import { env } from "@/lib/env";
 import type { FileCategory } from "@prisma/client";
+import { canVerifyPayment } from "@/lib/payment-rules";
 
 // Strict 15MB file size ceiling
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
@@ -29,6 +30,14 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { fileName, fileSize, fileType, category = "RESEARCH_DOCUMENT", studyId = "general" } = body;
+
+    // Payment QR codes are shown to every client, so only the people who manage payment accounts may upload them.
+    if (String(studyId) === "SYSTEM_CONFIG" && !canVerifyPayment(session.user.role)) {
+      return NextResponse.json(
+        { success: false, error: { code: "FORBIDDEN", message: "Only finance, admin, or the CEO can upload payment QR codes." } },
+        { status: 403 }
+      );
+    }
 
     if (!fileName || typeof fileName !== "string") {
       return NextResponse.json(
@@ -79,14 +88,15 @@ export async function POST(req: NextRequest) {
     const storageKey = generateR2StorageKey(category, studyId, fileName);
     const contentType = fileType || "application/octet-stream";
 
-    // Offline dev only: no real storage. Send the upload to a sink that keeps nothing.
+    // Offline dev only: no real storage. The sink keeps the file in a local folder under the same key,
+    // so the file viewer can show it again (payment QR codes, receipts) while testing offline.
     if (process.env.NODE_ENV !== "production" && process.env.JAXIS_OFFLINE === "1") {
       return NextResponse.json({
         success: true,
         data: {
-          uploadUrl: "/api/dev/upload-sink",
-          storageKey: `offline/${storageKey}`,
-          publicUrl: `offline/${storageKey}`,
+          uploadUrl: `/api/dev/upload-sink?key=${encodeURIComponent(storageKey)}`,
+          storageKey,
+          publicUrl: storageKey,
           fileName,
           fileSize,
           fileCategory: category,

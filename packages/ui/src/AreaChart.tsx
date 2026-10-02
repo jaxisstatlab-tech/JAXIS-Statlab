@@ -156,9 +156,6 @@ export function AreaChart({
               );
             })}
           </div>
-          <span className="text-[11px] text-white/40 font-mono hidden sm:inline-block">
-            Scale: Units
-          </span>
         </div>
       )}
       <div style={{ height, width: "100%" }}>

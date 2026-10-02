@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 import { auth } from "@/lib/auth";
 import { db, withDbTimeout } from "@/lib/db";
 import { clientFilesUnlocked } from "@/lib/delivery-rules";
+import { readDevUpload } from "@/lib/dev-uploads";
 
 /**
  * Resilient File Streaming & Preview Proxy
@@ -234,7 +235,23 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Offline development: files live in the local .dev-uploads folder (see src/lib/dev-uploads.ts).
+  const local = readDevUpload(storageKey);
+
   try {
+    if (local) {
+      const ext = storageKey.toLowerCase().split(".").pop() ?? "";
+      const types: Record<string, string> = { pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp" };
+      return new NextResponse(new Uint8Array(local), {
+        status: 200,
+        headers: {
+          "Content-Type": types[ext] ?? "application/octet-stream",
+          "X-Content-Type-Options": "nosniff",
+          "Cache-Control": "private, max-age=60",
+        },
+      });
+    }
+
     const s3Res = await r2Client.send(
       new GetObjectCommand({
         Bucket: env.R2_BUCKET_NAME,

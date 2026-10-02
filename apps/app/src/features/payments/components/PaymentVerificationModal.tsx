@@ -7,15 +7,13 @@ import {
   FormTextarea,
   StatusBadge,
   LoadingState,
+  CopyButton,
 } from "@repo/ui";
 import {
   IconCheck,
   IconX,
   IconLoader2,
   IconAlertCircle,
-  IconBuildingBank,
-  IconDeviceMobile,
-  IconUser,
   IconDownload,
   IconReceipt,
   IconExternalLink,
@@ -43,6 +41,8 @@ export function PaymentVerificationModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  // Confirming needs the payment to be seen in the JAXIS account, not just on a screenshot.
+  const [foundInAccount, setFoundInAccount] = useState(false);
 
   useEffect(() => {
     setImageError(false);
@@ -50,6 +50,7 @@ export function PaymentVerificationModal({
     setIsRejecting(false);
     setRejectionReason("");
     setErrorMessage(null);
+    setFoundInAccount(false);
   }, [payment, open]);
 
   if (!payment) return null;
@@ -106,78 +107,68 @@ export function PaymentVerificationModal({
   };
 
   const isReadOnly = payment.paymentStatus !== "PROOF_SUBMITTED";
+  const sentAt = new Date(payment.createdAt).toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const REJECT_REASONS = [
+    "We couldn't find this payment in our account. Please check the reference number and send it again.",
+    "The amount we received doesn't match. Please message us so we can sort it out.",
+    "This reference number belongs to a different payment. Please check your GCash or bank text.",
+  ];
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={isReadOnly ? "Deposit Receipt & Audit Inspection" : "Deposit Receipt Verification Desk"}
-      description={
-          isReadOnly
-          ? `Audit cleared deposit details and archived payment proof for Study ${payment.project?.intakeId || payment.projectId}.`
-          : `Inspect deposit details and archived payment proof for Study ${payment.project?.intakeId || payment.projectId}.`
-      }
+      title={isReadOnly ? "Payment details" : "Check this payment"}
+      description={payment.project?.intakeId ? `Study ${payment.project.intakeId}` : undefined}
       size="2xl"
     >
       <div className="flex flex-col gap-6 w-full">
-        {/* ── Transaction Dossier ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-[2px] bg-[#0A0A18] border border-white/10">
-          <div className="flex flex-col gap-1">
-            <span className="font-mono text-xs text-white/50 uppercase tracking-wider">
-              Research Study
-            </span>
-            <span className="font-mono text-xs text-[#FFA040] font-semibold">
-              {payment.project?.intakeId || payment.projectId}
-            </span>
-            <span className="font-sans text-xs text-white font-medium line-clamp-1">
-              {payment.project?.researchTitle || "Research Study"}
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="font-mono text-xs text-white/50 uppercase tracking-wider">
-              Lead Researcher
-            </span>
-            <span className="font-sans text-xs text-white font-medium flex items-center gap-1.5">
-              <IconUser size={14} stroke={1.5} className="text-white/60" />
-              {payment.project?.client.fullName || "Client"}
-            </span>
-            <span className="font-sans text-xs text-white/50">
-              {payment.project?.client.clientProfile?.institutionSchool ||
-                payment.project?.client.email}
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="font-mono text-xs text-white/50 uppercase tracking-wider">
-              Claimed Amount & Method
-            </span>
-            <div className="text-lg font-sans font-bold text-emerald-400">
-              <MoneyDisplay amount={payment.amountSubmitted} />
+        {/* ── What was sent ── */}
+        <dl className="grid grid-cols-2 gap-4 rounded-[2px] border border-white/10 bg-[#0A0A18] p-4 font-sans text-[13px] sm:grid-cols-4">
+          {payment.project ? (
+            <div className="col-span-2 min-w-0">
+              <dt className="text-white/45">Study</dt>
+              <dd className="mt-0.5 truncate text-white">
+                <span className="font-mono">{payment.project.intakeId}</span>
+                {payment.project.client?.fullName ? <span className="text-white/60">{` · ${payment.project.client.fullName}`}</span> : null}
+              </dd>
             </div>
-            <span className="font-sans text-xs text-white/70 flex items-center gap-1.5">
-              {payment.paymentMethod === "GCASH" ? (
-                <IconDeviceMobile size={14} stroke={1.5} className="text-[#CC6600]" />
-              ) : (
-                <IconBuildingBank size={14} stroke={1.5} className="text-[#CC6600]" />
-              )}
-              {payment.paymentMethod === "GCASH" ? "GCash Corporate" : "Bank Transfer"} (
-              {payment.paymentType})
-            </span>
+          ) : null}
+          <div>
+            <dt className="text-white/45">Paying</dt>
+            <dd className="mt-0.5 text-white">
+              {payment.paymentType === "DOWNPAYMENT" ? "Deposit" : payment.paymentType === "BALANCE" ? "The rest" : "In full"}
+              {" by "}
+              {payment.paymentMethod === "GCASH" ? "GCash" : "bank transfer"}
+            </dd>
           </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="font-mono text-xs text-white/50 uppercase tracking-wider">
-              Official Reference No.
-            </span>
-            <span className="font-mono text-xs font-bold text-white bg-white/[0.04] px-2 py-1 rounded-[2px] border border-white/10 w-fit">
-              {payment.referenceNumber || "N/A"}
-            </span>
-            <div className="mt-1">
+          <div>
+            <dt className="text-white/45">Status</dt>
+            <dd className="mt-1">
               <StatusBadge status={payment.paymentStatus} />
-            </div>
+            </dd>
           </div>
-        </div>
+          {isReadOnly ? (
+            <>
+              <div>
+                <dt className="text-white/45">Amount</dt>
+                <dd className="mt-0.5 font-semibold text-white">
+                  <MoneyDisplay amount={payment.amountSubmitted} />
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="text-white/45">Reference number</dt>
+                <dd className="mt-0.5 truncate font-mono text-white">{payment.referenceNumber || "—"}</dd>
+              </div>
+            </>
+          ) : null}
+        </dl>
 
         {/* ── Status Notice Banner ── */}
         {(payment.paymentStatus === "VERIFIED" || payment.paymentStatus === "FULLY_PAID") && (
@@ -206,11 +197,54 @@ export function PaymentVerificationModal({
           </div>
         )}
 
+        {/* ── How to confirm (only while waiting) ── */}
+        {!isReadOnly && (
+          <div className="flex flex-col gap-3 rounded-[2px] border border-white/10 bg-white/[0.02] p-4 font-sans text-[13px] text-white/75">
+            <p className="text-sm font-semibold text-white">Before you confirm, find this payment in the JAXIS account</p>
+            <ol className="flex list-decimal flex-col gap-1.5 pl-5">
+              <li>
+                Open the {payment.paymentMethod === "GCASH" ? "JAXIS GCash app (Transactions)" : "JAXIS bank account history"}.
+                Don&apos;t go by the screenshot alone; it can be edited.
+              </li>
+              <li>
+                <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 align-middle">
+                  Reference number matches:
+                  {payment.referenceNumber ? (
+                    <CopyButton value={payment.referenceNumber} label={payment.referenceNumber} copiedLabel="Copied" variant="badge" />
+                  ) : (
+                    <span className="text-white/45">none given</span>
+                  )}
+                </span>
+              </li>
+              <li>
+                Amount is exactly{" "}
+                <span className="font-semibold text-white">
+                  <MoneyDisplay amount={payment.amountSubmitted} />
+                </span>
+                , received around {sentAt}.
+              </li>
+              <li>
+                From another bank into GCash, the reference can differ. Then match the amount, time, sender name, and the
+                study ID {payment.project?.intakeId ? <span className="font-mono text-white">{payment.project.intakeId}</span> : null} in the message.
+              </li>
+            </ol>
+            <label className="mt-1 flex cursor-pointer items-start gap-2.5 rounded-[2px] border border-white/10 px-3 py-2.5 text-white/85">
+              <input
+                type="checkbox"
+                checked={foundInAccount}
+                onChange={(e) => setFoundInAccount(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-[#CC6600]"
+              />
+              <span>I found this payment in the JAXIS account and it matches.</span>
+            </label>
+          </div>
+        )}
+
         {/* ── Receipt Preview Canvas ── */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <span className="font-mono text-xs text-white/60 uppercase tracking-wider">
-              Uploaded Transaction Receipt
+            <span className="font-sans text-xs text-white/60">
+              Client&apos;s screenshot (optional)
             </span>
             {proof && (
               <div className="flex items-center gap-3">
@@ -301,8 +335,8 @@ export function PaymentVerificationModal({
               )}
             </div>
           ) : (
-            <div className="p-8 text-center text-white/40 font-sans text-xs border border-white/10 rounded-[2px]">
-              No receipt document attached to this payment record.
+            <div className="p-6 text-center text-white/50 font-sans text-xs border border-white/10 rounded-[2px]">
+              No screenshot sent. Check the reference number in the JAXIS {payment.paymentMethod === "GCASH" ? "GCash" : "bank"} history.
             </div>
           )}
         </div>
@@ -310,13 +344,27 @@ export function PaymentVerificationModal({
         {/* ── Rejection Reason Drawer ── */}
         {isRejecting && (
           <div className="flex flex-col gap-2 p-4 rounded-[2px] bg-red-500/[0.06] border border-red-500/20">
+            <div className="flex flex-wrap gap-1.5">
+              {REJECT_REASONS.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRejectionReason(r)}
+                  className={`rounded-[2px] border px-2.5 py-1 text-left font-sans text-[12px] transition-colors ${
+                    rejectionReason === r ? "border-white/40 bg-white/[0.08] text-white" : "border-white/10 text-white/65 hover:border-white/25 hover:text-white"
+                  }`}
+                >
+                  {r.split(".")[0]}
+                </button>
+              ))}
+            </div>
             <FormTextarea
-              label="Rejection Reason"
-              placeholder="e.g. Reference number does not match bank settlement records, or receipt image is unreadable."
+              label="Why it wasn't confirmed"
+              placeholder="Pick a reason above or write your own"
               required
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              helper="This explanation will be shown directly to the Lead Researcher so they can re-upload."
+              helper="The client sees this and can send their payment details again."
             />
           </div>
         )}
@@ -364,7 +412,7 @@ export function PaymentVerificationModal({
                     className="text-red-400 hover:text-red-300"
                   >
                     <IconX size={14} stroke={2} />
-                    <span>Reject Proof</span>
+                    <span>Not Found</span>
                   </Button>
 
                   <Button
@@ -372,18 +420,19 @@ export function PaymentVerificationModal({
                     variant="primary"
                     size="sm"
                     onClick={handleVerify}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !foundInAccount}
+                    title={foundInAccount ? undefined : "Tick the box once you've found the payment in the JAXIS account"}
                     className="gap-2"
                   >
                     {isSubmitting ? (
                       <>
                         <IconLoader2 size={16} stroke={2.5} className="animate-spin text-white/90" />
-                        <span>Verifying...</span>
+                        <span>Confirming...</span>
                       </>
                     ) : (
                       <>
                         <IconCheck size={16} stroke={2.5} />
-                        <span>Authorize &amp; Clear Funds →</span>
+                        <span>Confirm Payment</span>
                       </>
                     )}
                   </Button>
@@ -405,7 +454,7 @@ export function PaymentVerificationModal({
                   ) : (
                     <>
                       <IconX size={16} stroke={2} />
-                      <span>Confirm Rejection</span>
+                      <span>Send Back to Client</span>
                     </>
                   )}
                 </Button>

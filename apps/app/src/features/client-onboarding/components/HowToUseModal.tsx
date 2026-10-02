@@ -33,7 +33,7 @@ const STEPS: Array<{ title: string; body: string; note?: string; tracker?: (type
   },
   {
     title: "Pay your deposit",
-    body: "Pay by GCash or bank transfer and upload your receipt. DataCheck and Start are paid in full; larger plans pay a deposit first and the rest on delivery.",
+    body: "Pay by GCash or bank transfer, then send us the reference number. DataCheck and Start are paid in full; larger plans pay a deposit first and the rest on delivery.",
     note: "Your deposit is held until your study passes our quality review.",
     tracker: "Deposit",
   },
