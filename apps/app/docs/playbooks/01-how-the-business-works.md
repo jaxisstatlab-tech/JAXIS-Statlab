@@ -35,13 +35,13 @@ STAGE 3: SOW CONTRACT & 50% ESCROW DEPOSIT
 ──────────────────────────────────────────
 • Client reviews and digitally signs the Statement of Work (SOW)
 • Client transfers 50% deposit via GCash or BDO/BPI Bank Transfer
-• Finance Officer verifies payment proof ────► Escrow locked in JAXIS Vault
+• Finance finds the payment by its reference number ────► Escrow locked in JAXIS Vault
         │
         ▼
 STAGE 4: EXPERT ASSIGNMENT & TIME TRACKING
 ──────────────────────────────────────────
 • Operations Admin assigns a qualified Lead Statistician
-• Specialist clocks in via topbar and begins data hygiene & model runs
+• Specialist begins data cleaning & model runs (hourly staff clock in first)
 • Specialist and Client communicate exclusively through the secure platform
         │
         ▼
@@ -62,7 +62,7 @@ STAGE 6: FINAL SETTLEMENT & DELIVERABLE RELEASE
         ▼
 STAGE 7: PAYDAY DISBURSEMENT (15th / 30th)
 ──────────────────────────────────────────
-• Payroll engine calculates specialist's study commission and duty hours
+• Payroll adds up study pay, salary, and clocked hours (hourly staff only)
 • Finance clicks 1-Click Copy and releases payment to staff GCash/Bank account
 • Official statement voucher generated for specialist's historical ledger
 ```

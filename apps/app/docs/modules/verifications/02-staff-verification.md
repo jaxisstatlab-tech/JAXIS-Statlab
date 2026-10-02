@@ -67,3 +67,21 @@ All 7 tasks and all acceptance criteria from the specification are satisfied. Ze
 
 **Module 02 (Expert Provisioning & Staff Management) is complete, fully verified, and passing all quality checks.**  
 The workspace is approved and ready for execution of **Module 03: Client Profile & Account**.
+
+---
+
+## 6. Re-check 2026-10-02: Staff Directory and deleting accounts (`fb9726b`)
+
+Run on the local test database (`npm run dev:localdb`), desktop 1440 and phone 390.
+
+| Check | Result |
+|---|---|
+| CEO opens a person's menu | View details, Put on leave, Suspend, Remove access and Delete account |
+| Admin opens a person's menu | Only View details, Put on leave and Suspend |
+| Delete a reviewer still on an unfinished study | Blocked; the button stays off |
+| Delete own account | Refused |
+| Delete a client while they are signed in | They are sent out of the dashboard and can't sign in again; their study still shows their name |
+| Add the deleted email again as staff | Works; one entry in the directory |
+| Add it a second time | "Email in use" message |
+| Unknown email in the delete window | Says it's free to use |
+| Phone 390 | Stacked list, no sideways scroll |

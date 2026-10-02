@@ -28,12 +28,15 @@ The Finance desk is responsible for the cash flow and treasury operations of JAX
 
 ## 2. Verifying Client Downpayments & Milestone Proofs
 
-1. Navigate to `/dashboard/finance`.
-2. Open the **Deposit Verification Queue**.
-3. Compare the client's uploaded screenshot with corporate bank transactions:
-   - Check Reference Number (e.g. `GCash Ref: 90218844102`).
-   - Check Exact Amount Received.
-4. Click **"Verify & Clear Escrow"** $\rightarrow$ The study status changes to `IN_PROGRESS`, unlocking the analysis workbench for the assigned statistician.
+1. Navigate to `/dashboard/finance` (the "Waiting for a check" card links to the queue).
+2. Open the payment ("Check this payment"). The client typed the reference number; a screenshot is there only if they added one.
+3. Find the payment in the JAXIS GCash or bank history:
+   - Reference number (e.g. `90218844102`).
+   - Exact amount, and a time close to what the client said.
+   - Bank to our GCash: the reference can differ, so match the amount, time and sender name.
+4. Tick **"I found this payment in the JAXIS account and it matches"**, then click **"Confirm Payment"**. The study moves on and the analyst can start. If you can't find it, click **"Not Found"** and pick a reason; the client sees it.
+
+**Our payment accounts** (where clients send money) are on Finance Overview → Payment accounts → Edit: GCash and bank accounts, the registered name, an optional QR code, and a "Shown to clients" switch. Every change is recorded in the activity log.
 
 ---
 
@@ -42,15 +45,17 @@ The Finance desk is responsible for the cash flow and treasury operations of JAX
 ### Step 1: Select Pay Period Cut-Off
 1. Navigate to `/dashboard/finance/payroll`.
 2. Use the top dropdown to pick the current cycle:
-   - **First Half (Days 1–15)**: Covers all duty hours and study completions between the 1st and 15th of the month.
-   - **Second Half (Days 16–End)**: Covers all duty hours and completions from the 16th to the end of the month.
+   - **First Half (Days 1–15)**: Covers clocked hours (hourly staff only) and studies delivered between the 1st and 15th.
+   - **Second Half (Days 16–End)**: Covers the 16th to the end of the month.
    - **Full Calendar Month**: For monthly consolidated audits.
-3. Click **"Run Selected Cycle"**.
+3. Click **"Generate Payslips"**.
 
 ### Step 2: System Automatic Calculation
 The payroll engine automatically executes the following formula for every active specialist:
 
-$$\text{Gross Pay} = \text{Pro-Rated Base Retainer} + (\text{Verified Duty Hours} \times \text{Hourly Rate}) + \text{Study Commissions} + \text{Bonuses}$$
+$$\text{Gross Pay} = \text{Salary for the period} + (\text{Clocked Hours} \times \text{Hourly Rate}) + \text{Study Pay} + \text{Allowance}$$
+
+Clocked hours count only for staff on Hourly Wage. A study counts once it's delivered in the period, paid in full, and has no open claim or refund, and it's paid only once.
 
 $$\text{Net Take-Home} = \text{Gross Pay} - \text{Mandatory & Custom Deductions}$$
 

@@ -25,16 +25,18 @@ As the CEO / Executive Director of JAXIS StatLab, your desk controls company com
 
 ## 2. Setting Compensation Models & Rate Matrices
 
-Go to `/dashboard/ceo/payroll` and select **Tab 1: Compensation Policy & Rate Matrix**.
+Go to **Payroll Settings** (`/dashboard/ceo/payroll`) → **Pay by role**, and click Edit on a role's card.
 
-The CEO can select from 4 standard pay structures for any organizational role:
+Pick one of 4 ways to pay that role:
 
-| Compensation Model | Description | Typical Use Case |
-| :--- | :--- | :--- |
-| **Fixed Base Retainer** | Fixed monthly pay split across semi-monthly cut-offs (e.g. ₱35,000/month $\rightarrow$ ₱17,500 on the 15th, ₱17,500 on the 30th). | Core full-time staff (Finance, Admin). |
-| **Commission Only** | Paid strictly as a percentage or flat fee per completed, QA-verified study deliverable. | Freelance/Adjunct Statisticians. |
-| **Hourly Duty** | Paid strictly based on verified clock-in/out attendance hours at a set hourly rate (e.g. ₱250/hr). | Lab assistants, junior analysts. |
-| **Hybrid Structure** | Combines a guaranteed monthly base with study commissions and hourly lab duty. | Senior Statisticians and QA Leads. |
+| Pay model | What they get | Time clock | Typical use |
+| :--- | :--- | :--- | :--- |
+| **Per Study** | A share of each delivered study, at the rates on Money & Pay Rates. | No clock-in | Analysts, reviewers |
+| **Monthly Salary** | The same pay every month (e.g. ₱35,000, paid ₱17,500 twice a month). | No clock-in | Finance, admin |
+| **Hourly Wage** | Their hourly rate for each clocked-in hour (e.g. ₱250/hr). | Uses the clock | Part-time helpers |
+| **Salary + Per Study** | A monthly salary plus study pay. | No clock-in | Senior analysts, reviewers |
+
+Only people on **Hourly Wage** use the time clock. For everyone else the clock shows "Clock in not needed", hours don't change their pay, and My HR has no timesheets. Each role card says in one sentence what that role gets.
 
 ---
 
@@ -42,17 +44,17 @@ The CEO can select from 4 standard pay structures for any organizational role:
 
 If a specific specialist negotiated a bespoke pay structure (for example, an expert Senior Biostatistician who receives ₱45,000 base + 15% commission instead of the standard rate):
 
-1. Navigate to **Tab 2: Active Specialist Roster & Pay Profiles**.
-2. Click **"Configure Pay Structure"** on the specialist's profile card.
-3. Toggle their compensation model, enter custom rates, and save.
-4. The payroll calculation engine will immediately use these custom parameters for all future cut-off calculations.
+1. Open **Pay per person**.
+2. Click **"Set Own Pay"** (or **"Edit"**) on their row.
+3. Pick their pay model, enter the amounts, check the "They get:" line, and click **"Save Their Pay"**.
+4. The next payslips use it. Their role's pay doesn't change. To undo, open it again and click **"Use Their Role's Pay"** (it asks for a second click).
 
 ---
 
 ## 4. Semi-Monthly Batch Approval & Audit
 
 On the 15th and 30th of each month, the CEO inspects the batch payroll calculations prepared by the system:
-1. Navigate to **Tab 3: Institutional Payslip Audit Ledger**.
-2. Filter by cycle (e.g., `August 2026 (1st Half)`).
-3. Review total company payout liabilities, gross earnings, and net take-home amounts.
-4. Click **"Approve"** on draft statements to authorize the Finance desk to disburse funds.
+1. Pick the pay period at the top and click **"Make Payslips"** (or let Finance do it).
+2. Open the **Payslips** tab.
+3. Check each payslip: hours (hourly staff only), studies and take-home pay. **View** opens the full payslip.
+4. Click **"Approve"** on payslips marked "Needs approval" so Finance can pay them. Approved and paid payslips are never recalculated.

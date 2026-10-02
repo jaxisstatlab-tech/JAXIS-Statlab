@@ -67,10 +67,14 @@ When you log in, your main screen displays the 4 core health cards of JAXIS Stat
 ### Screen 3: Setting Pay Rates & Commission Rules (`Settings`)
 
 1. Go to **"Payroll Settings"** in the sidebar.
-2. You have the authority to configure the team compensation rules:
-   - **Monthly Base Retainer:** Guaranteed monthly base pay for loyal team members.
-   - **Hourly Duty Rate:** Hourly compensation paid for logged work hours on the topbar timer.
-   - **Study Commission Split:** By default, specialists earn **60%** of the project package fee, QA earns **15%**, and company margin is **25%**. You can adjust this or give custom bonuses to senior specialists handling complex medical PhD papers.
+2. Under **Pay by role**, pick how each role is paid (Edit on the role's card):
+   - **Per Study:** a share of each delivered study, at the rates on **Money & Pay Rates**. No clock-in.
+   - **Monthly Salary:** the same pay every month. No clock-in.
+   - **Hourly Wage:** paid for clocked-in hours. Only people on Hourly Wage use the time clock.
+   - **Salary + Per Study:** a monthly salary plus study pay. No clock-in.
+   Each card says in one sentence what that role gets.
+3. Under **Pay per person**, give one person their own pay (for example a senior analyst with a higher share) without changing their role. "Use Their Role's Pay" undoes it.
+4. Study shares per package (what the analyst and reviewer get, and what JAXIS keeps) are set on **Money & Pay Rates**.
 
 ---
 

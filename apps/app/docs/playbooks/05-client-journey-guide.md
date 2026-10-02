@@ -43,9 +43,9 @@ Clients experience a transparent, predictable, and professional consulting workf
 3. Click **"Review & Sign Contract"** to digitally sign the legal Statement of Work (SOW).
 
 ### Step 3: Depositing the 50% Escrow Downpayment
-1. Select your preferred payment method (**GCash** or **BDO/BPI Corporate Bank Transfer**).
-2. Scan the official QR code or copy the account details provided on screen.
-3. Upload your payment screenshot and enter the transaction reference number.
+1. Open the study's **Payment** tab. It shows the amount and our GCash and bank accounts, each with a Copy button; tap a QR code to see it large or save it.
+2. Send the payment and write your study ID in the message.
+3. Click **"I've Paid"**, choose how you sent it, and type the reference number from GCash or your bank. Adding a screenshot is optional.
 4. Once Finance verifies the deposit, the funds are safely locked in escrow, and your assigned Lead Statistician starts analyzing your data immediately.
 
 ### Step 4: Reviewing Drafts & Receiving Final Deliverables

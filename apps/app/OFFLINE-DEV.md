@@ -81,7 +81,9 @@ Every account's password is `LocalTest123!`.
 - Sample data lives in local files that git ignores (`.dev-projects.json`, `.dev-quotations.json`, `.dev-sows.json`, `dev_data/payments.json`, `.dev-alerts.json`, `.dev-defenselab.json`, `.dev-messages.json`, `.dev-analysis.json`, `.dev-deliverables.json`, `.dev-disputes.json`, `.dev-revisions.json`). They are never committed and never touch the real database or file storage.
 - Offline mode builds into its own `.next-offline` folder, so it doesn't clash with `npm run dev`.
 - Live chat updates (instant push, "is typing") don't work offline. New messages still arrive within about 3 seconds.
-- Uploading or downloading files doesn't work offline (there's no storage). The file lists still show.
+- Files you upload offline (for example a payment QR in Finance → Payment accounts) are kept in the git-ignored `.dev-uploads/` folder and open through the normal file viewer, with the same permission checks. Files in the sample data were never uploaded, so they show in lists but don't open. Delete `.dev-uploads/` to clear them.
+- Saving settings offline writes to the shipped sample files (`dev_data/payment_channels.json`, `dev_data/payroll_configs.json`, `dev_data/package_rates.json`, `.dev-catalog.json`), and deleting a sample account writes to `.dev-users.json`. Don't commit those changes; undo them with `git checkout -- <file>` when you're done testing.
+- A sample account deleted from the CEO pages stays deleted (sign-in no longer falls back to the built-in list). Undo it by restoring `.dev-users.json` as above.
 - Good studies to open: **Study habits, sleep, and GWA…** (in analysis: workbench, review, chat) and **Financial literacy and saving habits…** (delivered: files, change requests).
 - **"Missing script: dev:offline"**: you're in the wrong folder. Run `cd app` from `apps`, then try again.
 - **Page shows old data or a 404 after big changes**: stop the server, delete the `.next-offline` folder, and start again.

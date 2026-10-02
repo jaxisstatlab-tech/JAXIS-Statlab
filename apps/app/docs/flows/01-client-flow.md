@@ -124,9 +124,9 @@ When you click **"+ Submit New Study Request"**, you will see a simple 3-step fo
 3. Once compiled, you will receive an alert: *"Your SOW is ready to review and sign"*.
 4. Click **"Sign Statement of Work Now →"**, review the contract terms, type your legal full name to sign, and click **"Sign & Execute Agreement"**.
 5. Click **"Pay Deposit"**:
-   - You will see our official **GCash QR Code** and **Bank Transfer details** (BDO / BPI).
-   - Send the 50% downpayment.
-   - Take a screenshot of the receipt and upload it with the reference number.
+   - The Payment tab shows the amount and our GCash and bank accounts, each with a Copy button. Tap a QR code to see it large and save it.
+   - Send the 50% downpayment, and write your study ID in the message.
+   - Click **"I've Paid"** and type the reference number from GCash or your bank. A screenshot is optional.
 6. **Your Money is 100% Protected:** Finance verifies the receipt and locks your deposit safely in the **JAXIS Escrow Vault**. It is never released to the specialist until our Senior QA Lead checks the math and passes your paper!
 
 ---
@@ -164,7 +164,7 @@ When you click **"+ Submit New Study Request"**, you will see a simple 3-step fo
 
 1. Once QA approves your study, you receive an alert: *"Your deliverables are ready!"*
 2. Inspect your watermarked preview to confirm your questions are answered.
-3. Pay the remaining 50% balance via GCash or Bank.
+3. Pay the remaining 50% balance via GCash or Bank, then click **"I've Paid"** and type the reference number.
 4. Click the green button: **"Download Deliverables"**.
 5. You receive:
    - **Summary Report (`.docx`):** Ready-to-use Chapter 4 write-up with formatted APA 7th tables.

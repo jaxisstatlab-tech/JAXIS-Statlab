@@ -7,7 +7,7 @@
 ## 1. Daily Specialist Routine
 
 As a JAXIS research specialist, your day consists of three core activities:
-1. **Clocking in** for your analysis shifts.
+1. **Clocking in** for your shifts, if you're paid by the hour.
 2. **Executing statistical consultations** and uploading APA deliverables.
 3. **Managing your HR profile** and reviewing your semi-monthly compensation vouchers.
 
@@ -16,19 +16,21 @@ As a JAXIS research specialist, your day consists of three core activities:
 │                          SPECIALIST DAILY WORKFLOW                          │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-  1. CLOCK IN VIA TOPBAR       2. ANALYSIS WORKBENCH       3. REGISTER PAYOUT INFO
+  1. CLOCK IN (HOURLY ONLY)    2. ANALYSIS WORKBENCH       3. REGISTER PAYOUT INFO
  ┌───────────────────────┐   ┌───────────────────────┐   ┌───────────────────────┐
- │ Click [▷ Clock In] in │   │ Run SPSS/R models,    │   │ Add your GCash, Maya, │
- │ top navigation when   │──►│ write APA 7th text, & │──►│ or Bank Account in    │
- │ starting lab shift    │   │ submit to Senior QA   │   │ the Staff HR Portal   │
+ │ Paid by the hour?     │   │ Run SPSS/R models,    │   │ Add your GCash, Maya, │
+ │ Clock In in the       │──►│ write APA 7th text, & │──►│ or Bank Account in    │
+ │ sidebar. Others skip. │   │ submit to Senior QA   │   │ the Staff HR Portal   │
  └───────────────────────┘   └───────────────────────┘   └───────────────────────┘
 ```
 
 ---
 
-## 2. Using the Topbar Live Timeclock
+## 2. Using the Time Clock (only if you're paid by the hour)
 
-- **Starting Work**: Click the green **`▷ Clock In`** button located at the top-right corner of any dashboard page.
+Only staff paid by the hour (Hourly Wage) use the time clock. If you're paid per study or a salary, the button reads **"Clock in not needed"** and is greyed out; your hours don't change your pay, and My HR shows your leave, payslips and payout details without timesheets. Skip this section.
+
+- **Starting Work**: Click **Clock In** in the sidebar (on phones, in the top bar).
 - **Live Elapsed Indicator**: While clocked in, the button pulses with an active timer (e.g., `● 03:42:15`) displaying your continuous shift duration.
 - **Ending Work**: Click **`■ Clock Out`** when concluding your session. The system records your total hours, auto-deducts lunch breaks, and credits your payable duty ledger.
 - **Shift Limit Safeguard**: Shifts automatically cap at 14 hours. If you accidentally forget to clock out, file a Missed Punch Correction in **Staff HR Portal $\rightarrow$ Attendance Corrections**.

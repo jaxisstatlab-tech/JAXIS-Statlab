@@ -133,7 +133,7 @@ enum SuspensionAction {
 
 ### Deleting an account (added 2026-10-02)
 
-The CEO can delete any account except their own and other CEO accounts from **CEO Overview → Delete an account** (`src/features/accounts/actions.ts`: `findAccountByEmail`, `deleteAccount`). The CEO types the email to confirm; a reason is optional.
+The CEO can delete any account except their own and other CEO accounts from **CEO Overview → Delete an account**, or from a person's menu in the **Staff Directory** (`src/features/accounts/actions.ts`: `findAccountByEmail`, `deleteAccount`). The CEO types the email to confirm; a reason is optional.
 
 - The row is kept, because studies, payments, payslips, messages and the audit trail point to it. The email changes to `removed-<id>@removed.jaxis.invalid` (`src/lib/account-removal.ts`), so the old address is free to add again (for example as staff). The password changes to an unknown one, status becomes `TERMINATED`, and phone and leave details are cleared. Saved payout details and password-reset links are deleted.
 - Open sessions end on the next page load (the layout and `requireRole` refuse `TERMINATED` accounts and changed passwords).
@@ -208,7 +208,7 @@ export const SpecialistLeaveRequestSchema = z.object({
 
 | Page | Route | Role | Description |
 |---|---|---|---|
-| Staff Roster | `/dashboard/admin/staff` | Admin, CEO | Table: name, role badge, status, specializations, active projects, actions |
+| Staff Directory | `/dashboard/admin/staff` | Admin, CEO | Filters (Everyone / Active / Asked for leave / On leave / Suspended / Access removed), role, search; cards Team / Analysts / Reviewers / Away or suspended; table with View and a menu (see §9) |
 | Staff Detail | `/dashboard/admin/staff/:id` | Admin, CEO | Profile card, specializations, suspension history, assignments |
 | Specialist Leave Approvals | `/dashboard/finance/leaves` | Finance & HR Officer, Admin | Live queue: pending submissions, justification review, 1-click approvals, leave roster |
 | Statistician Workbench | `/dashboard/statistician` | Statistician | Self-service leave request modal with reason presets & calendar pickers |
@@ -282,3 +282,15 @@ const seedStaffProfiles = [
 - [x] `npm run lint` → 0 warnings/errors
 - [x] `npm run build` → clean
 
+---
+
+## 9. Staff Directory (2026-10-02, `fb9726b`)
+
+`/dashboard/admin/staff`, for admins and for the CEO ("Staff Directory" in the sidebar), rebuilt in plain words:
+
+- The whole list loads once; filters (with counts), role and search (`/` to focus, Esc to clear) work on it, so the cards on top stay the same while filtering.
+- Table: initials, name and email, role in plain words (Analyst, Reviewer, Finance, Admin), skills, status (an orange dot only for a leave request), joined date, View and a menu. A stacked list on phones.
+- Details window: email with copy, phone, joined, leave dates, about, skills and suspension history.
+- Add Staff: each role option says what the role does. An email already in use says to delete that account first.
+- Menu: admins see View details, Put on leave and Suspend. **Remove access** and **Delete account** are CEO only (Remove access used to show for admins and then fail). Delete account follows the rules under "Deleting an account" (§3).
+- The viewer's role comes from the sign-in session, like the sidebar; the server actions still check the role. (It used to come from a profile lookup that fell back to "admin" when it failed, so the CEO could see only the admin menu.)

@@ -66,3 +66,21 @@ Module 18 delivers enterprise-grade duty tracking, missed punch adjustments, pay
 | Staff HR & People Operations Portal | `/dashboard/staff/hr` | All Internal Staff Roles |
 | HR Attendance Review Desk | `/dashboard/finance/attendance` | FINANCE_OFFICER, ADMIN, CEO |
 | CEO Institutional Ledger & Policy Desk | `/dashboard/ceo/attendance` | CEO, ADMIN |
+
+---
+
+## Re-check 2026-10-02: time clock only for hourly staff (`ae31f9e`)
+
+Run on the local test database (`npm run dev:localdb`), desktop 1440 and phone 390.
+
+| Check | Result |
+|---|---|
+| Analyst on Per Study: sidebar clock | Greyed "Clock in not needed"; tapping explains why |
+| Same analyst calls `clockIn` directly | Refused with `TIME_CLOCK_NOT_USED` |
+| Same analyst: My HR | Titled "My HR", note shown, no Timesheets or Overtime tabs, no correction button |
+| Same analyst opens `/dashboard/staff/attendance` | Sent to My HR |
+| CEO sets analysts to Hourly Wage ₱200 | Clock In appears; "My HR & Timeclock"; clock in and out work |
+| Staff Timesheets | Lists the two analysts under "Who uses the time clock"; tabs and search work |
+| Timesheets | No "study events" figures anywhere |
+
+Test changes were undone afterwards. Lint and type check clean on the touched files.

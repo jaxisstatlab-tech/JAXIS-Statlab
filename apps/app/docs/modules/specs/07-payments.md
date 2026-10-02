@@ -12,6 +12,8 @@
 - **Primary Objective:** Client uploads GCash or bank transfer payment proof. Finance Officer or Admin verifies. Partial (installment) payments are supported. Project activates after required downpayment clears. Full payment unlocks deliverable release (RULE_REL_01).
 - **Core Responsibilities:** `Payment` + `PaymentProof` models, proof upload, verification queue, balance tracking, 3-day pending expiry job.
 
+> **Since 2026-10-02 (`90e7d1d`):** the client sends the **reference number** of their GCash or bank transfer; the screenshot is optional. Our payment accounts are shown on the client's Payment tab, and finance edits them in "Payment accounts". See §10. Where this document says the client must upload a receipt, read it with that change.
+
 ---
 
 ## 2. Module Scope
@@ -259,3 +261,46 @@ const seedPayment = {
 - [ ] `npm run check-types` → 0 errors
 - [ ] `npm run lint` → 0 warnings/errors
 - [ ] `npm run build` → clean
+
+---
+
+## 10. Changes on 2026-10-02 (`90e7d1d`)
+
+### Where clients pay (client Payment tab)
+
+- `/dashboard/client/projects/[id]/payment` loads our payment accounts on the server. The "Pay your deposit" / "Pay the rest" card shows the amount, each account that is switched on (number in large type, registered name, bank and branch, QR if set, Copy that copies the number without dashes), the study ID to write in the message (with Copy), and "I've Paid". When nothing is due, the accounts are under "Where to send a payment". With no account set up, the card says so and links to Messages.
+- Tapping a QR opens a payment window: large QR, amount, number, registered name, bank and branch, study ID (each with Copy), "Save QR Code" and a one-line how-to.
+
+### Telling us about a payment (client)
+
+"I've Paid" opens "Tell us about your payment": what you paid (deposit or in full, only what is due), how you sent it (only the methods switched on), the reference number, and an optional "Add Screenshot" (PNG, JPG or PDF, up to 10 MB).
+
+Rules shared by the form and the server (`src/lib/payment-rules.ts`):
+
+| Rule | Detail |
+|---|---|
+| `normalizeReference` | Uppercase; spaces, dots, dashes and similar removed. "1002 984 182 91" and "100298418291" are the same |
+| `referenceProblem` | Letters and digits only, 6 to 30 of them |
+| Duplicate check (`submitPaymentProof`) | A reference already used on another payment is refused, unless that payment was rejected (so a client can resend a corrected number) |
+| Amount (`paymentAmountProblem`) | Only what is due: what's left of the deposit, or everything left; nothing while another payment is being checked |
+
+The payment is saved as `PROOF_SUBMITTED` with the reference. A `PaymentProof` row is created only when a screenshot is sent.
+
+### Checking a payment (finance, admin, CEO)
+
+"Check this payment" (`PaymentVerificationModal`) lists what to match in the JAXIS GCash or bank history: the reference (with Copy), the exact amount and time, and what to do for bank-to-GCash transfers where the reference can differ. **Confirm Payment stays off until "I found this payment in the JAXIS account and it matches" is ticked.** "Not Found" offers ready reasons the client sees.
+
+### Payment accounts (finance, admin, CEO)
+
+- Edited in Finance Overview → Payment accounts → Edit (`PaymentChannelSettingsModal`). Stored in `app_settings` under `payment_channels`; the shipped `dev_data/payment_channels.json` is read only until the first save, and is the store only in offline mode.
+- Each GCash or bank account: number, registered name, bank name and branch (banks), optional QR and note, a "Shown to clients" switch, Remove. Up to 10 accounts (`MAX_PAYMENT_ACCOUNTS`).
+- The same checks run in the window and on the server (`paymentAccountProblems`): GCash 11 digits starting 09; bank 6–20 digits and a bank name; a registered name; no account listed twice. A warning shows when no account is shown to clients.
+- Every save is written to the activity log as `PAYMENT_ACCOUNTS_CHANGED` with the old and new numbers.
+- Clients see saved changes at once. Stock notes that shipped with the app are not shown to clients (`clientNote`).
+
+### QR codes
+
+- PNG or JPG only. Uploads into the QR folder (`treasury/payments/SYSTEM_CONFIG/`, `PAYMENT_QR_FOLDER`) are allowed only for finance, admin and CEO, in both upload routes (`/api/upload/presigned`, `/api/upload`).
+- A saved QR must be a file in that folder (`isPaymentQrPath`); outside addresses and `..` are refused.
+- Any signed-in client can view the QR folder through `/api/files/preview`, but not another study's receipts.
+- Offline mode (`npm run dev:offline`) keeps uploads in the git-ignored `.dev-uploads/` folder under the same path (`src/lib/dev-uploads.ts`, `/api/dev/upload-sink`), and the file viewer serves them after its usual checks.

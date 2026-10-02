@@ -137,6 +137,8 @@ model FinancialLedger {
 
 > QA Lead payout: 10% of the Statistician payout (MVP flat rate — adjustable via config).
 
+> **Since 2026-10-02 (`62413e6`):** the rates in use are the ones saved on Money & Pay Rates, stored in `payout_rate_configs` (analyst %, reviewer % `qaRatePercent`, `mode` share or flat, flat amounts; empty = package default) and read through `getPackagePayoutRules` / `resolvePackagePayoutRule`. Every change is written to the audit log with old and new values. The table above is only the starting point.
+
 ---
 
 ## 5. RULE_PAY_01 Enforcement
@@ -191,14 +193,14 @@ export async function assertPayoutEligible(projectId: string): Promise<void> {
 
 | Page | Route | Role | Description |
 |---|---|---|---|
-| Finance & HR Control Center | `/dashboard/finance` | Finance & HR Officer | Receivables overview, downpayment clearances, and escrow vault status |
+| Finance Overview | `/dashboard/finance` | Finance & HR Officer, CEO | Money collected and owed, payments waiting for a check, staff pay sent, our payment accounts, client payments table (see §10) |
 | Specialist Leave Approvals | `/dashboard/finance/leaves` | Finance & HR Officer, Admin | Review leave requests, inspect justification paragraphs, approve/decline leave windows |
 | Deposit Verification Queue | `/dashboard/finance/payments` | Finance & HR Officer, Admin | Queue of pending client GCash / Bank Transfer payment proofs |
 | Staff Payroll & Payslips Desk | `/dashboard/finance/payroll` | Finance & HR Officer | Run monthly payroll cycles, audit itemized payslip statements, and record disbursements |
-| CEO Executive Payroll Policy | `/dashboard/ceo/payroll` | CEO | Executive compensation desk: configure role pay models, specialist overrides, and batch audit |
+| Payroll Settings | `/dashboard/ceo/payroll` | CEO | Pay by role, pay per person, pay schedule and payslips (see `19-payroll.md` §7) |
 | Disbursement Queue | `/dashboard/finance/payouts` | Finance & HR Officer, CEO | Pending/Approved payouts with disburse action and eligibility status |
 | Ledger | `/dashboard/finance/ledger` | Finance & HR Officer, CEO | Full ledger table with margin breakdown per project |
-| CEO Finance | `/dashboard/ceo/finance` | CEO | Executive summary + ledger + payout override |
+| Money & Pay Rates | `/dashboard/ceo/finance` | CEO | Revenue, profit, paid to staff, and pay rates and profit by package (edit rates; prices & packages) |
 | Statistician Payouts | `/dashboard/statistician/payouts` | Statistician | Own payout history: project, amount, rate, status |
 
 ---
@@ -268,3 +270,19 @@ const seedPayout = {
 - [x] `npm run check-types` → 0 errors
 - [x] `npm run lint` → 0 warnings/errors
 - [x] `npm run build` → clean
+
+---
+
+## 10. Finance Overview (2026-10-02, `90e7d1d`)
+
+`/dashboard/finance` (finance officers, and the CEO from "Finance & Payments") shows real numbers only:
+
+- **Cards:** Collected this month (change from last month and a 6-month chart), Still owed, Waiting for a check (total of payments to check, with a link), Paid to staff this month.
+- **Money in and out:** checked client payments vs staff pay sent, per month.
+- **Payment accounts:** exactly what clients see, Shown/Hidden, and Edit (see `07-payments.md` §10).
+- **How clients paid:** checked payments by GCash and bank.
+- **Leave requests** and the **Client payments** table (filters Waiting for deposit / Deposit paid / Paid in full / Paid too much; copy ID; paid-of-price bar; left to pay; status; Open; a stacked list on phones).
+
+Removed: the made-up cashflow chart, the fixed "Net inflow: Positive" badge, and a payment-channel split that was the study count times fixed percentages.
+
+`getFinanceReceivablesSummary` no longer counts a study without an accepted price as ₱4,650, skips stopped studies' balances, reads sample files only in offline mode, and returns an error when the database doesn't answer instead of showing sample figures. `FinanceOverviewData` gained optional `months`, `collectedByMonth`, `paidOutByMonth`, `byMethod` and `pendingProofAmount`.

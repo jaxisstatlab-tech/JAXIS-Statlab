@@ -7,10 +7,10 @@ Welcome to the team! As a Lead Statistician at JAXIS StatLab, your mission is to
 ## 1. Your Daily Routine (ASCII Flowchart)
 
 ```
-STEP 1: CLOCK IN ON THE TOPBAR TIMER
+STEP 1: CLOCK IN (ONLY IF YOU'RE PAID BY THE HOUR)
 ┌─────────────────────────────────────────────────────────┐
-│ • Click "Clock In" in the top-right corner of screen    │
-│ • Tracks your work hours for your paycheck              │
+│ • Click "Clock In" in the sidebar                       │
+│ • Paid per study or salary? You don't need to clock in  │
 └────────────────────────────┬────────────────────────────┘
                              │
                              ▼
@@ -50,17 +50,19 @@ STEP 5: SUBMIT TO SENIOR QA REVIEW
 
 ## 2. Step-by-Step Screen Guide
 
-### Step 1: Clocking In on the Topbar
+### Step 1: Clocking In (only if you're paid by the hour)
 
-Before starting your analysis work:
-1. Look at the top right of your screen (beside your name avatar).
-2. Click the **"Clock In"** button on the **Duty Clock Widget**:
+Only staff paid by the hour (Hourly Wage) use the time clock. If you're paid per study or a salary, the button reads **"Clock in not needed"** and is greyed out: your hours don't change your pay, and My HR has no timesheets. Skip to Step 2.
+
+If you are paid by the hour, before starting your work:
+1. Find the clock in the sidebar (on phones, in the top bar).
+2. Click **"Clock In"**:
    ```
    [ ⏰ Clock In ] ➔ Shows active timer: [ 🟢 Duty: 01h 24m ]
    ```
 3. When taking a meal break, click **"Start Break"**.
 4. When ending your shift, click **"Clock Out"**.
-5. **Why this matters:** Your tracked hours are multiplied by your hourly rate and added directly to your payday check alongside your study commissions!
+5. **Why this matters:** your clocked hours times your hourly rate are your pay for the period.
 
 ---
 

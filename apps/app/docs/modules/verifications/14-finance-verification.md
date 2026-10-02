@@ -136,3 +136,20 @@ model FinancialLedger {
 | Type Checking | `npm run check-types` | ✅ **0 errors across 5 workspace packages** |
 | Database Sync | `npx prisma db push` | ✅ **0 errors (Supabase in sync)** |
 | Data Seeding | `npx prisma db seed` | ✅ **Seeded rate configurations, financial ledgers, and milestone payouts** |
+
+---
+
+## 6. Re-check 2026-10-02: Finance Overview and pay rates
+
+Run on the local test database (`npm run dev:localdb`), as the CEO and as a finance officer, desktop 1440 and phone 390.
+
+| Check | Result |
+|---|---|
+| Finance Overview cards and charts | Built from checked payments and payslips only; no sample figures |
+| "Still owed" | A study without an accepted price is no longer counted as ₱4,650; stopped studies are left out |
+| Database not answering (live site) | An error is shown instead of sample figures |
+| Payment accounts panel | Matches what the client's Payment tab shows; Edit saves and the panel updates |
+| Client payments table | Filters, copy ID and Open work; stacked list at 390 px with no sideways scroll |
+| Money & Pay Rates: save 42% / 6% for DataCheck | Table and reload show 42% / 6% / JAXIS keeps 52% |
+| Rates over 100% | Refused |
+| Flat ₱2,600 / ₱500 | Saved and shown |

@@ -721,6 +721,16 @@
 - [x] Generated 8 section specification documents (`00-navigation-bar.md` through `07-footer-and-cta.md`) in `docs/marketing-web/`.
 - [x] Updated `apps/app/docs/README.md` and monorepo documentation portals to index the marketing web revamp suite.
 
+### Task 24 — Settings, Payroll and Payments That Work on the Live Site (2026-10-02)
+Page-by-page details and what was checked: `docs/tasks/premium-ui-revamp.md` notes 11–19.
+- [x] Pay rates, prices & packages and payment accounts save in the database (`payout_rate_configs` columns, new `app_settings` table) instead of files that can't change on the server (`62413e6`).
+- [x] Payslips and staff payout details saved in new `payslips` and `staff_payout_details` tables; payroll pays only for real clock-ins and delivered, fully paid studies, each study once (`841753d`). See `19-payroll.md`.
+- [x] The agreement is signed for JAXIS by the admin or CEO who prepared it (`9d0fbf2`).
+- [x] CEO Overview on real numbers; Staff Directory redesign; the CEO can delete an account to free its email (`fb9726b`). See `17-reporting.md` §11 and `02-staff.md`.
+- [x] Client Payment tab shows our GCash and bank accounts and QR; payments by reference number with the screenshot optional; finance must tick "I found this payment" to confirm; payment accounts editor with checks and an activity log entry; QR uploads limited to finance, admin and CEO; Finance Overview on real numbers (`90e7d1d`). See `07-payments.md` §10 and `14-finance.md` §10.
+- [x] Only staff paid by the hour use the time clock; Staff Timesheets rebuilt; made-up "study events" removed (`ae31f9e`). See `18-attendance.md` §8 and `19-payroll.md` §6.
+- [x] Payroll Settings rebuilt in the calm dashboard style (`ebd4822`). See `19-payroll.md` §7.
+
 ---
 
 ## Roadmap Status Matrix

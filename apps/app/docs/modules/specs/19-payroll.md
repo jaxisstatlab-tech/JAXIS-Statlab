@@ -27,6 +27,8 @@ Module 19 implements institutional compensation governance, dual-mandate separat
 
 > **Storage and pay rules (2026-10-02).** Payslips are stored in the `payslips` table (one per person per period, `payslipNumber` unique), payout details in `staff_payout_details`, and payroll settings in `app_settings` under `payroll_config`. The `dev_data` files are read only until the first save, and are the store only in offline mode. A payslip counts real clock-ins, and studies the person was assigned to that were delivered in the period, paid in full against the accepted price, and have no open claim or refund. Each study is paid once. Admin and finance get no study pay. Approved or paid payslips are never recalculated. `getPayslipById` and `getStaffPayoutDetails` return data only to the owner or to `FINANCE_OFFICER`, `CEO` and `ADMIN`.
 
+> **Time clock rule (2026-10-02, `ae31f9e`).** Only people paid by the hour (`HOURLY_DUTY`, "Hourly Wage") use the time clock. For them, payslips count clocked hours at their own rate, and each shift longer than 8.5 hours adds 1.5 overtime hours at 1.25x that rate (no fallback rate). For everyone else (`TIER_DELIVERABLE` "Per Study", `FIXED_SALARY` "Monthly Salary", `HYBRID` "Salary + Per Study", `PERCENTAGE_PER_STUDY`) hours never change pay: `hourlyDutyEarnings` and `overtimeEarnings` are 0 even if they have shifts on record. The person's own pay setting is checked first, then their role's. See §6. Where this document says hybrid pay includes an hourly duty rate, that no longer applies.
+
 ---
 
 ## 2. Module Scope & Feature Registry
@@ -178,3 +180,38 @@ export interface StaffPayslipDTO {
    - Zero emojis across all views.
 4. **Toast Notification Protocol**:
    - Standard toasts for settlement savings, batch payroll generation, 1-click clipboard copying, and treasury disbursements.
+
+---
+
+## 6. Time clock and pay models (2026-10-02)
+
+Shared helpers in `src/features/payroll/schemas.ts`:
+
+- `usesTimeClock(payModel)`: true only for `HOURLY_DUTY`.
+- `PAY_MODEL_OPTIONS`: the four choices shown in Payroll Settings, each with a one-line meaning: Per Study ("A share of each delivered study. No clock-in."), Monthly Salary, Hourly Wage ("Uses the time clock."), Salary + Per Study.
+- `payModelSummary(config)`: one plain sentence of what someone on a setting gets, for example "₱200 for each clocked-in hour, plus a ₱1,000 monthly allowance." Used on the role cards, the role editor and the "own pay" window, and saved as the role's note.
+
+`getTimeClockAccess()` (payroll actions) returns `{ enabled, payModel, reason }` for the signed-in person. It reads their own pay setting first, then their role's (cached with the payroll settings, tag `CACHE_TAGS.PAYROLL`). `reason` is a plain sentence shown to them, for example "You're paid per study, so you don't need to clock in. Hours don't change your pay."
+
+Where it is used:
+
+| Place | When the clock isn't used |
+|---|---|
+| `clockIn`, `fileAttendanceCorrection` (attendance actions) | Refused with `TIME_CLOCK_NOT_USED` and the reason |
+| `getActiveShift` | Returns `timeClock` so the sidebar clock knows |
+| Sidebar and phone-header clock (`DutyClockWidget`) | Greyed "Clock in not needed"; tapping shows the reason. Someone already clocked in can still clock out |
+| My HR (`/dashboard/staff/hr`) | Title "My HR", a short note, no Timesheets or Overtime tabs, no "File Overtime / Correction", no hours cards on the payslip; opens on Payslips |
+| `/dashboard/staff/attendance` | Redirects to My HR |
+| Staff Timesheets (`/dashboard/ceo/attendance`) | Lists only the people who do use the clock |
+| `generateBatchPayslips` | No hours, hourly pay or overtime |
+
+## 7. Payroll Settings page (`/dashboard/ceo/payroll`, 2026-10-02, `ebd4822`)
+
+Rebuilt in the calm dashboard style (neutral colours, one orange action, Phosphor fill icons, plain words):
+
+- **Top:** pay period picker and "Make Payslips"; four cards: Payroll, Paid out, Hours paid (hourly staff only), Studies paid.
+- **Pay by role:** the pay schedule (twice or once a month, the day the first half ends, pay within N working days, split salaries in half) and one card per role (Analysts, Reviewers, Finance, Admins) with the pay model, "Uses the time clock" or "No clock-in", the rate, the `payModelSummary` sentence and who changed it when. Edit opens the fields for that model with a live "They get:" line. For Per Study the rate shown is "Package rate" (the rates are on Money & Pay Rates, `/dashboard/ceo/finance`).
+- **Pay per person:** each person's pay and whether it comes from their role or their own setting. "Set Own Pay" (or "Edit") opens `SpecialistOverrideModal` ("{name}'s own pay"): pay model, amounts, the "They get:" line, an optional reason, and "Use Their Role's Pay", which asks for a second click (no browser confirm).
+- **Payslips:** number with copy, period, hours, studies, take-home, status (Needs approval / Approved, not paid yet / Paid), Approve and View.
+
+The old "Package Tier Key Rules" box showed fixed percentages instead of the saved rates and was removed.

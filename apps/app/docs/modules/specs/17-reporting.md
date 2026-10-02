@@ -207,6 +207,7 @@ Fields **deleted** on valid request:
 | Page | Route | Role | Description |
 |---|---|---|---|
 | Reports Home | `/dashboard/admin/reports` | Admin | Report type cards + date filter + PDF export |
+| CEO Overview | `/dashboard/ceo` | CEO | Real numbers only (see §11) |
 | CEO Reports | `/dashboard/ceo/reports` | CEO | All report types + financial overlay |
 | Finance Reports | `/dashboard/finance/reports` | Finance | Ledger export + payout report |
 | Archive | `/dashboard/admin/archive` | Admin, CEO | Searchable archive table (intake ID, client, package, date) |
@@ -283,3 +284,18 @@ const seedAuditLogs = [
 - [x] `npm run check-types` → 0 errors
 - [x] `npm run lint` → 0 errors
 - [x] `npm run build` → clean
+
+---
+
+## 11. CEO Overview (2026-10-02, `fb9726b`)
+
+`/dashboard/ceo` is built from real data only, loaded on the server (`src/features/ceo/overview.ts`, types in `overview-types.ts`, month buckets in `src/lib/month-buckets.ts`, Philippine time):
+
+- **Cards:** Collected this month (change from last month, 6-month chart), Still owed on studies underway, New studies this month (6-month chart), Delivered on time in the last 90 days (with the usual days to deliver).
+- **Money collected:** checked payments per month.
+- **Needs your attention:** late studies, payments to check, open claims, new requests, deletion requests, leave requests and unpaid payslips, each linking to its page; hidden when zero.
+- **Where studies are:** count per stage (7 stages).
+- **Studies table:** newest 200; filters All / Underway / Past due / Delivered / Stopped with counts; search (`/`, Esc); copy ID; due date with a late marker; paid of price; Open and Delete. A stacked list on phones.
+- **Delete an account:** see `02-staff.md` "Deleting an account".
+
+Removed made-up figures: "4.2 Days" turnaround, "99.2% on-time", "Gross Margin ~52%" and an invented revenue chart. Offline mode shows sample studies and zero money, with a note.

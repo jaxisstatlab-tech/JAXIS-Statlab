@@ -65,3 +65,26 @@ Module 07 implements the institutional payment ledger, client deposit submission
 
 With Module 07 complete and verified:
 - **Module 08: Expert Assignment & Workload (`08-assignment`)** is now unblocked and ready to start.
+
+---
+
+## 5. Re-check 2026-10-02: reference numbers, payment accounts and QR (`90e7d1d`)
+
+Run on the local test database (`npm run dev:localdb`) and the offline server, desktop 1440 and phone 390.
+
+| Check | Result |
+|---|---|
+| Client Payment tab with accounts set | Amount, accounts, copy buttons, study ID and "I've Paid" shown; no sideways scroll at 390 px |
+| Tap the QR | Payment window with QR, amount, number, name, study ID and "Save QR Code" |
+| Pay in full, study 4 (₱3,000) | ₱2,999 refused; ₱3,000 accepted; a second payment while one is being checked refused; confirmed → paid in full, study moves to Analysis |
+| Deposit (₱1,500) | ₱1,400 refused; ₱1,500 accepted and confirmed; the remaining ₱1,500 accepted and confirmed → paid in full |
+| References "abc", "12-34-5", "!!!123456" | Refused with plain messages |
+| Payment with no screenshot | Accepted; reference saved as `100298418291` |
+| Same reference on another study | Refused |
+| Reference from a rejected payment | Can be sent again |
+| Finance "Check this payment" | Confirm stays off until the box is ticked, then confirms |
+| Payment accounts editor | Short GCash number and a bank without a name refused (window and server); saved accounts appear on the client page; hidden ones disappear; `PAYMENT_ACCOUNTS_CHANGED` logged |
+| QR permissions | Client asking to upload a QR gets 403; finance and CEO get an upload link; client can view the QR folder but not another study's receipts; outside or `..` paths refused |
+| Offline QR upload | Saved under `.dev-uploads/treasury/payments/SYSTEM_CONFIG/`; shows in the editor and on the client page (200, image/png) |
+
+Not checked: a real QR upload to file storage on the live site (the local test setup has no storage).

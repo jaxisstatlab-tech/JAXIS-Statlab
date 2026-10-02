@@ -9,15 +9,15 @@ Welcome, Finance Officer! As the Finance & Payroll Manager at JAXIS StatLab, you
 ```
 STEP 1: CLIENT SENDS 50% DEPOSIT
 ┌─────────────────────────────────────────────────────────┐
-│ • Client sends money via GCash or BDO/BPI Bank          │
-│ • Client uploads screenshot of receipt                  │
+│ • Client sends money to a JAXIS GCash or bank account   │
+│ • Client types the reference number (photo optional)    │
 └────────────────────────────┬────────────────────────────┘
                              │
                              ▼
 STEP 2: FINANCE VERIFIES & LOCKS IN ESCROW VAULT
 ┌─────────────────────────────────────────────────────────┐
-│ • You open online bank or GCash to verify the funds     │
-│ • Click "Approve Payment"                               │
+│ • Find the payment in the JAXIS GCash or bank history   │
+│ • Tick "I found this payment", then Confirm Payment     │
 │ • Money is locked safely in the JAXIS Escrow Vault      │
 │ • Work is officially cleared to start!                  │
 └────────────────────────────┬────────────────────────────┘
@@ -25,7 +25,7 @@ STEP 2: FINANCE VERIFIES & LOCKS IN ESCROW VAULT
                              ▼
 STEP 3: CLIENT PAYS FINAL 50% BALANCE
 ┌─────────────────────────────────────────────────────────┐
-│ • You verify the second receipt                         │
+│ • You check the second payment the same way             │
 │ • Clean Word report unlocks for the client              │
 │ • Specialist's study commission is credited             │
 └────────────────────────────┬────────────────────────────┘
@@ -33,9 +33,9 @@ STEP 3: CLIENT PAYS FINAL 50% BALANCE
                              ▼
 STEP 4: PAYDAY RUN (15th & 30th OF THE MONTH)
 ┌─────────────────────────────────────────────────────────┐
-│ • Check staff clock-in hours from topbar timer          │
-│ • Click "Generate Payroll Cycle"                        │
-│ • System calculates: Base Pay + Hourly Pay + Study Fees │
+│ • Only staff paid by the hour have clock-in hours       │
+│ • Click "Generate Payslips" for the pay period          │
+│ • System adds: salary + hourly pay + study pay          │
 │ • Click "Copy Details" to send money to staff GCash/Bank│
 └─────────────────────────────────────────────────────────┘
 ```
@@ -57,12 +57,12 @@ When a student pays their deposit:
    │ JAXIS-5622 Ana Cruz   ₱6,000   102938475610   [View Slip] [Verify]  │
    └─────────────────────────────────────────────────────────────────────┘
    ```
-2. Click **"[View Slip]"** to see the student's payment screenshot.
-3. Open your company bank app (or GCash merchant portal) and verify:
-   - Did the money actually arrive?
-   - Does the Reference Number match?
-   - Is the amount correct (e.g. exactly ₱6,000)?
-4. If correct, click **"Approve & Clear Funds"**:
+2. Open the payment ("Check this payment"). The client typed a reference number; a screenshot is there only if they added one. Don't rely on the screenshot alone, since it can be edited.
+3. Open the JAXIS GCash or bank app and find the payment:
+   - Does the reference number match?
+   - Is the amount exactly right (e.g. ₱6,000), and the time close to what the client said?
+   - From a bank to our GCash, the reference can differ; match the amount, time and sender name instead.
+4. If you found it, tick **"I found this payment in the JAXIS account and it matches"**, then click **"Confirm Payment"** (it stays off until the box is ticked). If you can't find it, click **"Not Found"** and pick a reason; the client sees it and can send the right number:
    - The money is locked in the **JAXIS Escrow Vault**.
    - The Admin is now allowed to assign a statistician to start work!
    - The client receives an official email receipt.

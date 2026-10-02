@@ -94,3 +94,23 @@ Module 19 provides institutional payroll governance, executive compensation conf
 | Standardized KPI Card Component | `packages/ui/src/KpiCard.tsx` | Shared enterprise metric card with uppercase mono labels & bold mono values |
 | Payroll Server Actions | `apps/app/src/features/payroll/actions.ts` | Complete CRUD, calculation, batch generation, payout accounts, and disbursement logic |
 | Payroll Schemas & Types | `apps/app/src/features/payroll/schemas.ts` | Zod validators and TypeScript interfaces |
+
+---
+
+## 4. Re-check 2026-10-02: payroll in the database and the time clock rule
+
+Run on the local test database (`npm run dev:localdb`) through the real server actions and in the browser (desktop 1440 and phone 390).
+
+| Check | Result |
+|---|---|
+| First-half payroll: analyst with one delivered, fully paid study at 47% + ₱1,500 | ₱2,910 study pay, net ₱4,160 |
+| Reviewer on the same study at 5% + ₱500 | ₱650, net ₱1,900 |
+| Running the same period again | Same numbers; no study paid twice |
+| Approved payslip, then regenerate | Skipped unchanged, and the result says so |
+| Analyst opens own payslip / the reviewer's | Own opens; the reviewer's is refused |
+| Analyst on Per Study tries to clock in | Refused (`TIME_CLOCK_NOT_USED`); clock shows "Clock in not needed"; My HR has no timesheets |
+| CEO sets analysts to Hourly Wage ₱200 (real save) | Clock In appears; page becomes "My HR & Timeclock"; Staff Timesheets lists both analysts |
+| Full-month payroll after an 8-hour shift | Hourly analyst 8 h × ₱200 = ₱1,600; reviewer (Per Study) and admin/finance (salary) 0 hours, no overtime |
+| Payroll Settings page | Role cards, editor "They get:" line, own-pay window and Payslips tab work; no sideways scroll at 390 px |
+
+Test changes were undone afterwards. Lint and type check clean on the touched files.

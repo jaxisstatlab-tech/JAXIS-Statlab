@@ -12,6 +12,8 @@
 - **Primary Objective:** Provide automated, tamper-proof duty time tracking (Clock-In / Clock-Out) for internal staff roles (`STATISTICIAN`, `SENIOR_QA_LEAD`, `FINANCE_OFFICER`, `ADMIN`), with a structured self-service **Missed Punch / Attendance Correction** filing system for payroll settlement.
 - **Anti-Fraud & Governance Mandate:** Implements strict **Segregation of Duties (SoD)** so that no staff member (including the Finance & HR Officer) can approve their own time adjustments. Includes automated 14-hour runaway shift capping and a comprehensive **CEO Executive Audit Vault**.
 
+> **Who uses the time clock (2026-10-02, `ae31f9e`).** Only staff paid by the hour ("Hourly Wage", `HOURLY_DUTY` in Payroll Settings, either their own pay setting or their role's) clock in. For everyone else `clockIn` and `fileAttendanceCorrection` are refused with `TIME_CLOCK_NOT_USED`, the sidebar clock shows a greyed "Clock in not needed", and My HR hides timesheets and overtime. Hours never change their pay. Rule and helpers: `docs/modules/specs/19-payroll.md` §6. Where this document says every internal role clocks in, read it with this rule.
+
 ---
 
 ## 2. Module Scope
@@ -167,7 +169,7 @@ model AttendanceCorrectionRequest {
 | `POST` | `reviewAttendanceCorrection` | FINANCE_OFFICER, ADMIN, CEO | Authorize or reject adjustment (enforces SoD: requester != approver) |
 | `GET` | `getCeoAttendanceAuditVault` | CEO, ADMIN | Executive raw telemetry audit ledger + active policy configurations |
 | `GET` | `getCompanyAttendancePolicy` | Any internal staff | Retrieve active corporate labor & duty policy |
-| `POST` | `updateCompanyAttendancePolicy` | CEO | Executive update of weekend/holiday toggles, shift hours, meal breaks, and hourly rates |
+| `POST` | `updateCompanyAttendancePolicy` | CEO | Update weekend/holiday rules, set working hours, lunch break and automatic clock-out. Hourly rates are not set here; they live in Payroll Settings |
 | `GET` | `getMyHrPortalData` | Any internal staff | Comprehensive HR Hub data (Monthly calendar, leave balances, overtime log, itemized payslip) |
 
 ---
@@ -177,10 +179,10 @@ model AttendanceCorrectionRequest {
 | Page | Route | Role | Description |
 |---|---|---|---|
 | Topbar Duty Widget | Topbar header component | Internal Staff | Live active shift indicator, timer, and modal clock punch trigger |
-| My Timesheets & Attendance | `/dashboard/staff/attendance` | Internal Staff | Personal shift ledger, adjustment filing modal, and claimed status |
+| My Timesheets & Attendance | `/dashboard/staff/attendance` | Internal Staff (hourly) | Personal shift ledger, adjustment filing modal, and claimed status. Others are sent to My HR |
 | Staff HR & People Operations Portal | `/dashboard/staff/hr` | Internal Staff | Centralized hub with interactive monthly duty calendar, leave requests, overtime claims, and itemized payslips |
 | HR Attendance Review Desk | `/dashboard/finance/attendance` | Finance & HR Officer, Admin | Queue of pending missed punch submissions with deliverable verification |
-| CEO Institutional Ledger & Policy Controls | `/dashboard/ceo/attendance` | CEO | Dual-tab executive desk with raw punch telemetry ledger and dynamic corporate labor policy controls |
+| Staff Timesheets | `/dashboard/ceo/attendance` | CEO | Who uses the time clock, shifts, missed punches & overtime, and clock rules (see §8) |
 
 ---
 
@@ -207,3 +209,13 @@ model AttendanceCorrectionRequest {
 - [x] `npm run check-types` → 0 errors
 - [x] `npm run lint` → 0 warnings/errors
 - [x] `npm run build` → clean
+
+---
+
+## 8. Changes on 2026-10-02 (`ae31f9e`)
+
+- **Time clock only for hourly staff.** `getActiveShift` now returns `timeClock` (`{ enabled, payModel, reason }` from `getTimeClockAccess`). `DutyClockWidget` uses it: when the clock isn't used it shows a greyed "Clock in not needed" button; tapping it shows the reason as a toast. An open shift can still be clocked out.
+- **My HR (`/dashboard/staff/hr`).** For staff not paid by the hour: title "My HR", a short "You don't need to clock in" note, no Timesheets or Overtime tabs, no "File Overtime / Correction" button, no hours cards on the payslip, opens on Payslips. Hourly staff see "My HR & Timeclock" as before.
+- **`/dashboard/staff/attendance`** redirects staff who don't use the clock to My HR.
+- **No made-up activity.** The "study events" count on timesheets (shift minutes divided by 80) is removed everywhere. It wasn't real activity.
+- **Staff Timesheets (`/dashboard/ceo/attendance`), rebuilt in plain words:** "Who uses the time clock" (everyone on Hourly Wage, by role or own setting, with a link to Payroll Settings); cards for hours this month, on the clock now, shifts recorded and requests waiting; tabs Shifts (search with `/`, statuses On the clock / Done / Fixed by HR / Closed automatically, Phone or Computer), Missed punches & overtime (Waiting / Approved / Declined and who checked it) and Clock rules (weekends, holidays, set working hours, lunch break, automatic clock-out). The unused "Base Hourly Compute Rate" field is gone; hourly rates are set in Payroll Settings.

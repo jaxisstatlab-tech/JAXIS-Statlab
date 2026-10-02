@@ -63,20 +63,20 @@ The system divides authority into 6 distinct roles so that no single person can 
 
 ### A. The Client & Financial Pipeline
 1. **Intake to Quotation**: A client submits a research project at `/dashboard/client/projects/new`. Admin reviews the dataset and generates a pricing quotation based on complexity (e.g. Simple Regression vs Structural Equation Modeling).
-2. **Escrow Vault Security**: The client deposits a 50% downpayment via GCash or Bank Wire. The money is locked in the **JAXIS Escrow Vault**. Work does not begin until Finance verifies the payment proof.
+2. **Escrow Vault Security**: The client deposits a 50% downpayment via GCash or Bank Wire. The money is locked in the **JAXIS Escrow Vault**. Work does not begin until Finance finds the payment in the JAXIS GCash or bank history using the reference number the client typed.
 3. **Delivery & Final Balance**: When the analysis passes QA, the client pays the remaining 50% to unlock and download their official deliverable files.
 
 ### B. The Specialist Attendance & Labor Pipeline
-1. **1-Click Live Timeclock**: All staff members have an integrated live clock-in widget in the sidebar and mobile header. It tracks shifts with server timestamps and device telemetry.
+1. **1-Click Live Timeclock**: Staff paid by the hour (Hourly Wage) clock in from the sidebar or the phone header. It records shifts with server times and the device used. Staff paid per study or a salary don't clock in; their button reads "Clock in not needed".
 2. **Anti-Runaway Safety**: If an employee forgets to clock out, the system automatically caps the shift at 14 hours (`AUTO_CLOSED`) and prompts them to file a missed punch correction.
 3. **Shift Deductions**: Meal breaks (e.g., 60 minutes for shifts over 5 hours) are deducted automatically to calculate **Net Payable Duty Hours**.
 
 ### C. The Executive Compensation & Payroll Pipeline
 1. **CEO Policy Matrix**: The CEO sets company-wide compensation models for each role:
-   - **Fixed Base Retainer** (e.g. ₱35,000/mo)
-   - **Commission Only** (e.g. 50% per completed research study)
-   - **Hourly Duty** (e.g. ₱250/hr for lab shifts)
-   - **Hybrid Structure** (Base Salary + 10% Study Commission + Hourly Duty)
+   - **Per Study** (a share of each delivered study, at the package rates)
+   - **Monthly Salary** (e.g. ₱35,000/mo)
+   - **Hourly Wage** (e.g. ₱250/hr; the only model that uses the time clock)
+   - **Salary + Per Study** (a monthly salary plus study pay)
 2. **Semi-Monthly Settlement (Every 15 Days)**:
    - **1st Cut-Off**: Days 1 to 15 (50% base salary + first-half duty hours + first-half study completions).
    - **2nd Cut-Off**: Days 16 to End of Month (Remaining 50% base + second-half hours + second-half studies).
