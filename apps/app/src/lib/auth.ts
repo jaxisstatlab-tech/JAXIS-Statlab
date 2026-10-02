@@ -8,7 +8,7 @@ import type { RoleName, UserStatus } from "@prisma/client";
 import { db, withDbTimeout } from "@/lib/db";
 import { ipFrom, isLoginThrottled, recordAuthEvent } from "@/lib/auth-throttle";
 import { LoginSchema } from "@/features/auth/schemas";
-import { DEV_USERS, getDevUserByEmail } from "@/lib/mock-data/users.data";
+import { getDevUserByEmail, getDevUsers } from "@/lib/mock-data/users.data";
 import { authConfig as baseAuthConfig } from "@/lib/auth.config";
 import { ensureFreshAccountNotifications } from "@/features/notifications/actions";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
@@ -127,7 +127,7 @@ export const authConfig: NextAuthConfig = {
             }
 
             // Dev password fallback check for demo presets or dev environments
-            const devFallback = getDevUserByEmail(normalizedEmail) || DEV_USERS[normalizedEmail];
+            const devFallback = getDevUserByEmail(normalizedEmail);
             if (!isValidPassword && allowDevLogins && devFallback && devFallback.password === password) {
               isValidPassword = true;
             }
@@ -188,7 +188,7 @@ export const authConfig: NextAuthConfig = {
 
         // 2. Demo Presets & Development Fallback (Handles DB cold starts / offline demo testing)
         if (allowDevLogins) {
-          const devUser = getDevUserByEmail(normalizedEmail) || DEV_USERS[normalizedEmail];
+          const devUser = getDevUserByEmail(normalizedEmail);
           if (devUser && devUser.password === password) {
             if (devUser.status === "SUSPENDED") {
               throw new LoginError("account_suspended");
@@ -446,7 +446,8 @@ export async function requireRole(...roles: RoleName[]) {
   const allowDevLogins = devLoginsAllowed();
 
   if (allowDevLogins && session.user.email) {
-    const devUser = getDevUserByEmail(session.user.email) || DEV_USERS[session.user.email];
+    // Looked up by the sign-in email, so a deleted account (kept there, locked) ends its open session.
+    const devUser = getDevUsers()[session.user.email.toLowerCase().trim()];
     if (devUser) {
       if (devUser.status === "SUSPENDED") throw new Error("ACCOUNT_SUSPENDED");
       if (devUser.status === "TERMINATED") throw new Error("ACCOUNT_TERMINATED");

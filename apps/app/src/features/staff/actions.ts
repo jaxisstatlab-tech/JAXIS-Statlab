@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { db, withDbTimeout } from "@/lib/db";
 import { requireRole, auth } from "@/lib/auth";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
+import { REMOVED_EMAIL_DOMAIN, isRemovedAccountEmail } from "@/lib/account-removal";
 import {
   ProvisionStaffSchema,
   SuspendStaffSchema,
@@ -225,6 +226,8 @@ const fetchCachedStaffRosterRaw = unstable_cache(
             },
           },
           ...(status !== "ALL" ? { status: status as UserStatus } : {}),
+          // Deleted accounts keep their history but leave the directory.
+          NOT: { email: { endsWith: `@${REMOVED_EMAIL_DOMAIN}` } },
           ...(search.trim()
             ? {
                 OR: [
@@ -310,7 +313,7 @@ export async function getStaffRoster(
 
     const devUsers = Object.values(getDevUsers());
     const roster: StaffListItem[] = devUsers
-      .filter((u) => targetRoles.includes(u.role))
+      .filter((u) => targetRoles.includes(u.role) && !isRemovedAccountEmail(u.email))
       .filter((u) => (status === "ALL" ? true : u.status === status))
       .filter((u) => {
         if (!search.trim()) return true;

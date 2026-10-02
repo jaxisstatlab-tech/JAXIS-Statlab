@@ -142,11 +142,23 @@ export function getDevUsers(): Record<string, MockUser> {
 
 export function getDevUserByEmail(email: string): MockUser | undefined {
   const users = getDevUsers();
-  return users[email.toLowerCase().trim()];
+  const user = users[email.toLowerCase().trim()];
+  // A deleted account keeps its old key but no longer answers to that email.
+  return user && user.email.toLowerCase() === email.toLowerCase().trim() ? user : undefined;
 }
 
 export function registerDevUser(user: MockUser): void {
   const persisted = readPersistedDevUsers();
   persisted[user.email.toLowerCase().trim()] = user;
+  writePersistedDevUsers(persisted);
+}
+
+/** Offline mode: delete an account by keeping it under its old email, locked, with a freed-up address. */
+export function markDevUserRemoved(originalEmail: string, removedEmail: string): void {
+  const key = originalEmail.toLowerCase().trim();
+  const user = getDevUsers()[key];
+  if (!user) return;
+  const persisted = readPersistedDevUsers();
+  persisted[key] = { ...user, email: removedEmail, status: "TERMINATED" };
   writePersistedDevUsers(persisted);
 }

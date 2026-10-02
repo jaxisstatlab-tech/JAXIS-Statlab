@@ -131,6 +131,17 @@ enum SuspensionAction {
 
 ---
 
+### Deleting an account (added 2026-10-02)
+
+The CEO can delete any account except their own and other CEO accounts from **CEO Overview → Delete an account** (`src/features/accounts/actions.ts`: `findAccountByEmail`, `deleteAccount`). The CEO types the email to confirm; a reason is optional.
+
+- The row is kept, because studies, payments, payslips, messages and the audit trail point to it. The email changes to `removed-<id>@removed.jaxis.invalid` (`src/lib/account-removal.ts`), so the old address is free to add again (for example as staff). The password changes to an unknown one, status becomes `TERMINATED`, and phone and leave details are cleared. Saved payout details and password-reset links are deleted.
+- Open sessions end on the next page load (the layout and `requireRole` refuse `TERMINATED` accounts and changed passwords).
+- Refused while the person is assigned to a study that isn't finished (reassign it first).
+- Deleted accounts are hidden from the staff directory. Past studies keep the person's name.
+- Logged as `ACCOUNT_DELETED` in `audit_logs` (old and new email, who, why) and in `auth_audit_logs`.
+- Offline mode: the sample account is kept, locked, under its old email key (`markDevUserRemoved`).
+
 ## 4. API Routes & Server Actions
 
 | Method | Route / Server Action | Role | Description |

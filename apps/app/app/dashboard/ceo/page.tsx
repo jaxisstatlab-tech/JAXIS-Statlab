@@ -1,27 +1,20 @@
 import React from "react";
 import type { Metadata } from "next";
-import { projectService } from "@/features/projects/services/project.service";
-import { getFinanceReceivablesSummary } from "@/features/payments/actions";
+import { getCeoOverview } from "@/features/ceo/overview";
 import { CEODashboardClient } from "./CEODashboardClient";
 
 export const metadata: Metadata = {
   title: "CEO Overview | JAXIS StatLab",
-  description: "Executive oversight of study progress, revenue, turnaround times, and client retention.",
+  description: "Money collected, studies in progress, and what needs the CEO's attention.",
 };
 
 export const dynamic = "force-dynamic";
 
+// Everything is read on the server so the page arrives complete. If the read fails, the page says so.
 export default async function CEODashboardPage() {
-  const [initialProjects, financeRes] = await Promise.all([
-    projectService.getProjects(),
-    getFinanceReceivablesSummary(),
-  ]);
-
-  return (
-    <CEODashboardClient
-      initialProjects={initialProjects}
-      initialFinanceData={financeRes.success && financeRes.data ? financeRes.data : null}
-    />
-  );
+  const overview = await getCeoOverview().catch((err) => {
+    console.error("[CEO Overview] Couldn't load the overview:", err);
+    return null;
+  });
+  return <CEODashboardClient overview={overview} />;
 }
-

@@ -1,46 +1,40 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useTransition,
-  useMemo,
-  useCallback,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   PageHeader,
-  Card,
   Button,
   Modal,
   FormInput,
   FormSelect,
   FormTextarea,
-  Alert,
-  FilterToolbar,
   KpiCard,
-  FormFooter,
   TagsOverflow,
   DropdownMenu,
   Toast,
   Pagination,
-  LoadingState,
+  CopyButton,
 } from "@repo/ui";
 import {
-  IconEye,
-  IconPlayerPause,
-  IconPlayerPlay,
-  IconUserX,
-  IconKey,
-  IconCheck,
-  IconCopy,
-  IconCalendar,
-  IconChevronDown,
-  IconX,
-} from "@tabler/icons-react";
+  CalendarBlank,
+  ChartBar,
+  Check,
+  Copy,
+  Eye,
+  MagnifyingGlass,
+  PauseCircle,
+  PlayCircle,
+  Plus,
+  ShieldCheck,
+  Trash,
+  UserMinus,
+  UsersThree,
+  WarningCircle,
+  X,
+} from "@phosphor-icons/react";
 import {
   getStaffRoster,
   getStaffDetail,
-  getStaffSelfProfile,
   provisionStaff,
   suspendStaff,
   liftSuspension,
@@ -50,1778 +44,1181 @@ import {
   approveLeave,
   rejectLeave,
 } from "@/features/staff/actions";
+import { findAccountByEmail, deleteAccount, type AccountSummary } from "@/features/accounts/actions";
 import { PendingLeaveQueue } from "@/features/staff/components/PendingLeaveQueue";
-import {
-  STANDARD_SPECIALIZATIONS,
-  type StaffRole,
-  type StaffListItem,
-  type StaffDetailItem,
-} from "@/features/staff/schemas";
+import { Panel, PanelHeader } from "@/components/dashboard/Panel";
+import { STANDARD_SPECIALIZATIONS, type StaffRole, type StaffListItem, type StaffDetailItem } from "@/features/staff/schemas";
 import { ViolationType } from "@prisma/client";
 
+// Staff Directory (admins and the CEO): everyone on the team, their role and status, and what can be done
+// with each account. The whole list loads once and the filters work on it, so the numbers on top never shift.
+
+const ROLE_LABEL: Record<string, string> = {
+  ADMIN: "Admin",
+  FINANCE_OFFICER: "Finance",
+  STATISTICIAN: "Analyst",
+  SENIOR_QA_LEAD: "Reviewer",
+  CEO: "CEO",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  ACTIVE: "Active",
+  LEAVE_PENDING: "Asked for leave",
+  ON_LEAVE: "On leave",
+  SUSPENDED: "Suspended",
+  TERMINATED: "Access removed",
+};
+
 const VIOLATION_OPTIONS = [
-  { value: "ETHICAL_BREACH", label: "Ethical Breach (Code of Conduct)" },
-  {
-    value: "DIRECT_PAYMENT_BYPASS",
-    label: "Direct Payment Bypass / Off-Platform Solicitation",
-  },
-  { value: "DATA_FALSIFICATION", label: "Data Falsification / Fabrication" },
-  { value: "GHOSTWRITING", label: "Ghostwriting Policy Violation" },
-  { value: "POLICY_VIOLATION", label: "General Operational Policy Violation" },
+  { value: "POLICY_VIOLATION", label: "Broke a work rule" },
+  { value: "ETHICAL_BREACH", label: "Ethics problem" },
+  { value: "DIRECT_PAYMENT_BYPASS", label: "Took payment outside JAXIS" },
+  { value: "DATA_FALSIFICATION", label: "Made up or changed data" },
+  { value: "GHOSTWRITING", label: "Wrote a client's paper for them" },
 ];
 
-
-
-const LEAVE_REASON_TEMPLATES = [
-  {
-    label: "Approved Medical / Sick Leave",
-    text: "Staff member approved for medical/sick recovery leave following verified health notice.",
-  },
-  {
-    label: "Annual Vacation / Sabbatical",
-    text: "Approved scheduled annual vacation or academic sabbatical leave.",
-  },
-  {
-    label: "Academic Conference Attendance",
-    text: "Official authorization for off-site academic conference attendance and scholarly presentations.",
-  },
-  {
-    label: "Family Emergency / Urgent Matters",
-    text: "Special compassionate leave granted for urgent family matters.",
-  },
-  {
-    label: "Administrative Temporary Hold",
-    text: "Placed on administrative leave and temporarily removed from the active study assignment pool.",
-  },
+const LEAVE_REASONS = [
+  { label: "Sick leave", text: "Sick leave." },
+  { label: "Vacation", text: "Vacation." },
+  { label: "Conference or training", text: "Away for a conference or training." },
+  { label: "Family emergency", text: "Family emergency." },
+  { label: "Paused by admin", text: "Paused from new studies by an admin." },
 ];
+
+type StatusTab = "ALL" | "ACTIVE" | "AWAY" | "LEAVE_PENDING" | "SUSPENDED" | "TERMINATED";
+
+const TABS: Array<{ value: StatusTab; label: string; match: (s: StaffListItem) => boolean }> = [
+  { value: "ALL", label: "Everyone", match: (s) => s.status !== "TERMINATED" },
+  { value: "ACTIVE", label: "Active", match: (s) => s.status === "ACTIVE" },
+  { value: "LEAVE_PENDING", label: "Asked for leave", match: (s) => s.status === "LEAVE_PENDING" },
+  { value: "AWAY", label: "On leave", match: (s) => s.status === "ON_LEAVE" },
+  { value: "SUSPENDED", label: "Suspended", match: (s) => s.status === "SUSPENDED" },
+  { value: "TERMINATED", label: "Access removed", match: (s) => s.status === "TERMINATED" },
+];
+
+type ToastState = { message: string; description?: string; variant: "info" | "success" | "warning" | "danger" } | null;
+
+function shortDate(value?: Date | string | null) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric" });
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]!.toUpperCase())
+    .join("");
+}
+
+function todayInput() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function addDays(input: string, days: number) {
+  const d = new Date(input);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0]!;
+}
 
 interface StaffRosterClientProps {
   initialStaff?: StaffListItem[];
   initialCurrentUserRole?: string;
 }
 
-export function StaffRosterClient({
-  initialStaff = [],
-  initialCurrentUserRole = "ADMIN",
-}: StaffRosterClientProps) {
-  const [staffList, setStaffList] = useState<StaffListItem[]>(initialStaff);
-  const [selectedRole, setSelectedRole] = useState<string>("ALL");
-  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(initialStaff.length === 0);
-  const [isPending, startTransition] = useTransition();
-  const [currentPage, setCurrentPage] = useState(1);
+export function StaffRosterClient({ initialStaff = [], initialCurrentUserRole = "ADMIN" }: StaffRosterClientProps) {
+  const isCeo = initialCurrentUserRole === "CEO";
+  const [staff, setStaff] = useState<StaffListItem[]>(initialStaff);
+  const [tab, setTab] = useState<StatusTab>("ALL");
+  const [role, setRole] = useState<string>("ALL");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [isPending, startTransition] = useTransition();
+  const [toast, setToast] = useState<ToastState>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  // Modals state
-  const [selectedStaff, setSelectedStaff] = useState<StaffListItem | null>(
-    null,
-  );
-  const [detailData, setDetailData] = useState<StaffDetailItem | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
-  const [isSuspendOpen, setIsSuspendOpen] = useState<boolean>(false);
-  const [isTerminateOpen, setIsTerminateOpen] = useState<boolean>(false);
-  const [isAdminLeaveOpen, setIsAdminLeaveOpen] = useState<boolean>(false);
-  const [adminLeaveReason, setAdminLeaveReason] = useState<string>("");
-  const [adminLeaveFrom, setAdminLeaveFrom] = useState<string>("");
-  const [adminLeaveUntil, setAdminLeaveUntil] = useState<string>("");
+  // Which window is open, and for whom.
+  const [target, setTarget] = useState<StaffListItem | null>(null);
+  const [dialog, setDialog] = useState<null | "details" | "suspend" | "terminate" | "leave" | "delete">(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [created, setCreated] = useState<{ id: string; email: string; fullName: string; role: string; temporaryPassword: string } | null>(null);
 
-  const [currentUserRole, setCurrentUserRole] = useState<string>(initialCurrentUserRole);
-
-  // Provision modal states
-  const [isProvisionOpen, setIsProvisionOpen] = useState<boolean>(false);
-  const [provFirstName, setProvFirstName] = useState<string>("");
-  const [provLastName, setProvLastName] = useState<string>("");
-  const [provEmail, setProvEmail] = useState<string>("");
-  const [provRole, setProvRole] = useState<StaffRole>("STATISTICIAN");
-  const [provSpecs, setProvSpecs] = useState<string[]>(["Regression", "ANOVA"]);
-  const [provCustomTag, setProvCustomTag] = useState<string>("");
-  const [provBio, setProvBio] = useState<string>("");
-  const [provFormError, setProvFormError] = useState<string | null>(null);
-  const [provFieldErrors, setProvFieldErrors] = useState<
-    Record<string, string[]>
-  >({});
-
-  // Credentials Generated Modal
-  const [provisionedData, setProvisionedData] = useState<{
-    id: string;
-    email: string;
-    fullName: string;
-    role: string;
-    temporaryPassword: string;
-  } | null>(null);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState<boolean>(false);
-  const [copied, setCopied] = useState<boolean>(false);
-  const [toastMessage, setToastMessage] = useState<{
-    message: string;
-    description?: string;
-    variant: "info" | "success" | "warning" | "danger";
-  } | null>(null);
-
-  // Action form states inside modals
-  const [suspendReason, setSuspendReason] = useState<string>("");
-  const [suspendViolation, setSuspendViolation] = useState<string>("");
-  const [terminateReason, setTerminateReason] = useState<string>("");
-  const [terminateViolation, setTerminateViolation] =
-    useState<string>("POLICY_VIOLATION");
-  const [forfeitPayouts, setForfeitPayouts] = useState<boolean>(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-
-  // Load current user profile if not provided from server
-  useEffect(() => {
-    if (!initialCurrentUserRole) {
-      const fetchProfile = async () => {
-        try {
-          const res = await getStaffSelfProfile();
-          if (res.success && res.data) {
-            setCurrentUserRole(res.data.role);
-            setProvRole("STATISTICIAN");
-          }
-        } catch {
-          // Fallback default is ADMIN
-        }
-      };
-      fetchProfile();
-    }
-  }, [initialCurrentUserRole]);
-
-  // Provision role options: Manager can only create Statistician & QA; CEO can create all
-  const provisionRoleOptions = useMemo(() => {
-    if (currentUserRole === "CEO") {
-      return [
-        {
-          value: "ADMIN",
-          label: "Manager (Operations & Assignments)",
-        },
-        {
-          value: "FINANCE_OFFICER",
-          label: "Finance Officer (Payments & Accounting)",
-        },
-        {
-          value: "SENIOR_QA_LEAD",
-          label: "Senior QA Lead (Quality Reviews)",
-        },
-        {
-          value: "STATISTICIAN",
-          label: "Statistical Analyst (Data Analysis & Modeling)",
-        },
-      ];
-    }
-
-    // Manager (ADMIN) can only create Statistician and QA
-    return [
-      {
-        value: "STATISTICIAN",
-        label: "Statistical Analyst (Data Analysis & Modeling)",
-      },
-      {
-        value: "SENIOR_QA_LEAD",
-        label: "Senior QA Lead (Quality Reviews)",
-      },
-    ];
-  }, [currentUserRole]);
-
-  const isMountedRef = React.useRef(true);
-
-  // Load roster
-  const loadRoster = useCallback(async () => {
-    setIsLoading(true);
+  const reload = useCallback(async () => {
     try {
-      const res = await getStaffRoster({
-        role: selectedRole,
-        status: selectedStatus,
-        search: searchQuery,
-      });
-      if (!isMountedRef.current) return;
-      if (res.success) {
-        setStaffList(res.data);
-      }
-    } catch (e) {
-      if (isMountedRef.current) {
-        console.error("Failed to load staff roster", e);
-      }
-    } finally {
-      if (isMountedRef.current) {
-        setIsLoading(false);
-      }
+      const res = await getStaffRoster({ role: "ALL", status: "ALL", search: "" });
+      if (res.success) setStaff(res.data);
+    } catch {
+      setToast({ message: "Couldn't refresh the list", description: "Check your connection and try again.", variant: "danger" });
     }
-  }, [selectedRole, selectedStatus, searchQuery]);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    loadRoster();
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, [loadRoster]);
-
-  // KPI Calculations
-  const kpis = useMemo(() => {
-    const total = staffList.length;
-    const stats = staffList.filter((s) => s.role === "STATISTICIAN").length;
-    const qa = staffList.filter((s) => s.role === "SENIOR_QA_LEAD").length;
-    const finance = staffList.filter(
-      (s) => s.role === "FINANCE_OFFICER",
-    ).length;
-    const managers = staffList.filter((s) => s.role === "ADMIN").length;
-    const active = staffList.filter((s) => s.status === "ACTIVE").length;
-    const onLeave = staffList.filter((s) => s.status === "ON_LEAVE").length;
-    const suspended = staffList.filter((s) => s.status === "SUSPENDED").length;
-    const terminated = staffList.filter(
-      (s) => s.status === "TERMINATED",
-    ).length;
-    return { total, stats, qa, finance, managers, active, onLeave, suspended, terminated };
-  }, [staffList]);
-
-  // View details
-  const handleOpenDetail = async (staff: StaffListItem) => {
-    setSelectedStaff(staff);
-    setIsDetailOpen(true);
-    try {
-      const res = await getStaffDetail(staff.id);
-      if (res.success) {
-        setDetailData(res.data);
-      }
-    } catch (e) {
-      console.error("Failed to fetch staff detail", e);
-    }
-  };
-
-  // Provision staff handlers
-  const toggleProvSpec = (spec: string) => {
-    if (provSpecs.includes(spec)) {
-      setProvSpecs(provSpecs.filter((s) => s !== spec));
-    } else {
-      setProvSpecs([...provSpecs, spec]);
-    }
-  };
-
-  const handleAddProvCustomTag = (e: React.FormEvent) => {
-    e.preventDefault();
-    const tag = provCustomTag.trim();
-    if (tag && !provSpecs.includes(tag)) {
-      setProvSpecs([...provSpecs, tag]);
-      setProvCustomTag("");
-    }
-  };
-
-  const handleProvisionSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setProvFormError(null);
-    setProvFieldErrors({});
-
-    startTransition(async () => {
-      const res = await provisionStaff({
-        firstName: provFirstName,
-        lastName: provLastName,
-        email: provEmail,
-        role: provRole,
-        specializations: provSpecs,
-        bio: provBio,
-      });
-
-      if (!res.success) {
-        setProvFormError(res.error.message);
-        if (res.error.fieldErrors) {
-          setProvFieldErrors(res.error.fieldErrors);
-        }
-        setToastMessage({
-          message: "Provisioning Failed",
-          description: res.error.message,
-          variant: "danger",
-        });
-        return;
-      }
-
-      setIsProvisionOpen(false);
-      setProvFirstName("");
-      setProvLastName("");
-      setProvEmail("");
-      setProvRole("STATISTICIAN");
-      setProvSpecs(["Regression", "ANOVA"]);
-      setProvBio("");
-      setProvisionedData(res.data);
-      setIsSuccessModalOpen(true);
-      setToastMessage({
-        message: "Staff Member Created",
-        description: `Account created for ${res.data.fullName}. Temporary password is ready to copy.`,
-        variant: "success",
-      });
-      loadRoster();
-    });
-  };
-
-  const getLoginUrl = () => {
-    if (process.env.NEXT_PUBLIC_APP_URL) {
-      return `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/login`;
-    }
-    if (
-      typeof window !== "undefined" &&
-      window.location.hostname &&
-      window.location.hostname !== "localhost" &&
-      window.location.hostname !== "127.0.0.1"
-    ) {
-      return `${window.location.origin}/login`;
-    }
-    return "https://app.jaxis-statlab.com/login";
-  };
-
-  const copyCredentials = () => {
-    if (!provisionedData) return;
-    const loginUrl = getLoginUrl();
-    const text = `JAXIS StatLab Internal Account Credentials\nName: ${provisionedData.fullName}\nRole: ${provisionedData.role}\nEmail: ${provisionedData.email}\nTemporary Password: ${provisionedData.temporaryPassword}\nLogin URL: ${loginUrl}`;
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setToastMessage({
-      message: "Credentials Copied",
-      description: `Account credentials for ${provisionedData.fullName} copied to clipboard.`,
-      variant: "info",
-    });
-    setTimeout(() => setCopied(false), 2500);
-  };
-
-  // Suspend action
-  const handleSuspendSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedStaff) return;
-    setActionError(null);
-
-    startTransition(async () => {
-      const res = await suspendStaff(selectedStaff.id, {
-        reason: suspendReason,
-        violationType: suspendViolation
-          ? (suspendViolation as ViolationType)
-          : undefined,
-      });
-
-      if (!res.success) {
-        setActionError(res.error.message);
-        setToastMessage({
-          message: "Suspension Failed",
-          description: res.error.message,
-          variant: "danger",
-        });
-        return;
-      }
-
-      setIsSuspendOpen(false);
-      setSuspendReason("");
-      setSuspendViolation("");
-      setToastMessage({
-        message: "Staff Account Suspended",
-        description: `Account for ${selectedStaff.fullName} has been placed in suspended status.`,
-        variant: "warning",
-      });
-      loadRoster();
-    });
-  };
-
-  // Lift suspension action
-  const handleLiftSuspension = async (staff: StaffListItem) => {
-    if (
-      !confirm(
-        `Are you sure you want to restore active status for ${staff.fullName}?`,
-      )
-    )
-      return;
-    setActionError(null);
-
-    startTransition(async () => {
-      const res = await liftSuspension(staff.id);
-      if (!res.success) {
-        alert(res.error.message);
-        setToastMessage({
-          message: "Failed to Lift Suspension",
-          description: res.error.message,
-          variant: "danger",
-        });
-        return;
-      }
-      setToastMessage({
-        message: "Suspension Lifted",
-        description: `Active system access restored for ${staff.fullName}.`,
-        variant: "success",
-      });
-      loadRoster();
-    });
-  };
-
-  const todayStr = useMemo(() => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
   }, []);
 
-  const isAdminReturnBeforeStart = useMemo(() => {
-    if (!adminLeaveFrom || !adminLeaveUntil) return false;
-    return adminLeaveUntil < adminLeaveFrom;
-  }, [adminLeaveFrom, adminLeaveUntil]);
+  useEffect(() => {
+    if (initialStaff.length === 0) reload();
+  }, [initialStaff.length, reload]);
 
-  const isAdminStartInPast = useMemo(() => {
-    if (!adminLeaveFrom) return false;
-    return adminLeaveFrom < todayStr;
-  }, [adminLeaveFrom, todayStr]);
-
-  const adminCalculatedDays = useMemo(() => {
-    if (!adminLeaveFrom || !adminLeaveUntil || isAdminReturnBeforeStart) return null;
-    const start = new Date(adminLeaveFrom);
-    const end = new Date(adminLeaveUntil);
-    const diff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return Math.max(1, diff);
-  }, [adminLeaveFrom, adminLeaveUntil, isAdminReturnBeforeStart]);
-
-  const handleAdminLeaveFromChange = (val: string) => {
-    setAdminLeaveFrom(val);
-    setActionError(null);
-    if (adminLeaveUntil && adminLeaveUntil < val) {
-      const nextDay = new Date(val);
-      nextDay.setDate(nextDay.getDate() + 1);
-      setAdminLeaveUntil(nextDay.toISOString().split("T")[0]!);
-    }
-  };
-
-  const handleAdminLeaveUntilChange = (val: string) => {
-    setAdminLeaveUntil(val);
-    setActionError(null);
-  };
-
-  const openAdminLeaveModal = (staff: StaffListItem) => {
-    setSelectedStaff(staff);
-    setAdminLeaveReason("");
-    setAdminLeaveFrom(todayStr);
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    setAdminLeaveUntil(tomorrow.toISOString().split("T")[0]!);
-    setActionError(null);
-    setIsAdminLeaveOpen(true);
-  };
-
-  // Admin Place on Leave
-  const handleAdminPlaceOnLeaveSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedStaff) return;
-    if (!adminLeaveReason || adminLeaveReason.trim().length < 3) {
-      setActionError("Please provide a reason for the leave (at least 3 characters).");
-      return;
-    }
-    if (isAdminStartInPast) {
-      setActionError("Leave start date cannot be in the past.");
-      return;
-    }
-    if (isAdminReturnBeforeStart) {
-      setActionError("Expected return date cannot be earlier than leave start date.");
-      return;
-    }
-    setActionError(null);
-
-    startTransition(async () => {
-      const res = await requestLeave({
-        userId: selectedStaff.id,
-        reason: adminLeaveReason.trim(),
-        leaveFrom: adminLeaveFrom ? new Date(adminLeaveFrom).toISOString() : undefined,
-        leaveUntil: adminLeaveUntil ? new Date(adminLeaveUntil).toISOString() : undefined,
-      });
-
-      if (!res.success) {
-        setActionError(res.error.message);
-        setToastMessage({
-          message: "Leave Action Failed",
-          description: res.error.message,
-          variant: "danger",
-        });
-        return;
+  // "/" jumps to search; Esc clears it.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      const typing = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
+      if (e.key === "/" && !typing) {
+        e.preventDefault();
+        searchRef.current?.focus();
       }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
-      setIsAdminLeaveOpen(false);
-      setAdminLeaveReason("");
-      setAdminLeaveUntil("");
-      setToastMessage({
-        message: "Staff Placed On Leave",
-        description: `${selectedStaff.fullName} is now On Leave and paused from study assignments.`,
-        variant: "warning",
-      });
-      loadRoster();
-    });
+  const counts = useMemo(() => {
+    const by = (r: string) => staff.filter((s) => s.role === r && s.status !== "TERMINATED").length;
+    return {
+      team: staff.filter((s) => s.status !== "TERMINATED").length,
+      active: staff.filter((s) => s.status === "ACTIVE").length,
+      analysts: by("STATISTICIAN"),
+      reviewers: by("SENIOR_QA_LEAD"),
+      away: staff.filter((s) => s.status === "ON_LEAVE" || s.status === "LEAVE_PENDING").length,
+      suspended: staff.filter((s) => s.status === "SUSPENDED").length,
+      tabs: Object.fromEntries(TABS.map((t) => [t.value, staff.filter(t.match).length])) as Record<StatusTab, number>,
+    };
+  }, [staff]);
+
+  const rows = useMemo(() => {
+    const match = TABS.find((t) => t.value === tab)!.match;
+    const q = query.trim().toLowerCase();
+    return staff
+      .filter(match)
+      .filter((s) => role === "ALL" || s.role === role)
+      .filter(
+        (s) =>
+          !q ||
+          s.fullName.toLowerCase().includes(q) ||
+          s.email.toLowerCase().includes(q) ||
+          s.specializations.some((sp) => sp.toLowerCase().includes(q))
+      )
+      .sort((a, b) => a.fullName.localeCompare(b.fullName));
+  }, [staff, tab, role, query]);
+
+  const shown = rows.slice((page - 1) * pageSize, page * pageSize);
+
+  const open = (s: StaffListItem, which: NonNullable<typeof dialog>) => {
+    setTarget(s);
+    setDialog(which);
   };
+  const close = () => setDialog(null);
 
-  // Admin End Leave
-  const handleAdminEndLeave = async (staff: StaffListItem) => {
+  const quickAction = (s: StaffListItem, run: () => Promise<{ success: boolean; error?: { message: string } }>, done: ToastState) => {
     startTransition(async () => {
-      const res = await returnFromLeave(staff.id);
+      const res = await run();
       if (!res.success) {
-        setToastMessage({
-          message: "Failed to End Leave",
-          description: res.error.message,
-          variant: "danger",
-        });
+        setToast({ message: "That didn't work", description: res.error?.message, variant: "danger" });
         return;
       }
       window.dispatchEvent(new CustomEvent("leave-status-updated"));
       window.dispatchEvent(new CustomEvent("shift-status-updated"));
-      setToastMessage({
-        message: "Leave Concluded",
-        description: `${staff.fullName} has returned to Active status and is available for assignments.`,
-        variant: "success",
-      });
-      loadRoster();
+      setToast(done);
+      reload();
     });
   };
 
-  // Admin Approve Leave Request
-  const handleAdminApproveLeave = async (staff: StaffListItem) => {
-    startTransition(async () => {
-      const res = await approveLeave(staff.id);
-      if (!res.success) {
-        setToastMessage({
-          message: "Approval Failed",
-          description: res.error.message,
-          variant: "danger",
-        });
-        return;
-      }
-      window.dispatchEvent(new CustomEvent("leave-status-updated"));
-      window.dispatchEvent(new CustomEvent("shift-status-updated"));
-      setToastMessage({
-        message: "Leave Request Approved",
-        description: `${staff.fullName} is now marked On Leave and hidden from Module 08 assignments.`,
-        variant: "success",
-      });
-      loadRoster();
-    });
+  const menuFor = (s: StaffListItem) => [
+    { label: "View details", icon: <Eye size={16} weight="fill" />, onClick: () => open(s, "details") },
+    ...(s.status === "ACTIVE"
+      ? [
+          {
+            dividerBefore: true,
+            label: "Put on leave",
+            subtitle: "No new studies while away",
+            icon: <CalendarBlank size={16} weight="fill" />,
+            onClick: () => open(s, "leave"),
+          },
+          {
+            label: "Suspend",
+            subtitle: "Can't sign in until you lift it",
+            variant: "warning" as const,
+            icon: <PauseCircle size={16} weight="fill" />,
+            onClick: () => open(s, "suspend"),
+          },
+        ]
+      : []),
+    ...(s.status === "LEAVE_PENDING"
+      ? [
+          {
+            dividerBefore: true,
+            label: "Approve leave",
+            variant: "success" as const,
+            icon: <Check size={16} weight="bold" />,
+            onClick: () =>
+              quickAction(s, () => approveLeave(s.id), {
+                message: "Leave approved",
+                description: `${s.fullName} won't get new studies while away.`,
+                variant: "success",
+              }),
+          },
+          {
+            label: "Decline leave",
+            icon: <X size={16} weight="bold" />,
+            onClick: () =>
+              quickAction(s, () => rejectLeave(s.id), {
+                message: "Leave declined",
+                description: `${s.fullName} stays active.`,
+                variant: "info",
+              }),
+          },
+        ]
+      : []),
+    ...(s.status === "ON_LEAVE"
+      ? [
+          {
+            dividerBefore: true,
+            label: "End leave",
+            subtitle: "Back to active",
+            icon: <PlayCircle size={16} weight="fill" />,
+            onClick: () =>
+              quickAction(s, () => returnFromLeave(s.id), {
+                message: "Leave ended",
+                description: `${s.fullName} is active again and can get new studies.`,
+                variant: "success",
+              }),
+          },
+        ]
+      : []),
+    ...(s.status === "SUSPENDED"
+      ? [
+          {
+            dividerBefore: true,
+            label: "Lift suspension",
+            subtitle: "Can sign in again",
+            icon: <PlayCircle size={16} weight="fill" />,
+            onClick: () =>
+              quickAction(s, () => liftSuspension(s.id), {
+                message: "Suspension lifted",
+                description: `${s.fullName} can sign in again.`,
+                variant: "success",
+              }),
+          },
+        ]
+      : []),
+    ...(isCeo && s.status !== "TERMINATED"
+      ? [
+          {
+            dividerBefore: true,
+            label: "Remove access",
+            subtitle: "Keeps the account on record",
+            variant: "danger" as const,
+            icon: <UserMinus size={16} weight="fill" />,
+            onClick: () => open(s, "terminate"),
+          },
+        ]
+      : []),
+    ...(isCeo
+      ? [
+          {
+            dividerBefore: s.status === "TERMINATED",
+            label: "Delete account",
+            subtitle: "Frees the email to add again",
+            variant: "danger" as const,
+            icon: <Trash size={16} weight="fill" />,
+            onClick: () => open(s, "delete"),
+          },
+        ]
+      : []),
+  ];
+
+  const clearFilters = () => {
+    setTab("ALL");
+    setRole("ALL");
+    setQuery("");
+    setPage(1);
   };
-
-  // Admin Decline Leave Request
-  const handleAdminDeclineLeave = async (staff: StaffListItem) => {
-    startTransition(async () => {
-      const res = await rejectLeave(staff.id);
-      if (!res.success) {
-        setToastMessage({
-          message: "Action Failed",
-          description: res.error.message,
-          variant: "danger",
-        });
-        return;
-      }
-      window.dispatchEvent(new CustomEvent("leave-status-updated"));
-      window.dispatchEvent(new CustomEvent("shift-status-updated"));
-      setToastMessage({
-        message: "Leave Request Declined",
-        description: `${staff.fullName} has been restored to Active duty.`,
-        variant: "warning",
-      });
-      loadRoster();
-    });
-  };
-
-  // Terminate action (CEO Authority)
-  const handleTerminateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedStaff) return;
-    setActionError(null);
-
-    startTransition(async () => {
-      const res = await terminateStaff(selectedStaff.id, {
-        reason: terminateReason,
-        violationType: terminateViolation as ViolationType,
-        forfeitPayouts,
-      });
-
-      if (!res.success) {
-        setActionError(res.error.message);
-        setToastMessage({
-          message: "Termination Failed",
-          description: res.error.message,
-          variant: "danger",
-        });
-        return;
-      }
-
-      setIsTerminateOpen(false);
-      setTerminateReason("");
-      setForfeitPayouts(false);
-      setToastMessage({
-        message: "Account Terminated",
-        description: `Account for ${selectedStaff.fullName} has been permanently terminated.`,
-        variant: "danger",
-      });
-      loadRoster();
-    });
-  };
-
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case "STATISTICIAN":
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-[2px] text-xs font-mono font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20 whitespace-nowrap">
-            STATISTICIAN
-          </span>
-        );
-      case "SENIOR_QA_LEAD":
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-[2px] text-xs font-mono font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 whitespace-nowrap">
-            SENIOR QA LEAD
-          </span>
-        );
-      case "FINANCE_OFFICER":
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-[2px] text-xs font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
-            FINANCE OFFICER
-          </span>
-        );
-      case "CEO":
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-[2px] text-xs font-mono font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20 whitespace-nowrap">
-            CEO / OWNER
-          </span>
-        );
-      case "ADMIN":
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-[2px] text-xs font-mono font-semibold bg-white/10 text-white border border-white/20 whitespace-nowrap">
-            ADMIN
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-[2px] text-xs font-mono font-semibold text-slate-300 border border-white/10 whitespace-nowrap">
-            {role}
-          </span>
-        );
-    }
-  };
-
-  const getStatusIndicator = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
-        return (
-          <span className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-emerald-400 whitespace-nowrap">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-            Active
-          </span>
-        );
-      case "LEAVE_PENDING":
-        return (
-          <span className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-amber-400 whitespace-nowrap">
-            <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
-            Leave Pending
-          </span>
-        );
-      case "ON_LEAVE":
-        return (
-          <span className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-purple-400 whitespace-nowrap">
-            <span className="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0" />
-            On Leave
-          </span>
-        );
-      case "SUSPENDED":
-        return (
-          <span className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-amber-400 whitespace-nowrap">
-            <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
-            Suspended
-          </span>
-        );
-      case "TERMINATED":
-        return (
-          <span className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-red-400 whitespace-nowrap">
-            <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />
-            Terminated
-          </span>
-        );
-      default:
-        return (
-          <span className="text-xs font-mono text-white/50">{status}</span>
-        );
-    }
-  };
-
-  if (isLoading && staffList.length === 0) {
-    return (
-      <div className="flex-1 w-full min-h-full flex items-center justify-center animate-content-fade my-auto font-sans">
-        <LoadingState
-          variant="page"
-          label="Loading Staff Directory..."
-          description="Getting team accounts, roles, and status."
-        />
-      </div>
-    );
-  }
 
   return (
-    <div className="flex flex-col gap-9 max-w-7xl mx-auto pb-16 w-full">
-      {/* ── Page Header ── */}
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       <PageHeader
         title="Staff Directory"
-        description="Create and manage team accounts, roles, and status."
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Admin Operations", href: "/dashboard/admin" },
-          { label: "Staff Directory" },
-        ]}
+        description={
+          counts.away + counts.suspended > 0
+            ? `${counts.active} of ${counts.team} people are active. ${counts.away} on leave or asking, ${counts.suspended} suspended.`
+            : `Everyone on the team, their role, and what they do. ${counts.active} of ${counts.team} are active.`
+        }
+        breadcrumbs={[{ label: "WORKSPACE", href: "/dashboard" }, { label: "Staff Directory" }]}
         actions={
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadRoster}
-              loading={isLoading}
-            >
-              Refresh
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                setProvFormError(null);
-                setProvFieldErrors({});
-                setProvRole("STATISTICIAN");
-                setIsProvisionOpen(true);
-              }}
-            >
-              + Add New Staff
-            </Button>
-          </div>
+          <Button variant="primary" size="sm" onClick={() => setIsAddOpen(true)} className="gap-1.5 active:scale-[0.97]">
+            <Plus size={15} weight="bold" />
+            Add Staff
+          </Button>
         }
       />
 
-      {/* ── KPI Grid (Consistent with Admin Dashboard Standard) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          label="Total Staff"
-          value={kpis.total}
-          variant="default"
-          description={`${kpis.active} active • ${kpis.onLeave} on leave`}
+          label="Team"
+          description="Everyone with access"
+          icon={<UsersThree size={18} weight="fill" />}
+          value={counts.team}
+          badge={`${counts.active} active`}
         />
-
+        <KpiCard label="Analysts" description="Run the analysis" icon={<ChartBar size={18} weight="fill" />} value={counts.analysts} />
+        <KpiCard label="Reviewers" description="Check the work before delivery" icon={<ShieldCheck size={18} weight="fill" />} value={counts.reviewers} />
         <KpiCard
-          label="Statistical Analysts"
-          value={kpis.stats}
-          variant="sky"
-          description="Data analysis & modeling"
-        />
-
-        <KpiCard
-          label="QA Leads"
-          value={kpis.qa}
-          variant="orange"
-          description="Quality check & review"
-        />
-
-        <KpiCard
-          label="Suspended / Inactive"
-          value={kpis.suspended + kpis.terminated}
-          variant="amber"
-          description={`${kpis.suspended} Suspended / ${kpis.terminated} Terminated`}
+          label="Away or suspended"
+          description={`${counts.away} on leave or asking · ${counts.suspended} suspended`}
+          icon={<PauseCircle size={18} weight="fill" />}
+          value={counts.away + counts.suspended}
         />
       </div>
 
-      {/* ── Pending Specialist Leave Requests (HR / Admin Review Queue) ── */}
-      <PendingLeaveQueue
-        onStatusChange={loadRoster}
-        title="Pending Leave Requests"
-        subtitle="Review and approve staff leave requests."
-      />
+      <PendingLeaveQueue onStatusChange={reload} title="Leave requests" subtitle="Staff waiting for an answer about time off." />
 
-      {/* ── Staff Directory Card ── */}
-      <Card
-        className="p-0 overflow-hidden border border-white/[0.08] bg-[#050513]"
-        style={{ padding: 0 }}
-      >
-        {/* ─ Header ─ */}
-        <div
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-          style={{ padding: '1.75rem 1.75rem 1.25rem 1.75rem' }}
-        >
-          <div>
-            <h2 className="text-base font-bold text-white tracking-wide font-sans">
-              Staff Directory
-            </h2>
-            <p className="text-xs text-white/50 mt-1.5 font-sans leading-relaxed">
-              All active staff members, roles, and status
-            </p>
-          </div>
-          <span className="text-xs font-mono text-white/60 bg-white/[0.04] px-3.5 py-1.5 rounded-[2px] border border-white/10 self-start sm:self-auto whitespace-nowrap">
-            {staffList.length}{" "}
-            {staffList.length === 1
-              ? "registered member"
-              : "registered members"}
-          </span>
-        </div>
+      <Panel>
+        <PanelHeader title="Team" count={counts.team} subtitle="Open someone to see their details, or use the menu to change their status." />
 
-        {/* ─ Filter Toolbar ─ */}
-        <FilterToolbar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder="Search by name, email, or specialization..."
-          onSearchSubmit={loadRoster}
-          filters={[
-            {
-              key: "role",
-              label: "Role",
-              value: selectedRole,
-              defaultValue: "ALL",
-              options: [
-                { value: "ALL", label: "All Roles" },
-                { value: "ADMIN", label: "Manager" },
-                { value: "STATISTICIAN", label: "Statistical Analyst" },
-                { value: "SENIOR_QA_LEAD", label: "QA Lead" },
-                { value: "FINANCE_OFFICER", label: "Finance" },
-              ],
-            },
-            {
-              key: "status",
-              label: "Status",
-              value: selectedStatus,
-              defaultValue: "ALL",
-              options: [
-                { value: "ALL", label: "All" },
-                { value: "ACTIVE", label: "Active" },
-                { value: "LEAVE_PENDING", label: "Leave Pending" },
-                { value: "ON_LEAVE", label: "On Leave" },
-                { value: "SUSPENDED", label: "Suspended" },
-                { value: "TERMINATED", label: "Terminated" },
-              ],
-            },
-          ]}
-          onFilterChange={(key, value) => {
-            if (key === "role") setSelectedRole(value);
-            if (key === "status") setSelectedStatus(value);
-            setCurrentPage(1);
-          }}
-          onClear={() => {
-            setSelectedRole("ALL");
-            setSelectedStatus("ALL");
-            setSearchQuery("");
-            setCurrentPage(1);
-          }}
-        />
-
-        {/* ─ Table ─ */}
-        <div style={{ padding: '1.25rem 1.75rem 1.75rem 1.75rem' }}>
-          <div className="w-full overflow-x-auto rounded-[3px] border border-white/[0.08]">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>
-                    Staff Member
-                  </th>
-                  <th className="w-[160px] whitespace-nowrap">
-                    Role
-                  </th>
-                  <th className="w-[240px] whitespace-nowrap">
-                    Specializations
-                  </th>
-                  <th className="w-[120px] whitespace-nowrap">
-                    Status
-                  </th>
-                  <th className="w-[110px] text-right whitespace-nowrap">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="py-20 text-center text-white/30 font-mono text-xs"
-                    >
-                      Loading staff directory records...
-                    </td>
-                  </tr>
-                ) : staffList.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="py-20 text-center text-white/30 font-mono text-xs"
-                    >
-                      No staff members match the selected filters.
-                    </td>
-                  </tr>
-                ) : (
-                staffList.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((staff) => (
-                  <tr
-                    key={staff.id}
-                    className="group"
-                  >
-                    {/* Staff Member */}
-                    <td>
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="font-semibold text-white group-hover:text-[#CC6600] transition-colors whitespace-nowrap truncate text-[0.8125rem]">
-                          {staff.fullName}
-                        </span>
-                        <span className="text-[0.6875rem] text-white/40 font-mono whitespace-nowrap truncate">
-                          {staff.email}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Role */}
-                    <td className="whitespace-nowrap">
-                      {getRoleBadge(staff.role)}
-                    </td>
-
-                    {/* Specializations */}
-                    <td>
-                      <TagsOverflow
-                        tags={staff.specializations}
-                        limit={2}
-                        title="Other Specializations"
-                      />
-                    </td>
-
-                    {/* Status */}
-                    <td className="whitespace-nowrap">
-                      {getStatusIndicator(staff.status)}
-                    </td>
-
-                    {/* Actions */}
-                    <td className="text-right whitespace-nowrap">
-                      <div className="relative inline-flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenDetail(staff)}
-                          className="py-1.5 px-3.5 h-auto whitespace-nowrap font-mono text-xs tracking-wider"
-                        >
-                          DETAILS
-                        </Button>
-
-                        <DropdownMenu
-                          items={[
-                            {
-                              label: "View Profile & Logs",
-                              subtitle: "Inspect activity records",
-                              icon: <IconEye size={16} stroke={1.5} />,
-                              onClick: () => handleOpenDetail(staff),
-                            },
-                            ...(staff.status === "ACTIVE"
-                              ? [
-                                  {
-                                    dividerBefore: true,
-                                    label: "Place on Leave",
-                                    subtitle: "Pause study assignments",
-                                    icon: <IconCalendar size={16} stroke={1.5} />,
-                                    onClick: () => openAdminLeaveModal(staff),
-                                  },
-                                  {
-                                    dividerBefore: false,
-                                    label: "Suspend Account",
-                                    subtitle: "Temporarily halt access",
-                                    variant: "warning" as const,
-                                    icon: <IconPlayerPause size={16} stroke={1.5} />,
-                                    onClick: () => {
-                                      setSelectedStaff(staff);
-                                      setIsSuspendOpen(true);
-                                    },
-                                  },
-                                ]
-                              : []),
-                            ...(staff.status === "LEAVE_PENDING"
-                              ? [
-                                  {
-                                    dividerBefore: true,
-                                    label: "Acknowledge & Approve",
-                                    subtitle: "Authorize leave & pause assignments",
-                                    variant: "success" as const,
-                                    icon: <IconCheck size={16} stroke={1.5} />,
-                                    onClick: () => handleAdminApproveLeave(staff),
-                                  },
-                                  {
-                                    dividerBefore: false,
-                                    label: "Decline Request",
-                                    subtitle: "Restore to active duty",
-                                    variant: "warning" as const,
-                                    icon: <IconX size={16} stroke={1.5} />,
-                                    onClick: () => handleAdminDeclineLeave(staff),
-                                  },
-                                ]
-                              : []),
-                            ...(staff.status === "ON_LEAVE"
-                              ? [
-                                  {
-                                    dividerBefore: true,
-                                    label: "End Leave",
-                                    subtitle: "Return to active duty",
-                                    variant: "success" as const,
-                                    icon: <IconPlayerPlay size={16} stroke={1.5} />,
-                                    onClick: () => handleAdminEndLeave(staff),
-                                  },
-                                ]
-                              : []),
-                            ...(staff.status === "SUSPENDED"
-                              ? [
-                                  {
-                                    dividerBefore: true,
-                                    label: "Lift Suspension",
-                                    subtitle: "Restore active access",
-                                    variant: "success" as const,
-                                    icon: <IconPlayerPlay size={16} stroke={1.5} />,
-                                    onClick: () => handleLiftSuspension(staff),
-                                  },
-                                ]
-                              : []),
-                            ...(staff.status !== "TERMINATED"
-                              ? [
-                                  {
-                                    dividerBefore: true,
-                                    label: "Terminate Staff",
-                                    subtitle: "Revoke role & credentials",
-                                    badge: "CEO",
-                                    variant: "danger" as const,
-                                    icon: <IconUserX size={16} stroke={1.5} />,
-                                    onClick: () => {
-                                      setSelectedStaff(staff);
-                                      setIsTerminateOpen(true);
-                                    },
-                                  },
-                                ]
-                              : []),
-                          ]}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        </div>
-
-        {staffList.length > 0 && (
-          <Pagination
-            currentPage={currentPage}
-            totalItems={staffList.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
-            itemLabel="staff"
-          />
-        )}
-      </Card>
-
-      {/* ── 1. Staff Detail Modal ── */}
-      {selectedStaff && (
-        <Modal
-          open={isDetailOpen}
-          onClose={() => setIsDetailOpen(false)}
-          title={`Staff Profile: ${selectedStaff.fullName}`}
-          size="lg"
-        >
-          <div className="flex flex-col gap-6 font-sans">
-            {/* Staff Identity Card */}
-            <div
-              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-[4px] bg-[#0A0A18] border border-white/10"
-              style={{ padding: "1.5rem", boxSizing: "border-box" }}
-            >
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-sans font-semibold text-white/50 uppercase tracking-wider">
-                  Email Address
-                </span>
-                <span className="text-base font-semibold text-white font-sans">
-                  {selectedStaff.email}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                {getRoleBadge(selectedStaff.role)}
-                {getStatusIndicator(selectedStaff.status)}
-              </div>
-            </div>
-
-            {/* Bio Section */}
-            <div className="flex flex-col gap-2.5">
-              <span className="text-xs font-sans font-semibold text-white/50 uppercase tracking-wider">
-                Professional Bio &amp; Focus
-              </span>
-              <p
-                className="text-sm text-slate-200 bg-[#0A0A18] rounded-[4px] border border-white/10 leading-relaxed font-sans"
-                style={{ padding: "1.25rem 1.5rem", boxSizing: "border-box" }}
-              >
-                {detailData?.bio ||
-                  selectedStaff.bio ||
-                  "No biographical profile entered yet."}
-              </p>
-            </div>
-
-            {/* Specializations List */}
-            <div className="flex flex-col gap-2.5">
-              <span className="text-xs font-sans font-semibold text-white/50 uppercase tracking-wider">
-                Certified Specializations
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {(
-                  detailData?.specializations || selectedStaff.specializations
-                ).map((spec, i) => (
-                  <span
-                    key={i}
-                    className="text-xs font-sans font-medium rounded-[3px] bg-[#0A0A18] text-sky-300 border border-sky-400/30"
-                    style={{ padding: "0.375rem 0.75rem", display: "inline-flex", alignItems: "center" }}
-                  >
-                    {spec}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Disciplinary / Suspension Logs */}
-            <div className="flex flex-col gap-2.5">
-              <span className="text-xs font-sans font-semibold text-white/50 uppercase tracking-wider">
-                Governance &amp; Disciplinary History
-              </span>
-              {detailData?.suspensionLogs &&
-              detailData.suspensionLogs.length > 0 ? (
-                <div className="overflow-x-auto border border-white/10 rounded-[4px]">
-                  <table className="w-full text-xs text-left font-sans">
-                    <thead className="bg-white/[0.03] text-white/50 border-b border-white/[0.08]">
-                      <tr>
-                        <th className="py-3.5 px-5 font-sans font-semibold">Action</th>
-                        <th className="py-3.5 px-5 font-sans font-semibold">Reason</th>
-                        <th className="py-3.5 px-5 font-sans font-semibold">Violation Type</th>
-                        <th className="py-3.5 px-5 font-sans font-semibold">Date</th>
-                        <th className="py-3.5 px-5 font-sans font-semibold">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {detailData.suspensionLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-white/[0.02]">
-                          <td className="py-3.5 px-5 font-mono font-bold text-amber-400">
-                            {log.action}
-                          </td>
-                          <td className="py-3.5 px-5 text-slate-300 max-w-[200px]">
-                            {log.reason}
-                          </td>
-                          <td className="py-3.5 px-5 text-slate-400">
-                            {log.violationType || "N/A"}
-                          </td>
-                          <td className="py-3.5 px-5 text-white/50 font-mono">
-                            {new Date(log.performedAt).toLocaleDateString()}
-                          </td>
-                          <td className="py-3.5 px-5">
-                            {log.liftedAt ? (
-                              <span className="text-emerald-400 font-sans font-medium">
-                                Lifted on{" "}
-                                {new Date(log.liftedAt).toLocaleDateString()}
-                              </span>
-                            ) : (
-                              <span className="text-amber-400 font-sans font-medium">
-                                Active Record
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div
-                  className="text-xs text-white/50 italic bg-[#0A0A18] border border-white/10 rounded-[4px] font-sans"
-                  style={{ padding: "1.25rem 1.5rem", boxSizing: "border-box" }}
-                >
-                  Clean record — zero disciplinary actions or suspensions logged.
-                </div>
-              )}
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* ── 2. Provision Staff Modal (2-Column Zero-Scroll Layout) ── */}
-      <Modal
-        open={isProvisionOpen}
-        onClose={() => setIsProvisionOpen(false)}
-        title="Add New Staff Member"
-        description={
-          currentUserRole === "CEO"
-            ? "Create an account for a Manager, Finance Officer, QA Lead, or Statistical Analyst."
-            : "Create an account for a Finance Officer or Senior QA Lead."
-        }
-        size="2xl"
-      >
-        <form
-          onSubmit={handleProvisionSubmit}
-          className="flex flex-col gap-5 p-1 font-sans"
-        >
-          {provFormError && <Alert variant="danger">{provFormError}</Alert>}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            {/* ── Left Column: Identity, Role & Security (50%) ── */}
-            <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormInput
-                  label="First Name"
-                  required
-                  placeholder="Eleanor"
-                  value={provFirstName}
-                  onChange={(e) => setProvFirstName(e.target.value)}
-                  error={provFieldErrors.firstName?.[0] || provFieldErrors.fullName?.[0]}
-                  disabled={isPending}
-                />
-                <FormInput
-                  label="Last Name"
-                  required
-                  placeholder="Vance"
-                  value={provLastName}
-                  onChange={(e) => setProvLastName(e.target.value)}
-                  error={provFieldErrors.lastName?.[0]}
-                  disabled={isPending}
-                />
-              </div>
-
-              <FormInput
-                label="Email Address"
-                type="email"
-                required
-                placeholder="name@jaxis.dev"
-                value={provEmail}
-                onChange={(e) => setProvEmail(e.target.value)}
-                error={provFieldErrors.email?.[0]}
-                disabled={isPending}
-              />
-
-              <div className="flex flex-col gap-1">
-                <FormSelect
-                  label="Role"
-                  required
-                  options={provisionRoleOptions}
-                  value={provRole}
-                  onChange={(e) => setProvRole(e.target.value as StaffRole)}
-                  disabled={isPending}
-                />
-                <span className="text-[0.688rem] text-white/50 font-sans">
-                  {currentUserRole === "CEO"
-                    ? "CEO access: You can create Managers, Finance, QA, and Statistical Analysts."
-                    : "Manager access: You can create Statistical Analyst and QA staff."}
-                </span>
-              </div>
-
-              {/* Automated Credentials Notice Badge */}
-              <div className="p-3.5 rounded-[3px] bg-sky-500/[0.06] border border-sky-500/20 text-xs text-slate-300 flex items-start gap-3 mt-1">
-                <div className="p-1.5 rounded-[2px] bg-sky-500/10 border border-sky-500/20 text-sky-400 mt-0.5 flex-shrink-0">
-                  <IconKey size={14} stroke={1.5} />
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-sans uppercase font-bold text-sky-400 text-xs tracking-wider">
-                    Temporary Password
-                  </span>
-                  <p className="text-xs text-slate-300/80 leading-relaxed font-sans mt-0.5">
-                    A secure password (<code className="text-sky-300 font-mono">JAXIS-XXXXXXXX</code>) will be generated automatically for you to copy and share.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Right Column: Certified Specializations & Bio (50%) ── */}
-            <div className="flex flex-col gap-4">
-              {/* Specialization Tags Picker */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-slate-200 whitespace-nowrap">
-                    Certified Specializations <span className="text-[#CC6600]">*</span>
-                  </span>
-                  <div className="flex items-center gap-2 text-xs font-sans text-white/40 flex-shrink-0">
-                    {provSpecs.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setProvSpecs([])}
-                        className="text-white/40 hover:text-[#CC6600] transition-colors underline cursor-pointer"
-                      >
-                        Clear ({provSpecs.length})
-                      </button>
-                    )}
-                    <span>{provSpecs.length} selected</span>
-                  </div>
-                </div>
-                <p className="text-xs text-white/50 font-sans">
-                  Select methodologies, modeling frameworks, or domain competencies
-                </p>
-
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {[
-                    ...STANDARD_SPECIALIZATIONS,
-                    ...provSpecs.filter(
-                      (s) => !(STANDARD_SPECIALIZATIONS as readonly string[]).includes(s)
-                    ),
-                  ].map((spec) => {
-                    const isSelected = provSpecs.includes(spec);
-                    const isCustom = !(STANDARD_SPECIALIZATIONS as readonly string[]).includes(spec);
-                    return (
-                      <button
-                        key={spec}
-                        type="button"
-                        onClick={() => toggleProvSpec(spec)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[3px] text-xs font-sans transition-all duration-150 cursor-pointer select-none border ${
-                          isSelected
-                            ? "bg-[#CC6600]/15 text-[#FF9433] border-[#CC6600] font-medium shadow-sm shadow-[#CC6600]/10"
-                            : "bg-[#0A0A18] text-slate-300 border-white/10 hover:border-white/25 hover:text-white hover:bg-white/[0.04]"
-                        }`}
-                      >
-                        {isSelected ? (
-                          <IconCheck size={13} stroke={2.5} className="text-[#CC6600] flex-shrink-0" />
-                        ) : (
-                          <span className="text-white/30 font-bold text-xs leading-none">+</span>
-                        )}
-                        <span className="max-w-[180px] truncate">{spec}</span>
-                        {isCustom && isSelected && (
-                          <span
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setProvSpecs(provSpecs.filter((s) => s !== spec));
-                            }}
-                            className="ml-1 text-[#FF9433]/70 hover:text-red-400 font-bold text-xs px-1 hover:bg-red-500/20 rounded-[2px] transition-colors"
-                            title="Remove custom tag"
-                          >
-                            ×
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex items-stretch gap-2 pt-1">
-                  <input
-                    type="text"
-                    placeholder="Add custom specialization..."
-                    value={provCustomTag}
-                    onChange={(e) => setProvCustomTag(e.target.value)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" &&
-                      (e.preventDefault(), handleAddProvCustomTag(e))
-                    }
-                    className="flex-1 bg-[#080816] border border-white/10 rounded-[2px] text-xs text-white placeholder-white/40 focus:outline-none focus:border-[#CC6600] transition-colors font-sans"
-                    style={{
-                      height: "2.25rem",
-                      paddingLeft: "1rem",
-                      paddingRight: "1rem",
-                      boxSizing: "border-box",
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddProvCustomTag}
-                    disabled={!provCustomTag.trim()}
-                    className="text-xs px-3.5 font-mono whitespace-nowrap flex items-center justify-center rounded-[2px]"
-                    style={{
-                      height: "2.25rem",
-                      boxSizing: "border-box",
-                    }}
-                  >
-                    + ADD TAG
-                  </Button>
-                </div>
-              </div>
-
-              <FormTextarea
-                label="Professional Biography / Domain Scope"
-                placeholder="Brief overview of research background, publications, or statistical focus areas..."
-                value={provBio}
-                onChange={(e) => setProvBio(e.target.value)}
-                rows={3}
-                disabled={isPending}
-              />
-            </div>
-          </div>
-
-          {/* ── Modal Footer: Action Buttons (Full width) ── */}
-          <FormFooter className="mt-5">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setIsProvisionOpen(false)}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" loading={isPending}>
-              PROVISION ACCOUNT →
-            </Button>
-          </FormFooter>
-        </form>
-      </Modal>
-
-      {/* ── 3. Credentials Generated Success Modal ── */}
-      {provisionedData && (
-        <Modal
-          open={isSuccessModalOpen}
-          onClose={() => setIsSuccessModalOpen(false)}
-          title="Staff Account Successfully Provisioned"
-          size="md"
-        >
-          <div className="flex flex-col gap-5 font-sans animate-content-fade">
-            <Alert variant="success">
-              Staff record created in institutional directory. Credentials ready
-              for secure distribution.
-            </Alert>
-
-            <div className="p-5 sm:px-7 rounded-[3px] bg-[#0F0F1D] border border-white/10 flex flex-col gap-3.5 font-mono text-xs">
-              <div className="flex justify-between border-b border-white/5 pb-2.5">
-                <span className="text-white/50 uppercase tracking-wider">Full Name</span>
-                <span className="font-bold text-white">
-                  {provisionedData.fullName}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-white/5 pb-2.5">
-                <span className="text-white/50 uppercase tracking-wider">Internal Role</span>
-                <span className="text-[#CC6600] font-bold">
-                  {provisionedData.role}
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-white/5 pb-2.5">
-                <span className="text-white/50 uppercase tracking-wider">
-                  Institutional Email
-                </span>
-                <span className="text-white">{provisionedData.email}</span>
-              </div>
-              <div className="flex justify-between items-center border-b border-white/5 pb-2.5">
-                <span className="text-white/50 uppercase tracking-wider">
-                  Portal Login URL
-                </span>
-                <span className="text-sky-400 font-mono text-xs">{getLoginUrl()}</span>
-              </div>
-              <div className="flex justify-between items-center pt-1">
-                <span className="text-white/50 uppercase tracking-wider">
-                  Temporary Password
-                </span>
-                <span className="font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-[2px] border border-emerald-500/20 text-sm">
-                  {provisionedData.temporaryPassword}
-                </span>
-              </div>
-            </div>
-
-            <div className="p-4 sm:px-6 rounded-[3px] bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200">
-              <strong>Notice:</strong> Temporary passwords will not be displayed
-              again. Transmit these credentials via secure institutional
-              channels.
-            </div>
-
-            <FormFooter align="between" className="mt-4">
-              <Button
-                variant="outline"
-                onClick={copyCredentials}
-                className="font-mono text-xs flex items-center gap-2"
-              >
-                <IconCopy size={14} stroke={1.5} className="text-white/60" />
-                {copied ? "COPIED TO CLIPBOARD!" : "COPY CREDENTIALS"}
-              </Button>
-
-              <Button
-                variant="primary"
-                onClick={() => setIsSuccessModalOpen(false)}
-              >
-                DONE
-              </Button>
-            </FormFooter>
-          </div>
-        </Modal>
-      )}
-
-      {/* ── 4. Suspend Staff Modal ── */}
-      {selectedStaff && (
-        <Modal
-          open={isSuspendOpen}
-          onClose={() => setIsSuspendOpen(false)}
-          title={`Temporary Suspension: ${selectedStaff.fullName}`}
-          size="md"
-        >
-          <form
-            onSubmit={handleSuspendSubmit}
-            className="flex flex-col gap-4 font-sans"
-          >
-            <Alert variant="warning">
-              Suspending this staff member will immediately block login access
-              and flag their active study assignments for administrator review.
-            </Alert>
-
-            {actionError && <Alert variant="danger">{actionError}</Alert>}
-
-            <FormSelect
-              label="Violation Classification (Optional)"
-              options={[
-                { value: "", label: "Standard Operational Hold / Review" },
-                ...VIOLATION_OPTIONS,
-              ]}
-              value={suspendViolation}
-              onChange={(e) => setSuspendViolation(e.target.value)}
-              monoLabel
-            />
-
-            <FormTextarea
-              label="Mandatory Reason for Suspension"
-              required
-              placeholder="Detail the operational reason or policy grounds for this temporary suspension (minimum 10 characters)..."
-              value={suspendReason}
-              onChange={(e) => setSuspendReason(e.target.value)}
-              rows={4}
-              monoLabel
-            />
-
-            <FormFooter className="mt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsSuspendOpen(false)}
-                disabled={isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="danger"
-                loading={isPending}
-                disabled={suspendReason.trim().length < 10}
-              >
-                CONFIRM SUSPENSION
-              </Button>
-            </FormFooter>
-          </form>
-        </Modal>
-      )}
-
-      {/* ── 5. Terminate Staff Modal (CEO Authority) ── */}
-      {selectedStaff && (
-        <Modal
-          open={isTerminateOpen}
-          onClose={() => setIsTerminateOpen(false)}
-          title={`Permanent Termination: ${selectedStaff.fullName}`}
-          size="md"
-        >
-          <form
-            onSubmit={handleTerminateSubmit}
-            className="flex flex-col gap-4 font-sans"
-          >
-            <Alert variant="danger">
-              <strong>EXECUTIVE ACTION (RULE_ROL_01):</strong> Permanent account
-              termination revokes all access indefinitely. Active projects will
-              be flagged for emergency reassignment.
-            </Alert>
-
-            {actionError && <Alert variant="danger">{actionError}</Alert>}
-
-            <FormSelect
-              label="Required Violation Grounds"
-              required
-              options={VIOLATION_OPTIONS}
-              value={terminateViolation}
-              onChange={(e) => setTerminateViolation(e.target.value)}
-              monoLabel
-            />
-
-            <FormTextarea
-              label="Mandatory Termination Rationale"
-              required
-              placeholder="Provide exhaustive justification for permanent termination and audit record (minimum 10 characters)..."
-              value={terminateReason}
-              onChange={(e) => setTerminateReason(e.target.value)}
-              rows={4}
-              monoLabel
-            />
-
-            <div className="p-3 rounded-[2px] bg-red-500/10 border border-red-500/20 flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="forfeitPayouts"
-                checked={forfeitPayouts}
-                onChange={(e) => setForfeitPayouts(e.target.checked)}
-                className="h-4 w-4 rounded-[2px] accent-[#CC6600] cursor-pointer"
-              />
-              <label
-                htmlFor="forfeitPayouts"
-                className="text-xs text-red-200 cursor-pointer select-none"
-              >
-                <strong>Enforce Payout Forfeiture:</strong> Void pending
-                milestone payouts due to severe ethical breach or off-platform
-                direct payment solicitation.
-              </label>
-            </div>
-
-            <FormFooter className="mt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsTerminateOpen(false)}
-                disabled={isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="danger"
-                loading={isPending}
-                disabled={terminateReason.trim().length < 10}
-              >
-                EXECUTE PERMANENT TERMINATION
-              </Button>
-            </FormFooter>
-          </form>
-        </Modal>
-      )}
-
-      {/* ── 6. Admin Place On Leave Modal ── */}
-      {selectedStaff && (
-        <Modal
-          open={isAdminLeaveOpen}
-          onClose={() => setIsAdminLeaveOpen(false)}
-          title={`Place on Leave: ${selectedStaff.fullName}`}
-          size="md"
-        >
-          <form
-            onSubmit={handleAdminPlaceOnLeaveSubmit}
-            className="flex flex-col gap-4 font-sans"
-          >
-            <Alert variant="info">
-              Placing this staff member on leave will immediately hide them from the Module 08 specialist assignment pool. They will retain login access to their workbench.
-            </Alert>
-
-            {actionError && <Alert variant="danger">{actionError}</Alert>}
-
-            {/* Reason for Leave with Dropdown Selector */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-white/90">
-                  Reason for Leave (Mandatory)
-                </label>
-                <span className="text-[0.625rem] text-white/50 font-mono">
-                  Select template or enter custom note
-                </span>
-              </div>
-
-              {/* Template Dropdown */}
-              <div className="relative">
-                <select
-                  value={LEAVE_REASON_TEMPLATES.find((t) => t.text === adminLeaveReason)?.text || ""}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      setAdminLeaveReason(e.target.value);
-                    }
+        <div className="mt-4 flex flex-col gap-3 px-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="-mx-1 flex items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none]" role="tablist" aria-label="Show staff">
+            {TABS.filter((t) => t.value === "ALL" || counts.tabs[t.value] > 0 || t.value === tab).map((t) => {
+              const active = tab === t.value;
+              return (
+                <button
+                  key={t.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => {
+                    setTab(t.value);
+                    setPage(1);
                   }}
-                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white/90 focus:border-[#CC6600] focus:ring-0 outline-none cursor-pointer appearance-none pr-8 transition-colors font-sans hover:border-white/30"
+                  className={`inline-flex shrink-0 items-center gap-2 rounded-[2px] px-3 py-1.5 font-sans text-[13px] transition-colors ${
+                    active ? "bg-white/[0.08] font-medium text-white" : "text-white/55 hover:text-white"
+                  }`}
                 >
-                  <option value="" className="bg-[#0A0A18] text-white/50">
-                    Select standard reason template...
-                  </option>
-                  {LEAVE_REASON_TEMPLATES.map((tmpl) => (
-                    <option
-                      key={tmpl.label}
-                      value={tmpl.text}
-                      className="bg-[#0A0A18] text-white py-1"
-                    >
-                      {tmpl.label}
-                    </option>
-                  ))}
-                </select>
-                <IconChevronDown
-                  size={14}
-                  stroke={2}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none"
-                />
-              </div>
-
-              <textarea
-                value={adminLeaveReason}
-                onChange={(e) => setAdminLeaveReason(e.target.value)}
-                placeholder="e.g. Approved medical leave, sabbatical, conference attendance..."
-                className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-16 font-sans leading-relaxed"
+                  {t.label}
+                  <span className={`font-mono text-[11px] ${active ? "text-white/60" : "text-white/35"}`}>{counts.tabs[t.value]}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <select
+              value={role}
+              onChange={(e) => {
+                setRole(e.target.value);
+                setPage(1);
+              }}
+              aria-label="Role"
+              className="h-9 rounded-[2px] border border-white/10 bg-[#050513] px-3 font-sans text-[13px] text-white outline-none focus:border-[#CC6600]/60"
+            >
+              <option value="ALL">All roles</option>
+              <option value="STATISTICIAN">Analysts</option>
+              <option value="SENIOR_QA_LEAD">Reviewers</option>
+              <option value="FINANCE_OFFICER">Finance</option>
+              <option value="ADMIN">Admins</option>
+            </select>
+            <label className="relative flex w-full items-center sm:w-64">
+              <MagnifyingGlass size={14} weight="bold" className="pointer-events-none absolute left-3 text-white/35" />
+              <input
+                ref={searchRef}
+                type="search"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setPage(1);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setQuery("");
+                    e.currentTarget.blur();
+                  }
+                }}
+                placeholder="Search name, email, or skill"
+                aria-label="Search staff"
+                className="h-9 w-full rounded-[2px] border border-white/10 bg-[#050513] pl-8 pr-9 font-sans text-[13px] text-white outline-none placeholder:text-white/35 focus:border-[#CC6600]/60"
               />
-            </div>
+              <kbd className="pointer-events-none absolute right-2.5 rounded-[2px] border border-white/15 px-1.5 font-mono text-[10px] text-white/40">/</kbd>
+            </label>
+          </div>
+        </div>
 
-            {/* Leave Duration & Date Range (Day or Days) */}
-            <div className="flex flex-col gap-2 p-3 bg-black/40 border border-white/10 rounded-[2px]">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-white/90">
-                  Leave Duration (Day or Days)
-                </label>
-                {isAdminReturnBeforeStart ? (
-                  <span className="text-xs font-mono font-semibold text-rose-400 bg-rose-950/40 px-2 py-0.5 rounded-[2px] border border-rose-500/30">
-                    Invalid: Return Before Start
-                  </span>
-                ) : isAdminStartInPast ? (
-                  <span className="text-xs font-mono font-semibold text-rose-400 bg-rose-950/40 px-2 py-0.5 rounded-[2px] border border-rose-500/30">
-                    Invalid: Past Start Date
-                  </span>
-                ) : adminCalculatedDays !== null ? (
-                  <span className="text-xs font-mono font-semibold text-[#FF9433] bg-[#CC6600]/15 px-2 py-0.5 rounded-[2px] border border-[#CC6600]/30">
-                    {adminCalculatedDays} {adminCalculatedDays === 1 ? "Day" : "Days"} Scheduled
-                  </span>
-                ) : null}
-              </div>
-
-              {/* Start Date & Return Date inputs side-by-side */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[0.688rem] uppercase font-mono text-white/50">
-                    Leave Start Date
-                  </span>
-                  <input
-                    type="date"
-                    min={todayStr}
-                    value={adminLeaveFrom}
-                    onChange={(e) => handleAdminLeaveFromChange(e.target.value)}
-                    className={`w-full bg-[#0A0A18] border rounded-[2px] p-2 text-xs text-white focus:border-[#CC6600] outline-none font-mono cursor-pointer transition-colors ${
-                      isAdminStartInPast ? "border-rose-500/60 bg-rose-950/10" : "border-white/10 hover:border-white/20"
-                    }`}
-                  />
-                  {isAdminStartInPast && (
-                    <span className="text-[0.688rem] text-rose-400 font-sans">
-                      Start date cannot be in the past.
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[0.688rem] uppercase font-mono text-white/50">
-                    Expected Return Date
-                  </span>
-                  <input
-                    type="date"
-                    min={adminLeaveFrom || todayStr}
-                    value={adminLeaveUntil}
-                    onChange={(e) => handleAdminLeaveUntilChange(e.target.value)}
-                    className={`w-full bg-[#0A0A18] border rounded-[2px] p-2 text-xs text-white focus:border-[#CC6600] outline-none font-mono cursor-pointer transition-colors ${
-                      isAdminReturnBeforeStart ? "border-rose-500/60 bg-rose-950/10" : "border-white/10 hover:border-white/20"
-                    }`}
-                  />
-                  {isAdminReturnBeforeStart && (
-                    <span className="text-[0.688rem] text-rose-400 font-sans">
-                      Return date cannot be earlier than start date.
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <FormFooter className="mt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsAdminLeaveOpen(false)}
-                disabled={isPending}
-              >
-                Cancel
+        {rows.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
+            <p className="text-sm text-white/60">{staff.length === 0 ? "No staff yet. Add your first team member." : "Nobody matches."}</p>
+            {staff.length > 0 ? (
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                Clear Filters
               </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                loading={isPending}
-                disabled={adminLeaveReason.trim().length < 3}
-              >
-                CONFIRM LEAVE STATUS
-              </Button>
-            </FormFooter>
-          </form>
-        </Modal>
-      )}
+            ) : null}
+          </div>
+        ) : (
+          <>
+            <ul className="mt-4 divide-y divide-white/[0.05] border-t border-white/[0.06] md:hidden">
+              {shown.map((s) => (
+                <li key={s.id} className="flex items-start gap-3 px-5 py-4">
+                  <Avatar name={s.fullName} />
+                  <div className="min-w-0 flex-1">
+                    <button type="button" onClick={() => open(s, "details")} className="text-left text-sm font-medium text-white">
+                      {s.fullName}
+                    </button>
+                    <p className="truncate text-[12px] text-white/45">{s.email}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <RoleTag role={s.role} />
+                      <StatusText status={s.status} />
+                    </div>
+                  </div>
+                  <DropdownMenu items={menuFor(s)} align="end" />
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 hidden overflow-x-auto border-t border-white/[0.06] md:block">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-white/[0.06] text-[11px] uppercase tracking-wider text-white/40">
+                    <th className="px-6 py-2.5 font-medium">Name</th>
+                    <th className="px-3 py-2.5 font-medium">Role</th>
+                    <th className="px-3 py-2.5 font-medium">Skills</th>
+                    <th className="px-3 py-2.5 font-medium">Status</th>
+                    <th className="px-3 py-2.5 font-medium">Joined</th>
+                    <th className="px-6 py-2.5" aria-label="Actions" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.05]">
+                  {shown.map((s) => (
+                    <tr key={s.id} className="group transition-colors hover:bg-white/[0.02]">
+                      <td className="max-w-[300px] px-6 py-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar name={s.fullName} />
+                          <div className="min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => open(s, "details")}
+                              className="block truncate text-left text-sm font-medium text-white hover:underline hover:decoration-white/30 hover:underline-offset-4"
+                            >
+                              {s.fullName}
+                            </button>
+                            <p className="truncate text-[12px] text-white/45">{s.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3">
+                        <RoleTag role={s.role} />
+                      </td>
+                      <td className="px-3 py-3">
+                        <TagsOverflow tags={s.specializations} limit={2} title="Other skills" emptyText="—" />
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3">
+                        <StatusText status={s.status} />
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3 text-[13px] text-white/55">{shortDate(s.joinedAt)}</td>
+                      <td className="whitespace-nowrap px-6 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => open(s, "details")} className="active:scale-[0.97]">
+                            View
+                          </Button>
+                          <DropdownMenu items={menuFor(s)} align="end" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              currentPage={page}
+              totalItems={rows.length}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(n) => {
+                setPageSize(n);
+                setPage(1);
+              }}
+              itemLabel="people"
+            />
+          </>
+        )}
+      </Panel>
 
-      {toastMessage && (
-        <Toast
-          message={toastMessage.message}
-          description={toastMessage.description}
-          variant={toastMessage.variant}
-          onClose={() => setToastMessage(null)}
+      {target && dialog === "details" ? <DetailsDialog staff={target} onClose={close} /> : null}
+
+      {target && dialog === "suspend" ? (
+        <ReasonDialog
+          title={`Suspend ${target.fullName}?`}
+          description="They can't sign in until you lift the suspension. Their open studies are flagged so an admin can check them."
+          confirmLabel="Suspend Account"
+          withViolation="optional"
+          busy={isPending}
+          onClose={close}
+          onConfirm={(reason, violation) =>
+            startTransition(async () => {
+              const res = await suspendStaff(target.id, { reason, violationType: violation ? (violation as ViolationType) : undefined });
+              if (!res.success) return setToast({ message: "Couldn't suspend", description: res.error.message, variant: "danger" });
+              close();
+              setToast({ message: "Account suspended", description: `${target.fullName} can't sign in until you lift it.`, variant: "warning" });
+              reload();
+            })
+          }
         />
-      )}
+      ) : null}
+
+      {target && dialog === "terminate" ? (
+        <ReasonDialog
+          title={`Remove ${target.fullName}'s access?`}
+          description="They can't sign in again. The account stays on record with its email, so the same email can't be added as someone new. To free the email, use Delete account instead. Their open studies need a new analyst or reviewer."
+          confirmLabel="Remove Access"
+          withViolation="required"
+          withForfeit
+          busy={isPending}
+          onClose={close}
+          onConfirm={(reason, violation, forfeit) =>
+            startTransition(async () => {
+              const res = await terminateStaff(target.id, {
+                reason,
+                violationType: (violation || "POLICY_VIOLATION") as ViolationType,
+                forfeitPayouts: Boolean(forfeit),
+              });
+              if (!res.success) return setToast({ message: "Couldn't remove access", description: res.error.message, variant: "danger" });
+              close();
+              setToast({ message: "Access removed", description: `${target.fullName} can't sign in anymore.`, variant: "warning" });
+              reload();
+            })
+          }
+        />
+      ) : null}
+
+      {target && dialog === "leave" ? (
+        <LeaveDialog
+          staff={target}
+          busy={isPending}
+          onClose={close}
+          onConfirm={(reason, from, until) =>
+            startTransition(async () => {
+              const res = await requestLeave({
+                userId: target.id,
+                reason,
+                leaveFrom: new Date(from).toISOString(),
+                leaveUntil: new Date(until).toISOString(),
+              });
+              if (!res.success) return setToast({ message: "Couldn't put on leave", description: res.error.message, variant: "danger" });
+              close();
+              window.dispatchEvent(new CustomEvent("leave-status-updated"));
+              setToast({ message: "On leave", description: `${target.fullName} won't get new studies until ${shortDate(until)}.`, variant: "success" });
+              reload();
+            })
+          }
+        />
+      ) : null}
+
+      {target && dialog === "delete" ? (
+        <DeleteDialog
+          staff={target}
+          onClose={close}
+          onDeleted={(name, email) => {
+            close();
+            setStaff((prev) => prev.filter((p) => p.id !== target.id));
+            setToast({ message: "Account deleted", description: `${name} can't sign in anymore. ${email} is free to add again.`, variant: "success" });
+            reload();
+          }}
+        />
+      ) : null}
+
+      {isAddOpen ? (
+        <AddStaffDialog
+          isCeo={isCeo}
+          onClose={() => setIsAddOpen(false)}
+          onCreated={(data) => {
+            setIsAddOpen(false);
+            setCreated(data);
+            setToast({ message: "Account created", description: `Copy ${data.fullName}'s temporary password before you close it.`, variant: "success" });
+            reload();
+          }}
+        />
+      ) : null}
+
+      {created ? <CreatedDialog data={created} onClose={() => setCreated(null)} onCopied={() => setToast({ message: "Sign-in details copied", variant: "info" })} /> : null}
+
+      {toast ? <Toast message={toast.message} description={toast.description} variant={toast.variant} onClose={() => setToast(null)} /> : null}
     </div>
+  );
+}
+
+function Avatar({ name }: { name: string }) {
+  return (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-white/10 bg-white/[0.04] font-sans text-[12px] font-semibold text-white/75">
+      {initials(name) || "?"}
+    </span>
+  );
+}
+
+function RoleTag({ role }: { role: string }) {
+  return (
+    <span className="inline-flex items-center rounded-[2px] border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[12px] text-white/80">
+      {ROLE_LABEL[role] ?? role}
+    </span>
+  );
+}
+
+/** Neutral by default; orange only when someone needs an answer (a leave request). */
+function StatusText({ status }: { status: string }) {
+  const needsAnswer = status === "LEAVE_PENDING";
+  const quiet = status === "TERMINATED" || status === "SUSPENDED" || status === "ON_LEAVE";
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-[13px] ${needsAnswer ? "font-medium text-white" : quiet ? "text-white/50" : "text-white/80"}`}>
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${needsAnswer ? "bg-[#CC6600]" : status === "ACTIVE" ? "bg-white/70" : "bg-white/25"}`}
+        aria-hidden="true"
+      />
+      {STATUS_LABEL[status] ?? status}
+    </span>
+  );
+}
+
+function DetailsDialog({ staff, onClose }: { staff: StaffListItem; onClose: () => void }) {
+  const [detail, setDetail] = useState<StaffDetailItem | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    getStaffDetail(staff.id)
+      .then((res) => !cancelled && (res.success ? setDetail(res.data) : setFailed(true)))
+      .catch(() => !cancelled && setFailed(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [staff.id]);
+  const specs = detail?.specializations ?? staff.specializations;
+  const logs = detail?.suspensionLogs ?? [];
+  const actionWord: Record<string, string> = { SUSPENDED: "Suspended", TERMINATED: "Access removed", LIFTED: "Suspension lifted" };
+
+  return (
+    <Modal open onClose={onClose} title={staff.fullName} description={`${ROLE_LABEL[staff.role] ?? staff.role} · ${STATUS_LABEL[staff.status] ?? staff.status}`} size="lg">
+      <div className="flex flex-col gap-5 font-sans text-[13px]">
+        <dl className="grid grid-cols-1 gap-4 rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4 sm:grid-cols-3">
+          <div className="min-w-0">
+            <dt className="text-white/45">Email</dt>
+            <dd className="mt-1 flex items-center gap-1.5 text-white">
+              <span className="truncate">{staff.email}</span>
+              <CopyButton value={staff.email} variant="ghost" label="" copiedLabel="" className="shrink-0" />
+            </dd>
+          </div>
+          <div>
+            <dt className="text-white/45">Phone</dt>
+            <dd className="mt-1 text-white">{detail?.phone || "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-white/45">Joined</dt>
+            <dd className="mt-1 text-white">{shortDate(staff.joinedAt)}</dd>
+          </div>
+          {staff.status === "ON_LEAVE" || staff.status === "LEAVE_PENDING" ? (
+            <div className="sm:col-span-3">
+              <dt className="text-white/45">Leave</dt>
+              <dd className="mt-1 text-white">
+                {shortDate(staff.leaveFrom)} to {shortDate(staff.leaveUntil)}
+                {staff.leaveReason ? <span className="text-white/60">{` · ${staff.leaveReason}`}</span> : null}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+
+        <section>
+          <h3 className="text-sm font-semibold text-white">About</h3>
+          <p className="mt-1.5 leading-relaxed text-white/70">{detail?.bio || staff.bio || "No bio yet."}</p>
+        </section>
+
+        <section>
+          <h3 className="text-sm font-semibold text-white">Skills</h3>
+          {specs.length ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {specs.map((s) => (
+                <span key={s} className="rounded-[2px] border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[12px] text-white/80">
+                  {s}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-1.5 text-white/50">None listed.</p>
+          )}
+        </section>
+
+        <section>
+          <h3 className="text-sm font-semibold text-white">Suspensions and removals</h3>
+          {failed ? (
+            <p className="mt-1.5 text-white/50">The history didn&apos;t load. Close this and try again.</p>
+          ) : !detail ? (
+            <p className="mt-1.5 text-white/40">Loading...</p>
+          ) : logs.length === 0 ? (
+            <p className="mt-1.5 text-white/50">None. Clean record.</p>
+          ) : (
+            <ul className="mt-2 divide-y divide-white/[0.06] rounded-[2px] border border-white/[0.08]">
+              {logs.map((log) => (
+                <li key={log.id} className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                  <div className="min-w-0">
+                    <p className="font-medium text-white">{actionWord[log.action] ?? log.action}</p>
+                    <p className="mt-0.5 text-white/65">{log.reason}</p>
+                  </div>
+                  <p className="shrink-0 text-white/45">
+                    {shortDate(log.performedAt)}
+                    {log.liftedAt ? ` · lifted ${shortDate(log.liftedAt)}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </Modal>
+  );
+}
+
+function ReasonDialog({
+  title,
+  description,
+  confirmLabel,
+  withViolation,
+  withForfeit = false,
+  busy,
+  onClose,
+  onConfirm,
+}: {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  withViolation: "optional" | "required";
+  withForfeit?: boolean;
+  busy: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string, violation: string, forfeit?: boolean) => void;
+}) {
+  const [reason, setReason] = useState("");
+  const [violation, setViolation] = useState(withViolation === "required" ? "POLICY_VIOLATION" : "");
+  const [forfeit, setForfeit] = useState(false);
+  const short = reason.trim().length < 10;
+  return (
+    <Modal
+      open
+      onClose={() => (busy ? undefined : onClose())}
+      title={title}
+      description={description}
+      size="md"
+      footer={
+        <div className="flex w-full justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="danger" size="sm" loading={busy} disabled={short} onClick={() => onConfirm(reason.trim(), violation, forfeit)}>
+            {confirmLabel}
+          </Button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-4 font-sans">
+        <FormSelect
+          label={withViolation === "required" ? "What happened" : "What happened (optional)"}
+          options={[...(withViolation === "optional" ? [{ value: "", label: "No rule broken, just a pause" }] : []), ...VIOLATION_OPTIONS]}
+          value={violation}
+          onChange={(e) => setViolation(e.target.value)}
+        />
+        <FormTextarea
+          label="Reason"
+          helper="At least 10 characters. Kept in their history."
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={3}
+          placeholder="Say what happened in a sentence or two"
+        />
+        {withForfeit ? (
+          <label className="flex cursor-pointer items-start gap-3 rounded-[2px] border border-white/10 px-3.5 py-3 text-[13px] text-white/75">
+            <input type="checkbox" checked={forfeit} onChange={(e) => setForfeit(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#CC6600]" />
+            <span>
+              <span className="font-medium text-white">Cancel their unpaid study pay.</span> Only for serious cases, like taking payment
+              outside JAXIS.
+            </span>
+          </label>
+        ) : null}
+      </div>
+    </Modal>
+  );
+}
+
+function LeaveDialog({
+  staff,
+  busy,
+  onClose,
+  onConfirm,
+}: {
+  staff: StaffListItem;
+  busy: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string, from: string, until: string) => void;
+}) {
+  const today = todayInput();
+  const [reason, setReason] = useState("");
+  const [from, setFrom] = useState(today);
+  const [until, setUntil] = useState(addDays(today, 1));
+  const pastStart = from < today;
+  const backwards = until < from;
+  const days = !backwards ? Math.max(1, Math.round((new Date(until).getTime() - new Date(from).getTime()) / 86_400_000)) : null;
+  const problem = pastStart ? "The start date can't be in the past." : backwards ? "The return date can't be before the start date." : null;
+
+  return (
+    <Modal
+      open
+      onClose={() => (busy ? undefined : onClose())}
+      title={`Put ${staff.fullName} on leave?`}
+      description="They can still sign in, but won't get new studies until they're back."
+      size="md"
+      footer={
+        <div className="flex w-full justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="sm" loading={busy} disabled={reason.trim().length < 3 || Boolean(problem)} onClick={() => onConfirm(reason.trim(), from, until)}>
+            Put on Leave
+          </Button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-4 font-sans text-[13px]">
+        <div className="flex flex-wrap gap-1.5">
+          {LEAVE_REASONS.map((r) => (
+            <button
+              key={r.label}
+              type="button"
+              onClick={() => setReason(r.text)}
+              className={`rounded-[2px] border px-2.5 py-1 text-[12px] transition-colors ${
+                reason === r.text ? "border-[#CC6600]/70 bg-[#CC6600]/[0.08] text-white" : "border-white/10 text-white/65 hover:border-white/25 hover:text-white"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+        <FormTextarea label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} rows={2} placeholder="Pick one above or write your own" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-white/70">From</span>
+            <input
+              type="date"
+              min={today}
+              value={from}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                if (until < e.target.value) setUntil(addDays(e.target.value, 1));
+              }}
+              className="h-10 rounded-[2px] border border-white/10 bg-[#050513] px-3 text-sm text-white outline-none focus:border-[#CC6600]/60"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-white/70">Back on</span>
+            <input
+              type="date"
+              min={from || today}
+              value={until}
+              onChange={(e) => setUntil(e.target.value)}
+              className="h-10 rounded-[2px] border border-white/10 bg-[#050513] px-3 text-sm text-white outline-none focus:border-[#CC6600]/60"
+            />
+          </label>
+        </div>
+        <p className={problem ? "text-red-300" : "text-white/50"}>{problem ?? (days ? `${days} ${days === 1 ? "day" : "days"} away.` : "")}</p>
+      </div>
+    </Modal>
+  );
+}
+
+function DeleteDialog({ staff, onClose, onDeleted }: { staff: StaffListItem; onClose: () => void; onDeleted: (name: string, email: string) => void }) {
+  const [account, setAccount] = useState<AccountSummary | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // Checked on the server first: you, CEO accounts, and anyone still on an unfinished study can't be deleted.
+  useEffect(() => {
+    let cancelled = false;
+    findAccountByEmail(staff.email)
+      .then((res) => {
+        if (cancelled) return;
+        if (!res.success) setLoadError(res.error);
+        else if (!res.data) setLoadError("This account no longer exists.");
+        else setAccount(res.data);
+      })
+      .catch(() => !cancelled && setLoadError("Couldn't check this account. Try again."));
+    return () => {
+      cancelled = true;
+    };
+  }, [staff.email]);
+
+  const matches = confirmText.trim().toLowerCase() === staff.email.toLowerCase();
+  const confirm = async () => {
+    if (!account || busy) return;
+    setBusy(true);
+    setError(null);
+    const res = await deleteAccount({ userId: account.id, confirmEmail: confirmText, reason: reason || undefined });
+    setBusy(false);
+    if (!res.success) return setError(res.error);
+    onDeleted(res.data.fullName, res.data.email);
+  };
+
+  return (
+    <Modal
+      open
+      onClose={() => (busy ? undefined : onClose())}
+      title={`Delete ${staff.fullName}'s account?`}
+      description="This can't be undone."
+      size="sm"
+      footer={
+        <div className="flex w-full justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="danger" size="sm" loading={busy} disabled={!account || Boolean(account.blockedReason) || !matches} onClick={confirm}>
+            Delete Account
+          </Button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-4 font-sans text-[13px] text-white/70">
+        {loadError ? (
+          <p className="text-white/80">{loadError}</p>
+        ) : !account ? (
+          <p className="text-white/45">Checking the account...</p>
+        ) : account.blockedReason ? (
+          <p className="flex items-start gap-2 text-white/85">
+            <WarningCircle size={16} weight="fill" className="mt-0.5 shrink-0 text-[#CC6600]" />
+            {account.blockedReason}
+          </p>
+        ) : (
+          <>
+            <ul className="flex list-disc flex-col gap-1 pl-4">
+              <li>They&apos;re signed out and can&apos;t sign in with this account again.</li>
+              <li>{staff.email} becomes free, so you can add it again.</li>
+              <li>Saved payout details (GCash or bank) are removed.</li>
+              <li>Past studies, payslips, and messages stay on record under their name.</li>
+            </ul>
+            <label className="flex flex-col gap-1.5">
+              <span>
+                Type <span className="font-mono text-white">{staff.email}</span> to confirm
+              </span>
+              <input
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                autoComplete="off"
+                className="h-9 rounded-[2px] border border-white/10 bg-[#050513] px-3 text-[13px] text-white outline-none focus:border-[#CC6600]/60"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span>Reason (optional, kept in the activity log)</span>
+              <input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                maxLength={300}
+                placeholder="For example: adding them again with a new role"
+                className="h-9 rounded-[2px] border border-white/10 bg-[#050513] px-3 text-[13px] text-white outline-none placeholder:text-white/30 focus:border-[#CC6600]/60"
+              />
+            </label>
+          </>
+        )}
+        {error ? <p className="text-red-300">{error}</p> : null}
+      </div>
+    </Modal>
+  );
+}
+
+function AddStaffDialog({
+  isCeo,
+  onClose,
+  onCreated,
+}: {
+  isCeo: boolean;
+  onClose: () => void;
+  onCreated: (data: { id: string; email: string; fullName: string; role: string; temporaryPassword: string }) => void;
+}) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<StaffRole>("STATISTICIAN");
+  const [specs, setSpecs] = useState<string[]>([]);
+  const [customTag, setCustomTag] = useState("");
+  const [bio, setBio] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const [busy, setBusy] = useState(false);
+
+  const roleOptions = isCeo
+    ? [
+        { value: "STATISTICIAN", label: "Analyst (runs the analysis)" },
+        { value: "SENIOR_QA_LEAD", label: "Reviewer (checks work before delivery)" },
+        { value: "FINANCE_OFFICER", label: "Finance (checks payments, pays staff)" },
+        { value: "ADMIN", label: "Admin (prices studies, assigns work)" },
+      ]
+    : [
+        { value: "STATISTICIAN", label: "Analyst (runs the analysis)" },
+        { value: "SENIOR_QA_LEAD", label: "Reviewer (checks work before delivery)" },
+      ];
+
+  const allSpecs = [...STANDARD_SPECIALIZATIONS, ...specs.filter((s) => !(STANDARD_SPECIALIZATIONS as readonly string[]).includes(s))];
+  const toggle = (s: string) => setSpecs((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
+  const addCustom = () => {
+    const tag = customTag.trim();
+    if (tag && !specs.includes(tag)) setSpecs([...specs, tag]);
+    setCustomTag("");
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setFormError(null);
+    setFieldErrors({});
+    setBusy(true);
+    const res = await provisionStaff({ firstName, lastName, email, role, specializations: specs, bio });
+    setBusy(false);
+    if (!res.success) {
+      setFormError(res.error.code === "EMAIL_TAKEN" ? "Someone already uses this email. Delete that account first to reuse it." : res.error.message);
+      if (res.error.fieldErrors) setFieldErrors(res.error.fieldErrors);
+      return;
+    }
+    onCreated(res.data);
+  };
+
+  return (
+    <Modal
+      open
+      onClose={() => (busy ? undefined : onClose())}
+      title="Add staff"
+      description="We create the account and give you a temporary password to send them."
+      size="2xl"
+      footer={
+        <div className="flex w-full justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button type="submit" form="add-staff-form" variant="primary" size="sm" loading={busy}>
+            Create Account
+          </Button>
+        </div>
+      }
+    >
+      <form id="add-staff-form" onSubmit={submit} noValidate className="grid grid-cols-1 gap-6 font-sans md:grid-cols-2">
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormInput label="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} error={fieldErrors.firstName?.[0]} />
+            <FormInput label="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} error={fieldErrors.lastName?.[0]} />
+          </div>
+          <FormInput label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} error={fieldErrors.email?.[0]} placeholder="name@gmail.com" />
+          <FormSelect label="Role" options={roleOptions} value={role} onChange={(e) => setRole(e.target.value as StaffRole)} />
+          <FormTextarea label="About (optional)" value={bio} onChange={(e) => setBio(e.target.value)} rows={3} placeholder="Background, degree, or the kind of studies they handle" />
+          {formError ? (
+            <p role="alert" className="flex items-start gap-2 text-[13px] text-red-300">
+              <WarningCircle size={15} weight="fill" className="mt-0.5 shrink-0" />
+              {formError}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between">
+            <span className="text-[13px] text-white/80">Skills</span>
+            <span className="text-[12px] text-white/45">{specs.length} picked</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {allSpecs.map((s) => {
+              const on = specs.includes(s);
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => toggle(s)}
+                  aria-pressed={on}
+                  className={`inline-flex items-center gap-1 rounded-[2px] border px-2.5 py-1 text-[12px] transition-colors ${
+                    on ? "border-[#CC6600]/70 bg-[#CC6600]/[0.08] text-white" : "border-white/10 text-white/65 hover:border-white/25 hover:text-white"
+                  }`}
+                >
+                  {on ? <Check size={12} weight="bold" /> : <Plus size={12} weight="bold" className="text-white/35" />}
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-1 flex gap-2">
+            <input
+              value={customTag}
+              onChange={(e) => setCustomTag(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addCustom();
+                }
+              }}
+              placeholder="Add another skill"
+              className="h-9 min-w-0 flex-1 rounded-[2px] border border-white/10 bg-[#050513] px-3 text-[13px] text-white outline-none placeholder:text-white/30 focus:border-[#CC6600]/60"
+            />
+            <Button type="button" variant="outline" size="sm" onClick={addCustom} disabled={!customTag.trim()}>
+              Add
+            </Button>
+          </div>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function CreatedDialog({
+  data,
+  onClose,
+  onCopied,
+}: {
+  data: { email: string; fullName: string; role: string; temporaryPassword: string };
+  onClose: () => void;
+  onCopied: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const loginUrl =
+    typeof window !== "undefined" && !["localhost", "127.0.0.1"].includes(window.location.hostname)
+      ? `${window.location.origin}/login`
+      : "https://app.jaxis-statlab.com/login";
+  const copy = () => {
+    const text = `Your JAXIS StatLab account\nName: ${data.fullName}\nEmail: ${data.email}\nTemporary password: ${data.temporaryPassword}\nSign in: ${loginUrl}\nPlease change your password after you sign in.`;
+    navigator.clipboard?.writeText(text).catch(() => {});
+    setCopied(true);
+    onCopied();
+    setTimeout(() => setCopied(false), 2500);
+  };
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={`${data.fullName}'s account is ready`}
+      description="Send them these sign-in details. The password won't be shown again."
+      size="md"
+      footer={
+        <div className="flex w-full justify-between gap-2">
+          <Button variant="outline" size="sm" onClick={copy} className="gap-1.5">
+            {copied ? <Check size={14} weight="bold" /> : <Copy size={14} weight="bold" />}
+            {copied ? "Copied" : "Copy Sign-in Details"}
+          </Button>
+          <Button variant="primary" size="sm" onClick={onClose}>
+            Done
+          </Button>
+        </div>
+      }
+    >
+      <dl className="flex flex-col divide-y divide-white/[0.06] rounded-[2px] border border-white/[0.08] font-sans text-[13px]">
+        {[
+          ["Name", data.fullName],
+          ["Role", ROLE_LABEL[data.role] ?? data.role],
+          ["Email", data.email],
+          ["Sign in at", loginUrl],
+        ].map(([k, v]) => (
+          <div key={k} className="flex items-center justify-between gap-4 px-4 py-2.5">
+            <dt className="text-white/45">{k}</dt>
+            <dd className="truncate text-right text-white">{v}</dd>
+          </div>
+        ))}
+        <div className="flex items-center justify-between gap-4 px-4 py-3">
+          <dt className="text-white/45">Temporary password</dt>
+          <dd className="font-mono text-base font-semibold text-white">{data.temporaryPassword}</dd>
+        </div>
+      </dl>
+    </Modal>
   );
 }
