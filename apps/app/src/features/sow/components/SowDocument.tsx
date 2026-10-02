@@ -9,6 +9,7 @@ import type { SOWDetailItem } from "../schemas";
 import { ADDONS_CATALOG } from "@/lib/pricing-rules";
 import type { AddOnName } from "@prisma/client";
 import { clientPackageName } from "@/features/projects/client-packages";
+import { formatSignatureName, normalizePersonName } from "@/lib/formatters";
 
 // The agreement as a sheet of paper: dark ink on white, sized like A4, so what you see on screen is
 // what prints and what "Save as PDF" produces. The words inside the snapshot (terms, policies) are
@@ -56,6 +57,7 @@ export interface SowDocumentProps {
 export function SowDocument({ sow, className = "", showPrintAction = true }: SowDocumentProps) {
   const { client, project, commercial, delivery, terms } = sow.contentSnapshot;
   const ref = `JAXIS-SOW-${sow.id.replace(/[^a-z0-9]/gi, "").slice(-8).toUpperCase()}`;
+  const preparer = sow.generatedByName?.trim() || "";
   const addOns = commercial.addOns ?? [];
   const balance = commercial.balanceDue ?? Math.max(0, commercial.totalAmount - commercial.downpaymentRequired);
 
@@ -259,9 +261,9 @@ export function SowDocument({ sow, className = "", showPrintAction = true }: Sow
             />
             <SignatureBlock
               role="For JAXIS StatLab"
-              signature="JAXIS StatLab"
-              name="Authorized representative"
-              lines={[`Prepared ${longDate(sow.generatedAt)}`]}
+              signature={preparer ? formatSignatureName(preparer) : "JAXIS StatLab"}
+              name={preparer ? normalizePersonName(preparer) : "Authorized representative"}
+              lines={[preparer ? "Authorized representative" : null, `Prepared ${longDate(sow.generatedAt)}`]}
             />
           </div>
           <p className="mt-8 border-t border-[#1c1c28]/15 pt-3 text-[11px] text-[#6b6b80]">

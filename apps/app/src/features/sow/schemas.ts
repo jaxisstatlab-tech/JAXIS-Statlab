@@ -48,6 +48,8 @@ export interface SOWDetailItem {
   signedAt?: string | null;
   signedByUserId?: string | null;
   generatedBy: string;
+  /** Name of the admin or CEO who prepared the agreement (signs for JAXIS). */
+  generatedByName?: string | null;
   generatedAt: string;
   pdfPath?: string | null;
 }

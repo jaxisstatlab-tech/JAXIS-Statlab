@@ -29,6 +29,18 @@ const DEV_SOWS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-s
 const DEV_PROJECTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
 const DEV_QUOTATIONS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-quotations.json");
 
+// The agreement is signed for JAXIS by whoever prepared it, so add their name.
+async function withPreparer(sow: SOWDetailItem): Promise<SOWDetailItem> {
+  try {
+    const user = await withDbTimeout(
+      db.user.findUnique({ where: { id: sow.generatedBy }, select: { fullName: true } })
+    );
+    return { ...sow, generatedByName: user?.fullName?.trim() || null };
+  } catch {
+    return sow;
+  }
+}
+
 function readPersistedDevSows(): SOWDetailItem[] {
   try {
     if (fs.existsSync(DEV_SOWS_FILE)) {
@@ -237,7 +249,7 @@ async function createOrUpdateSOWInternal({
     revalidatePath(`/dashboard/admin/intake`);
     revalidatePath(`/dashboard/client/projects`);
 
-    return { success: true, data: result };
+    return { success: true, data: await withPreparer(result) };
   } catch (err: unknown) {
     console.warn("Database SOW generation fallback to dev store:", (err as Error).message);
 
@@ -479,7 +491,7 @@ export async function getSOWByProject(
 
     return {
       success: true,
-      data: {
+      data: await withPreparer({
         id: sow.id,
         projectId: sow.projectId,
         projectIntakeId: sow.project.intakeId,
@@ -498,7 +510,7 @@ export async function getSOWByProject(
         generatedBy: sow.generatedBy,
         generatedAt: sow.generatedAt.toISOString(),
         pdfPath: sow.pdfPath,
-      },
+      }),
     };
   } catch {
     // Fallback to dev store
@@ -636,7 +648,7 @@ export async function signSOW(
       console.warn("[signSOW] Realtime notification warning:", e);
     }
 
-    return { success: true, data: updatedSow };
+    return { success: true, data: await withPreparer(updatedSow) };
   } catch (err: unknown) {
     const errorMsg = (err as Error).message;
     if (errorMsg.startsWith("NAME_MISMATCH") || errorMsg.startsWith("SOW_LOCKED")) {
