@@ -272,7 +272,7 @@ function DepositScene({ on }: { on: boolean }) {
   );
 }
 
-/* 04 Analysis: a second analyst reruns everything; each number has to match the first run before sign-off. */
+/* 04 Analysis: an analyst runs your tests, and a review editor conducts an audit run before sign-off. */
 const RUNS = [
   ["t value", "3.42"],
   ["p value", ".001"],
@@ -283,7 +283,7 @@ function AnalysisScene({ on }: { on: boolean }) {
   return (
     <Sheet
       title="Checked twice"
-      meta={<Meta>Both runs must match</Meta>}
+      meta={<Meta>Audit run must match</Meta>}
       footer={
         <>
           <span className="font-sans text-[12px] text-white/55">Senior reviewer</span>
@@ -296,7 +296,7 @@ function AnalysisScene({ on }: { on: boolean }) {
           <tr className="font-mono text-[9.5px] uppercase tracking-wider text-white/35">
             <th className="py-2.5 pl-5 text-left font-normal">Result</th>
             <th className="py-2.5 text-right font-normal">First run</th>
-            <th className="py-2.5 text-right font-normal">Second run</th>
+            <th className="py-2.5 text-right font-normal">Audit run</th>
             <th className="w-12 pr-5" />
           </tr>
         </thead>

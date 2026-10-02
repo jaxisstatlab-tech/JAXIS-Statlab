@@ -20,6 +20,7 @@ import {
   type AdminQaRejectionWarningDTO,
 } from "./schemas";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
+import { emailClient } from "@/lib/email/notify";
 import { computePurgeDeadline, computeRevisionWindowExpiry } from "@/lib/delivery-rules";
 import type { RoleName, DeliverableCategory } from "@prisma/client";
 import { devStudyDataEnabled, devQaDesk } from "@/features/projects/dev-study-store";
@@ -592,6 +593,8 @@ export async function submitQaReview(
     } catch (notifyErr) {
       console.warn("[submitQaReview] Realtime notification warning:", notifyErr);
     }
+    // Approval delivers the study: tell the client once (a later admin release won't email again).
+    if (decision === "QA_APPROVED") emailClient(project.id, "ProjectDelivered", {}, { once: true });
 
     // Revalidate paths
     revalidatePath(`/dashboard/qa`);

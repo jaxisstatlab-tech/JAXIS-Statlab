@@ -499,12 +499,12 @@ export function CheckArt() {
     <div
       ref={ref}
       role="img"
-      aria-label="Two analysts run the same study separately and both get F(2, 217) = 8.14, so the results match"
+      aria-label="Analysis run verified by an independent audit run, confirming F(2, 217) = 8.14"
       className="relative mt-6 h-[17rem] w-full overflow-hidden"
     >
-      <Status left="Two separate runs" right={matched ? "Results match" : "Rerunning"} hot={matched} />
-      <RunWindow title="Run 1 · Analyst 1" shown className="left-7 top-7 w-[62%] sm:left-8" />
-      <RunWindow title="Run 2 · Analyst 2" shown={step >= 1} className="left-[30%] top-[8.5rem] w-[80%]" />
+      <Status left="Analysis & audit run" right={matched ? "Results match" : "Auditing"} hot={matched} />
+      <RunWindow title="Analysis run · Analyst" shown className="left-7 top-7 w-[62%] sm:left-8" />
+      <RunWindow title="Audit run · Review Editor" shown={step >= 1} className="left-[30%] top-[8.5rem] w-[80%]" />
       <span
         aria-hidden="true"
         className={`absolute right-5 top-[7.4rem] z-10 flex h-9 w-9 items-center justify-center rounded-full border transition-[border-color,background-color,transform] duration-300 ${ease} ${

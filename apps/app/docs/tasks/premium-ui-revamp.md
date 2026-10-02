@@ -271,6 +271,10 @@ Tracker coverage checked 2026-09-27: all 78 pages in `apps/app/app` are listed (
 - Everyone already logged in will be asked to log in once (new session rules).
 - Last release check (2026-09-27): production build passes with no warnings, type check clean, no secrets in browser code. Re-run before the next deploy (many pages changed since).
 
+### Email
+
+- 2026-10-02: email kept to what matters (Resend free plan: 100 a day, 3,000 a month). Team inbox: new study, price accepted (says RUSH/EXPRESS/EMERGENCY), claim filed. Clients: price ready, more info needed, agreement ready, receipt not accepted, files ready. Password reset always. About 6 per study; above 90 a day or 2,850 a month only password reset is sent (others held back, retry from Email Delivery Logs). Development only logs emails. Details: `docs/modules/specs/22-email.md`. Open: confirm the app's Vercel project has `RESEND_API_KEY` and `RESEND_FROM_EMAIL`.
+
 ### Security
 
 - 2026-10-01: a client-side security audit and its fixes are listed with commits in `docs/modules/specs/21-production-hardening.md` §3.

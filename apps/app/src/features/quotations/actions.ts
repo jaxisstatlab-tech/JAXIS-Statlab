@@ -23,6 +23,20 @@ import {
   sendQuotationAcceptedNotification,
   sendQuotationDeclinedNotification,
 } from "./notifications";
+import { emailClient, emailTeam } from "@/lib/email/notify";
+
+// Delivery speeds a client can pick when accepting (add-on codes), in the words the price page uses.
+const SPEEDS: Record<string, { label: string; detail: string }> = {
+  EMERGENCY: { label: "Emergency (24 hours)", detail: "Ready 24 hours after the deposit is confirmed, with a senior reviewer." },
+  EXPRESS: { label: "Express (48 hours)", detail: "Ready 48 hours after the deposit is confirmed." },
+  RUSH: { label: "Rush (3 days)", detail: "Ready 3 days after the deposit is confirmed." },
+};
+function deliverySpeed(lineItems: Array<{ itemType: string; itemName: string }>) {
+  const code = ["EMERGENCY", "EXPRESS", "RUSH"].find((c) => lineItems.some((li) => li.itemType === "ADDON" && li.itemName === c));
+  return code
+    ? { speedCode: code, speedLabel: SPEEDS[code]!.label, speedDetail: SPEEDS[code]!.detail }
+    : { speedCode: "STANDARD", speedLabel: "Standard", speedDetail: "" };
+}
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 import {
   CreateQuotationSchema,
@@ -985,6 +999,9 @@ export async function issueQuotation(
     revalidatePath(`/dashboard/client/projects/${updated.projectId}/quote`);
     invalidateCacheTags(CACHE_TAGS.QUOTATIONS, CACHE_TAGS.PROJECTS);
 
+    // The client has to accept the price before anything else happens, so they get an email.
+    emailClient(result.projectId, "QuoteReady", { totalAmount: result.totalAmount, expiresAt: result.expiresAt });
+
     // Dispatch email notification to client
     await sendQuotationIssuedNotification({
       quotationId: result.id,
@@ -1329,6 +1346,12 @@ export async function respondQuotation(
 
     // Note: SOW is intentionally drafted and compiled by Operations Admin (Module 06)
     if (decision === "ACCEPT") {
+      // Team inbox: says Rush / Express / Emergency in the subject so a fast order can't be missed.
+      emailTeam(
+        "QuoteAccepted",
+        { totalAmount: result.totalAmount, ...deliverySpeed(result.lineItems ?? []) },
+        { projectId: result.projectId, once: true }
+      );
       await sendQuotationAcceptedNotification({
         quotationId: result.id,
         intakeId: result.projectIntakeId || "Study",

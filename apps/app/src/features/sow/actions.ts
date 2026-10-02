@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { emailClient } from "@/lib/email/notify";
 import fs from "fs";
 import path from "path";
 import { auth } from "@/lib/auth";
@@ -420,12 +421,15 @@ export async function generateSOW(
 
   const { projectId, quotationId, customTerms } = parsed.data;
 
-  return createOrUpdateSOWInternal({
+  const res = await createOrUpdateSOWInternal({
     projectId,
     quotationId,
     generatedBy: session.user.id,
     customTerms,
   });
+  // The client must sign before paying, so the first agreement is emailed (later edits stay in-app).
+  if (res.success) emailClient(res.data.projectId, "SOWReady", {}, { once: true });
+  return res;
 }
 
 /**

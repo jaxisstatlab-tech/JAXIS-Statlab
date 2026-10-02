@@ -1,136 +1,87 @@
 import { EmailTemplateName, EmailRenderResult, EMAIL_SUBJECTS } from "./types";
 
-function renderBaseEmailLayout(params: {
+const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+const TZ = "Asia/Manila";
+
+/** Names, titles and notes come from people; escape them before they go into the email's HTML. */
+function esc(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+const peso = (n: unknown) =>
+  `₱${Number(n || 0).toLocaleString("en-PH", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+
+const day = (d: unknown) =>
+  d ? new Date(String(d)).toLocaleDateString("en-PH", { timeZone: TZ, month: "long", day: "numeric", year: "numeric" }) : "";
+
+/** One plain layout for every email: logo line, title, greeting, text, an optional highlight, facts and one button. */
+function renderLayout(params: {
   title: string;
-  badgeText?: string;
-  badgeColor?: string;
-  recipientName?: string;
-  bodyContent: string;
+  greeting: string;
+  paragraphs: string[];
+  highlight?: string;
+  facts?: Array<{ label: string; value: string }>;
   ctaText?: string;
   ctaUrl?: string;
-  metaRows?: Array<{ label: string; value: string }>;
+  footer: string;
 }): string {
-  const {
-    title,
-    badgeText,
-    badgeColor = "#38BDF8",
-    recipientName = "Client",
-    bodyContent,
-    ctaText,
-    ctaUrl,
-    metaRows = [],
-  } = params;
-
-  const metaHtml =
-    metaRows.length > 0
-      ? `
-    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #0A0A18; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px;">
-      ${metaRows
-        .map(
-          (r) => `
-        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.06);">
-          <td style="padding: 10px 14px; font-family: 'Courier New', monospace; font-size: 11px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; width: 35%;">${r.label}</td>
-          <td style="padding: 10px 14px; font-family: Arial, sans-serif; font-size: 13px; color: #FFFFFF; font-weight: 600;">${r.value}</td>
-        </tr>
-      `
-        )
-        .join("")}
-    </table>
-  `
-      : "";
-
+  const { title, greeting, paragraphs, highlight, facts = [], ctaText, ctaUrl, footer } = params;
+  const factsHtml = facts.length
+    ? `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 22px 0 0 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 2px;">
+        ${facts
+          .map(
+            (f, i) => `<tr>
+          <td style="padding: 10px 14px; font-family: ${FONT}; font-size: 12px; color: rgba(255,255,255,0.5); width: 38%;${i ? " border-top: 1px solid rgba(255,255,255,0.06);" : ""}">${f.label}</td>
+          <td style="padding: 10px 14px; font-family: ${FONT}; font-size: 13px; color: #FFFFFF; font-weight: 600;${i ? " border-top: 1px solid rgba(255,255,255,0.06);" : ""}">${f.value}</td>
+        </tr>`
+          )
+          .join("")}
+      </table>`
+    : "";
+  const highlightHtml = highlight
+    ? `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 4px 0 0 0;"><tr>
+        <td style="padding: 12px 16px; background-color: rgba(204,102,0,0.10); border: 1px solid rgba(204,102,0,0.35); border-radius: 2px; font-family: ${FONT}; font-size: 14px; line-height: 1.55; color: #FFB066;">${highlight}</td>
+      </tr></table>`
+    : "";
   const ctaHtml =
     ctaText && ctaUrl
-      ? `
-    <div style="margin: 28px 0 16px 0; text-align: center;">
-      <a href="${ctaUrl}" style="display: inline-block; background-color: #CC6600; color: #FFFFFF; text-decoration: none; font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; padding: 12px 28px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.5px;">
-        ${ctaText} &rarr;
-      </a>
-    </div>
-  `
+      ? `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top: 26px;"><tr><td align="center">
+          <a href="${ctaUrl}" target="_blank" style="display: block; background-color: #CC6600; color: #FFFFFF; text-decoration: none; text-align: center; font-family: ${FONT}; font-size: 14px; font-weight: 700; padding: 14px 24px; border-radius: 2px;">${ctaText} &rarr;</a>
+        </td></tr></table>`
       : "";
 
-  const badgeHtml = badgeText
-    ? `<span style="display: inline-block; font-family: 'Courier New', monospace; font-size: 10px; font-weight: bold; color: ${badgeColor}; border: 1px solid ${badgeColor}; padding: 3px 8px; border-radius: 2px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">${badgeText}</span>`
-    : "";
-
-  return `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #010114; font-family: Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #E2E8F0; -webkit-font-smoothing: antialiased;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #010114; padding: 32px 16px;">
-    <tr>
-      <td align="center">
-        <!-- Main Container -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 580px; background-color: #0B0B19; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 6px; overflow: hidden;">
-          
-          <!-- Top Header Bar -->
-          <tr>
-            <td style="padding: 24px 32px; background-color: #060614; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td>
-                    <span style="font-family: 'Courier New', monospace; font-weight: 800; font-size: 17px; color: #FFFFFF; letter-spacing: 1.5px;">
-                      JAXIS <span style="color: #CC6600;">STATLAB</span>
-                    </span>
-                  </td>
-                  <td align="right">
-                    <span style="font-family: 'Courier New', monospace; font-size: 10px; color: rgba(255, 255, 255, 0.4); text-transform: uppercase;">
-                      SECURE RESEARCH DESK
-                    </span>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Email Content Body -->
-          <tr>
-            <td style="padding: 32px 32px 24px 32px;">
-              ${badgeHtml}
-              <h1 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 700; color: #FFFFFF; line-height: 1.3;">
-                ${title}
-              </h1>
-
-              <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: rgba(255, 255, 255, 0.85);">
-                Hello <strong>${recipientName}</strong>,
-              </p>
-
-              <div style="font-size: 14px; line-height: 1.6; color: rgba(255, 255, 255, 0.8);">
-                ${bodyContent}
-              </div>
-
-              ${metaHtml}
-
-              ${ctaHtml}
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 20px 32px; background-color: #040412; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center;">
-              <p style="margin: 0 0 6px 0; font-size: 11px; color: rgba(255, 255, 255, 0.4); line-height: 1.5;">
-                This is an automated operational notification from JAXIS StatLab.<br>
-                Please do not reply directly to this email.
-              </p>
-              <p style="margin: 0; font-size: 11px; color: rgba(255, 255, 255, 0.3);">
-                &copy; 2026 JAXIS StatLab. All rights reserved. &bull; <a href="https://jaxis.dev/support" style="color: #38BDF8; text-decoration: none;">Support Desk</a>
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${title}</title></head>
+<body style="margin: 0; padding: 0; background-color: #010114; font-family: ${FONT}; -webkit-font-smoothing: antialiased;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #010114; padding: 40px 16px 48px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 520px; background-color: #0A0A18; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; overflow: hidden;">
+        <tr><td style="padding: 36px 36px 40px 36px;">
+          <div style="font-family: ${FONT}; font-size: 12px; font-weight: 800; letter-spacing: 2.5px; color: #FFFFFF; text-transform: uppercase; margin: 0 0 18px 0;">JAXIS <span style="color: #CC6600;">STATLAB</span></div>
+          <h1 style="margin: 0 0 20px 0; font-family: ${FONT}; font-size: 21px; font-weight: 700; color: #FFFFFF; line-height: 1.3;">${title}</h1>
+          <p style="margin: 0 0 14px 0; font-family: ${FONT}; font-size: 14px; font-weight: 700; color: #FFFFFF;">${greeting}</p>
+          ${paragraphs.map((p) => `<p style="margin: 0 0 14px 0; font-family: ${FONT}; font-size: 14px; line-height: 1.65; color: rgba(255,255,255,0.78);">${p}</p>`).join("")}
+          ${highlightHtml}
+          ${factsHtml}
+          ${ctaHtml}
+        </td></tr>
+      </table>
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 520px; margin: 20px auto 0 auto; text-align: center;">
+        <tr><td style="font-family: ${FONT}; font-size: 12px; color: rgba(255,255,255,0.4); line-height: 1.6;">
+          <p style="margin: 0 0 4px 0;">${footer}</p>
+          <p style="margin: 0;">&copy; 2026 JAXIS StatLab</p>
+        </td></tr>
+      </table>
+    </td></tr>
   </table>
 </body>
-</html>
-`;
+</html>`;
 }
 
 function extractFirstName(rawName?: string, email?: string): string {
@@ -285,259 +236,173 @@ JAXIS StatLab Inc.`;
   };
 }
 
-export function renderEmailTemplate(
-  template: EmailTemplateName,
-  data: Record<string, any>
-): EmailRenderResult {
-  const rawUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.AUTH_URL ||
-    process.env.NEXTAUTH_URL;
-  const appUrl =
-    rawUrl && !rawUrl.includes("localhost")
-      ? rawUrl.replace(/\/$/, "")
-      : "https://app.jaxis-statlab.com";
+export function renderEmailTemplate(template: EmailTemplateName, data: Record<string, unknown>): EmailRenderResult {
+  const rawUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.AUTH_URL || process.env.NEXTAUTH_URL;
+  const appUrl = rawUrl && !rawUrl.includes("localhost") ? rawUrl.replace(/\/$/, "") : "https://app.jaxis-statlab.com";
 
-  // Specialized Clean Minimalist Reset Password Email matching inspiration
   if (template === "PasswordReset") {
-    const ctaUrl = data.resetUrl || `${appUrl}/reset-password?token=${data.resetToken}`;
-    const recipientName = extractFirstName(data.userName || data.clientName || data.name, data.email);
-    return renderPasswordResetEmail({
-      recipientName,
-      ctaUrl,
-    });
+    const ctaUrl = String(data.resetUrl || `${appUrl}/reset-password?token=${data.resetToken}`);
+    const recipientName = extractFirstName(String(data.userName || data.clientName || data.name || ""), String(data.email || ""));
+    return renderPasswordResetEmail({ recipientName, ctaUrl });
   }
 
-  const subjectFn = EMAIL_SUBJECTS[template];
-  const subject = subjectFn ? subjectFn(data) : "JAXIS StatLab Notification";
-  const name = data.clientName || data.userName || "Client";
-  const intakeId = data.intakeId || "JAXIS Study";
-  const title = data.researchTitle || "Statistical Consultation";
+  const subject = EMAIL_SUBJECTS[template]?.(data) ?? "JAXIS StatLab";
+  const intakeId = esc(data.intakeId || "your study");
+  const title = esc(data.researchTitle || "your study");
+  const clientName = esc(data.clientName || "The client");
+  const first = esc(extractFirstName(String(data.clientName || data.userName || ""), String(data.clientEmail || data.email || "")));
+  const study = data.projectId ? `${appUrl}/dashboard/client/projects/${encodeURIComponent(String(data.projectId))}` : `${appUrl}/dashboard/client`;
+  const clientFooter = "Questions? Reply to your team in Messages in your account.";
+  const teamFooter = "Sent to the JAXIS team inbox. The same alert is in the app.";
 
-  let bodyHtml = "";
-  let badgeText = "UPDATE";
-  let badgeColor = "#38BDF8";
-  let ctaText: string | undefined;
-  let ctaUrl: string | undefined;
-  let metaRows: Array<{ label: string; value: string }> = [];
-
+  let layout: Parameters<typeof renderLayout>[0];
   switch (template) {
+    // ── Team inbox ──────────────────────────────────────────────────────────────
     case "NewIntake":
-      badgeText = "NEW STUDY INTAKE";
-      badgeColor = "#38BDF8";
-      bodyHtml = `
-        <p>A new research study specifications intake has been submitted and queued for triage review.</p>
-        <p><strong>Title:</strong> ${title}</p>
-        <p><strong>Client:</strong> ${name} (${data.clientEmail || "N/A"})</p>
-      `;
-      metaRows = [
-        { label: "Study ID", value: intakeId },
-        { label: "Client", value: name },
-        { label: "Requested Deadline", value: data.deadlineRequested ? new Date(data.deadlineRequested).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Standard Turnaround" },
-        { label: "Triage Status", value: "New Request / Pending Review" },
-      ];
-      ctaText = "Open Intake Review Desk";
-      ctaUrl = `${appUrl}/dashboard/admin/intake`;
+      layout = {
+        title: "New study request",
+        greeting: "Hi team,",
+        paragraphs: [`${clientName} sent a new study: <strong style="color:#FFFFFF;">${title}</strong>.`, "Check it and send a price, or ask for anything missing."],
+        facts: [
+          { label: "Study ID", value: intakeId },
+          { label: "Client", value: `${clientName}${data.clientEmail ? ` (${esc(data.clientEmail)})` : ""}` },
+          { label: "Needed by", value: esc(day(data.deadlineRequested)) || "Not given" },
+          ...(data.analysisGoals ? [{ label: "Analysis", value: esc(data.analysisGoals) }] : []),
+        ],
+        ctaText: "Open New Study Requests",
+        ctaUrl: `${appUrl}/dashboard/admin/intake`,
+        footer: teamFooter,
+      };
+      break;
+    case "QuoteAccepted": {
+      const fast = data.speedCode && data.speedCode !== "STANDARD";
+      layout = {
+        title: fast ? `${esc(data.speedLabel)} order: price accepted` : "Price accepted",
+        greeting: "Hi team,",
+        paragraphs: [`${clientName} accepted the price for <strong style="color:#FFFFFF;">${title}</strong>.`, "Next: prepare the agreement so they can sign and pay the deposit."],
+        highlight: fast ? `<strong>${esc(data.speedLabel)}:</strong> ${esc(data.speedDetail)} Plan the work now.` : undefined,
+        facts: [
+          { label: "Study ID", value: intakeId },
+          { label: "Total", value: peso(data.totalAmount) },
+          { label: "Delivery", value: esc(data.speedLabel || "Standard") },
+          { label: "Client needs it by", value: esc(day(data.deadlineRequested)) || "Not given" },
+        ],
+        ctaText: "Open the Study",
+        ctaUrl: data.projectId ? `${appUrl}/dashboard/admin/projects/${encodeURIComponent(String(data.projectId))}` : `${appUrl}/dashboard/admin`,
+        footer: teamFooter,
+      };
+      break;
+    }
+    case "ClaimFiled":
+      layout = {
+        title: "A client filed a claim",
+        greeting: "Hi team,",
+        paragraphs: [`${clientName} filed a claim about <strong style="color:#FFFFFF;">${title}</strong>.`, "Please review it and reply to the client."],
+        facts: [
+          { label: "Study ID", value: intakeId },
+          { label: "Reason", value: esc(data.groundsLabel || "Not given") },
+        ],
+        ctaText: "Open Study Claims",
+        ctaUrl: `${appUrl}/dashboard/admin/disputes`,
+        footer: teamFooter,
+      };
       break;
 
-    case "SOWReady":
-      badgeText = "ACTION REQUIRED";
-      badgeColor = "#F59E0B";
-      bodyHtml = `
-        <p>Your Scope of Work (SOW) document has been compiled and is now ready for your digital signature.</p>
-        <p>Please review the proposed statistical methodologies, delivery milestones, and package terms in your client portal.</p>
-      `;
-      metaRows = [
-        { label: "Study ID", value: intakeId },
-        { label: "Research Title", value: title },
-        { label: "Package", value: data.packageName || "Standard Statistical Consultation" },
-      ];
-      ctaText = "Review & Sign SOW";
-      ctaUrl = `${appUrl}/dashboard/client/quotations`;
+    // ── Clients ─────────────────────────────────────────────────────────────────
+    case "QuoteReady":
+      layout = {
+        title: "Your price is ready",
+        greeting: `Hi ${first},`,
+        paragraphs: [`We checked your study <strong style="color:#FFFFFF;">${title}</strong> and your price is ready.`, "You won't pay anything until you accept it and sign your agreement."],
+        facts: [
+          { label: "Study ID", value: intakeId },
+          { label: "Price", value: peso(data.totalAmount) },
+          ...(data.expiresAt ? [{ label: "Good until", value: esc(day(data.expiresAt)) }] : []),
+        ],
+        ctaText: "See Your Price",
+        ctaUrl: `${study}/quote`,
+        footer: clientFooter,
+      };
       break;
-
-    case "SOWSigned":
-      badgeText = "CONTRACT ACTIVE";
-      badgeColor = "#10B981";
-      bodyHtml = `
-        <p>Thank you for signing the Scope of Work for your research study.</p>
-        <p>Your legal contract is now locked in Escrow. Please proceed with your downpayment deposit to activate specialist assignment and analytical workflows.</p>
-      `;
-      metaRows = [
-        { label: "Study ID", value: intakeId },
-        { label: "Contract Ref", value: data.sowRef || "SOW-EXECUTED" },
-        { label: "Signatory", value: data.signatoryName || name },
-      ];
-      ctaText = "Make Downpayment Deposit";
-      ctaUrl = `${appUrl}/dashboard/client/quotations`;
-      break;
-
-    case "ProofReceived":
-      badgeText = "PAYMENT PROCESSING";
-      badgeColor = "#38BDF8";
-      bodyHtml = `
-        <p>We have successfully received your payment proof upload.</p>
-        <p>Our finance officers are currently verifying the reference number with the bank or e-wallet channel. You will be notified once clearance is confirmed.</p>
-      `;
-      metaRows = [
-        { label: "Study ID", value: intakeId },
-        { label: "Channel", value: data.paymentChannel || "GCash / Maya / Bank" },
-        { label: "Reference", value: data.referenceNumber || "PENDING" },
-      ];
-      ctaText = "View Payment Status";
-      ctaUrl = `${appUrl}/dashboard/client/projects`;
-      break;
-
-    case "PaymentVerified":
-      badgeText = "PAYMENT VERIFIED";
-      badgeColor = "#10B981";
-      bodyHtml = `
-        <p>Your payment deposit has been verified and cleared by Finance.</p>
-        <p>Your study is now fully active! An expert statistical analyst and Senior QA lead will be assigned to begin processing your data.</p>
-      `;
-      metaRows = [
-        { label: "Study ID", value: intakeId },
-        { label: "Amount Verified", value: `PHP ${Number(data.amount || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
-        { label: "Status", value: "ACTIVE IN WORKBENCH" },
-      ];
-      ctaText = "Open Study Workspace";
-      ctaUrl = `${appUrl}/dashboard/client/projects`;
-      break;
-
-    case "PaymentRejected":
-      badgeText = "ACTION NEEDED";
-      badgeColor = "#EF4444";
-      bodyHtml = `
-        <p>Our finance team was unable to verify your submitted payment proof.</p>
-        <p style="color: #F87171;"><strong>Reason:</strong> ${data.rejectionReason || "Reference number or deposit receipt did not match our records."}</p>
-        <p>Please re-upload a clear receipt screenshot or re-check the reference number in your portal.</p>
-      `;
-      metaRows = [
-        { label: "Study ID", value: intakeId },
-        { label: "Action Required", value: "Re-upload valid proof" },
-      ];
-      ctaText = "Update Payment Proof";
-      ctaUrl = `${appUrl}/dashboard/client/projects`;
-      break;
-
-    case "ExpertAssigned":
-      badgeText = "TEAM ASSIGNED";
-      badgeColor = "#38BDF8";
-      bodyHtml = `
-        <p>A specialized Lead Statistical Analyst and Senior QA Lead have been assigned to your research study.</p>
-        <p>Data cleaning, coding, and hypothesis testing have officially commenced per your signed SOW specifications.</p>
-      `;
-      metaRows = [
-        { label: "Study ID", value: intakeId },
-        { label: "Lead Statistical Analyst", value: data.statisticianName || "Assigned Specialist" },
-        { label: "Estimated Delivery", value: data.deliveryDueDate || "Per SLA Schedule" },
-      ];
-      ctaText = "View Workspace & Messages";
-      ctaUrl = `${appUrl}/dashboard/client/messages`;
-      break;
-
-    case "NewMessage":
-      badgeText = "NEW MESSAGE";
-      badgeColor = "#38BDF8";
-      bodyHtml = `
-        <p>You have received a new message from your assigned research team regarding <strong>${intakeId}</strong>.</p>
-        <blockquote style="margin: 16px 0; padding: 12px 16px; background-color: #060614; border-left: 3px solid #CC6600; font-size: 13px; color: rgba(255, 255, 255, 0.9);">
-          "${data.messagePreview || "New communication update..."}"
-        </blockquote>
-      `;
-      metaRows = [
-        { label: "Study ID", value: intakeId },
-        { label: "Sender", value: data.senderName || "Specialist Team" },
-      ];
-      ctaText = "Reply in Secure Thread";
-      ctaUrl = `${appUrl}/dashboard/client/messages`;
-      break;
-
     case "InfoRequested":
-      badgeText = "ACTION REQUIRED";
-      badgeColor = "#F59E0B";
-      bodyHtml = `
-        <p>Our operations team reviewed your study intake submission and needs a few additional details before pricing can be completed.</p>
-        <p style="color: #FCD34D;"><strong>Notes from Admin:</strong> ${data.missingInfoReason || "Please clarify your research objectives or provide chapter guidelines."}</p>
-      `;
-      metaRows = [
-        { label: "Study ID", value: intakeId },
-        { label: "Submission", value: title },
-      ];
-      ctaText = "Update Study Details";
-      ctaUrl = `${appUrl}/dashboard/client/projects`;
+      layout = {
+        title: "We need a bit more information",
+        greeting: `Hi ${first},`,
+        paragraphs: [`Before we can price <strong style="color:#FFFFFF;">${title}</strong>, we need a little more from you.`],
+        highlight: `<strong>Our note:</strong> ${esc(data.missingInfoReason || "Please check your study in your account.")}`,
+        facts: [{ label: "Study ID", value: intakeId }],
+        ctaText: "Add What's Missing",
+        ctaUrl: study,
+        footer: clientFooter,
+      };
       break;
-
+    case "SOWReady":
+      layout = {
+        title: "Your agreement is ready to sign",
+        greeting: `Hi ${first},`,
+        paragraphs: [`Your agreement for <strong style="color:#FFFFFF;">${title}</strong> is ready.`, "Read it, sign it by typing your name, then pay the deposit to start your analysis."],
+        facts: [{ label: "Study ID", value: intakeId }],
+        ctaText: "Read and Sign",
+        ctaUrl: `${study}/sow`,
+        footer: clientFooter,
+      };
+      break;
+    case "PaymentRejected":
+      layout = {
+        title: "We couldn't accept your receipt",
+        greeting: `Hi ${first},`,
+        paragraphs: [`We checked the receipt you sent for <strong style="color:#FFFFFF;">${title}</strong>, but we couldn't match it to a payment.`],
+        highlight: `<strong>Why:</strong> ${esc(data.rejectionReason || "The amount or reference number didn't match.")}`,
+        facts: [{ label: "Study ID", value: intakeId }],
+        ctaText: "Send It Again",
+        ctaUrl: `${study}/payment`,
+        footer: clientFooter,
+      };
+      break;
     case "ProjectDelivered":
-      badgeText = "STUDY DELIVERED";
-      badgeColor = "#10B981";
-      bodyHtml = `
-        <p>Great news! Your final statistical deliverables and APA-compliant analysis tables have been audited by Senior QA and released.</p>
-        <p>Your <strong>7-Day Post-Delivery Review Window</strong> is now officially open. Please download and inspect your final files.</p>
-      `;
-      metaRows = [
-        { label: "Study ID", value: intakeId },
-        { label: "Deliverables", value: "Tables, Codebook, Methodology Writeup" },
-        { label: "Review Window", value: "7 Calendar Days" },
-      ];
-      ctaText = "Download Deliverables";
-      ctaUrl = `${appUrl}/dashboard/client/projects`;
+      layout = {
+        title: "Your files are ready",
+        greeting: `Hi ${first},`,
+        paragraphs: [
+          `Your results for <strong style="color:#FFFFFF;">${title}</strong> are finished and were checked by a second statistical analyst.`,
+          "Open your study to download them. If there's a balance left, pay it first and your downloads open as soon as we confirm it.",
+          "Need something fixed? You can ask for free changes within 3 working days.",
+        ],
+        facts: [{ label: "Study ID", value: intakeId }],
+        ctaText: "Get Your Files",
+        ctaUrl: `${study}/deliverables`,
+        footer: clientFooter,
+      };
       break;
 
-    case "RefundProcessed":
-      badgeText = "REFUND COMPLETED";
-      badgeColor = "#10B981";
-      bodyHtml = `
-        <p>Following executive review, a refund has been issued for your study <strong>${intakeId}</strong>.</p>
-        <p>The funds have been returned via your registered payment channel.</p>
-      `;
-      metaRows = [
-        { label: "Study ID", value: intakeId },
-        { label: "Refund Amount", value: `PHP ${Number(data.refundAmount || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
-        { label: "Decision Notes", value: data.resolutionNotes || "Dispute claim resolved." },
-      ];
-      ctaText = "View Dispute Ruling";
-      ctaUrl = `${appUrl}/dashboard/client/disputes`;
-      break;
-
-    case "DisputeOpened":
-      badgeText = "CLAIM REGISTERED";
-      badgeColor = "#F59E0B";
-      bodyHtml = `
-        <p>We have received your technical claim for study <strong>${intakeId}</strong>.</p>
-        <p>Your statement and attached evidence have been forwarded to our lead reviewer and CEO for arbitration. You will receive a ruling update shortly.</p>
-      `;
-      metaRows = [
-        { label: "Study ID", value: intakeId },
-        { label: "Reason Filed", value: data.groundsLabel || "Technical Methodology Claim" },
-        { label: "Filing Status", value: "Under Investigation" },
-      ];
-      ctaText = "Track Claim Status";
-      ctaUrl = `${appUrl}/dashboard/client/disputes`;
-      break;
+    // ── Not sent (kept so old log rows still render) ────────────────────────────
+    default:
+      layout = {
+        title: esc(subject),
+        greeting: `Hi ${first},`,
+        paragraphs: ["There's an update on your study. Open your account to see it."],
+        facts: [{ label: "Study ID", value: intakeId }],
+        ctaText: "Open Your Account",
+        ctaUrl: study,
+        footer: clientFooter,
+      };
   }
 
-  const html = renderBaseEmailLayout({
-    title: subject,
-    badgeText,
-    badgeColor,
-    recipientName: name,
-    bodyContent: bodyHtml,
-    ctaText,
-    ctaUrl,
-    metaRows,
-  });
-
-  const text = `
-JAXIS STATLAB — ${subject}
-Hello ${name},
-
-${bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}
-
-${metaRows.map((r) => `${r.label}: ${r.value}`).join("\n")}
-
-${ctaUrl ? `View in Portal: ${ctaUrl}` : ""}
-  `.trim();
+  const html = renderLayout(layout);
+  const strip = (s: string) => s.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  const text = [
+    strip(layout.title),
+    "",
+    strip(layout.greeting),
+    "",
+    ...layout.paragraphs.map(strip),
+    ...(layout.highlight ? ["", strip(layout.highlight)] : []),
+    "",
+    ...(layout.facts ?? []).map((f) => `${f.label}: ${strip(f.value)}`),
+    ...(layout.ctaUrl ? ["", `${layout.ctaText}: ${layout.ctaUrl}`] : []),
+    "",
+    strip(layout.footer),
+  ].join("\n");
 
   return { subject, html, text };
 }

@@ -31,6 +31,7 @@ import {
 } from "./schemas";
 import { Deliverable, RevisionRequest, RoleName, DeliverableCategory } from "@prisma/client";
 import { assertStudyAccess } from "@/lib/access-control";
+import { emailClient } from "@/lib/email/notify";
 import { clientFilesUnlocked } from "@/lib/delivery-rules";
 import { clientPackageName } from "@/features/projects/client-packages";
 import { devStudyDataEnabled, devAdminDeliverables, devClientDeliverables, devDeliverableDownload, devSubmitRevision } from "@/features/projects/dev-study-store";
@@ -371,6 +372,8 @@ export async function releaseDeliverables(rawInput: ReleaseDeliverablesInput): P
   } catch (notifyErr) {
     console.warn("[releaseDeliverables] Realtime notification warning:", notifyErr);
   }
+  // Once per study (QA approval may have sent it already).
+  emailClient(input.projectId, "ProjectDelivered", {}, { once: true });
 
   return {
     success: true,

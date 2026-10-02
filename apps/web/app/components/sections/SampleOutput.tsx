@@ -131,7 +131,7 @@ export default function SampleOutput() {
                 <div>
                   <div className="font-mono text-[11px] uppercase tracking-wider text-white/55">Who checks your numbers</div>
                   <p className="mt-2 max-w-xs font-sans text-[14px] leading-relaxed text-white/70">
-                    Mathematicians and statisticians. One runs your tests, another reruns them from scratch.
+                    Mathematicians and statisticians. Statistical Analysts run your tests, and Statistical Review Editors audit the methods and findings.
                   </p>
                 </div>
 

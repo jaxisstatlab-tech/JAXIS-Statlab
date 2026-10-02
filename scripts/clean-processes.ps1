@@ -31,8 +31,8 @@ if (-not $SkipProcessClean) {
         $targetProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
     }
 
-    # Release dev ports (3000, 3001, 3002)
-    $ports = @(3000, 3001, 3002)
+    # Release dev ports (3000, 3001, 3002, 3011)
+    $ports = @(3000, 3001, 3002, 3011)
     foreach ($port in $ports) {
         $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
         if ($connections) {
@@ -45,7 +45,7 @@ if (-not $SkipProcessClean) {
         }
     }
 
-    Write-Host "Killed $processCount orphaned background processes and freed ports 3000-3002." -ForegroundColor Green
+    Write-Host "Killed $processCount orphaned background processes and freed ports 3000-3002, 3011." -ForegroundColor Green
 }
 
 # ── 2. Delete stale .next and .turbo build caches ─────────────────────────────

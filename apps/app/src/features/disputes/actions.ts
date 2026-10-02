@@ -5,6 +5,7 @@ import path from "path";
 import { db, withDbTimeout } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
+import { emailTeam } from "@/lib/email/notify";
 import {
   assertDisputeWindowOpen,
   computeSLABreachRefund,
@@ -353,6 +354,13 @@ export async function submitDisputeAction(rawInput: SubmitDisputeInput): Promise
     } catch (notifyErr) {
       console.warn("[submitDisputeAction] Realtime notification warning:", notifyErr);
     }
+    // Rare but urgent: the team inbox gets an email.
+    const CLAIM_REASONS: Record<string, string> = {
+      METHODOLOGY_DEVIATION: "Wrong test or method",
+      MATHEMATICAL_ERROR: "Wrong numbers",
+      SLA_BREACH: "Late delivery",
+    };
+    emailTeam("ClaimFiled", { groundsLabel: CLAIM_REASONS[grounds] ?? grounds }, { projectId });
 
     return { success: true, data: { disputeId: dispute.id } };
   } catch (err: unknown) {

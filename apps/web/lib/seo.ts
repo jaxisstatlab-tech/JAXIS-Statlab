@@ -9,7 +9,7 @@ export const SITE_URL = "https://jaxis-statlab.com";
 export const SITE_NAME = "JAXIS StatLab";
 export const SITE_TAGLINE = "Thesis and research statistics, checked by two analysts";
 export const SITE_DESCRIPTION =
-  "Statistical consulting for students and researchers in the Philippines. We run the analysis for your thesis, survey, or dissertation, a second analyst rechecks every number, and you get APA tables and plain-English explanations you can defend. Fixed written price within 24 hours.";
+  "Statistical consulting for students and researchers in the Philippines. We run the analysis for your thesis, survey, or dissertation, a second analyst audits every number, and you get APA tables and plain-English explanations you can defend. Fixed written price within 24 hours.";
 
 const FACEBOOK = FACEBOOK_URL || "https://www.facebook.com/jaxisstatlab";
 

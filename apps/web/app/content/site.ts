@@ -34,7 +34,7 @@ export const FAQS: Faq[] = [
   },
   {
     q: "What files will I receive?",
-    a: "APA 7th edition tables ready for Word, a plain-English write-up of your findings, your cleaned dataset (.sav or .csv), and a signed Certificate of Statistical Audit showing a second analyst checked and approved your analysis.",
+    a: "APA 7th edition tables ready for Word, a plain-English write-up of your findings, your cleaned dataset (.sav or .csv), and a signed Certificate of Statistical Audit showing our Statistical Review Editors audited and certified your analysis.",
   },
   {
     pricing: true,
@@ -160,9 +160,9 @@ export const HOW_STEPS: HowStep[] = [
   {
     tag: "Analysis",
     time: "3 to 7 days",
-    title: "We run and recheck it",
-    body: "One statistical analyst runs your tests, a second reruns them, and a senior reviewer signs off.",
-    chips: ["First run", "Rerun", "Senior review"],
+    title: "We run and audit it",
+    body: "One statistical analyst runs your tests, a second audits them, and a senior reviewer signs off.",
+    chips: ["First run", "Audit run", "Senior review"],
   },
   {
     tag: "Delivery",
@@ -187,7 +187,7 @@ export const DELIVERABLES: Deliverable[] = [
   {
     name: "Certificate of Statistical Audit",
     format: "PDF",
-    body: "Signed proof that a second analyst checked your analysis and approved it. Show it to your adviser or panel.",
+    body: "Signed proof that our Statistical Review Editors audited your analysis and certified it. Show it to your adviser or panel.",
   },
   { name: "Defense guide", format: "PDF", body: "The questions panels ask most, answered in plain English." },
 ];

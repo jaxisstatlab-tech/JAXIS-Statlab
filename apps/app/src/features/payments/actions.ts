@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { db, withDbTimeout, DatabaseUnavailableError } from "@/lib/db";
 import { devProjectsEnabled } from "@/features/projects/dev-projects-store";
+import { emailClient } from "@/lib/email/notify";
 import { checkUploadedFilePaths } from "@/lib/upload-claims";
 import { revalidatePath, unstable_cache } from "next/cache";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
@@ -774,6 +775,8 @@ export async function rejectPayment(
     } catch (e) {
       console.warn("[rejectPayment] Realtime notification warning:", e);
     }
+    // The client has to send the receipt again, so they get an email.
+    emailClient(updated.projectId, "PaymentRejected", { rejectionReason });
 
     return {
       success: true,

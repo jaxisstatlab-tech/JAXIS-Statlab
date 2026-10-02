@@ -6,7 +6,8 @@ import path from "path";
 import { auth } from "@/lib/auth";
 import { db, withDbTimeout } from "@/lib/db";
 import { invalidateCacheTags, CACHE_TAGS } from "@/lib/cache-tags";
-import { sendEmail } from "@/lib/email";
+import { emailClient, emailTeam } from "@/lib/email/notify";
+import { analysisGoalsFor } from "./analysis-goals";
 import { assertValidStatusTransition, generateIntakeId } from "@/lib/project-rules";
 import { calculateProjectBalance } from "@/lib/payment-rules";
 import { getClientProfile } from "@/features/client-profile/actions";
@@ -360,46 +361,19 @@ export async function createProject(
     console.warn("[createProject] Could not record audit log:", auditErr);
   }
 
-  // ── 3. Dispatch Email Notification to Admin Operations ──
-  try {
-    const adminUsers = await db.user.findMany({
-      where: {
-        userRoles: {
-          some: {
-            role: {
-              name: "ADMIN",
-            },
-          },
-        },
-      },
-      select: { id: true, email: true, fullName: true },
-    });
-
-    const targets = adminUsers.length > 0
-      ? adminUsers
-      : [{ id: "admin_fallback", email: "admin@jaxis.dev", fullName: "Admin Operations" }];
-
-    // Non-blocking fire-and-forget email dispatch so response stays snappy (<400ms)
-    Promise.allSettled(
-      targets.map((admin) =>
-        sendEmail({
-          to: admin.email,
-          recipientId: admin.id,
-          template: "NewIntake",
-          projectId: project.id,
-          data: {
-            intakeId: project.intakeId,
-            researchTitle: project.researchTitle,
-            clientName: session.user.name || "Lead Researcher",
-            clientEmail: session.user.email || "client@jaxis.dev",
-            deadlineRequested: deadlineDate.toISOString(),
-          },
-        })
-      )
-    ).catch((e) => console.warn("[createProject] sendEmail background error:", e));
-  } catch (emailErr) {
-    console.warn("[createProject] Failed to dispatch admin email:", emailErr);
-  }
+  // ── 3. Email the team inbox (one email, not one per admin; see src/lib/email/policy.ts) ──
+  emailTeam(
+    "NewIntake",
+    {
+      intakeId: project.intakeId,
+      researchTitle: project.researchTitle,
+      clientName: session.user.name || "A client",
+      clientEmail: session.user.email || "",
+      deadlineRequested: deadlineDate.toISOString(),
+      analysisGoals: analysisGoalsFor(analysisGoals).map((g) => g.shortTitle).join(", "),
+    },
+    { projectId: project.id, once: true }
+  );
 
   // ── 4. Dispatch Real-time in-app alert via SSE ──
   try {
@@ -1107,6 +1081,8 @@ export async function requestMissingInfo(
     } catch (e) {
       console.warn("[requestMissingInfo] Realtime notification warning:", e);
     }
+    // The study is paused until the client replies, so this one is worth an email.
+    emailClient(existing.id, "InfoRequested", { missingInfoReason: reason.trim() });
 
     revalidateProjectCaches(projectId);
 

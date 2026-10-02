@@ -916,15 +916,38 @@ export async function retryFailedNotificationAction(logId: string): Promise<{
       return { success: false, error: { message: "Notification record not found." } };
     }
 
+    // Rebuild the email from the study it was about (the log keeps only the template and address).
+    const project = log.projectId
+      ? await withDbTimeout(
+          db.project.findUnique({
+            where: { id: log.projectId },
+            select: {
+              id: true,
+              intakeId: true,
+              researchTitle: true,
+              deadlineRequested: true,
+              missingInfoReason: true,
+              client: { select: { fullName: true, email: true } },
+            },
+          })
+        ).catch(() => null)
+      : null;
     const res = await sendEmail({
       to: log.email,
       recipientId: log.recipientId,
       template: log.template as EmailTemplateName,
       projectId: log.projectId || undefined,
-      data: {
-        userName: log.email,
-        intakeId: "JAXIS Study",
-      },
+      data: project
+        ? {
+            projectId: project.id,
+            intakeId: project.intakeId,
+            researchTitle: project.researchTitle,
+            deadlineRequested: project.deadlineRequested.toISOString(),
+            missingInfoReason: project.missingInfoReason,
+            clientName: project.client?.fullName,
+            clientEmail: project.client?.email,
+          }
+        : { userName: log.email },
     });
 
     if (res.success) {
