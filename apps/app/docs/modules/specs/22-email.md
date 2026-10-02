@@ -67,7 +67,7 @@ Fewer in practice: a client who doesn't accept the price gets only 1–2 emails.
 - **Never slows the page.** Emails are sent after the response (Next.js `after`). A failed email never undoes or fails the action.
 - **Development doesn't email people.** Outside production, emails are only written to the server log and the email log, unless `EMAIL_SEND_IN_DEV=1`.
 - **Retries.** Up to 3 attempts per email. The admin Retry button now rebuilds the email from the study, with its title, ID and client.
-- **Plain, safe emails.** One simple design in plain English (`src/lib/email/renderer.ts`). Names, titles and notes are escaped before going into the email. Buttons link straight to the right page, for example the study's price, agreement, payment or files page.
+- **Plain, safe emails.** One design for every email, password reset included (`src/lib/email/renderer.ts`, redesigned 2026-10-02): light background (dark emails get partly inverted by Gmail and Outlook in dark mode), the JAXIS logo, a small label ("Action needed", "Fast delivery"), a clear title, short plain-English text, an orange-edged note when there's a reason to read, a small facts table, one orange button, and inbox preview text so the line under the subject is useful. Fits phones (checked at 375 px). Names, titles and notes are escaped. Buttons link straight to the right page, e.g. the study's price, agreement, payment or files page.
 
 ## 5. Settings
 
