@@ -38,6 +38,8 @@ function LoginForm() {
   const isAccountTerminated = authError === "AccountTerminated";
   const isSessionRevoked = authError === "SessionRevoked";
   const isGoogleError = ["Configuration", "OAuthSignin", "OAuthCallback"].includes(authError ?? "");
+  // The app turned the Google sign-in down (suspended or closed account, or an email Google hasn't verified).
+  const isGoogleRefused = authError === "AccessDenied";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -158,6 +160,11 @@ function LoginForm() {
       {isGoogleError && (
         <Alert variant="danger" title="Google sign-in didn't work">
           Please log in with your email and password instead.
+        </Alert>
+      )}
+      {isGoogleRefused && (
+        <Alert variant="danger" title="We couldn't sign you in with Google">
+          This Google account can&apos;t be used to log in here. Use your email and password, or message us if you need help.
         </Alert>
       )}
 

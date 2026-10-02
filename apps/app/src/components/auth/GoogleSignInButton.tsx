@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getProviders, signIn } from "next-auth/react";
 import { GOOGLE_SIGN_IN_AVAILABLE } from "./availability";
 import { SoonTag } from "./SoonTag";
@@ -14,53 +14,61 @@ interface GoogleSignInButtonProps {
   temporarilyUnavailable?: boolean;
 }
 
-// Switched off until the jaxis-statlab.com domain is live (see ./availability).
-const DOMAIN_MAINTENANCE_ACTIVE = !GOOGLE_SIGN_IN_AVAILABLE;
+// Google sign-in shows as "Soon" unless the server has Google set up (AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET),
+// so a half-configured site never shows a button that fails.
+let providersCheck: Promise<boolean> | null = null;
+const googleIsSetUp = () =>
+  (providersCheck ??= getProviders()
+    .then((p) => Boolean(p?.google))
+    .catch(() => false));
 
 export function GoogleSignInButton({
   callbackUrl = "/dashboard",
   isRegister = false,
   className = "",
   onError,
-  temporarilyUnavailable = DOMAIN_MAINTENANCE_ACTIVE,
+  temporarilyUnavailable,
 }: GoogleSignInButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [configured, setConfigured] = useState<boolean | null>(GOOGLE_SIGN_IN_AVAILABLE ? null : false);
+
+  useEffect(() => {
+    if (!GOOGLE_SIGN_IN_AVAILABLE) return;
+    let live = true;
+    googleIsSetUp().then((ok) => {
+      if (live) setConfigured(ok);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  // Until the check answers, the button is shown but can't be pressed (no "Soon" flash).
+  const unavailable = temporarilyUnavailable ?? configured === false;
+  const checking = configured === null && !temporarilyUnavailable;
 
   const handleGoogleSignIn = async () => {
-    if (temporarilyUnavailable) {
-      onError?.(
-        "Google sign-in is temporarily paused during domain maintenance. Please sign in with your email and password."
-      );
-      return;
-    }
-
+    if (unavailable || checking) return;
     setIsLoading(true);
     try {
-      const providers = await getProviders();
-      if (!providers?.google) {
-        setIsLoading(false);
-        onError?.(
-          "Google Sign-In is not configured yet. Please add AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET to your .env file."
-        );
-        return;
-      }
       await signIn("google", { callbackUrl });
     } catch (err) {
-      console.error("[GoogleSignIn] Error initiating Google sign-in:", err);
+      console.error("[GoogleSignIn] Error starting Google sign-in:", err);
       setIsLoading(false);
-      onError?.("Unable to initiate Google sign-in. Please try again.");
+      onError?.("We couldn't open Google sign-in. Please try again, or use your email and password.");
     }
   };
+
 
   return (
     <button
       type="button"
       onClick={handleGoogleSignIn}
-      disabled={isLoading || temporarilyUnavailable}
-      title={temporarilyUnavailable ? "Google sign-in is coming soon. For now, use your email and password." : undefined}
-      aria-describedby={temporarilyUnavailable ? "google-soon" : undefined}
+      disabled={isLoading || checking || unavailable}
+      title={unavailable ? "Google sign-in is coming soon. For now, use your email and password." : undefined}
+      aria-describedby={unavailable ? "google-soon" : undefined}
       className={`auth-google relative flex h-12 w-full items-center justify-center gap-3 rounded-[2px] border px-4 font-sans text-sm font-medium outline-none transition-[background-color,border-color,color,transform] duration-150 ease-out ${
-        temporarilyUnavailable
+        unavailable
           ? "cursor-not-allowed select-none border-white/10 bg-white/[0.02] text-white/45"
           : "cursor-pointer border-white/15 bg-white/[0.03] text-white hover:border-white/30 hover:bg-white/[0.06] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
       } ${className}`}
@@ -69,7 +77,7 @@ export function GoogleSignInButton({
         <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-[#CC6600]" />
       ) : (
         <svg
-          className={`h-[18px] w-[18px] flex-shrink-0 ${temporarilyUnavailable ? "opacity-40 grayscale" : ""}`}
+          className={`h-[18px] w-[18px] flex-shrink-0 ${unavailable ? "opacity-40 grayscale" : ""}`}
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
@@ -92,7 +100,7 @@ export function GoogleSignInButton({
         </svg>
       )}
       <span>{isRegister ? "Sign up with Google" : "Continue with Google"}</span>
-      {temporarilyUnavailable && (
+      {unavailable && (
         <span id="google-soon" className="absolute right-3 top-1/2 -translate-y-1/2">
           <SoonTag />
           <span className="sr-only">Google sign-in is coming soon.</span>

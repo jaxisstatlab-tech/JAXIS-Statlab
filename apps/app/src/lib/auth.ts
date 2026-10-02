@@ -218,9 +218,10 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     ...baseAuthConfig.callbacks,
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
-        if (!user.email) return false;
+        // Google sign-ins are matched to accounts by email, so the email must be one Google has verified.
+        if (!user.email || profile?.email_verified !== true) return false;
         const normalizedEmail = user.email.toLowerCase().trim();
 
         try {
