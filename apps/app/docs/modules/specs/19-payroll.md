@@ -25,6 +25,8 @@ Module 19 implements institutional compensation governance, dual-mandate separat
    - Live Treasury Verification card displays real-time synchronization with Finance and CEO desks.
    - Interactive Historical Cycle selector and full chronological Statement Ledger with printable document vouchers.
 
+> **Storage and pay rules (2026-10-02).** Payslips are stored in the `payslips` table (one per person per period, `payslipNumber` unique), payout details in `staff_payout_details`, and payroll settings in `app_settings` under `payroll_config`. The `dev_data` files are read only until the first save, and are the store only in offline mode. A payslip counts real clock-ins, and studies the person was assigned to that were delivered in the period, paid in full against the accepted price, and have no open claim or refund. Each study is paid once. Admin and finance get no study pay. Approved or paid payslips are never recalculated. `getPayslipById` and `getStaffPayoutDetails` return data only to the owner or to `FINANCE_OFFICER`, `CEO` and `ADMIN`.
+
 ---
 
 ## 2. Module Scope & Feature Registry

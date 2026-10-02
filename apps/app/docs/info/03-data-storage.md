@@ -217,10 +217,10 @@ To allow instant configuration updates without complex SQL migrations, local JSO
 
 | File Name | Content Stored |
 |---|---|
-| **`payroll_configs.json`** | Role compensation configurations: monthly base retainers, hourly rates, per-study bonus rates, QA review bonus rates, compensation models (`HOURLY`, `COMMISSION`, `HYBRID`, `STIPEND`, `FIXED_BASE`), pay schedules (`SEMI_MONTHLY`, `MONTHLY`), cutoff dates, and bespoke specialist rate overrides. |
+| **`payroll_configs.json`** | Role compensation configurations: monthly base retainers, hourly rates, per-study bonus rates, QA review bonus rates, compensation models (`HOURLY`, `COMMISSION`, `HYBRID`, `STIPEND`, `FIXED_BASE`), pay schedules (`SEMI_MONTHLY`, `MONTHLY`), cutoff dates, and bespoke specialist rate overrides. Read until the first save; saves go to `app_settings` (`payroll_config`) since 2026-10-02. |
 | **`package_rates.json`** | Customizable Statistician commission percentage (`ratePercent`, e.g. 45%–72%) and Senior QA Reviewer commission percentage (`qaRatePercent`, e.g. 5%–15%) per package tier (`JX_01_DATACHECK`, `JX_02_START`, `JX_03_CORE`, `JX_04_ADVANCED`, `DEFENSELAB`). |
-| **`payslips.json`** | Complete history of generated staff payslips: payslip numbers, period dates, duty hours worked, completed studies, itemized earnings, statutory deductions, net payouts, disbursement status, and verification tokens. |
-| **`payout_details.json`** | Registered specialist disbursement settlement destinations: Philippine mobile wallets (GCash, Maya) and commercial bank accounts (BDO, BPI, UnionBank, Metrobank) with verified account names. |
+| **`payslips.json`** | Offline mode only. In the database, payslips live in the `payslips` table (since 2026-10-02). |
+| **`payout_details.json`** | Offline mode only. In the database, staff payout details live in `staff_payout_details` (since 2026-10-02). |
 | **`payment_channels.json`** | Official corporate receiving accounts displayed on client checkout forms (JAXIS corporate GCash, Maya QR, and BDO corporate accounts). |
 
 ---

@@ -2065,6 +2065,8 @@ export async function freshDatabaseResetAction(
       categoriesPurged.push("User Accounts (non-CEO)");
       await db.suspensionLog.deleteMany({});
       await db.passwordResetToken.deleteMany({});
+      // Payslips block deleting their owner (pay history), so remove them first
+      await db.payslip.deleteMany({ where: { userId: { not: ceoId } } });
       // Delete non-CEO profiles and user records
       await db.staffProfile.deleteMany({ where: { userId: { not: ceoId } } });
       await db.clientProfile.deleteMany({ where: { userId: { not: ceoId } } });

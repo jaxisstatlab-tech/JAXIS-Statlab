@@ -1464,14 +1464,16 @@ export async function getMyHrPortalData(
         .filter((l) => l.status === "COMPLETED" || l.status === "ADJUSTED" || l.status === "AUTO_CLOSED")
         .reduce((sum, l) => sum + (l.totalMinutes || 0), 0);
 
+      // Real numbers only: from the payslip when there is one, otherwise the hours actually clocked and no pay
+      // amounts (this used to invent hours and pay, e.g. 42.5 hours and a ₱18,500 commission).
       const calculatedDutyHours = Math.round((totalDutyMinutes / 60) * 10) / 10;
-      const totalDutyHours = officialPs?.verifiedDutyHours ?? (calculatedDutyHours > 0 ? calculatedDutyHours : 42.5);
-      const dutyHourlyEarnings = officialPs?.hourlyDutyEarnings ?? (totalDutyHours * baseHourlyRate);
-      const projectMilestoneEarnings = officialPs?.commissionEarnings ?? (roleName === "STATISTICIAN" ? 18500.0 : roleName === "SENIOR_QA_LEAD" ? 12000.0 : 8500.0);
-      const overtimeEarnings = officialPs?.overtimeEarnings ?? (monthLogs.filter((l) => (l.totalMinutes || 0) > 510).length * 450.0);
-      const allowances = officialPs?.allowances ?? 3000.0;
-      const grossPay = officialPs?.grossEarnings ?? (dutyHourlyEarnings + projectMilestoneEarnings + overtimeEarnings + allowances);
-      const netPay = officialPs?.netPay ?? grossPay;
+      const totalDutyHours = officialPs?.verifiedDutyHours ?? calculatedDutyHours;
+      const dutyHourlyEarnings = officialPs?.hourlyDutyEarnings ?? 0;
+      const projectMilestoneEarnings = officialPs?.commissionEarnings ?? 0;
+      const overtimeEarnings = officialPs?.overtimeEarnings ?? 0;
+      const allowances = officialPs?.allowances ?? 0;
+      const grossPay = officialPs?.grossEarnings ?? 0;
+      const netPay = officialPs?.netPay ?? 0;
 
       return {
         user: {
@@ -1614,13 +1616,13 @@ export async function getMyHrPortalData(
       payslip: {
         payPeriod: payPeriodMonthStr,
         baseHourlyRate: 450.0,
-        totalDutyHours: 42.5,
-        dutyHourlyEarnings: 19125.0,
-        projectMilestoneEarnings: fallbackRole === "STATISTICIAN" ? 18500.0 : 12000.0,
+        totalDutyHours: 0,
+        dutyHourlyEarnings: 0,
+        projectMilestoneEarnings: 0,
         overtimeEarnings: 0,
-        grossPay: 40625.0,
-        allowances: 3000.0,
-        netPay: 40625.0,
+        grossPay: 0,
+        allowances: 0,
+        netPay: 0,
         status: "DRAFT",
       },
       policy: {

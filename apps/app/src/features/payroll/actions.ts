@@ -3,12 +3,14 @@
 import { revalidatePath, unstable_cache } from "next/cache";
 import fs from "fs";
 import path from "path";
-import type { RoleName } from "@prisma/client";
+import { Prisma, type RoleName } from "@prisma/client";
 import { db, withDbTimeout } from "@/lib/db";
 import { requireRole, auth } from "@/lib/auth";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import { resolvePackagePayoutRule } from "@/lib/payout-rules";
+import { calculateProjectBalance } from "@/lib/payment-rules";
+import { getAppSetting, isOfflineDev, setAppSetting } from "@/lib/app-settings";
 import {
   RoleCompensationConfigSchema,
   StaffCompensationOverrideSchema,
@@ -23,23 +25,25 @@ import {
   type StaffPayoutDetailsDTO,
   type PayrollKpiSummary,
   type PayslipItemizedStudy,
+  type PayslipStatus,
 } from "./schemas";
 import { getDevUsers } from "@/lib/mock-data/users.data";
+
+/**
+ * Payroll: pay settings, payslips and staff payout details.
+ *
+ * Stored in the database (payslips, staff_payout_details, and app_settings "payroll_config"). They used to be
+ * saved to files under dev_data/, which can't change on the server, so payslips and settings were lost on the
+ * live site. Offline development (npm run dev:offline) has no database and still uses those files.
+ */
 
 const DEV_DATA_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), "dev_data");
 const CONFIGS_FILE = path.join(DEV_DATA_DIR, "payroll_configs.json");
 const PAYSLIPS_FILE = path.join(DEV_DATA_DIR, "payslips.json");
 const PAYOUT_DETAILS_FILE = path.join(DEV_DATA_DIR, "payout_details.json");
-
-function ensureDevDataDir() {
-  try {
-    if (!fs.existsSync(DEV_DATA_DIR)) {
-      fs.mkdirSync(DEV_DATA_DIR, { recursive: true });
-    }
-  } catch {
-    // Read-only filesystem in serverless environments (e.g. Vercel)
-  }
-}
+const PAYROLL_CONFIG_KEY = "payroll_config";
+const MANAGERS: RoleName[] = ["FINANCE_OFFICER", "CEO", "ADMIN"];
+const PAYROLL_ROLES: RoleName[] = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN"];
 
 const DEFAULT_SCHEDULE_CONFIG: CorporatePayrollScheduleConfigDTO = {
   frequency: "SEMI_MONTHLY",
@@ -47,9 +51,9 @@ const DEFAULT_SCHEDULE_CONFIG: CorporatePayrollScheduleConfigDTO = {
   secondCutoffDay: 31,
   prorateMonthlyBase: true,
   disbursementGraceDays: 3,
-  notes: "Standard Semi-Monthly Corporate Settlement Schedule (Days 1–15 & Days 16–End)",
+  notes: "Paid twice a month (days 1–15 and 16–end of month).",
   updatedAt: new Date().toISOString(),
-  updatedBy: "Executive CEO Office",
+  updatedBy: "CEO",
 };
 
 interface PayrollStorage {
@@ -68,9 +72,9 @@ const DEFAULT_ROLE_CONFIGS: Record<string, RoleCompensationConfigDTO> = {
     fixedPerStudyBonus: 1000.0,
     allowancesMonthly: 2500.0,
     isActive: true,
-    notes: "Tier deliverable fee based on approved SOW contracts (governed by CEO Treasury Rates) + ₱450/hr compute duty + ₱1,000 completion bonus.",
+    notes: "Package pay rate per finished study (set on Money & Pay Rates) + ₱450 per hour worked + ₱1,000 per finished study.",
     updatedAt: new Date().toISOString(),
-    updatedBy: "CEO Owner",
+    updatedBy: "CEO",
   },
   SENIOR_QA_LEAD: {
     roleName: "SENIOR_QA_LEAD",
@@ -81,9 +85,9 @@ const DEFAULT_ROLE_CONFIGS: Record<string, RoleCompensationConfigDTO> = {
     fixedPerStudyBonus: 500.0,
     allowancesMonthly: 2500.0,
     isActive: true,
-    notes: "₱12,000 monthly retainer + 10% review commission per audited study + ₱450/hr attendance duty.",
+    notes: "₱12,000 a month + a share of each checked study + ₱450 per hour worked.",
     updatedAt: new Date().toISOString(),
-    updatedBy: "CEO Owner",
+    updatedBy: "CEO",
   },
   FINANCE_OFFICER: {
     roleName: "FINANCE_OFFICER",
@@ -94,9 +98,9 @@ const DEFAULT_ROLE_CONFIGS: Record<string, RoleCompensationConfigDTO> = {
     fixedPerStudyBonus: 0,
     allowancesMonthly: 3000.0,
     isActive: true,
-    notes: "Monthly base salary with compliance allowances.",
+    notes: "Monthly salary and allowance.",
     updatedAt: new Date().toISOString(),
-    updatedBy: "CEO Owner",
+    updatedBy: "CEO",
   },
   ADMIN: {
     roleName: "ADMIN",
@@ -107,104 +111,170 @@ const DEFAULT_ROLE_CONFIGS: Record<string, RoleCompensationConfigDTO> = {
     fixedPerStudyBonus: 0,
     allowancesMonthly: 3000.0,
     isActive: true,
-    notes: "Operations admin fixed salary.",
+    notes: "Monthly salary and allowance.",
     updatedAt: new Date().toISOString(),
-    updatedBy: "CEO Owner",
+    updatedBy: "CEO",
   },
 };
 
-function readPayrollStorage(): PayrollStorage {
-  ensureDevDataDir();
-  try {
-    if (fs.existsSync(CONFIGS_FILE)) {
-      const data = fs.readFileSync(CONFIGS_FILE, "utf-8");
-      const parsed = JSON.parse(data) as PayrollStorage;
-      return parsed;
-    }
-  } catch (err) {
-    console.warn("[readPayrollStorage] Failed to read configs file, using defaults", err);
-  }
-  const initial = {
-    roleConfigs: DEFAULT_ROLE_CONFIGS,
-    staffOverrides: {},
-  };
-  writePayrollStorage(initial);
-  return initial;
-}
+// ─── Offline-only file storage ──────────────────────────────────────────────────
 
-function writePayrollStorage(data: PayrollStorage): void {
-  ensureDevDataDir();
+function readJsonFile<T>(file: string): T | null {
   try {
-    fs.writeFileSync(CONFIGS_FILE, JSON.stringify(data, null, 2), "utf-8");
+    if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf-8")) as T;
   } catch (err) {
-    console.error("[writePayrollStorage] Failed to write payroll configs", err);
-  }
-}
-
-function readPayslipsStorage(): StaffPayslipDTO[] {
-  ensureDevDataDir();
-  try {
-    if (fs.existsSync(PAYSLIPS_FILE)) {
-      const data = fs.readFileSync(PAYSLIPS_FILE, "utf-8");
-      return JSON.parse(data);
-    }
-  } catch (err) {
-    console.warn("[readPayslipsStorage] Failed to read payslips file", err);
-  }
-  return [];
-}
-
-function writePayslipsStorage(data: StaffPayslipDTO[]): void {
-  ensureDevDataDir();
-  try {
-    fs.writeFileSync(PAYSLIPS_FILE, JSON.stringify(data, null, 2), "utf-8");
-  } catch (err) {
-    console.error("[writePayslipsStorage] Failed to write payslips", err);
-  }
-}
-
-function readPayoutDetailsStorage(): Record<string, StaffPayoutDetailsDTO> {
-  ensureDevDataDir();
-  try {
-    if (fs.existsSync(PAYOUT_DETAILS_FILE)) {
-      const data = fs.readFileSync(PAYOUT_DETAILS_FILE, "utf-8");
-      return JSON.parse(data);
-    }
-  } catch (err) {
-    console.warn("[readPayoutDetailsStorage] Failed to read payout details file", err);
-  }
-  return {};
-}
-
-function writePayoutDetailsStorage(data: Record<string, StaffPayoutDetailsDTO>): void {
-  ensureDevDataDir();
-  try {
-    fs.writeFileSync(PAYOUT_DETAILS_FILE, JSON.stringify(data, null, 2), "utf-8");
-  } catch (err) {
-    console.error("[writePayoutDetailsStorage] Failed to write payout details", err);
-  }
-}
-
-function findPayoutDetailsForStaff(
-  storage: Record<string, StaffPayoutDetailsDTO>,
-  userId: string,
-  staffName?: string
-): StaffPayoutDetailsDTO | null {
-  if (storage[userId]) return storage[userId]!;
-  const all = Object.values(storage);
-  const byUser = all.find((d) => d.userId === userId);
-  if (byUser) return byUser;
-  if (staffName) {
-    const sNameLower = staffName.toLowerCase();
-    const byName = all.find(
-      (d) =>
-        d.accountName.toLowerCase().includes(sNameLower) ||
-        sNameLower.includes(d.accountName.toLowerCase())
-    );
-    if (byName) return byName;
+    console.warn(`[payroll] Couldn't read ${path.basename(file)}:`, err);
   }
   return null;
 }
+
+function writeJsonFile(file: string, data: unknown): void {
+  if (!fs.existsSync(DEV_DATA_DIR)) fs.mkdirSync(DEV_DATA_DIR, { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf-8");
+}
+
+// ─── Pay settings ───────────────────────────────────────────────────────────────
+
+async function readPayrollStorage(): Promise<PayrollStorage> {
+  const saved = isOfflineDev()
+    ? readJsonFile<PayrollStorage>(CONFIGS_FILE)
+    : // The database copy once saved; until then the shipped file (the live site's settings before this change).
+      ((await getAppSetting<PayrollStorage>(PAYROLL_CONFIG_KEY)) ?? readJsonFile<PayrollStorage>(CONFIGS_FILE));
+  return {
+    roleConfigs: { ...DEFAULT_ROLE_CONFIGS, ...(saved?.roleConfigs ?? {}) },
+    staffOverrides: saved?.staffOverrides ?? {},
+    scheduleConfig: saved?.scheduleConfig,
+  };
+}
+
+/** Throws if it can't be saved, so the page never says "saved" when it wasn't. */
+async function writePayrollStorage(data: PayrollStorage, userId: string): Promise<void> {
+  if (isOfflineDev()) writeJsonFile(CONFIGS_FILE, data);
+  else await setAppSetting(PAYROLL_CONFIG_KEY, data, userId);
+}
+
+// ─── Payslips ───────────────────────────────────────────────────────────────────
+
+type PayslipRow = {
+  id: string;
+  payslipNumber: string;
+  userId: string;
+  payPeriodMonth: string;
+  status: string;
+  netPay: Prisma.Decimal;
+  data: Prisma.JsonValue;
+};
+
+const fromRow = (r: PayslipRow): StaffPayslipDTO => ({
+  ...(r.data as unknown as StaffPayslipDTO),
+  id: r.id,
+  payslipNumber: r.payslipNumber,
+  userId: r.userId,
+  payPeriodMonth: r.payPeriodMonth,
+  status: r.status as PayslipStatus,
+  netPay: Number(r.netPay),
+});
+
+async function listPayslips(where: Prisma.PayslipWhereInput = {}): Promise<StaffPayslipDTO[]> {
+  if (isOfflineDev()) {
+    const all = readJsonFile<StaffPayslipDTO[]>(PAYSLIPS_FILE) ?? [];
+    return all.filter((p) => !where.userId || p.userId === where.userId);
+  }
+  const rows = await withDbTimeout(db.payslip.findMany({ where, orderBy: { payPeriodStart: "desc" } }), 8000);
+  return rows.map(fromRow);
+}
+
+async function findPayslip(idOrNumber: string): Promise<StaffPayslipDTO | null> {
+  if (isOfflineDev()) {
+    return (readJsonFile<StaffPayslipDTO[]>(PAYSLIPS_FILE) ?? []).find((p) => p.id === idOrNumber || p.payslipNumber === idOrNumber) ?? null;
+  }
+  const row = await withDbTimeout(
+    db.payslip.findFirst({ where: { OR: [{ id: idOrNumber }, { payslipNumber: idOrNumber }] } }),
+    5000
+  );
+  return row ? fromRow(row) : null;
+}
+
+/** Saves one payslip (new or changed). Throws if it can't be saved. */
+async function savePayslip(p: StaffPayslipDTO): Promise<void> {
+  if (isOfflineDev()) {
+    const all = readJsonFile<StaffPayslipDTO[]>(PAYSLIPS_FILE) ?? [];
+    const i = all.findIndex((x) => x.id === p.id);
+    if (i >= 0) all[i] = p;
+    else all.push(p);
+    writeJsonFile(PAYSLIPS_FILE, all);
+    return;
+  }
+  const data = p as unknown as Prisma.InputJsonValue;
+  await withDbTimeout(
+    db.payslip.upsert({
+      where: { id: p.id },
+      create: {
+        id: p.id,
+        payslipNumber: p.payslipNumber,
+        userId: p.userId,
+        payPeriodMonth: p.payPeriodMonth,
+        payPeriodStart: new Date(p.payPeriodStart),
+        payPeriodEnd: new Date(p.payPeriodEnd),
+        status: p.status,
+        netPay: p.netPay,
+        data,
+      },
+      update: { status: p.status, netPay: p.netPay, data },
+    }),
+    8000
+  );
+}
+
+// ─── Staff payout details (where staff are paid) ───────────────────────────────
+
+async function readPayoutDetails(userIds?: string[]): Promise<Map<string, StaffPayoutDetailsDTO>> {
+  const out = new Map<string, StaffPayoutDetailsDTO>();
+  if (isOfflineDev()) {
+    for (const d of Object.values(readJsonFile<Record<string, StaffPayoutDetailsDTO>>(PAYOUT_DETAILS_FILE) ?? {})) {
+      if (d?.userId && (!userIds || userIds.includes(d.userId))) out.set(d.userId, d);
+    }
+    return out;
+  }
+  const rows = await withDbTimeout(
+    db.staffPayoutDetail.findMany({ where: userIds ? { userId: { in: userIds } } : undefined }),
+    5000
+  );
+  for (const r of rows) {
+    out.set(r.userId, {
+      userId: r.userId,
+      payoutChannel: r.payoutChannel as StaffPayoutDetailsDTO["payoutChannel"],
+      accountNumber: r.accountNumber,
+      accountName: r.accountName,
+      bankName: r.bankName ?? "",
+      notes: r.notes ?? "",
+      updatedAt: r.updatedAt.toISOString(),
+    });
+  }
+  return out;
+}
+
+async function writePayoutDetails(d: StaffPayoutDetailsDTO): Promise<void> {
+  if (isOfflineDev()) {
+    const all = readJsonFile<Record<string, StaffPayoutDetailsDTO>>(PAYOUT_DETAILS_FILE) ?? {};
+    all[d.userId] = d;
+    writeJsonFile(PAYOUT_DETAILS_FILE, all);
+    return;
+  }
+  const data = {
+    payoutChannel: d.payoutChannel,
+    accountNumber: d.accountNumber,
+    accountName: d.accountName,
+    bankName: d.bankName || null,
+    notes: d.notes || null,
+  };
+  await withDbTimeout(
+    db.staffPayoutDetail.upsert({ where: { userId: d.userId }, create: { userId: d.userId, ...data }, update: data }),
+    5000
+  );
+}
+
+// ─── People ─────────────────────────────────────────────────────────────────────
 
 /**
  * Cached DB queries for signatories and staff directory.
@@ -215,25 +285,8 @@ const fetchCachedSignatoriesDb = unstable_cache(
     try {
       return await withDbTimeout(
         db.user.findMany({
-          where: {
-            userRoles: {
-              some: {
-                role: {
-                  name: { in: ["CEO", "FINANCE_OFFICER", "ADMIN"] },
-                },
-              },
-            },
-          },
-          select: {
-            fullName: true,
-            userRoles: {
-              select: {
-                role: {
-                  select: { name: true },
-                },
-              },
-            },
-          },
+          where: { status: "ACTIVE", userRoles: { some: { role: { name: { in: ["CEO", "FINANCE_OFFICER", "ADMIN"] } } } } },
+          select: { fullName: true, userRoles: { select: { role: { select: { name: true } } } } },
         }),
         1500
       );
@@ -241,28 +294,18 @@ const fetchCachedSignatoriesDb = unstable_cache(
       return [];
     }
   },
-  ["payroll-signatories-db"],
+  ["payroll-signatories-db-v2"],
   { revalidate: 60, tags: [CACHE_TAGS.STAFF_DIRECTORY] }
 );
 
 const fetchCachedStaffMembersDb = unstable_cache(
   async () => {
-    const targetRoles: RoleName[] = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN"];
     try {
       return await withDbTimeout(
         db.user.findMany({
-          where: {
-            userRoles: {
-              some: {
-                role: {
-                  name: { in: targetRoles },
-                },
-              },
-            },
-          },
-          include: {
-            userRoles: { include: { role: true } },
-          },
+          where: { userRoles: { some: { role: { name: { in: PAYROLL_ROLES } } } } },
+          select: { id: true, fullName: true, email: true, status: true, userRoles: { select: { role: { select: { name: true } } } } },
+          orderBy: { fullName: "asc" },
         }),
         3000
       );
@@ -270,54 +313,28 @@ const fetchCachedStaffMembersDb = unstable_cache(
       return [];
     }
   },
-  ["payroll-staff-members-db"],
+  ["payroll-staff-members-db-v2"],
   { revalidate: 60, tags: [CACHE_TAGS.STAFF_DIRECTORY] }
 );
 
 export async function getSignatoryDetails(): Promise<{ ceoName: string; financeName: string; adminName: string }> {
-  let ceoName = "CEO Owner";
-  let financeName = "Finance Officer";
-  let adminName = "Prof. Sofia Benitez";
+  let ceoName = "CEO";
+  let financeName = "Finance";
+  let adminName = "Admin";
 
-  const payoutStorage = readPayoutDetailsStorage();
-  for (const entry of Object.values(payoutStorage)) {
-    if (entry.userId === "cmt5pluuu0001lrrk1qu1ul1t" || entry.accountName.toLowerCase().includes("ceo")) {
-      ceoName = entry.accountName;
-    }
-    if (
-      entry.userId === "cmt5plt6q0002lrrkr5jnsghs" ||
-      entry.userId === "cmt5pluuu0005lrrk6qu6ul2t" ||
-      entry.accountName.toLowerCase().includes("finance")
-    ) {
-      financeName = entry.accountName;
-    }
-    if (
-      entry.userId === "usr_dev_admin_001" ||
-      entry.userId === "cmt5plsb20001lrrk0w684oz0" ||
-      entry.notes?.toLowerCase().includes("admin") ||
-      entry.accountName.includes("Sofia")
-    ) {
-      adminName = entry.accountName;
-    }
+  if (isOfflineDev()) {
+    const devUsers = Object.values(getDevUsers());
+    ceoName = devUsers.find((u) => u.role === "CEO")?.fullName ?? ceoName;
+    financeName = devUsers.find((u) => u.role === "FINANCE_OFFICER")?.fullName ?? financeName;
+    adminName = devUsers.find((u) => u.role === "ADMIN")?.fullName ?? adminName;
+    return { ceoName, financeName, adminName };
   }
 
-  const users = await fetchCachedSignatoriesDb();
-
-  if (users.length > 0) {
-    for (const u of users) {
-      const roleNames = u.userRoles.map((ur) => ur.role.name);
-      if (roleNames.includes("CEO") && u.fullName) ceoName = u.fullName;
-      if (roleNames.includes("FINANCE_OFFICER") && u.fullName) financeName = u.fullName;
-      if (roleNames.includes("ADMIN") && u.fullName) adminName = u.fullName;
-    }
-  } else {
-    const devUsers = getDevUsers();
-    const ceoDev = Object.values(devUsers).find((u) => u.role === "CEO");
-    if (ceoDev) ceoName = ceoDev.fullName;
-    const finDev = Object.values(devUsers).find((u) => u.role === "FINANCE_OFFICER");
-    if (finDev) financeName = finDev.fullName;
-    const admDev = Object.values(devUsers).find((u) => u.role === "ADMIN");
-    if (admDev) adminName = admDev.fullName;
+  for (const u of await fetchCachedSignatoriesDb()) {
+    const roles = u.userRoles.map((ur) => ur.role.name);
+    if (roles.includes("CEO") && u.fullName) ceoName = u.fullName;
+    if (roles.includes("FINANCE_OFFICER") && u.fullName) financeName = u.fullName;
+    if (roles.includes("ADMIN") && u.fullName) adminName = u.fullName;
   }
   return { ceoName, financeName, adminName };
 }
@@ -333,9 +350,24 @@ export interface InternalStaffMember {
   payoutDetails?: StaffPayoutDetailsDTO | null;
 }
 
+/** Signatures and payout details added to payslips for display and printing. */
+async function withDisplayDetails(payslips: StaffPayslipDTO[]): Promise<StaffPayslipDTO[]> {
+  if (!payslips.length) return payslips;
+  const [{ ceoName, financeName, adminName }, details] = await Promise.all([
+    getSignatoryDetails(),
+    readPayoutDetails([...new Set(payslips.map((p) => p.userId))]).catch(() => new Map<string, StaffPayoutDetailsDTO>()),
+  ]);
+  return payslips.map((p) => ({
+    ...p,
+    employerName: p.employerName || ceoName,
+    approvedByName: p.approvedByName || ceoName,
+    preparedByName: p.preparedByName || (p.staffRole === "FINANCE_OFFICER" ? adminName : financeName),
+    payoutDetails: details.get(p.userId) ?? p.payoutDetails ?? null,
+  }));
+}
+
 /**
- * 1. Fetch all payroll configuration models (role defaults + specialist overrides + internal staff directory).
- * Accessible to CEO, FINANCE_OFFICER, and ADMIN.
+ * 1. Pay settings (role pay + personal pay + schedule) and the staff list. CEO, finance and admins.
  */
 export async function getPayrollConfigurations(): Promise<{
   roleConfigs: RoleCompensationConfigDTO[];
@@ -344,54 +376,31 @@ export async function getPayrollConfigurations(): Promise<{
   scheduleConfig: CorporatePayrollScheduleConfigDTO;
 }> {
   await requireRole("CEO", "FINANCE_OFFICER", "ADMIN");
-  const storage = readPayrollStorage();
-  const payoutStorage = readPayoutDetailsStorage();
+  const storage = await readPayrollStorage();
 
-  // Load internal staff users
-  const staffMembers: InternalStaffMember[] = [];
-  const targetRoles: RoleName[] = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN"];
+  type Person = { id: string; fullName: string; email: string; role: RoleName; status: string };
+  const people: Person[] = isOfflineDev()
+    ? Object.values(getDevUsers())
+        .filter((u) => PAYROLL_ROLES.includes(u.role))
+        .map((u) => ({ id: u.id, fullName: u.fullName, email: u.email, role: u.role, status: u.status }))
+    : (await fetchCachedStaffMembersDb()).map((u) => ({
+        id: u.id,
+        fullName: u.fullName,
+        email: u.email,
+        role: (u.userRoles.map((r) => r.role.name).find((r) => PAYROLL_ROLES.includes(r)) ?? "STATISTICIAN") as RoleName,
+        status: u.status,
+      }));
 
-  // 1. Check DB users
-  const dbUsers = await fetchCachedStaffMembersDb();
-
-  const registeredEmails = new Set<string>();
-
-  for (const u of dbUsers) {
-    registeredEmails.add(u.email.toLowerCase());
-    const role = (u.userRoles[0]?.role.name as RoleName) || "STATISTICIAN";
-    const override = storage.staffOverrides[u.id] || null;
-    const roleConfig = storage.roleConfigs[role] || DEFAULT_ROLE_CONFIGS[role]!;
-    staffMembers.push({
-      id: u.id,
-      fullName: u.fullName,
-      email: u.email,
-      role,
-      status: u.status,
+  const details = await readPayoutDetails(people.map((p) => p.id)).catch(() => new Map<string, StaffPayoutDetailsDTO>());
+  const staffMembers: InternalStaffMember[] = people.map((p) => {
+    const override = storage.staffOverrides[p.id] || null;
+    return {
+      ...p,
       overrideConfig: override,
-      effectiveConfig: override || roleConfig,
-      payoutDetails: findPayoutDetailsForStaff(payoutStorage, u.id, u.fullName),
-    });
-  }
-
-  // 2. Include dev users fallback
-  const devUsers = getDevUsers();
-  for (const du of Object.values(devUsers)) {
-    if (!registeredEmails.has(du.email.toLowerCase()) && targetRoles.includes(du.role)) {
-      registeredEmails.add(du.email.toLowerCase());
-      const override = storage.staffOverrides[du.id] || null;
-      const roleConfig = storage.roleConfigs[du.role] || DEFAULT_ROLE_CONFIGS[du.role]!;
-      staffMembers.push({
-        id: du.id,
-        fullName: du.fullName,
-        email: du.email,
-        role: du.role,
-        status: du.status,
-        overrideConfig: override,
-        effectiveConfig: override || roleConfig,
-        payoutDetails: findPayoutDetailsForStaff(payoutStorage, du.id, du.fullName),
-      });
-    }
-  }
+      effectiveConfig: override || storage.roleConfigs[p.role] || DEFAULT_ROLE_CONFIGS[p.role]!,
+      payoutDetails: details.get(p.id) ?? null,
+    };
+  });
 
   return {
     roleConfigs: Object.values(storage.roleConfigs),
@@ -401,9 +410,15 @@ export async function getPayrollConfigurations(): Promise<{
   };
 }
 
+const refreshPayrollPages = () => {
+  revalidatePath("/dashboard/ceo/payroll");
+  revalidatePath("/dashboard/finance/payroll");
+  revalidatePath("/dashboard/staff/hr");
+  invalidateCacheTags(CACHE_TAGS.PAYROLL, CACHE_TAGS.STAFF_DIRECTORY);
+};
+
 /**
- * Save Corporate Payroll Schedule (CEO-only).
- * Configures settlement frequency (Semi-Monthly / Monthly / Bi-Weekly), cutoff boundaries, and proration.
+ * Pay schedule (CEO only): how often staff are paid and the cut-off days.
  */
 export async function saveCompanyPayrollSchedule(
   input: unknown
@@ -411,31 +426,29 @@ export async function saveCompanyPayrollSchedule(
   const session = await requireRole("CEO");
   const parsed = CorporatePayrollScheduleConfigSchema.safeParse(input);
   if (!parsed.success) {
-    return {
-      success: false,
-      error: { message: parsed.error.issues[0]?.message || "Invalid schedule parameters." },
-    };
+    return { success: false, error: { message: parsed.error.issues[0]?.message || "Please check the schedule." } };
   }
 
-  const storage = readPayrollStorage();
+  const storage = await readPayrollStorage();
   const dto: CorporatePayrollScheduleConfigDTO = {
     ...parsed.data,
     updatedAt: new Date().toISOString(),
-    updatedBy: session.user?.name || "CEO Executive Office",
+    updatedBy: session.user?.name || "CEO",
   };
   storage.scheduleConfig = dto;
-  writePayrollStorage(storage);
-
-  revalidatePath("/dashboard/ceo/payroll");
-  revalidatePath("/dashboard/finance/payroll");
-  revalidatePath("/dashboard/staff/hr");
-  invalidateCacheTags(CACHE_TAGS.PAYROLL, CACHE_TAGS.STAFF_DIRECTORY);
+  try {
+    await writePayrollStorage(storage, session.user.id);
+  } catch (err) {
+    console.error("[saveCompanyPayrollSchedule] Save failed:", err);
+    return { success: false, error: { message: "We couldn't save the schedule. Please try again." } };
+  }
+  refreshPayrollPages();
 
   try {
     dispatchRealtimeNotification({
       eventType: "PAYROLL_UPDATE",
-      title: "Payroll Schedule Updated",
-      message: `Payroll schedule has been updated to ${dto.frequency.replace(/_/g, "-").toLowerCase()} settlement.`,
+      title: "Pay schedule updated",
+      message: `Staff are now paid ${dto.frequency.replace(/_/g, "-").toLowerCase()}.`,
       targetRoles: ["FINANCE_OFFICER", "ADMIN"],
       excludeUserId: session.user.id,
     });
@@ -447,41 +460,37 @@ export async function saveCompanyPayrollSchedule(
 }
 
 /**
- * 2. CEO-Only: Save or update role compensation model and numeric parameters.
+ * 2. Role pay settings (CEO only).
  */
 export async function saveRoleCompensationConfig(
   input: unknown
 ): Promise<{ success: boolean; data?: RoleCompensationConfigDTO; error?: { message: string } }> {
   const session = await requireRole("CEO");
   const parsed = RoleCompensationConfigSchema.safeParse(input);
-
   if (!parsed.success) {
-    return {
-      success: false,
-      error: { message: parsed.error.issues[0]?.message || "Invalid compensation parameters." },
-    };
+    return { success: false, error: { message: parsed.error.issues[0]?.message || "Please check the pay settings." } };
   }
 
-  const storage = readPayrollStorage();
+  const storage = await readPayrollStorage();
   const updatedDTO: RoleCompensationConfigDTO = {
     ...parsed.data,
     updatedAt: new Date().toISOString(),
-    updatedBy: session.user.fullName || "CEO Owner",
+    updatedBy: session.user.fullName || "CEO",
   };
-
   storage.roleConfigs[parsed.data.roleName] = updatedDTO;
-  writePayrollStorage(storage);
-
-  revalidatePath("/dashboard/ceo/payroll");
-  revalidatePath("/dashboard/finance/payroll");
-  revalidatePath("/dashboard/staff/hr");
-  invalidateCacheTags(CACHE_TAGS.PAYROLL, CACHE_TAGS.STAFF_DIRECTORY);
+  try {
+    await writePayrollStorage(storage, session.user.id);
+  } catch (err) {
+    console.error("[saveRoleCompensationConfig] Save failed:", err);
+    return { success: false, error: { message: "We couldn't save the pay settings. Please try again." } };
+  }
+  refreshPayrollPages();
 
   try {
     dispatchRealtimeNotification({
       eventType: "PAYROLL_UPDATE",
-      title: "Pay Rates Updated",
-      message: `Compensation rates for ${parsed.data.roleName.replace(/_/g, " ").toLowerCase()} have been updated.`,
+      title: "Pay settings updated",
+      message: `Pay settings for ${parsed.data.roleName.replace(/_/g, " ").toLowerCase()} were updated.`,
       targetRoles: ["FINANCE_OFFICER", "ADMIN"],
       excludeUserId: session.user.id,
     });
@@ -493,41 +502,37 @@ export async function saveRoleCompensationConfig(
 }
 
 /**
- * 3. CEO-Only: Save or update individual specialist compensation override.
+ * 3. Personal pay for one staff member (CEO only).
  */
 export async function saveStaffCompensationOverride(
   input: unknown
 ): Promise<{ success: boolean; data?: StaffCompensationOverrideDTO; error?: { message: string } }> {
   const session = await requireRole("CEO");
   const parsed = StaffCompensationOverrideSchema.safeParse(input);
-
   if (!parsed.success) {
-    return {
-      success: false,
-      error: { message: parsed.error.issues[0]?.message || "Invalid override parameters." },
-    };
+    return { success: false, error: { message: parsed.error.issues[0]?.message || "Please check the pay settings." } };
   }
 
-  const storage = readPayrollStorage();
+  const storage = await readPayrollStorage();
   const overrideDTO: StaffCompensationOverrideDTO = {
     ...parsed.data,
     updatedAt: new Date().toISOString(),
-    updatedBy: session.user.fullName || "CEO Owner",
+    updatedBy: session.user.fullName || "CEO",
   };
-
   storage.staffOverrides[parsed.data.userId] = overrideDTO;
-  writePayrollStorage(storage);
-
-  revalidatePath("/dashboard/ceo/payroll");
-  revalidatePath("/dashboard/finance/payroll");
-  revalidatePath("/dashboard/staff/hr");
-  invalidateCacheTags(CACHE_TAGS.PAYROLL, CACHE_TAGS.STAFF_DIRECTORY);
+  try {
+    await writePayrollStorage(storage, session.user.id);
+  } catch (err) {
+    console.error("[saveStaffCompensationOverride] Save failed:", err);
+    return { success: false, error: { message: "We couldn't save the personal pay. Please try again." } };
+  }
+  refreshPayrollPages();
 
   try {
     dispatchRealtimeNotification({
       eventType: "PAYROLL_UPDATE",
-      title: "Custom Pay Rate Updated",
-      message: "Your custom compensation rates have been updated by leadership.",
+      title: "Your pay was updated",
+      message: "Your personal pay settings were updated.",
       targetUserIds: [parsed.data.userId],
       excludeUserId: session.user.id,
     });
@@ -539,304 +544,223 @@ export async function saveStaffCompensationOverride(
 }
 
 /**
- * 4. CEO-Only: Remove custom override for a specialist, reverting to role default.
+ * 4. Remove someone's personal pay so the role pay applies again (CEO only).
  */
-export async function deleteStaffCompensationOverride(
-  userId: string
-): Promise<{ success: boolean }> {
-  await requireRole("CEO");
-  const storage = readPayrollStorage();
+export async function deleteStaffCompensationOverride(userId: string): Promise<{ success: boolean }> {
+  const session = await requireRole("CEO");
+  const storage = await readPayrollStorage();
   delete storage.staffOverrides[userId];
-  writePayrollStorage(storage);
-
-  revalidatePath("/dashboard/ceo/payroll");
-  revalidatePath("/dashboard/finance/payroll");
-  revalidatePath("/dashboard/staff/hr");
-  invalidateCacheTags(CACHE_TAGS.PAYROLL, CACHE_TAGS.STAFF_DIRECTORY);
-
+  try {
+    await writePayrollStorage(storage, session.user.id);
+  } catch (err) {
+    console.error("[deleteStaffCompensationOverride] Save failed:", err);
+    return { success: false };
+  }
+  refreshPayrollPages();
   return { success: true };
 }
 
 /**
- * 5. Batch Payroll Generator (Accessible to Finance Officer & CEO).
- * Computes official itemized payslips for all active internal staff for the specified cut-off.
+ * A study's pay is earned once it can be paid out: delivered (or closed), paid in full, no open claim and no
+ * refund pending. The same rule as per-study payouts (RULE_PAY_01), checked against the accepted price.
+ */
+function studyIsPayable(project: {
+  masterStatus: string;
+  hasActiveDispute: boolean;
+  hasPendingRefund: boolean;
+  quotations: { status: string; totalAmount: Prisma.Decimal; downpaymentRequired: Prisma.Decimal }[];
+  payments: { amountSubmitted: Prisma.Decimal; paymentStatus: Parameters<typeof calculateProjectBalance>[0][number]["paymentStatus"] }[];
+}): boolean {
+  if (!["DELIVERED", "CLOSED"].includes(project.masterStatus)) return false;
+  if (project.hasActiveDispute || project.hasPendingRefund) return false;
+  const quote = project.quotations.find((q) => q.status === "CLIENT_APPROVED");
+  if (!quote) return false;
+  const balance = calculateProjectBalance(project.payments, Number(quote.totalAmount), Number(quote.downpaymentRequired));
+  return balance.remainingBalance <= 0;
+}
+
+/**
+ * 5. Make payslips for every active staff member for a pay period (finance and the CEO).
+ *
+ * - Hours: real clock-ins in the period only (none = 0).
+ * - Studies: the person's own studies (as analyst or reviewer) that became payable by the end of the period
+ *   and aren't on any earlier payslip of theirs, so each study is paid exactly once.
+ * - Admins and finance are paid salary and allowance only (no study commission).
+ * - Payslips already approved or paid for this period are left exactly as they are.
  */
 export async function generateBatchPayslips(
   input: unknown
-): Promise<{ success: boolean; count?: number; error?: { message: string } }> {
+): Promise<{ success: boolean; count?: number; skipped?: number; error?: { message: string } }> {
   const session = await requireRole("FINANCE_OFFICER", "CEO");
   const parsed = GeneratePayrollBatchSchema.safeParse(input);
-
   if (!parsed.success) {
-    return {
-      success: false,
-      error: { message: parsed.error.issues[0]?.message || "Invalid pay period parameters." },
-    };
+    return { success: false, error: { message: parsed.error.issues[0]?.message || "Please check the pay period." } };
   }
 
   const { payPeriodMonth, payPeriodStart, payPeriodEnd, cutOffCycle = "FIRST_HALF" } = parsed.data;
-  const { staffMembers } = await getPayrollConfigurations();
   const startDate = new Date(payPeriodStart);
-  const endDate = new Date(payPeriodEnd);
+  const endExclusive = new Date(new Date(payPeriodEnd).getTime() + 24 * 60 * 60 * 1000); // include the whole last day
+  if (isNaN(startDate.getTime()) || isNaN(endExclusive.getTime()) || endExclusive <= startDate) {
+    return { success: false, error: { message: "The pay period dates don't look right." } };
+  }
 
+  const { staffMembers } = await getPayrollConfigurations();
+  const activeStaff = staffMembers.filter((s) => s.status === "ACTIVE" || s.status === "ON_LEAVE");
   const isHalfMonth = cutOffCycle === "FIRST_HALF" || cutOffCycle === "SECOND_HALF";
   const prorationMultiplier = isHalfMonth ? 0.5 : 1.0;
 
-  // Format formal cycle label for payslip
   let formalPeriodLabel = payPeriodMonth;
-  if (cutOffCycle === "FIRST_HALF") {
-    formalPeriodLabel = `${payPeriodMonth} (First Half-Month Cycle: Days 1–15)`;
-  } else if (cutOffCycle === "SECOND_HALF") {
-    formalPeriodLabel = `${payPeriodMonth} (Second Half-Month Cycle: Days 16–End)`;
-  } else if (cutOffCycle === "FULL_MONTH") {
-    formalPeriodLabel = `${payPeriodMonth} (Full Month Cycle)`;
-  }
+  if (cutOffCycle === "FIRST_HALF") formalPeriodLabel = `${payPeriodMonth} (Days 1–15)`;
+  else if (cutOffCycle === "SECOND_HALF") formalPeriodLabel = `${payPeriodMonth} (Days 16–end)`;
+  else if (cutOffCycle === "FULL_MONTH") formalPeriodLabel = `${payPeriodMonth} (Full month)`;
 
-  // Load existing payslips
-  const existingPayslips = readPayslipsStorage();
-  const { ceoName } = await getSignatoryDetails();
-
-  // Load attendance logs and assignments concurrently
-  let attendanceLogs: { userId: string; totalMinutes: number | null; status: string; clockInAt: Date }[] = [];
-  let assignments: {
+  type Assignment = {
     projectId: string;
     statisticianId: string;
     qaLeadId: string;
     project: {
-      id: string;
       intakeId: string;
       researchTitle: string;
       masterStatus: string;
       packageName: string | null;
-      sows: { totalAmount: number | { toString(): string }; isLocked: boolean; packageName: string }[];
-      quotations: { totalAmount: number | { toString(): string }; status: string; packageName: string }[];
+      sows: { totalAmount: Prisma.Decimal; isLocked: boolean }[];
+      quotations: { status: string; totalAmount: Prisma.Decimal; downpaymentRequired: Prisma.Decimal }[];
     };
-  }[] = [];
+  };
 
+  let attendanceLogs: { userId: string; totalMinutes: number | null }[] = [];
+  let payable: Assignment[] = [];
+  let existing: StaffPayslipDTO[] = [];
   try {
-    const [attRes, assignRes] = await Promise.all([
-      withDbTimeout(
-        db.staffAttendanceLog.findMany({
-          where: {
-            clockInAt: { gte: startDate, lte: endDate },
-            status: { in: ["COMPLETED", "ADJUSTED", "AUTO_CLOSED"] },
-          },
-          select: { userId: true, totalMinutes: true, status: true, clockInAt: true },
-        }),
-        3000
-      ),
-      withDbTimeout(
-        db.assignment.findMany({
-          include: {
-            project: {
+    const [att, assigned, slips] = await Promise.all([
+      isOfflineDev()
+        ? Promise.resolve([])
+        : withDbTimeout(
+            db.staffAttendanceLog.findMany({
+              where: { clockInAt: { gte: startDate, lt: endExclusive }, status: { in: ["COMPLETED", "ADJUSTED", "AUTO_CLOSED"] } },
+              select: { userId: true, totalMinutes: true },
+            }),
+            5000
+          ),
+      isOfflineDev()
+        ? Promise.resolve([])
+        : withDbTimeout(
+            db.assignment.findMany({
+              where: { project: { deliveredAt: { not: null, lt: endExclusive }, masterStatus: { in: ["DELIVERED", "CLOSED"] } } },
               select: {
-                id: true,
-                intakeId: true,
-                researchTitle: true,
-                masterStatus: true,
-                packageName: true,
-                sows: { select: { totalAmount: true, isLocked: true, packageName: true }, orderBy: { generatedAt: "desc" } },
-                quotations: { select: { totalAmount: true, status: true, packageName: true }, orderBy: { createdAt: "desc" } },
+                projectId: true,
+                statisticianId: true,
+                qaLeadId: true,
+                project: {
+                  select: {
+                    intakeId: true,
+                    researchTitle: true,
+                    masterStatus: true,
+                    packageName: true,
+                    hasActiveDispute: true,
+                    hasPendingRefund: true,
+                    sows: { select: { totalAmount: true, isLocked: true }, orderBy: { generatedAt: "desc" } },
+                    quotations: { select: { status: true, totalAmount: true, downpaymentRequired: true }, orderBy: { createdAt: "desc" } },
+                    payments: { select: { amountSubmitted: true, paymentStatus: true } },
+                  },
+                },
               },
-            },
-          },
-        }),
-        3000
-      ),
+            }),
+            8000
+          ),
+      listPayslips(),
     ]);
-    attendanceLogs = attRes;
-    assignments = assignRes;
-  } catch {
-    // fallback
+    attendanceLogs = att;
+    payable = assigned.filter((a) => studyIsPayable(a.project));
+    existing = slips;
+  } catch (err) {
+    console.error("[generateBatchPayslips] Couldn't load hours, studies or payslips:", err);
+    return { success: false, error: { message: "We couldn't load the hours and studies. Please try again." } };
   }
 
-  // Also check dev-projects.json if assignments is empty
-  if (assignments.length === 0) {
-    try {
-      const devProjPath = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
-      if (fs.existsSync(devProjPath)) {
-        const rawProjs = JSON.parse(fs.readFileSync(devProjPath, "utf-8"));
+  /** The price the client agreed to: the signed agreement, else the accepted quote. */
+  const contractAmount = (project: Assignment["project"]): number => {
+    const signed = project.sows.find((s) => s.isLocked) ?? project.sows[0];
+    if (signed) return Number(signed.totalAmount);
+    const approved = project.quotations.find((q) => q.status === "CLIENT_APPROVED");
+    return approved ? Number(approved.totalAmount) : 0;
+  };
 
-        // Cross-reference with .dev-quotations.json for dynamic SOW amounts
-        let devQuotations: { projectId?: string; status?: string; totalAmount?: number; packageName?: string }[] = [];
-        const devQuotePath = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-quotations.json");
-        if (fs.existsSync(devQuotePath)) {
-          devQuotations = JSON.parse(fs.readFileSync(devQuotePath, "utf-8"));
-        }
+  // Payslip numbers continue from the highest one used this month (JAX-PS-YYYYMM-NNN).
+  const now = new Date();
+  const prefix = `JAX-PS-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}-`;
+  let nextNumber =
+    existing
+      .map((p) => (p.payslipNumber.startsWith(prefix) ? parseInt(p.payslipNumber.slice(prefix.length), 10) : 0))
+      .reduce((max, n) => (Number.isFinite(n) && n > max ? n : max), 0) + 1;
 
-        // Create mock assignment links for active studies
-        for (const p of rawProjs) {
-          // Find the latest approved quotation for this project
-          const projQuotes = devQuotations
-            .filter((q) => q.projectId === p.id && q.status === "CLIENT_APPROVED")
-            .map((q) => ({ totalAmount: q.totalAmount || 0, status: q.status || "", packageName: q.packageName || "JX_03_CORE" }));
+  const nowStr = now.toISOString();
+  const { ceoName } = await getSignatoryDetails();
+  let made = 0;
+  let skipped = 0;
 
-          assignments.push({
-            projectId: p.id,
-            statisticianId: "usr_dev_stat_001",
-            qaLeadId: "usr_dev_qa_001",
-            project: {
-              id: p.id,
-              intakeId: p.intakeId || "JAXIS-202608-0001",
-              researchTitle: p.researchTitle || "Statistical Analysis",
-              masterStatus: p.masterStatus || "DELIVERED",
-              packageName: p.packageName || "JX_03_CORE",
-              sows: [], // No dev SOW file — quotation is the fallback
-              quotations: projQuotes,
-            },
-          });
-        }
-      }
-    } catch {
-      // ignore
+  for (const staff of activeStaff) {
+    const current = existing.find((p) => p.userId === staff.id && p.payPeriodMonth === formalPeriodLabel);
+    if (current && current.status !== "DRAFT") {
+      skipped++; // already approved or paid: never recalculated
+      continue;
     }
-  }
-
-  /**
-   * Resolve the approved contract amount for a project.
-   * Priority: Signed SOW.totalAmount > Approved Quotation.totalAmount > 0 (no amount available)
-   */
-  function resolveContractAmount(project: (typeof assignments)[0]["project"]): number {
-    // 1. Signed SOW (highest priority — immutable contract)
-    const signedSow = project.sows?.find((s) => s.isLocked);
-    if (signedSow) return Number(signedSow.totalAmount);
-    // 2. Any SOW (draft SOW still represents admin-approved pricing)
-    const latestSow = project.sows?.[0];
-    if (latestSow) return Number(latestSow.totalAmount);
-    // 3. Approved quotation (pre-SOW stage)
-    const approvedQuote = project.quotations?.find((q) => q.status === "CLIENT_APPROVED");
-    if (approvedQuote) return Number(approvedQuote.totalAmount);
-    // 4. Latest quotation of any status
-    const latestQuote = project.quotations?.[0];
-    if (latestQuote) return Number(latestQuote.totalAmount);
-    // 5. No contract data available
-    return 0;
-  }
-
-  const nowStr = new Date().toISOString();
-
-  let counter = existingPayslips.length + 1;
-
-  for (const staff of staffMembers) {
     const config = staff.effectiveConfig;
 
-    // 1. Calculate verified duty hours
+    // 1. Hours actually worked (clock-ins in the period)
     const staffLogs = attendanceLogs.filter((l) => l.userId === staff.id);
     const totalMinutes = staffLogs.reduce((sum, l) => sum + (l.totalMinutes || 0), 0);
-    // If 0 logs in DB for dev demo, supply realistic baseline prorated for half-month
-    const defaultBaseline = staff.role === "STATISTICIAN" ? 42.5 : staff.role === "SENIOR_QA_LEAD" ? 36.0 : 80.0;
-    const verifiedDutyHours = totalMinutes > 0
-      ? Math.round((totalMinutes / 60) * 10) / 10
-      : Math.round(defaultBaseline * prorationMultiplier * 10) / 10;
+    const verifiedDutyHours = Math.round((totalMinutes / 60) * 10) / 10;
     const overtimeHours = staffLogs.filter((l) => (l.totalMinutes || 0) > 510).length * 1.5;
 
-    // 2. Calculate studies completed — using dynamic SOW/Quotation amounts and Treasury Package Rules
+    // 2. Studies: their own, payable, not already on another payslip of theirs
+    const alreadyPaid = new Set(
+      existing.filter((p) => p.userId === staff.id && p.id !== current?.id).flatMap((p) => p.itemizedStudies.map((s) => s.projectId))
+    );
+    const isAnalyst = staff.role === "STATISTICIAN";
+    const isReviewer = staff.role === "SENIOR_QA_LEAD";
+    const theirs = payable.filter(
+      (a) => !alreadyPaid.has(a.projectId) && ((isAnalyst && a.statisticianId === staff.id) || (isReviewer && a.qaLeadId === staff.id))
+    );
+
     const itemizedStudies: PayslipItemizedStudy[] = [];
-    if (staff.role === "STATISTICIAN") {
-      const assigned = assignments.filter((a) => a.statisticianId === staff.id);
-      // Fallback if none specifically linked
-      const studiesToCount = assigned.length > 0 ? assigned : assignments.slice(0, 2);
-      for (const a of studiesToCount) {
-        const pkgName = a.project.packageName || "JX_03_CORE";
-        // Dynamic: pull actual contract amount from SOW/Quotation
-        const grossAmount = resolveContractAmount(a.project);
-        const rule = await resolvePackagePayoutRule(pkgName);
-
-        let commEarned = 0;
-        let commPct = 0;
-
-        if (rule.mode === "FIXED") {
-          commEarned = rule.fixedAmount + (config.fixedPerStudyBonus || 0);
-          commPct = 0;
-        } else {
-          // In Percentage Mode: individual staff override takes priority if set, otherwise use package rule rate
-          commPct = (staff.overrideConfig?.commissionPercentagePerStudy && staff.overrideConfig.commissionPercentagePerStudy > 0)
-            ? staff.overrideConfig.commissionPercentagePerStudy
-            : (config.commissionPercentagePerStudy && config.commissionPercentagePerStudy > 0 && config.compensationType === "PERCENTAGE_PER_STUDY"
-              ? config.commissionPercentagePerStudy
-              : rule.ratePercent);
-          commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
-        }
-
-        itemizedStudies.push({
-          projectId: a.projectId,
-          intakeId: a.project.intakeId,
-          researchTitle: a.project.researchTitle,
-          grossAmount,
-          commissionPercentage: commPct,
-          commissionEarned: Math.round(commEarned * 100) / 100,
-          status: a.project.masterStatus,
-        });
+    for (const a of theirs) {
+      const grossAmount = contractAmount(a.project);
+      const rule = await resolvePackagePayoutRule(a.project.packageName || "JX_03_CORE");
+      let commPct = 0;
+      let commEarned: number;
+      if (rule.mode === "FIXED") {
+        commEarned = (isAnalyst ? rule.fixedAmount : rule.fixedQaAmount) + (config.fixedPerStudyBonus || 0);
+      } else {
+        // Personal pay first, then a role "percentage per study", then the package rate.
+        const personal = staff.overrideConfig?.commissionPercentagePerStudy;
+        const role =
+          config.compensationType === "PERCENTAGE_PER_STUDY" && config.commissionPercentagePerStudy > 0
+            ? config.commissionPercentagePerStudy
+            : 0;
+        commPct = personal && personal > 0 ? personal : role > 0 ? role : isAnalyst ? rule.ratePercent : rule.qaRatePercent;
+        commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
       }
-    } else if (staff.role === "SENIOR_QA_LEAD") {
-      const assigned = assignments.filter((a) => a.qaLeadId === staff.id);
-      const studiesToCount = assigned.length > 0 ? assigned : assignments.slice(0, 3);
-      for (const a of studiesToCount) {
-        const pkgName = a.project.packageName || "JX_03_CORE";
-        const grossAmount = resolveContractAmount(a.project);
-        const rule = await resolvePackagePayoutRule(pkgName);
-
-        let commEarned = 0;
-        let commPct = 0;
-
-        if (rule.mode === "FIXED") {
-          commEarned = rule.fixedQaAmount + (config.fixedPerStudyBonus || 0);
-          commPct = 0;
-        } else {
-          commPct = (staff.overrideConfig?.commissionPercentagePerStudy && staff.overrideConfig.commissionPercentagePerStudy > 0)
-            ? staff.overrideConfig.commissionPercentagePerStudy
-            : (config.commissionPercentagePerStudy && config.commissionPercentagePerStudy > 0 && config.compensationType === "PERCENTAGE_PER_STUDY"
-              ? config.commissionPercentagePerStudy
-              : rule.qaRatePercent);
-          commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
-        }
-
-        itemizedStudies.push({
-          projectId: a.projectId,
-          intakeId: a.project.intakeId,
-          researchTitle: a.project.researchTitle,
-          grossAmount,
-          commissionPercentage: commPct,
-          commissionEarned: Math.round(commEarned * 100) / 100,
-          status: a.project.masterStatus,
-        });
-      }
-    } else if (staff.role === "ADMIN" || staff.role === "FINANCE_OFFICER") {
-      if (
-        config.compensationType === "TIER_DELIVERABLE" ||
-        config.compensationType === "PERCENTAGE_PER_STUDY" ||
-        config.compensationType === "HYBRID"
-      ) {
-        const studiesToCount = assignments.slice(0, 3);
-        for (const a of studiesToCount) {
-          const grossAmount = resolveContractAmount(a.project);
-          const commPct = config.commissionPercentagePerStudy || (staff.role === "ADMIN" ? 5.0 : 3.0);
-          const commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
-
-          itemizedStudies.push({
-            projectId: a.projectId,
-            intakeId: a.project.intakeId,
-            researchTitle: a.project.researchTitle,
-            grossAmount,
-            commissionPercentage: commPct,
-            commissionEarned: Math.round(commEarned * 100) / 100,
-            status: a.project.masterStatus,
-          });
-        }
-      }
+      itemizedStudies.push({
+        projectId: a.projectId,
+        intakeId: a.project.intakeId,
+        researchTitle: a.project.researchTitle,
+        grossAmount,
+        commissionPercentage: commPct,
+        commissionEarned: Math.round(commEarned * 100) / 100,
+        status: a.project.masterStatus,
+      });
     }
 
     const completedStudiesGrossValue = itemizedStudies.reduce((sum, s) => sum + s.grossAmount, 0);
-    const commissionEarnings = itemizedStudies.reduce((sum, s) => sum + s.commissionEarned, 0);
+    const commissionEarnings = Math.round(itemizedStudies.reduce((sum, s) => sum + s.commissionEarned, 0) * 100) / 100;
 
-    // 3. Compensation Math (with Semi-Monthly 50% Proration for Fixed Retainers & Stipends)
+    // 3. Salary, hourly pay, overtime, allowance (salary and allowance halved for a half-month)
     const fullMonthlyBase = config.compensationType === "FIXED_SALARY" || config.compensationType === "HYBRID" ? config.baseSalaryMonthly : 0;
     const baseSalary = Math.round(fullMonthlyBase * prorationMultiplier * 100) / 100;
     const hourlyRate = config.hourlyDutyRate || 0;
-    const hourlyDutyEarnings = (config.compensationType === "HOURLY_DUTY" || config.compensationType === "HYBRID" || config.compensationType === "PERCENTAGE_PER_STUDY" || config.compensationType === "TIER_DELIVERABLE")
-      ? Math.round(verifiedDutyHours * hourlyRate * 100) / 100
-      : 0;
-
+    const paysHourly = ["HOURLY_DUTY", "HYBRID", "PERCENTAGE_PER_STUDY", "TIER_DELIVERABLE"].includes(config.compensationType);
+    const hourlyDutyEarnings = paysHourly ? Math.round(verifiedDutyHours * hourlyRate * 100) / 100 : 0;
     const overtimeEarnings = Math.round(overtimeHours * (hourlyRate > 0 ? hourlyRate * 1.25 : 550) * 100) / 100;
     const allowances = Math.round((config.allowancesMonthly || 0) * prorationMultiplier * 100) / 100;
 
@@ -846,14 +770,9 @@ export async function generateBatchPayslips(
     const otherDeductions = 0;
     const netPay = Math.round((grossEarnings - withholdingTax - otherDeductions) * 100) / 100;
 
-    // Check if payslip already exists for this user and formal period label
-    const existingIndex = existingPayslips.findIndex((p) => p.userId === staff.id && p.payPeriodMonth === formalPeriodLabel);
-
-    const payslipNum = `JAX-PS-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${String(counter++).padStart(3, "0")}`;
-
-    const payslipDTO: StaffPayslipDTO = {
-      id: existingIndex >= 0 ? existingPayslips[existingIndex]!.id : `ps_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      payslipNumber: existingIndex >= 0 ? existingPayslips[existingIndex]!.payslipNumber : payslipNum,
+    const payslip: StaffPayslipDTO = {
+      id: current?.id ?? `ps_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      payslipNumber: current?.payslipNumber ?? `${prefix}${String(nextNumber++).padStart(3, "0")}`,
       userId: staff.id,
       staffName: staff.fullName,
       staffEmail: staff.email,
@@ -879,64 +798,51 @@ export async function generateBatchPayslips(
       withholdingTax,
       otherDeductions,
       netPay,
-      status: existingIndex >= 0 ? existingPayslips[existingIndex]!.status : "DRAFT",
-      disbursementMethod: existingIndex >= 0 ? existingPayslips[existingIndex]!.disbursementMethod : null,
-      disbursementReference: existingIndex >= 0 ? existingPayslips[existingIndex]!.disbursementReference : null,
-      disbursedAt: existingIndex >= 0 ? existingPayslips[existingIndex]!.disbursedAt : null,
-      disbursedBy: existingIndex >= 0 ? existingPayslips[existingIndex]!.disbursedBy : null,
-      disbursedByName: existingIndex >= 0 ? existingPayslips[existingIndex]!.disbursedByName : null,
-      employerName: existingIndex >= 0 ? existingPayslips[existingIndex]!.employerName || ceoName : ceoName,
-      approvedByName: existingIndex >= 0 ? existingPayslips[existingIndex]!.approvedByName || ceoName : ceoName,
-      generatedBy: session.user.fullName || "Finance / Executive Officer",
+      status: "DRAFT",
+      disbursementMethod: null,
+      disbursementReference: null,
+      disbursedAt: null,
+      disbursedBy: null,
+      disbursedByName: null,
+      employerName: current?.employerName || ceoName,
+      approvedByName: current?.approvedByName || ceoName,
+      generatedBy: session.user.fullName || "Finance",
       notes: config.notes || null,
-      createdAt: existingIndex >= 0 ? existingPayslips[existingIndex]!.createdAt : nowStr,
+      createdAt: current?.createdAt ?? nowStr,
       updatedAt: nowStr,
     };
 
-    if (existingIndex >= 0) {
-      existingPayslips[existingIndex] = payslipDTO;
-    } else {
-      existingPayslips.push(payslipDTO);
+    try {
+      await savePayslip(payslip);
+      made++;
+    } catch (err) {
+      console.error("[generateBatchPayslips] Couldn't save a payslip:", err);
+      return {
+        success: false,
+        error: { message: `We saved ${made} payslip${made === 1 ? "" : "s"} but couldn't save the rest. Please try again.` },
+      };
     }
   }
 
-  writePayslipsStorage(existingPayslips);
-
-  revalidatePath("/dashboard/ceo/payroll");
-  revalidatePath("/dashboard/finance/payroll");
-  revalidatePath("/dashboard/staff/hr");
-  invalidateCacheTags(CACHE_TAGS.PAYROLL);
+  refreshPayrollPages();
 
   try {
-    // Notify Finance and Leadership
     dispatchRealtimeNotification({
       eventType: "PAYROLL_UPDATE",
-      title: "Batch Payslips Generated",
-      message: `Generated ${staffMembers.length} staff payslips for ${formalPeriodLabel}.`,
+      title: "Payslips made",
+      message: `${made} payslip${made === 1 ? "" : "s"} made for ${formalPeriodLabel}${skipped ? ` (${skipped} already approved or paid, left as they were)` : ""}.`,
       targetRoles: ["FINANCE_OFFICER", "CEO"],
       excludeUserId: session.user.id,
     });
-
-    // Notify individual staff recipients
-    const staffUserIds = staffMembers.map((s) => s.id).filter(Boolean);
-    if (staffUserIds.length > 0) {
-      dispatchRealtimeNotification({
-        eventType: "PAYROLL_UPDATE",
-        title: "New Payslip Ready",
-        message: `Your payslip for ${formalPeriodLabel} is now ready for review.`,
-        targetUserIds: staffUserIds,
-        excludeUserId: session.user.id,
-      });
-    }
   } catch (notifyErr) {
     console.warn("[generateBatchPayslips] Realtime notification warning:", notifyErr);
   }
 
-  return { success: true, count: staffMembers.length };
+  return { success: true, count: made, skipped };
 }
 
 /**
- * 6. Get Company Payslips Ledger with KPI metrics (Finance and CEO).
+ * 6. All payslips with totals (finance, the CEO and admins).
  */
 export async function getCompanyPayslips(filters?: {
   period?: string;
@@ -948,108 +854,81 @@ export async function getCompanyPayslips(filters?: {
   availablePeriods: string[];
 }> {
   await requireRole("FINANCE_OFFICER", "CEO", "ADMIN");
-  const payslips = readPayslipsStorage();
+  let payslips: StaffPayslipDTO[] = [];
+  try {
+    payslips = await listPayslips();
+  } catch (err) {
+    console.error("[getCompanyPayslips] Couldn't load payslips:", err);
+  }
   const availablePeriods = Array.from(new Set(payslips.map((p) => p.payPeriodMonth)));
 
   let filtered = [...payslips];
-  if (filters?.period && filters.period !== "ALL") {
-    filtered = filtered.filter((p) => p.payPeriodMonth === filters.period);
-  }
-  if (filters?.status && filters.status !== "ALL") {
-    filtered = filtered.filter((p) => p.status === filters.status);
-  }
-  if (filters?.role && filters.role !== "ALL") {
-    filtered = filtered.filter((p) => p.staffRole === filters.role);
-  }
-
-  const totalInstitutionalPayroll = filtered.reduce((sum, p) => sum + p.netPay, 0);
-  const totalDisbursed = filtered.filter((p) => p.status === "DISBURSED").reduce((sum, p) => sum + p.netPay, 0);
-  const pendingDisbursementsCount = filtered.filter((p) => p.status !== "DISBURSED").length;
-  const totalDutyHoursCompensated = filtered.reduce((sum, p) => sum + p.verifiedDutyHours, 0);
-  const totalStudiesRewarded = filtered.reduce((sum, p) => sum + p.completedStudiesCount, 0);
-  const activeStaffCount = new Set(filtered.map((p) => p.userId)).size;
-
-  const payoutStorage = readPayoutDetailsStorage();
-  const { ceoName, financeName, adminName } = await getSignatoryDetails();
-  const enhancedPayslips = filtered.map((p) => ({
-    ...p,
-    employerName: p.employerName || ceoName,
-    approvedByName: p.approvedByName || ceoName,
-    preparedByName: p.preparedByName || (p.staffRole === "FINANCE_OFFICER" ? adminName : financeName),
-    payoutDetails: findPayoutDetailsForStaff(payoutStorage, p.userId, p.staffName) || p.payoutDetails || null,
-  }));
+  if (filters?.period && filters.period !== "ALL") filtered = filtered.filter((p) => p.payPeriodMonth === filters.period);
+  if (filters?.status && filters.status !== "ALL") filtered = filtered.filter((p) => p.status === filters.status);
+  if (filters?.role && filters.role !== "ALL") filtered = filtered.filter((p) => p.staffRole === filters.role);
 
   return {
-    payslips: enhancedPayslips,
+    payslips: await withDisplayDetails(filtered),
     kpis: {
-      totalInstitutionalPayroll,
-      totalDisbursed,
-      pendingDisbursementsCount,
-      totalDutyHoursCompensated: Math.round(totalDutyHoursCompensated * 10) / 10,
-      totalStudiesRewarded,
-      activeStaffCount,
+      totalInstitutionalPayroll: filtered.reduce((sum, p) => sum + p.netPay, 0),
+      totalDisbursed: filtered.filter((p) => p.status === "DISBURSED").reduce((sum, p) => sum + p.netPay, 0),
+      pendingDisbursementsCount: filtered.filter((p) => p.status !== "DISBURSED").length,
+      totalDutyHoursCompensated: Math.round(filtered.reduce((sum, p) => sum + p.verifiedDutyHours, 0) * 10) / 10,
+      totalStudiesRewarded: filtered.reduce((sum, p) => sum + p.completedStudiesCount, 0),
+      activeStaffCount: new Set(filtered.map((p) => p.userId)).size,
     },
     availablePeriods,
   };
 }
 
 /**
- * 7. Disburse Payslip with payment method and reference number.
- * Accessible to Finance Officer and CEO.
+ * 7. Mark a payslip as paid, with how and the reference (finance, the CEO and admins).
  */
 export async function disbursePayslip(
   input: unknown
 ): Promise<{ success: boolean; data?: StaffPayslipDTO; error?: { message: string } }> {
   const session = await requireRole("FINANCE_OFFICER", "CEO", "ADMIN");
   const parsed = DisbursePayslipSchema.safeParse(input);
-
   if (!parsed.success) {
-    return {
-      success: false,
-      error: { message: parsed.error.issues[0]?.message || "Invalid disbursement details." },
-    };
+    return { success: false, error: { message: parsed.error.issues[0]?.message || "Please check the payment details." } };
   }
 
   const { payslipId, disbursementMethod, disbursementReference, notes } = parsed.data;
-  const payslips = readPayslipsStorage();
-  const targetIndex = payslips.findIndex((p) => p.id === payslipId);
+  const target = await findPayslip(payslipId).catch(() => null);
+  if (!target) return { success: false, error: { message: "We couldn't find that payslip." } };
+  if (target.status === "DISBURSED") return { success: false, error: { message: "This payslip is already marked as paid." } };
 
-  if (targetIndex === -1) {
-    return { success: false, error: { message: "Payslip record not found." } };
+  const updated: StaffPayslipDTO = {
+    ...target,
+    status: "DISBURSED",
+    disbursementMethod,
+    disbursementReference,
+    disbursedAt: new Date().toISOString(),
+    disbursedBy: session.user.id,
+    disbursedByName: session.user.fullName || "Finance",
+    notes: notes || target.notes,
+    updatedAt: new Date().toISOString(),
+  };
+  try {
+    await savePayslip(updated);
+  } catch (err) {
+    console.error("[disbursePayslip] Save failed:", err);
+    return { success: false, error: { message: "We couldn't save the payment. Please try again." } };
   }
-
-  const target = payslips[targetIndex]!;
-  target.status = "DISBURSED";
-  target.disbursementMethod = disbursementMethod;
-  target.disbursementReference = disbursementReference;
-  target.disbursedAt = new Date().toISOString();
-  target.disbursedBy = session.user.id;
-  target.disbursedByName = session.user.fullName || "Finance Officer";
-  if (notes) target.notes = notes;
-  target.updatedAt = new Date().toISOString();
-
-  writePayslipsStorage(payslips);
-
-  revalidatePath("/dashboard/ceo/payroll");
-  revalidatePath("/dashboard/finance/payroll");
-  revalidatePath("/dashboard/staff/hr");
-  invalidateCacheTags(CACHE_TAGS.PAYROLL);
+  refreshPayrollPages();
 
   try {
-    // Notify employee of payment disbursement
     dispatchRealtimeNotification({
       eventType: "PAYROLL_UPDATE",
-      title: "Salary Payment Sent",
-      message: `Your net pay of ₱${target.netPay.toLocaleString()} has been sent via ${target.disbursementMethod || "bank transfer"} (Ref: ${target.disbursementReference || "N/A"}).`,
-      targetUserIds: [target.userId],
+      title: "Your pay was sent",
+      message: `₱${updated.netPay.toLocaleString()} was sent by ${updated.disbursementMethod || "bank transfer"} (ref ${updated.disbursementReference || "—"}).`,
+      targetUserIds: [updated.userId],
       excludeUserId: session.user.id,
     });
-
-    // Notify CEO of completed disbursement
     dispatchRealtimeNotification({
       eventType: "PAYROLL_UPDATE",
-      title: "Staff Payment Disbursed",
-      message: `Payslip ${target.payslipNumber} (₱${target.netPay.toLocaleString()}) for ${target.staffName} was marked as disbursed.`,
+      title: "Staff pay sent",
+      message: `Payslip ${updated.payslipNumber} (₱${updated.netPay.toLocaleString()}) for ${updated.staffName} was marked as paid.`,
       targetRoles: ["CEO"],
       excludeUserId: session.user.id,
     });
@@ -1057,37 +936,31 @@ export async function disbursePayslip(
     console.warn("[disbursePayslip] Realtime notification warning:", notifyErr);
   }
 
-  return { success: true, data: target };
+  return { success: true, data: updated };
 }
 
 /**
- * 8. Approve Payslip (CEO or Finance Officer).
+ * 8. Approve a payslip (finance, the CEO and admins).
  */
-export async function approvePayslip(
-  payslipId: string
-): Promise<{ success: boolean; error?: { message: string } }> {
+export async function approvePayslip(payslipId: string): Promise<{ success: boolean; error?: { message: string } }> {
   const session = await requireRole("FINANCE_OFFICER", "CEO", "ADMIN");
-  const payslips = readPayslipsStorage();
-  const target = payslips.find((p) => p.id === payslipId);
+  const target = await findPayslip(payslipId).catch(() => null);
+  if (!target) return { success: false, error: { message: "We couldn't find that payslip." } };
+  if (target.status === "DISBURSED") return { success: false, error: { message: "This payslip is already paid." } };
 
-  if (!target) {
-    return { success: false, error: { message: "Payslip record not found." } };
+  try {
+    await savePayslip({ ...target, status: "APPROVED", updatedAt: new Date().toISOString() });
+  } catch (err) {
+    console.error("[approvePayslip] Save failed:", err);
+    return { success: false, error: { message: "We couldn't approve the payslip. Please try again." } };
   }
-
-  target.status = "APPROVED";
-  target.updatedAt = new Date().toISOString();
-  writePayslipsStorage(payslips);
-
-  revalidatePath("/dashboard/ceo/payroll");
-  revalidatePath("/dashboard/finance/payroll");
-  revalidatePath("/dashboard/staff/hr");
-  invalidateCacheTags(CACHE_TAGS.PAYROLL);
+  refreshPayrollPages();
 
   try {
     dispatchRealtimeNotification({
       eventType: "PAYROLL_UPDATE",
-      title: "Payslip Approved",
-      message: `Payslip ${target.payslipNumber} for ${target.payPeriodMonth} has been approved.`,
+      title: "Payslip approved",
+      message: `Your payslip ${target.payslipNumber} for ${target.payPeriodMonth} was approved.`,
       targetUserIds: [target.userId],
       excludeUserId: session.user.id,
     });
@@ -1099,276 +972,102 @@ export async function approvePayslip(
 }
 
 /**
- * 9. Fetch official employee payslip for Staff HR portal.
+ * 9. The signed-in staff member's own payslips. No payslip yet means none is shown (it used to invent one).
  */
 export async function getMyOfficialPayslip(
   payPeriodMonthOrId?: string
 ): Promise<{ payslip: StaffPayslipDTO | null; allMyPayslips: StaffPayslipDTO[] }> {
   const session = await auth();
-  if (!session?.user?.id && !session?.user?.email) {
-    throw new Error("Authentication required.");
+  if (!session?.user?.id) throw new Error("Authentication required.");
+
+  let mine: StaffPayslipDTO[] = [];
+  try {
+    mine = await listPayslips({ userId: session.user.id });
+  } catch (err) {
+    console.error("[getMyOfficialPayslip] Couldn't load payslips:", err);
   }
+  mine.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  mine = await withDisplayDetails(mine);
 
-  // 1. Resolve logged-in user profile
-  let user = null;
-  if (session.user.id) {
-    try {
-      user = await db.user.findUnique({
-        where: { id: session.user.id },
-        include: {
-          userRoles: {
-            include: { role: true },
-          },
-        },
-      });
-    } catch {
-      // ignore
-    }
-  }
-  if (!user && session.user.email) {
-    try {
-      user = await db.user.findUnique({
-        where: { email: session.user.email },
-        include: {
-          userRoles: {
-            include: { role: true },
-          },
-        },
-      });
-    } catch {
-      // ignore
-    }
-  }
-
-  const userId = user?.id || session.user.id;
-  const userEmail = (user?.email || session.user.email || "").toLowerCase().trim();
-  const userFullName = (user?.fullName || session.user.name || "").toLowerCase().trim();
-  const userRole = (user?.userRoles?.[0]?.role?.name || (session.user as { role?: RoleName })?.role || "STATISTICIAN") as RoleName;
-
-  const payslips = readPayslipsStorage();
-
-  // 2. Strict Filter: ONLY payslips belonging to this specific respective employee
-  let myPayslips = payslips.filter((p) => {
-    const idMatch = p.userId === userId;
-    const emailMatch = userEmail && p.staffEmail && p.staffEmail.toLowerCase().trim() === userEmail;
-    const nameMatch = userFullName && p.staffName && p.staffName.toLowerCase().trim() === userFullName;
-    return idMatch || emailMatch || nameMatch;
-  });
-
-  // If no generated payslip exists for this employee yet, create a live personalized draft for them
-  if (myPayslips.length === 0) {
-    const now = new Date();
-    const periodLabel = payPeriodMonthOrId || `${now.toLocaleDateString("en-PH", { month: "long", year: "numeric" })} (First Half-Month Cycle: Days 1–15)`;
-
-    const storage = readPayrollStorage();
-    const roleCfg = storage.roleConfigs[userRole] || DEFAULT_ROLE_CONFIGS[userRole] || DEFAULT_ROLE_CONFIGS.STATISTICIAN;
-    const userOverride = storage.staffOverrides[userId];
-    const activeCompType = userOverride?.compensationType || roleCfg?.compensationType || "TIER_DELIVERABLE";
-    const activeHourlyRate = userOverride?.hourlyDutyRate ?? roleCfg?.hourlyDutyRate ?? 450.0;
-    const activeBaseSalary = userOverride?.baseSalaryMonthly ?? roleCfg?.baseSalaryMonthly ?? 0;
-    const activeCommissionPct = userOverride?.commissionPercentagePerStudy ?? roleCfg?.commissionPercentagePerStudy ?? (activeCompType === "TIER_DELIVERABLE" ? 0 : 50.0);
-    const activeAllowances = (userOverride?.allowancesMonthly ?? roleCfg?.allowancesMonthly ?? 2500.0) / 2;
-
-    const baseSalary = activeCompType === "FIXED_SALARY" || activeCompType === "HYBRID" ? Math.round((activeBaseSalary / 2) * 100) / 100 : 0;
-    const verifiedDutyHours = 21.3;
-    const hourlyDutyEarnings = (activeCompType === "HOURLY_DUTY" || activeCompType === "HYBRID" || activeCompType === "PERCENTAGE_PER_STUDY" || activeCompType === "TIER_DELIVERABLE")
-      ? Math.round(verifiedDutyHours * activeHourlyRate * 100) / 100
-      : 0;
-    const completedStudiesCount = 1;
-    const completedStudiesGrossValue = 28500.0;
-    const commissionEarnings = 15250.0;
-    const allowances = Math.round(activeAllowances * 100) / 100;
-    const overtimeHours = 0;
-    const overtimeEarnings = 0;
-    const grossEarnings = Math.round((baseSalary + hourlyDutyEarnings + commissionEarnings + allowances) * 100) / 100;
-    const taxThreshold = 10416.5;
-    const withholdingTax = grossEarnings > taxThreshold ? Math.round((grossEarnings - taxThreshold) * 0.15 * 100) / 100 : 0;
-    const otherDeductions = 0;
-    const netPay = Math.round((grossEarnings - withholdingTax - otherDeductions) * 100) / 100;
-
-    const liveDraft: StaffPayslipDTO = {
-      id: `ps_live_${userId}`,
-      payslipNumber: `JAX-PS-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}-001`,
-      userId: userId,
-      staffName: user?.fullName || session.user.name || "Staff Member",
-      staffEmail: user?.email || session.user.email || "",
-      staffRole: userRole,
-      payPeriodMonth: periodLabel,
-      payPeriodStart: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
-      payPeriodEnd: new Date(now.getFullYear(), now.getMonth(), 15).toISOString(),
-      cutOffCycle: "FIRST_HALF",
-      compensationType: activeCompType,
-      baseSalary,
-      verifiedDutyHours,
-      hourlyRate: activeHourlyRate,
-      hourlyDutyEarnings,
-      completedStudiesCount,
-      completedStudiesGrossValue,
-      commissionPercentage: activeCommissionPct,
-      commissionEarnings,
-      itemizedStudies: [
-        {
-          projectId: "proj_demo_study_01",
-          intakeId: "JAXIS-202609-0012",
-          researchTitle: "Predictive Healthcare Biomarkers Analysis",
-          grossAmount: 28500.0,
-          commissionPercentage: activeCommissionPct,
-          commissionEarned: commissionEarnings,
-          status: "IN_REVIEW",
-        }
-      ],
-      allowances,
-      overtimeHours,
-      overtimeEarnings,
-      grossEarnings,
-      withholdingTax,
-      otherDeductions,
-      netPay,
-      status: "DRAFT",
-      generatedBy: "System (Automated Live Draft)",
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
-    myPayslips = [liveDraft];
-  }
-
-  // Sort descending so newest is first
-  myPayslips.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  const payoutStorage = readPayoutDetailsStorage();
-  const { ceoName, financeName, adminName } = await getSignatoryDetails();
-  myPayslips = myPayslips.map((p) => ({
-    ...p,
-    employerName: p.employerName || ceoName,
-    approvedByName: p.approvedByName || ceoName,
-    preparedByName: p.preparedByName || (p.staffRole === "FINANCE_OFFICER" ? adminName : financeName),
-    payoutDetails: findPayoutDetailsForStaff(payoutStorage, p.userId, p.staffName) || p.payoutDetails || null,
-  }));
-
-  let targetPayslip = null;
-  if (payPeriodMonthOrId) {
-    targetPayslip =
-      myPayslips.find(
-        (p) =>
-          p.id === payPeriodMonthOrId ||
-          p.payPeriodMonth === payPeriodMonthOrId ||
-          p.payslipNumber === payPeriodMonthOrId
-      ) || null;
-  }
-  if (!targetPayslip && myPayslips.length > 0) {
-    targetPayslip = myPayslips[0] || null;
-  }
-
-  return {
-    payslip: targetPayslip,
-    allMyPayslips: myPayslips,
-  };
+  const target =
+    (payPeriodMonthOrId &&
+      mine.find((p) => p.id === payPeriodMonthOrId || p.payPeriodMonth === payPeriodMonthOrId || p.payslipNumber === payPeriodMonthOrId)) ||
+    mine[0] ||
+    null;
+  return { payslip: target, allMyPayslips: mine };
 }
 
 /**
- * 10. Get logged-in staff member's registered payout details.
+ * 10. The signed-in staff member's payout details (where they're paid).
  */
 export async function getMyPayoutDetails(): Promise<{ success: boolean; data: StaffPayoutDetailsDTO | null }> {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, data: null };
-  }
+  if (!session?.user?.id) return { success: false, data: null };
 
-  const storage = readPayoutDetailsStorage();
-  const details =
-    findPayoutDetailsForStaff(storage, session.user.id, session.user.fullName) ||
-    storage[session.user.id] ||
-    null;
-
-  if (details) {
-    return {
-      success: true,
-      data: {
-        ...details,
-        accountName: details.accountName || session.user.fullName || "",
-      },
-    };
-  }
-
+  const details = (await readPayoutDetails([session.user.id]).catch(() => new Map<string, StaffPayoutDetailsDTO>())).get(session.user.id);
   return {
     success: true,
-    data: {
+    data: details ?? {
       userId: session.user.id,
       payoutChannel: "GCASH",
       accountNumber: "",
       accountName: session.user.fullName || "",
-      bankName: "BDO Unibank",
+      bankName: "",
       notes: "",
     },
   };
 }
 
 /**
- * 11. Update logged-in staff member's payout details.
+ * 11. Save the signed-in staff member's payout details (staff only).
  */
 export async function updateMyPayoutDetails(
   input: Omit<StaffPayoutDetailsDTO, "userId" | "updatedAt">
 ): Promise<{ success: boolean; data?: StaffPayoutDetailsDTO; error?: string }> {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "Authentication required." };
-  }
+  if (!session?.user?.id) return { success: false, error: "Please log in again." };
+  if (!session.user.role || session.user.role === "CLIENT") return { success: false, error: "Only staff can add payout details." };
 
-  const validation = StaffPayoutDetailsSchema.safeParse({
-    ...input,
-    userId: session.user.id,
-    updatedAt: new Date().toISOString(),
-  });
-
+  const validation = StaffPayoutDetailsSchema.safeParse({ ...input, userId: session.user.id, updatedAt: new Date().toISOString() });
   if (!validation.success) {
-    return { success: false, error: validation.error.issues[0]?.message || "Invalid payout details input." };
+    return { success: false, error: validation.error.issues[0]?.message || "Please check your payout details." };
   }
 
-  const storage = readPayoutDetailsStorage();
-  storage[session.user.id] = validation.data;
-  writePayoutDetailsStorage(storage);
-
-  revalidatePath("/dashboard/staff/hr");
-  revalidatePath("/dashboard/finance/payroll");
-  revalidatePath("/dashboard/ceo/payroll");
-  invalidateCacheTags(CACHE_TAGS.PAYROLL, CACHE_TAGS.STAFF_DIRECTORY);
-
-  return {
-    success: true,
-    data: validation.data,
-  };
+  try {
+    await writePayoutDetails(validation.data);
+  } catch (err) {
+    console.error("[updateMyPayoutDetails] Save failed:", err);
+    return { success: false, error: "We couldn't save your payout details. Please try again." };
+  }
+  refreshPayrollPages();
+  return { success: true, data: validation.data };
 }
 
 /**
- * 12. Get payout details for any staff member (for Finance / CEO).
+ * 12. One staff member's payout details (finance, the CEO, admins, or the person themselves).
  */
 export async function getStaffPayoutDetails(userId: string): Promise<StaffPayoutDetailsDTO | null> {
-  const storage = readPayoutDetailsStorage();
-  return storage[userId] || null;
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const allowed = session.user.id === userId || MANAGERS.includes(session.user.role as RoleName);
+  if (!allowed) return null;
+  return (await readPayoutDetails([userId]).catch(() => new Map<string, StaffPayoutDetailsDTO>())).get(userId) ?? null;
 }
 
 /**
- * 13. Get individual payslip document by ID or payslip reference number.
+ * 13. One payslip by ID or number: its owner, or finance, the CEO and admins. Anyone else gets nothing, the
+ * same as for a payslip that doesn't exist (payslip numbers are easy to guess).
  */
 export async function getPayslipById(payslipIdOrNumber: string): Promise<StaffPayslipDTO | null> {
-  const payslips = readPayslipsStorage();
-  const found = payslips.find(
-    (p) => p.id === payslipIdOrNumber || p.payslipNumber === payslipIdOrNumber
-  );
+  const session = await auth();
+  if (!session?.user?.id) return null;
 
+  const found = await findPayslip(payslipIdOrNumber).catch(() => null);
   if (!found) return null;
-
-  const payoutStorage = readPayoutDetailsStorage();
-  const { ceoName, financeName, adminName } = await getSignatoryDetails();
-  return {
-    ...found,
-    employerName: found.employerName || ceoName,
-    approvedByName: found.approvedByName || ceoName,
-    preparedByName: found.preparedByName || (found.staffRole === "FINANCE_OFFICER" ? adminName : financeName),
-    payoutDetails:
-      findPayoutDetailsForStaff(payoutStorage, found.userId, found.staffName) ||
-      found.payoutDetails ||
-      null,
-  };
+  const allowed = found.userId === session.user.id || MANAGERS.includes(session.user.role as RoleName);
+  if (!allowed) {
+    console.warn("[getPayslipById] Refused a payslip that isn't theirs", { userId: session.user.id, payslip: found.payslipNumber });
+    return null;
+  }
+  return (await withDisplayDetails([found]))[0] ?? null;
 }
-

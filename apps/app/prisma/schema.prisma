@@ -51,50 +51,52 @@ enum AuthEvent {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  passwordHash  String
-  fullName      String
-  phone         String?
-  status        UserStatus     @default(ACTIVE)
-  leaveReason   String?
-  leaveFrom     DateTime?
-  leaveUntil    DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  fullName     String
+  phone        String?
+  status       UserStatus @default(ACTIVE)
+  leaveReason  String?
+  leaveFrom    DateTime?
+  leaveUntil   DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   // Relations
-  userRoles               UserRole[]
-  authAuditLogs           AuthAuditLog[]
-  staffProfile            StaffProfile?
-  clientProfile           ClientProfile?
-  suspensionLogs          SuspensionLog[]
-  clientProjects          Project[]                     @relation("ClientProjects")
-  statisticianAssignments Assignment[]                  @relation("StatAssignments")
-  qaAssignments           Assignment[]                  @relation("QAAssignments")
-  attendanceLogs          StaffAttendanceLog[]
-  attendanceCorrections   AttendanceCorrectionRequest[]
-  sentMessages            Message[]                     @relation("SentMessages")
-  messageReadReceipts     MessageReadReceipt[]
-  reviewedBlockedMessages BlockedMessageLog[]           @relation("ReviewedBlockedMessages")
-  analysisFiles           AnalysisFile[]                @relation("StatisticianAnalysisFiles")
-  flaggedScopeCreep       ScopeCreepLog[]               @relation("FlaggedScopeCreep")
-  resolvedScopeCreep      ScopeCreepLog[]               @relation("ResolvedScopeCreep")
-  qaReviews               QAReview[]                    @relation("QAOfficerReviews")
-  qaRejections            QARejectionCount[]            @relation("StatisticianQARejections")
-  uploadedDeliverables    Deliverable[]                 @relation("DeliverableUploader")
-  releasedDeliverables    Deliverable[]                 @relation("DeliverableReleaser")
-  clientRevisionRequests  RevisionRequest[]             @relation("ClientRevisionRequests")
-  classifiedRevisions     RevisionRequest[]             @relation("ClassifiedRevisions")
-  clientDefenseLabSessions DefenseLabSession[]          @relation("ClientDefenseLab")
-  expertDefenseLabSessions DefenseLabSession[]          @relation("ExpertDefenseLab")
-  payouts                 Payout[]                      @relation("RecipientPayouts")
-  clientDisputes          Dispute[]                     @relation("ClientDisputes")
-  resolvedDisputes        Dispute[]                     @relation("ResolvedDisputes")
-  notificationLogs        NotificationLog[]
-  inAppAlerts             InAppAlert[]
-  auditLogs               AuditLog[]
-  dataDeletionRequests    DataDeletionRequest[]
+  userRoles                UserRole[]
+  authAuditLogs            AuthAuditLog[]
+  staffProfile             StaffProfile?
+  clientProfile            ClientProfile?
+  suspensionLogs           SuspensionLog[]
+  clientProjects           Project[]                     @relation("ClientProjects")
+  statisticianAssignments  Assignment[]                  @relation("StatAssignments")
+  qaAssignments            Assignment[]                  @relation("QAAssignments")
+  attendanceLogs           StaffAttendanceLog[]
+  attendanceCorrections    AttendanceCorrectionRequest[]
+  sentMessages             Message[]                     @relation("SentMessages")
+  messageReadReceipts      MessageReadReceipt[]
+  reviewedBlockedMessages  BlockedMessageLog[]           @relation("ReviewedBlockedMessages")
+  analysisFiles            AnalysisFile[]                @relation("StatisticianAnalysisFiles")
+  flaggedScopeCreep        ScopeCreepLog[]               @relation("FlaggedScopeCreep")
+  resolvedScopeCreep       ScopeCreepLog[]               @relation("ResolvedScopeCreep")
+  qaReviews                QAReview[]                    @relation("QAOfficerReviews")
+  qaRejections             QARejectionCount[]            @relation("StatisticianQARejections")
+  uploadedDeliverables     Deliverable[]                 @relation("DeliverableUploader")
+  releasedDeliverables     Deliverable[]                 @relation("DeliverableReleaser")
+  clientRevisionRequests   RevisionRequest[]             @relation("ClientRevisionRequests")
+  classifiedRevisions      RevisionRequest[]             @relation("ClassifiedRevisions")
+  clientDefenseLabSessions DefenseLabSession[]           @relation("ClientDefenseLab")
+  expertDefenseLabSessions DefenseLabSession[]           @relation("ExpertDefenseLab")
+  payouts                  Payout[]                      @relation("RecipientPayouts")
+  clientDisputes           Dispute[]                     @relation("ClientDisputes")
+  resolvedDisputes         Dispute[]                     @relation("ResolvedDisputes")
+  notificationLogs         NotificationLog[]
+  inAppAlerts              InAppAlert[]
+  auditLogs                AuditLog[]
+  dataDeletionRequests     DataDeletionRequest[]
+  payslips                 Payslip[]
+  payoutDetail             StaffPayoutDetail?
 
   @@index([email])
   @@index([status])
@@ -102,10 +104,10 @@ model User {
 }
 
 model Role {
-  id        Int        @id @default(autoincrement())
-  name      RoleName   @unique
+  id        Int      @id @default(autoincrement())
+  name      RoleName @unique
   label     String
-  createdAt DateTime   @default(now())
+  createdAt DateTime @default(now())
 
   userRoles UserRole[]
 
@@ -280,25 +282,25 @@ model Project {
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
 
-  client            User               @relation("ClientProjects", fields: [clientId], references: [id])
-  files             ProjectFile[]
-  quotations        Quotation[]
-  sows              SOW[]
-  payments          Payment[]
-  assignment        Assignment?
-  messages          Message[]
-  analysisFiles     AnalysisFile[]
-  scopeCreepLogs    ScopeCreepLog[]
-  qaReviews         QAReview[]
-  qaRejectionCounts QARejectionCount[]
-  deliverables      Deliverable[]
-  revisionRequests  RevisionRequest[]
+  client             User                @relation("ClientProjects", fields: [clientId], references: [id])
+  files              ProjectFile[]
+  quotations         Quotation[]
+  sows               SOW[]
+  payments           Payment[]
+  assignment         Assignment?
+  messages           Message[]
+  analysisFiles      AnalysisFile[]
+  scopeCreepLogs     ScopeCreepLog[]
+  qaReviews          QAReview[]
+  qaRejectionCounts  QARejectionCount[]
+  deliverables       Deliverable[]
+  revisionRequests   RevisionRequest[]
   defenseLabSessions DefenseLabSession[]
-  payouts           Payout[]
-  financialLedger   FinancialLedger?
-  disputes          Dispute[]
-  notificationLogs  NotificationLog[]
-  inAppAlerts       InAppAlert[]
+  payouts            Payout[]
+  financialLedger    FinancialLedger?
+  disputes           Dispute[]
+  notificationLogs   NotificationLog[]
+  inAppAlerts        InAppAlert[]
 
   @@index([clientId])
   @@index([masterStatus])
@@ -363,7 +365,7 @@ model Quotation {
   expiresAt           DateTime
   status              QuotationStatus @default(DRAFT)
   notes               String?
-  createdBy           String          // Admin userId
+  createdBy           String // Admin userId
   respondedAt         DateTime?
   declineReason       String?
   createdAt           DateTime        @default(now())
@@ -384,7 +386,7 @@ model QuotationLineItem {
   id          String       @id @default(cuid())
   quotationId String
   itemType    LineItemType
-  itemName    String       // PackageName or AddOnName as string
+  itemName    String // PackageName or AddOnName as string
   description String?
   amount      Decimal      @db.Decimal(10, 2)
 
@@ -392,6 +394,45 @@ model QuotationLineItem {
 
   @@index([quotationId])
   @@map("quotation_line_items")
+}
+
+/// Staff payslips (added 2026-10-02; they used to be saved to a file that can't change on the server).
+/// The columns are what's searched and enforced; `data` holds the full payslip as shown and printed.
+model Payslip {
+  id             String   @id @default(cuid())
+  payslipNumber  String   @unique
+  userId         String
+  payPeriodMonth String
+  payPeriodStart DateTime
+  payPeriodEnd   DateTime
+  status         String   @default("DRAFT") // DRAFT | APPROVED | DISBURSED
+  netPay         Decimal  @db.Decimal(12, 2)
+  data           Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict) // keep pay history: a person with payslips can't be deleted
+
+  @@unique([userId, payPeriodMonth])
+  @@index([status])
+  @@index([payPeriodStart])
+  @@map("payslips")
+}
+
+/// Where a staff member is paid (GCash, bank). Added 2026-10-02 (was a file). Visible to the person and to
+/// finance, the CEO and admins only.
+model StaffPayoutDetail {
+  userId        String   @id
+  payoutChannel String   @default("GCASH")
+  accountNumber String
+  accountName   String
+  bankName      String?
+  notes         String?
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("staff_payout_details")
 }
 
 /// Settings edited in the app (price catalog, payment channels). Added 2026-10-02: these used to be saved to files,
@@ -410,7 +451,7 @@ model PackagePriceConfig {
   packageName PackageName @unique
   minPrice    Decimal     @db.Decimal(10, 2)
   maxPrice    Decimal?    @db.Decimal(10, 2) // null = no upper limit
-  isUpfront   Boolean     @default(false)    // true for JX-01, JX-02
+  isUpfront   Boolean     @default(false) // true for JX-01, JX-02
 
   @@map("package_price_configs")
 }
@@ -421,29 +462,29 @@ enum SOWType {
 }
 
 model SOW {
-  id                  String    @id @default(cuid())
-  projectId           String
-  sowType             SOWType   @default(PRIMARY)
-  parentSowId         String?   // For supplemental SOWs: references primary SOW id
+  id          String  @id @default(cuid())
+  projectId   String
+  sowType     SOWType @default(PRIMARY)
+  parentSowId String? // For supplemental SOWs: references primary SOW id
 
   // Immutable snapshot fields (denormalized at generation time)
-  contentSnapshot     Json      // Full SOW content: client info, scope, price, terms
+  contentSnapshot     Json // Full SOW content: client info, scope, price, terms
   packageName         String
-  totalAmount         Decimal   @db.Decimal(10, 2)
-  downpaymentRequired Decimal   @db.Decimal(10, 2)
+  totalAmount         Decimal  @db.Decimal(10, 2)
+  downpaymentRequired Decimal  @db.Decimal(10, 2)
   turnaroundDays      Int
   addOns              String[]
 
   // Signing
-  isLocked            Boolean   @default(false)
-  signedByName        String?   // Client typed name
-  signedAt            DateTime?
-  signedByUserId      String?
+  isLocked       Boolean   @default(false)
+  signedByName   String? // Client typed name
+  signedAt       DateTime?
+  signedByUserId String?
 
   // Generation
-  generatedBy         String    // Admin userId
-  generatedAt         DateTime  @default(now())
-  pdfPath             String?   // R2/S3 path after PDF is generated
+  generatedBy String // Admin userId
+  generatedAt DateTime @default(now())
+  pdfPath     String? // R2/S3 path after PDF is generated
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -475,20 +516,20 @@ enum PaymentMethod {
 }
 
 model Payment {
-  id                String        @id @default(cuid())
-  projectId         String
-  quotationId       String
-  paymentType       PaymentType
-  paymentMethod     PaymentMethod?
-  amountSubmitted   Decimal       @db.Decimal(10, 2)
-  balancePaidTotal  Decimal       @db.Decimal(10, 2) @default(0)
-  referenceNumber   String?
-  paymentStatus     PaymentStatus @default(AWAITING_PAYMENT)
-  rejectionReason   String?
-  verifiedBy        String?
-  verifiedAt        DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  id               String         @id @default(cuid())
+  projectId        String
+  quotationId      String
+  paymentType      PaymentType
+  paymentMethod    PaymentMethod?
+  amountSubmitted  Decimal        @db.Decimal(10, 2)
+  balancePaidTotal Decimal        @default(0) @db.Decimal(10, 2)
+  referenceNumber  String?
+  paymentStatus    PaymentStatus  @default(AWAITING_PAYMENT)
+  rejectionReason  String?
+  verifiedBy       String?
+  verifiedAt       DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   project   Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   quotation Quotation      @relation(fields: [quotationId], references: [id], onDelete: Cascade)
@@ -506,7 +547,7 @@ model Payment {
 model PaymentProof {
   id         String   @id @default(cuid())
   paymentId  String
-  filePath   String   // R2/S3 object key
+  filePath   String // R2/S3 object key
   fileName   String
   fileSize   Int?
   uploadedAt DateTime @default(now())
@@ -520,12 +561,12 @@ model PaymentProof {
 // ─── Module 08: Expert Assignment & Workload ──────────────────────────────────
 
 model Assignment {
-  id             String    @id @default(cuid())
-  projectId      String    @unique // One active assignment per project
+  id             String   @id @default(cuid())
+  projectId      String   @unique // One active assignment per project
   statisticianId String
   qaLeadId       String
-  assignedBy     String    // Admin userId
-  assignedAt     DateTime  @default(now())
+  assignedBy     String // Admin userId
+  assignedAt     DateTime @default(now())
 
   // SLA fields
   slaStartAt     DateTime
@@ -533,8 +574,8 @@ model Assignment {
   slaPausedAt    DateTime?
   slaResumedAt   DateTime?
   slaPauseReason String?
-  slaPausedBy    String?   // Statistician userId who requested pause
-  slaApprovedBy  String?   // Admin userId who approved pause
+  slaPausedBy    String? // Statistician userId who requested pause
+  slaApprovedBy  String? // Admin userId who approved pause
 
   // Reassignment tracking
   isActive       Boolean   @default(true)
@@ -617,7 +658,7 @@ model StaffAttendanceLog {
   clockInAt    DateTime            @default(now())
   clockOutAt   DateTime?
   breakMinutes Int                 @default(0)
-  totalMinutes Int?                // Net payable working minutes
+  totalMinutes Int? // Net payable working minutes
   status       AttendanceLogStatus @default(IN_PROGRESS)
   isAdjusted   Boolean             @default(false)
   ipAddress    String?
@@ -638,17 +679,17 @@ model StaffAttendanceLog {
 model AttendanceCorrectionRequest {
   id               String                   @id @default(cuid())
   attendanceLogId  String?
-  userId           String                   // Requester
+  userId           String // Requester
   correctionType   AttendanceCorrectionType
   targetDate       DateTime                 @db.Date
   claimedClockIn   DateTime
   claimedClockOut  DateTime
   claimedBreakMins Int                      @default(60)
   claimedNetHours  Decimal                  @db.Decimal(5, 2)
-  reason           String                   // Stated justification
-  tasksDelivered   String?                  // Accomplished deliverables
+  reason           String // Stated justification
+  tasksDelivered   String? // Accomplished deliverables
   status           CorrectionRequestStatus  @default(PENDING)
-  reviewedBy       String?                  // Approver userId
+  reviewedBy       String? // Approver userId
   reviewedAt       DateTime?
   reviewNotes      String?
   createdAt        DateTime                 @default(now())
@@ -684,19 +725,19 @@ model AttendancePolicyConfig {
 // ─── Module 09: Messaging & Communication Firewall ──────────────────────────
 
 model Message {
-  id            String               @id @default(cuid())
+  id            String   @id @default(cuid())
   projectId     String
   senderId      String
   senderRole    RoleName
   content       String
-  isBlocked     Boolean              @default(false)
-  blockedReason String?              // Detected firewall pattern name
-  sentAt        DateTime             @default(now())
+  isBlocked     Boolean  @default(false)
+  blockedReason String? // Detected firewall pattern name
+  sentAt        DateTime @default(now())
 
-  project       Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  sender        User                 @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  readReceipts  MessageReadReceipt[]
-  blockedLog    BlockedMessageLog?
+  project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sender       User                 @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  readReceipts MessageReadReceipt[]
+  blockedLog   BlockedMessageLog?
 
   @@index([projectId])
   @@index([senderId])
@@ -712,8 +753,8 @@ model MessageReadReceipt {
   userId    String
   readAt    DateTime @default(now())
 
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([messageId, userId])
   @@map("message_read_receipts")
@@ -722,15 +763,15 @@ model MessageReadReceipt {
 model BlockedMessageLog {
   id              String    @id @default(cuid())
   messageId       String    @unique
-  detectedPattern String    // The firewall pattern rule name that matched
-  matchedText     String    // The sensitive text snippet detected
-  reviewedBy      String?   // Admin / CEO userId
+  detectedPattern String // The firewall pattern rule name that matched
+  matchedText     String // The sensitive text snippet detected
+  reviewedBy      String? // Admin / CEO userId
   reviewedAt      DateTime?
   reviewNotes     String?
   createdAt       DateTime  @default(now())
 
-  message         Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  reviewer        User?     @relation("ReviewedBlockedMessages", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  message  Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reviewer User?   @relation("ReviewedBlockedMessages", fields: [reviewedBy], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([reviewedBy])
@@ -755,13 +796,13 @@ model AnalysisFile {
   projectId      String
   statisticianId String
   fileName       String
-  filePath       String               // R2/S3 object key or local path
-  fileType       String               // MIME type
-  fileSize       Int?                 // File size in bytes
+  filePath       String // R2/S3 object key or local path
+  fileType       String // MIME type
+  fileSize       Int? // File size in bytes
   fileCategory   AnalysisFileCategory
   version        Int                  @default(1)
   isCurrent      Boolean              @default(true)
-  notes          String?              // Statistician version notes
+  notes          String? // Statistician version notes
   uploadedAt     DateTime             @default(now())
 
   project      Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -778,11 +819,11 @@ model AnalysisFile {
 model ScopeCreepLog {
   id                      String    @id @default(cuid())
   projectId               String
-  flaggedBy               String    // Statistician userId
+  flaggedBy               String // Statistician userId
   flagReason              String
   flaggedAt               DateTime  @default(now())
   resolvedAt              DateTime?
-  resolvedBy              String?   // Admin userId
+  resolvedBy              String? // Admin userId
   resolutionNotes         String?
   supplementalQuotationId String?
 
@@ -814,11 +855,11 @@ enum ErrorClassification {
 model QAReview {
   id                  String               @id @default(cuid())
   projectId           String
-  reviewerId          String               // Senior QA Lead userId
+  reviewerId          String // Senior QA Lead userId
   decision            QADecision
   errorClassification ErrorClassification?
-  comments            String               // Correction requirements or approval notes
-  qaRevisionDueAt     DateTime?            // Set on rejection: now() + 24 hours
+  comments            String // Correction requirements or approval notes
+  qaRevisionDueAt     DateTime? // Set on rejection: now() + 24 hours
   reviewedAt          DateTime             @default(now())
 
   project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -877,20 +918,20 @@ model Deliverable {
   projectId       String
   category        DeliverableCategory
   fileName        String
-  filePath        String              // R2 storage key
-  fileSize        Int                 // bytes
-  fileType        String              // mime type
-  uploadedBy      String              // User id
+  filePath        String // R2 storage key
+  fileSize        Int // bytes
+  fileType        String // mime type
+  uploadedBy      String // User id
   isFinalReleased Boolean             @default(false)
   releasedAt      DateTime?
-  releasedBy      String?             // Admin userId
+  releasedBy      String? // Admin userId
   downloadCount   Int                 @default(0)
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
-  project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  uploader        User                @relation("DeliverableUploader", fields: [uploadedBy], references: [id], onDelete: Cascade)
-  releaser        User?               @relation("DeliverableReleaser", fields: [releasedBy], references: [id], onDelete: SetNull)
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploader User    @relation("DeliverableUploader", fields: [uploadedBy], references: [id], onDelete: Cascade)
+  releaser User?   @relation("DeliverableReleaser", fields: [releasedBy], references: [id], onDelete: SetNull)
 
   @@index([projectId])
   @@index([category])
@@ -910,7 +951,7 @@ model RevisionRequest {
   status                  RevisionStatus          @default(PENDING_REVIEW)
   classification          RevisionClassification?
   classificationNotes     String?
-  classifiedBy            String?                 // Admin userId
+  classifiedBy            String? // Admin userId
   classifiedAt            DateTime?
   supplementalQuotationId String?
   supplementalSowId       String?
@@ -918,9 +959,9 @@ model RevisionRequest {
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
 
-  project                 Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  client                  User                    @relation("ClientRevisionRequests", fields: [clientId], references: [id], onDelete: Cascade)
-  classifier              User?                   @relation("ClassifiedRevisions", fields: [classifiedBy], references: [id], onDelete: SetNull)
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client     User    @relation("ClientRevisionRequests", fields: [clientId], references: [id], onDelete: Cascade)
+  classifier User?   @relation("ClassifiedRevisions", fields: [classifiedBy], references: [id], onDelete: SetNull)
 
   @@index([projectId])
   @@index([clientId])
@@ -941,31 +982,31 @@ enum DefenseLabStatus {
 }
 
 model DefenseLabSession {
-  id                  String           @id @default(cuid())
-  projectId           String
-  clientId            String
-  expertId            String           // Assigned Statistician
-  scheduledAt         DateTime
-  durationHours       Int              @default(1)
-  amountPaid          Decimal          @db.Decimal(10, 2)
-  status              DefenseLabStatus @default(SCHEDULED)
-  meetingUrl          String?          // Google Meet / Zoom link
-  recordingUrl        String?          // Cloud / R2 recording URL
-  completedAt         DateTime?
-  completedBy         String?          // Admin / Specialist userId
-  notes               String?          // Agenda / Rehearsal notes
+  id            String           @id @default(cuid())
+  projectId     String
+  clientId      String
+  expertId      String // Assigned Statistician
+  scheduledAt   DateTime
+  durationHours Int              @default(1)
+  amountPaid    Decimal          @db.Decimal(10, 2)
+  status        DefenseLabStatus @default(SCHEDULED)
+  meetingUrl    String? // Google Meet / Zoom link
+  recordingUrl  String? // Cloud / R2 recording URL
+  completedAt   DateTime?
+  completedBy   String? // Admin / Specialist userId
+  notes         String? // Agenda / Rehearsal notes
 
   // Reschedule tracking
   rescheduledAt       DateTime?
   rescheduleReason    String?
-  rescheduleBy        String?          // userId who requested reschedule
-  penaltyApplied      Boolean          @default(false)
+  rescheduleBy        String? // userId who requested reschedule
+  penaltyApplied      Boolean   @default(false)
   penaltyReason       String?
-  penaltyDeterminedBy String?          // Admin userId
-  penaltyAmount       Decimal?         @db.Decimal(10, 2)
+  penaltyDeterminedBy String? // Admin userId
+  penaltyAmount       Decimal?  @db.Decimal(10, 2)
 
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   client  User    @relation("ClientDefenseLab", fields: [clientId], references: [id], onDelete: Cascade)
@@ -1012,24 +1053,24 @@ enum PayoutRole {
 }
 
 model Payout {
-  id                 String       @id @default(cuid())
-  projectId          String
-  recipientId        String
-  recipientRole      PayoutRole
-  grossProjectAmount Decimal      @db.Decimal(10, 2)
-  payoutRateApplied  Decimal      @db.Decimal(5, 2)
-  payoutAmount       Decimal      @db.Decimal(10, 2)
-  payoutStatus       PayoutStatus @default(NOT_ELIGIBLE)
-  voidReason         String?
-  disbursedAt        DateTime?
-  disbursedBy        String?      // Finance Officer userId
-  approvedBy         String?      // Finance/CEO userId
-  disbursementMethod String?      // GCASH, MAYA, BANK_TRANSFER, CASH
-  disbursementRef    String?      // Transaction reference
+  id                   String       @id @default(cuid())
+  projectId            String
+  recipientId          String
+  recipientRole        PayoutRole
+  grossProjectAmount   Decimal      @db.Decimal(10, 2)
+  payoutRateApplied    Decimal      @db.Decimal(5, 2)
+  payoutAmount         Decimal      @db.Decimal(10, 2)
+  payoutStatus         PayoutStatus @default(NOT_ELIGIBLE)
+  voidReason           String?
+  disbursedAt          DateTime?
+  disbursedBy          String? // Finance Officer userId
+  approvedBy           String? // Finance/CEO userId
+  disbursementMethod   String? // GCASH, MAYA, BANK_TRANSFER, CASH
+  disbursementRef      String? // Transaction reference
   disbursementProofUrl String?
-  notes              String?
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  notes                String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   recipient User    @relation("RecipientPayouts", fields: [recipientId], references: [id], onDelete: Cascade)
@@ -1081,22 +1122,22 @@ enum DisputeResolutionType {
 }
 
 model Dispute {
-  id                    String                 @id @default(cuid())
-  projectId             String
-  clientId              String
-  grounds               DisputeGrounds
-  description           String
-  evidenceFilePaths     String[]               // R2/S3 keys or file URLs
-  status                DisputeStatus          @default(OPEN)
-  resolutionType        DisputeResolutionType?
-  resolutionNotes       String?
-  resolvedBy            String?                // CEO userId
-  resolvedAt            DateTime?
-  chargebackTriggeredBy String?                // Admin / CEO userId
-  chargebackAt          DateTime?
-  disputeWindowExpiresAt DateTime              // deliveredAt + 7 days
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  id                     String                 @id @default(cuid())
+  projectId              String
+  clientId               String
+  grounds                DisputeGrounds
+  description            String
+  evidenceFilePaths      String[] // R2/S3 keys or file URLs
+  status                 DisputeStatus          @default(OPEN)
+  resolutionType         DisputeResolutionType?
+  resolutionNotes        String?
+  resolvedBy             String? // CEO userId
+  resolvedAt             DateTime?
+  chargebackTriggeredBy  String? // Admin / CEO userId
+  chargebackAt           DateTime?
+  disputeWindowExpiresAt DateTime // deliveredAt + 7 days
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
 
   project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   client   User    @relation("ClientDisputes", fields: [clientId], references: [id], onDelete: Cascade)
@@ -1121,7 +1162,7 @@ model NotificationLog {
   id            String             @id @default(cuid())
   recipientId   String
   email         String
-  template      String             // e.g. "SOWReady", "PaymentVerified"
+  template      String // e.g. "SOWReady", "PaymentVerified"
   projectId     String?
   status        NotificationStatus @default(SENT)
   attemptCount  Int                @default(1)
@@ -1143,10 +1184,10 @@ model InAppAlert {
   id            String    @id @default(cuid())
   recipientId   String
   recipientRole RoleName
-  alertType     String    // e.g. "NEW_INTAKE", "QA_SUBMISSION", "PRE_DEADLINE", "ETHICAL_BREACH", "CLAIM_FILED"
+  alertType     String // e.g. "NEW_INTAKE", "QA_SUBMISSION", "PRE_DEADLINE", "ETHICAL_BREACH", "CLAIM_FILED"
   projectId     String?
   message       String
-  linkUrl       String?   // Direct navigation target route
+  linkUrl       String? // Direct navigation target route
   isRead        Boolean   @default(false)
   readAt        DateTime?
   createdAt     DateTime  @default(now())
@@ -1177,12 +1218,12 @@ enum DeletionStatus {
 model ArchivedProject {
   id            String    @id @default(cuid())
   projectId     String    @unique
-  intakeId      String    // JAXIS-YYYYMM-XXXX for search
-  clientName    String    // Denormalized for fast search
-  packageName   String    // Denormalized for filter
-  snapshot      Json      // Full immutable project data snapshot
+  intakeId      String // JAXIS-YYYYMM-XXXX for search
+  clientName    String // Denormalized for fast search
+  packageName   String // Denormalized for filter
+  snapshot      Json // Full immutable project data snapshot
   archivedAt    DateTime  @default(now())
-  archivedBy    String    // Admin userId
+  archivedBy    String // Admin userId
   filesPurged   Boolean   @default(false)
   filesPurgedAt DateTime?
 
@@ -1198,11 +1239,11 @@ model AuditLog {
   projectId String?
   actorId   String
   actorRole RoleName
-  action    String   // e.g. "STATUS_TRANSITION", "FILE_RELEASED", "PAYOUT_DISBURSED", "ARCHIVE_CREATED"
-  oldValue  String?  // Old status or value
-  newValue  String?  // New status or value
+  action    String // e.g. "STATUS_TRANSITION", "FILE_RELEASED", "PAYOUT_DISBURSED", "ARCHIVE_CREATED"
+  oldValue  String? // Old status or value
+  newValue  String? // New status or value
   reason    String?
-  metadata  Json?    // Additional context
+  metadata  Json? // Additional context
   createdAt DateTime @default(now())
 
   actor User @relation(fields: [actorId], references: [id], onDelete: Cascade)
@@ -1221,10 +1262,10 @@ model DataDeletionRequest {
   clientId       String
   requestedAt    DateTime       @default(now())
   processedAt    DateTime?
-  deletedFields  String[]       // Which non-essential data was deleted
-  retainedFields String[]       // What was retained and why (SOW contracts, invoices, dispute logs)
+  deletedFields  String[] // Which non-essential data was deleted
+  retainedFields String[] // What was retained and why (SOW contracts, invoices, dispute logs)
   status         DeletionStatus @default(PENDING)
-  processedBy    String?        // Admin userId
+  processedBy    String? // Admin userId
 
   client User @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
@@ -1234,21 +1275,21 @@ model DataDeletionRequest {
 }
 
 model StorageRetentionConfig {
-  id                  String   @id @default("default-config")
-  retentionPeriodDays Int      @default(90)
-  purgeInactiveDays   Int      @default(180)
-  autoPurgeEnabled    Boolean  @default(true)
+  id                  String  @id @default("default-config")
+  retentionPeriodDays Int     @default(90)
+  purgeInactiveDays   Int     @default(180)
+  autoPurgeEnabled    Boolean @default(true)
 
   // Categorical file protection toggles (true = PRESERVE / DO NOT PURGE)
-  keepDatasets        Boolean  @default(true)
-  keepResearchDocs    Boolean  @default(true)
-  keepQuestionnaires  Boolean  @default(true)
-  keepReceiptPhotos   Boolean  @default(true)
-  keepChatHistory     Boolean  @default(true)
-  keepDeliverables    Boolean  @default(true)
+  keepDatasets       Boolean @default(true)
+  keepResearchDocs   Boolean @default(true)
+  keepQuestionnaires Boolean @default(true)
+  keepReceiptPhotos  Boolean @default(true)
+  keepChatHistory    Boolean @default(true)
+  keepDeliverables   Boolean @default(true)
 
-  updatedAt           DateTime @updatedAt
-  updatedBy           String?  // CEO userId
+  updatedAt DateTime @updatedAt
+  updatedBy String? // CEO userId
 
   @@map("storage_retention_configs")
 }
