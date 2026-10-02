@@ -25,7 +25,7 @@ Order: **Client → Statistician → QA Lead → Admin → Finance → CEO → S
 | 3. QA Lead | 1 of 6 | desk, review, files, payouts, profile |
 | 4. Admin | 1 of 15 (New study requests) | overview, quotes, assignments, revisions, DefenseLab, staff, claims, logs, reports, archive, study pages, profile |
 | 5. Finance | 0 of 11 | all |
-| 6. CEO | 0 of 10 | all |
+| 6. CEO | 1 of 10 (Money & pay rates) | overview, attendance, payroll, reports, disputes, escalations, retention, deleted studies, profile |
 | 7. Staff | 0 of 2 | all |
 | 8. Sign-in and system | 2 of 8 | forgot/reset password, no access, not found, error, loading |
 
@@ -215,7 +215,7 @@ Shared shell fixes above (layout, bell, unread count, stream) already apply to e
 ## 6. CEO
 
 - [ ] `ceo` — Overview
-- [ ] `ceo/finance`
+- [x] `ceo/finance` — Money & pay rates (2026-10-02): "Money & pay rates" (was "Company Financials & Pay Rates", breadcrumb "TREASURY & RATES"); 4 KPI cards in the new style (Revenue, Profit with margin %, Paid to staff with "₱X waiting", Not yet paid out) instead of mono ALL-CAPS ones with "Escrow Vault"/"Corporate"; one "Pay rates and profit by package" table with website package names (DataCheck, Start Package…) and the code underneath, white figures (no amber/emerald/sky), "Analyst gets / Reviewer gets / JAXIS keeps", "changed {date}" when a rate was changed, one Edit button; the "CEO Authority Verified" badge removed; "Edit Prices & Packages" kept. Rate editor: "Share of the price" or "Flat amount", analyst and reviewer fields, a live "On a ₱X study: analyst gets / reviewer gets / JAXIS keeps" preview, "Last changed {date} by {name}", plain errors; saving refreshes in place with a toast (it used to swap the page for a loader). Tabler icons → Phosphor fill. Sidebar label "Treasury & Rates" → "Money & Pay Rates". **Fixed: rates didn't save** (see note 11). Verified on the local test database: save 42% / 6% → table and reload show 42% / 6% / 52%; over 100% refused; flat ₱2,600 / ₱500 saved; phone width 390 with no sideways scroll.
 - [ ] `ceo/attendance`
 - [ ] `ceo/payroll`
 - [ ] `ceo/reports`
@@ -261,6 +261,8 @@ Tracker coverage checked 2026-09-27: all 78 pages in `apps/app/app` are listed (
 8. **Fixed 2026-10-01 (`7e8e5d7`):** sample logins never work in production (`devLoginsAllowed()`), whatever the hosting settings, and the seven `@jaxis.dev` accounts are suspended in the live database. Don't reactivate them without new private passwords.
 9. **Fixed 2026-10-01:** Messages on phones marked the newest chat read unseen (only the list shows there). `loadInbox` now loads the automatic first chat without marking it read (`getProjectMessages(..., { markRead: false })`, `readPending`); `MessageThread` takes `active` and marks it read, and starts pulling new messages, only once it's on screen (straight away on wide screens, after tapping on phones). A chat opened by link (`?projectId=`) is read as before.
 10. Website About page: Kim's middle name is spelled "Ric"; the request said "Rick". Confirm.
+11. **Fixed 2026-10-02 (not deployed yet): CEO pay rates didn't save.** Rates were kept in `dev_data/package_rates.json`, a file that ships with the app and can't change on the server; saving "succeeded" but the page (and every payout and payslip) kept reading the file. Only the analyst % reached the database (e.g. DataCheck 42% saved on 2026-10-02 while the page showed 45%). Now all rate fields live in `payout_rate_configs` (new columns `qaRatePercent`, `mode`, `fixedAmount`, `fixedQaAmount`, empty = package default); payouts (`calculateAndSyncProjectPayouts`), payroll and the CEO page read them through `getPackagePayoutRules` / `resolvePackagePayoutRule`; a failed save shows an error; every change is written to the audit log (old and new values). The file is used only in offline mode. **Before deploying:** add the 4 columns to the live database (needs the owner's go-ahead).
+12. **Fixed 2026-10-02 (not deployed yet): prices & packages and payment channels didn't save on the live site.** "Edit Prices & Packages" saved default prices, add-on prices and package wording only to `.dev-catalog.json`, and the finance "Payment Channels" settings (GCash/bank details) only to `dev_data/payment_channels.json`; both files ship with the app and can't change on the server. Now both are saved in a new `app_settings` table (`src/lib/app-settings.ts`); until someone saves, the app keeps reading the shipped files, so nothing changes on deploy. Failed saves show an error. Offline mode still uses the files. The CEO page also loads in offline mode again (it failed on the database-only totals). Verified on the local test database: Start Package default ₱1,500 → ₱1,700 and GCash number kept after reload, shipped files untouched; offline: page loads and a rate change saves to the sample file. **Before deploying:** create `app_settings` in the live database (with note 11's columns).
 
 ### Before deploying
 

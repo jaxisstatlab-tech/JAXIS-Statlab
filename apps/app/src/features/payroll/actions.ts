@@ -740,7 +740,7 @@ export async function generateBatchPayslips(
         const pkgName = a.project.packageName || "JX_03_CORE";
         // Dynamic: pull actual contract amount from SOW/Quotation
         const grossAmount = resolveContractAmount(a.project);
-        const rule = resolvePackagePayoutRule(pkgName);
+        const rule = await resolvePackagePayoutRule(pkgName);
 
         let commEarned = 0;
         let commPct = 0;
@@ -774,7 +774,7 @@ export async function generateBatchPayslips(
       for (const a of studiesToCount) {
         const pkgName = a.project.packageName || "JX_03_CORE";
         const grossAmount = resolveContractAmount(a.project);
-        const rule = resolvePackagePayoutRule(pkgName);
+        const rule = await resolvePackagePayoutRule(pkgName);
 
         let commEarned = 0;
         let commPct = 0;

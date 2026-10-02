@@ -300,7 +300,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.Invoice,
         },
         {
-          label: "Treasury & Rates",
+          label: "Money & Pay Rates",
           href: "/dashboard/ceo/finance",
           icon: Icons.FinanceVault,
         },

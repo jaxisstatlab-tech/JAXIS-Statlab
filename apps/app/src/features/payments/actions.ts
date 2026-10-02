@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { db, withDbTimeout, DatabaseUnavailableError } from "@/lib/db";
 import { devProjectsEnabled } from "@/features/projects/dev-projects-store";
 import { emailClient } from "@/lib/email/notify";
+import { getAppSetting, isOfflineDev, setAppSetting, SETTING_KEYS } from "@/lib/app-settings";
 import { checkUploadedFilePaths } from "@/lib/upload-claims";
 import { revalidatePath, unstable_cache } from "next/cache";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
@@ -1433,7 +1434,14 @@ export async function getFinanceReceivablesSummary(): Promise<ActionResponse<Fin
 
 export async function getPaymentChannels(): Promise<ActionResponse<PaymentChannelDetails[]>> {
   try {
-    const channels = readPersistedPaymentChannels();
+    // The database copy once someone has saved one; until then (and offline) the shipped file, then the defaults.
+    let saved: PaymentChannelDetails[] | null = null;
+    try {
+      saved = await getAppSetting<PaymentChannelDetails[]>(SETTING_KEYS.paymentChannels);
+    } catch (err) {
+      console.warn("[getPaymentChannels] Couldn't read saved channels, using the shipped ones:", err);
+    }
+    const channels = saved && saved.length ? saved : readPersistedPaymentChannels();
     return {
       success: true,
       data: channels,
@@ -1483,7 +1491,9 @@ export async function updatePaymentChannels(
 
   try {
     const updatedChannels = parsed.data.channels as PaymentChannelDetails[];
-    writePersistedPaymentChannels(updatedChannels);
+    // Saved in the database: the file this used to write can't change on the server, so edits were lost.
+    if (isOfflineDev()) writePersistedPaymentChannels(updatedChannels);
+    else await setAppSetting(SETTING_KEYS.paymentChannels, updatedChannels, session.user.id);
 
     revalidatePath("/dashboard/finance");
     revalidatePath("/dashboard/finance/payments");
@@ -1494,9 +1504,10 @@ export async function updatePaymentChannels(
       data: updatedChannels,
     };
   } catch (err) {
+    console.error("[updatePaymentChannels] Save failed:", err);
     return {
       success: false,
-      error: { code: "UPDATE_FAILED", message: (err as Error).message },
+      error: { code: "UPDATE_FAILED", message: "We couldn't save the payment details. Please try again." },
     };
   }
 }

@@ -52,32 +52,127 @@ export interface PackageRateRecord {
   approvedBy?: string;
 }
 
-export function resolvePackagePayoutRule(packageName: string): {
+export interface PackagePayoutRule {
   packageName: string;
   mode: TreasuryPayoutMode;
   ratePercent: number;
   qaRatePercent: number;
   fixedAmount: number;
   fixedQaAmount: number;
-} {
-  const customRates = readPackageRates();
-  const custom = customRates[packageName];
-  const mode: TreasuryPayoutMode = custom?.mode || "PERCENTAGE";
-  const ratePercent = custom?.ratePercent ?? (DEFAULT_PAYOUT_RATES[packageName] ?? 60.0);
-  const qaRatePercent = custom?.qaRatePercent ?? (DEFAULT_QA_PAYOUT_RATES[packageName] ?? 10.0);
-  const fixedAmount = custom?.fixedAmount ?? (DEFAULT_FIXED_RATES[packageName] ?? 1500.0);
-  const fixedQaAmount = custom?.fixedQaAmount ?? (DEFAULT_FIXED_QA_RATES[packageName] ?? 250.0);
+  /** When it was last changed and by whom (user id); null for package defaults. */
+  effectiveFrom: string | null;
+  approvedBy: string | null;
+}
 
+// Offline development (npm run dev:offline) has no database, so rates live in dev_data/package_rates.json there.
+const offlineRates = () => process.env.NODE_ENV !== "production" && process.env.JAXIS_OFFLINE === "1";
+
+function defaultRule(packageName: string): PackagePayoutRule {
   return {
     packageName,
-    mode,
-    ratePercent,
-    qaRatePercent,
-    fixedAmount,
-    fixedQaAmount,
+    mode: "PERCENTAGE",
+    ratePercent: DEFAULT_PAYOUT_RATES[packageName] ?? 60.0,
+    qaRatePercent: DEFAULT_QA_PAYOUT_RATES[packageName] ?? 10.0,
+    fixedAmount: DEFAULT_FIXED_RATES[packageName] ?? 1500.0,
+    fixedQaAmount: DEFAULT_FIXED_QA_RATES[packageName] ?? 250.0,
+    effectiveFrom: null,
+    approvedBy: null,
   };
 }
 
+type RateRow = {
+  packageName: string;
+  ratePercent: unknown;
+  qaRatePercent: unknown;
+  mode: string | null;
+  fixedAmount: unknown;
+  fixedQaAmount: unknown;
+  effectiveFrom: Date;
+  approvedBy: string | null;
+};
+
+function fromRow(row: RateRow): PackagePayoutRule {
+  const d = defaultRule(row.packageName);
+  const num = (v: unknown, fallback: number) => (v === null || v === undefined ? fallback : Number(v));
+  return {
+    packageName: row.packageName,
+    mode: row.mode === "FIXED" ? "FIXED" : "PERCENTAGE",
+    ratePercent: num(row.ratePercent, d.ratePercent),
+    qaRatePercent: num(row.qaRatePercent, d.qaRatePercent),
+    fixedAmount: num(row.fixedAmount, d.fixedAmount),
+    fixedQaAmount: num(row.fixedQaAmount, d.fixedQaAmount),
+    effectiveFrom: row.effectiveFrom.toISOString(),
+    approvedBy: row.approvedBy,
+  };
+}
+
+function fromFile(packageName: string): PackagePayoutRule {
+  const d = defaultRule(packageName);
+  const f = readPackageRates()[packageName];
+  if (!f) return d;
+  return {
+    packageName,
+    mode: f.mode || "PERCENTAGE",
+    ratePercent: f.ratePercent ?? d.ratePercent,
+    qaRatePercent: f.qaRatePercent ?? d.qaRatePercent,
+    fixedAmount: f.fixedAmount ?? d.fixedAmount,
+    fixedQaAmount: f.fixedQaAmount ?? d.fixedQaAmount,
+    effectiveFrom: f.updatedAt ?? null,
+    approvedBy: f.approvedBy ?? null,
+  };
+}
+
+/**
+ * Pay rules for every package. The database is the only source of truth (the CEO edits them on the finance page);
+ * packages without a saved row use the defaults above. Payouts, payroll and the CEO page all read from here.
+ */
+export async function getPackagePayoutRules(): Promise<Record<string, PackagePayoutRule>> {
+  const out: Record<string, PackagePayoutRule> = {};
+  for (const name of Object.keys(DEFAULT_PAYOUT_RATES)) out[name] = offlineRates() ? fromFile(name) : defaultRule(name);
+  if (offlineRates()) return out;
+  const rows = (await withDbTimeout(getDb().payoutRateConfig.findMany())) as RateRow[];
+  for (const row of rows) out[row.packageName] = fromRow(row);
+  return out;
+}
+
+/** Pay rule for one package (see getPackagePayoutRules). */
+export async function resolvePackagePayoutRule(packageName: string): Promise<PackagePayoutRule> {
+  if (offlineRates()) return fromFile(packageName);
+  const row = (await withDbTimeout(getDb().payoutRateConfig.findUnique({ where: { packageName } }))) as RateRow | null;
+  return row ? fromRow(row) : defaultRule(packageName);
+}
+
+/** Saves one package's pay rule. Throws if it can't be saved, so the page never says "saved" when it wasn't. */
+export async function savePackagePayoutRule(
+  rule: Omit<PackagePayoutRule, "effectiveFrom" | "approvedBy">,
+  approvedBy: string
+): Promise<PackagePayoutRule> {
+  if (offlineRates()) {
+    const all = readPackageRates();
+    all[rule.packageName] = { ...rule, updatedAt: new Date().toISOString(), approvedBy };
+    writePackageRates(all);
+    return fromFile(rule.packageName);
+  }
+  const data = {
+    ratePercent: rule.ratePercent,
+    qaRatePercent: rule.qaRatePercent,
+    mode: rule.mode,
+    fixedAmount: rule.fixedAmount,
+    fixedQaAmount: rule.fixedQaAmount,
+    approvedBy,
+    effectiveFrom: new Date(),
+  };
+  const row = (await withDbTimeout(
+    getDb().payoutRateConfig.upsert({
+      where: { packageName: rule.packageName },
+      create: { packageName: rule.packageName, ...data },
+      update: data,
+    })
+  )) as RateRow;
+  return fromRow(row);
+}
+
+/** Offline development only: rates from dev_data/package_rates.json. */
 export function readPackageRates(): Record<string, PackageRateRecord> {
   try {
     if (fs.existsSync(PACKAGE_RATES_FILE)) {
@@ -90,15 +185,12 @@ export function readPackageRates(): Record<string, PackageRateRecord> {
   return {};
 }
 
-export function writePackageRates(rates: Record<string, PackageRateRecord>): void {
-  try {
-    if (!fs.existsSync(DEV_DATA_DIR)) {
-      fs.mkdirSync(DEV_DATA_DIR, { recursive: true });
-    }
-    fs.writeFileSync(PACKAGE_RATES_FILE, JSON.stringify(rates, null, 2), "utf-8");
-  } catch (err) {
-    console.error("[writePackageRates] Failed to write package rates file", err);
+/** Offline development only. */
+function writePackageRates(rates: Record<string, PackageRateRecord>): void {
+  if (!fs.existsSync(DEV_DATA_DIR)) {
+    fs.mkdirSync(DEV_DATA_DIR, { recursive: true });
   }
+  fs.writeFileSync(PACKAGE_RATES_FILE, JSON.stringify(rates, null, 2), "utf-8");
 }
 
 export interface PayoutEligibilityResult {
@@ -236,7 +328,7 @@ export async function calculateAndSyncProjectPayouts(projectId: string): Promise
   const packageName = project.packageName || quote?.packageName || "JX_03_CORE";
 
   // 1. Fetch PayoutRateConfig for package (Statistician & QA shares)
-  const rule = resolvePackagePayoutRule(packageName);
+  const rule = await resolvePackagePayoutRule(packageName);
   const isFixed = rule.mode === "FIXED";
 
   // 2. Compute Statistician Share

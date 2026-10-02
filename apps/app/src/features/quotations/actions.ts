@@ -24,6 +24,7 @@ import {
   sendQuotationDeclinedNotification,
 } from "./notifications";
 import { emailClient, emailTeam } from "@/lib/email/notify";
+import { getAppSetting, isOfflineDev, setAppSetting, SETTING_KEYS } from "@/lib/app-settings";
 
 // Delivery speeds a client can pick when accepting (add-on codes), in the words the price page uses.
 const SPEEDS: Record<string, { label: string; detail: string }> = {
@@ -96,23 +97,35 @@ export async function getCommercialCatalog(): Promise<CommercialCatalogData> {
     addOns: { ...ADDONS_CATALOG },
   };
 
-  // 1. Merge persisted dev file if available (custom packages, addons, and metadata)
+  // 1. Saved catalog: the database copy (app_settings) once someone has saved one. Until then, and in offline
+  //    mode, the shipped .dev-catalog.json (the live site's prices before the database copy existed).
+  let saved: Partial<CommercialCatalogData> | null = null;
   try {
-    for (const filePath of getDevCatalogFilePaths()) {
-      if (fs.existsSync(filePath)) {
-        const raw = fs.readFileSync(filePath, "utf-8");
-        const parsed = JSON.parse(raw);
-        if (parsed.packages && typeof parsed.packages === "object") {
-          catalog.packages = { ...catalog.packages, ...parsed.packages };
-        }
-        if (parsed.addOns && typeof parsed.addOns === "object") {
-          catalog.addOns = { ...catalog.addOns, ...parsed.addOns };
-        }
-        break;
-      }
-    }
+    saved = await getAppSetting<CommercialCatalogData>(SETTING_KEYS.commercialCatalog);
   } catch (err) {
-    console.warn("[getCommercialCatalog] Error reading dev catalog file:", err);
+    console.warn("[getCommercialCatalog] Couldn't read the saved catalog, using the shipped one:", err);
+  }
+  if (saved) {
+    if (saved.packages && typeof saved.packages === "object") catalog.packages = { ...catalog.packages, ...saved.packages };
+    if (saved.addOns && typeof saved.addOns === "object") catalog.addOns = { ...catalog.addOns, ...saved.addOns };
+  } else {
+    try {
+      for (const filePath of getDevCatalogFilePaths()) {
+        if (fs.existsSync(filePath)) {
+          const raw = fs.readFileSync(filePath, "utf-8");
+          const parsed = JSON.parse(raw);
+          if (parsed.packages && typeof parsed.packages === "object") {
+            catalog.packages = { ...catalog.packages, ...parsed.packages };
+          }
+          if (parsed.addOns && typeof parsed.addOns === "object") {
+            catalog.addOns = { ...catalog.addOns, ...parsed.addOns };
+          }
+          break;
+        }
+      }
+    } catch (err) {
+      console.warn("[getCommercialCatalog] Error reading dev catalog file:", err);
+    }
   }
 
   // 2. Overlay live PostgreSQL database records (canonical source of truth for pricing)
@@ -169,8 +182,21 @@ export async function saveCommercialCatalog(
   }
 
   try {
-    // 1. Dev file fallback synchronization (always writes locally so dev updates succeed immediately)
-    writeDevCatalogFile(data);
+    // 1. Save the whole catalog (names, prices, add-ons, wording). It used to go only to a file, which can't
+    //    change on the server, so on the live site only min/max price and "pay upfront" were really saved.
+    if (isOfflineDev()) {
+      writeDevCatalogFile(data);
+    } else {
+      try {
+        await setAppSetting(SETTING_KEYS.commercialCatalog, data, session.user.id);
+      } catch (err) {
+        console.error("[saveCommercialCatalog] Couldn't save the catalog:", err);
+        return {
+          success: false,
+          error: { code: "DATABASE_ERROR", message: "We couldn't save the prices. Please try again." },
+        };
+      }
+    }
 
     // 2. Atomic Database Persistence for standard packages (when database is connected)
     const validPackageNames: string[] = Object.values(PackageName);

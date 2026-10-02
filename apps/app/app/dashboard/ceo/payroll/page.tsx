@@ -1042,7 +1042,7 @@ export default function CeoPayrollPolicyPage() {
                                 <div>
                                   <span className="font-semibold text-white">Dynamic SOW Contract Pricing:</span>
                                   <p className="text-[0.688rem] text-white/60 leading-relaxed mt-0.5">
-                                    Commission calculates from the actual approved Statement of Work (SOW) contract price for each study. Base rates link to your <Link href="/dashboard/ceo/finance" className="text-[#CC6600] hover:underline font-medium">Treasury & Rates</Link> desk.
+                                    Commission calculates from the actual approved Statement of Work (SOW) contract price for each study. Base rates are set on <Link href="/dashboard/ceo/finance" className="text-[#CC6600] hover:underline font-medium">Money & Pay Rates</Link>.
                                   </p>
                                 </div>
                               </div>

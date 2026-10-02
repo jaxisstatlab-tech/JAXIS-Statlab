@@ -394,6 +394,17 @@ model QuotationLineItem {
   @@map("quotation_line_items")
 }
 
+/// Settings edited in the app (price catalog, payment channels). Added 2026-10-02: these used to be saved to files,
+/// which can't change on the server, so edits on the live site were lost.
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
 model PackagePriceConfig {
   id          Int         @id @default(autoincrement())
   packageName PackageName @unique
@@ -974,6 +985,11 @@ model PayoutRateConfig {
   id            Int      @id @default(autoincrement())
   packageName   String   @unique
   ratePercent   Decimal  @db.Decimal(5, 2)
+  // Added 2026-10-02 (were only kept in a file, which can't be saved on the server). Empty = package default.
+  qaRatePercent Decimal? @db.Decimal(5, 2)
+  mode          String? // "PERCENTAGE" | "FIXED"
+  fixedAmount   Decimal? @db.Decimal(10, 2)
+  fixedQaAmount Decimal? @db.Decimal(10, 2)
   effectiveFrom DateTime @default(now())
   approvedBy    String?
   createdAt     DateTime @default(now())

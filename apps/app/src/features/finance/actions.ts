@@ -20,12 +20,11 @@ import {
   computePayoutEligibility,
   calculateAndSyncProjectPayouts,
   DEFAULT_PAYOUT_RATES,
-  DEFAULT_QA_PAYOUT_RATES,
-  DEFAULT_FIXED_RATES,
-  DEFAULT_FIXED_QA_RATES,
-  readPackageRates,
-  writePackageRates,
+  getPackagePayoutRules,
+  resolvePackagePayoutRule,
+  savePackagePayoutRule,
 } from "@/lib/payout-rules";
+import { isOfflineDev } from "@/lib/app-settings";
 
 export interface FinanceActionResult<T = unknown> {
   success: boolean;
@@ -548,50 +547,34 @@ export async function getCeoFinancialOverviewAction(): Promise<FinanceActionResu
   const client = getDb();
 
   try {
-    // 1. Fetch all rate configs (or seed defaults if empty)
-    let rateConfigs: any[] = await withDbTimeout<any[]>(
-      (client as any).payoutRateConfig.findMany({ orderBy: { packageName: "asc" } })
-    ) || [];
+    // 1. Pay rules per package (database, or package defaults where none is saved)
+    const rules = await getPackagePayoutRules();
+    const approverIds = [...new Set(Object.values(rules).map((r) => r.approvedBy).filter((id): id is string => Boolean(id)))];
+    // Offline development has no database: rates come from the sample file and the totals are zero.
+    const offline = isOfflineDev();
+    const approvers = approverIds.length && !offline
+      ? await withDbTimeout(client.user.findMany({ where: { id: { in: approverIds } }, select: { id: true, fullName: true } }))
+      : [];
+    const userMap = new Map(approvers.map((u) => [u.id, u.fullName] as const));
 
-    if (rateConfigs.length === 0) {
-      for (const [pkg, rate] of Object.entries(DEFAULT_PAYOUT_RATES)) {
-        await withDbTimeout(
-          (client as any).payoutRateConfig.upsert({
-            where: { packageName: pkg },
-            create: { packageName: pkg, ratePercent: rate },
-            update: {},
-          })
-        );
-      }
-      rateConfigs = await withDbTimeout<any[]>((client as any).payoutRateConfig.findMany({ orderBy: { packageName: "asc" } })) || [];
-    }
-
-    const allUsers = await withDbTimeout(client.user.findMany({ select: { id: true, fullName: true } }));
-    const userMap = new Map<string, string>();
-    for (const u of allUsers) userMap.set(u.id, u.fullName);
-
-    const customRates = readPackageRates();
-    const mappedConfigs: PayoutRateConfigDTO[] = rateConfigs.map((c) => {
-      const custom = customRates[c.packageName];
-      return {
-        id: c.id,
-        packageName: c.packageName,
-        mode: custom?.mode || "PERCENTAGE",
-        ratePercent: custom?.ratePercent ?? Number(c.ratePercent),
-        qaRatePercent: custom?.qaRatePercent ?? (DEFAULT_QA_PAYOUT_RATES[c.packageName] || 10.0),
-        fixedAmount: custom?.fixedAmount ?? (DEFAULT_FIXED_RATES[c.packageName] || 1500.0),
-        fixedQaAmount: custom?.fixedQaAmount ?? (DEFAULT_FIXED_QA_RATES[c.packageName] || 250.0),
-        effectiveFrom: c.effectiveFrom.toISOString(),
-        approvedBy: c.approvedBy,
-        approvedByName: c.approvedBy ? userMap.get(c.approvedBy) || null : null,
-      };
-    });
+    const mappedConfigs: PayoutRateConfigDTO[] = Object.values(rules).map((r) => ({
+      id: 0,
+      packageName: r.packageName,
+      mode: r.mode,
+      ratePercent: r.ratePercent,
+      qaRatePercent: r.qaRatePercent,
+      fixedAmount: r.fixedAmount,
+      fixedQaAmount: r.fixedQaAmount,
+      effectiveFrom: r.effectiveFrom ?? "",
+      approvedBy: r.approvedBy,
+      approvedByName: r.approvedBy ? userMap.get(r.approvedBy) ?? null : null,
+    }));
 
     const configMap = new Map<string, PayoutRateConfigDTO>();
     for (const c of mappedConfigs) configMap.set(c.packageName, c);
 
     // 2. Fetch Ledgers & Payouts for High-Level Aggregation
-    const ledgers = await withDbTimeout<any[]>(
+    const ledgers = offline ? [] : await withDbTimeout<any[]>(
       (client as any).financialLedger.findMany({
         include: {
           project: {
@@ -604,7 +587,7 @@ export async function getCeoFinancialOverviewAction(): Promise<FinanceActionResu
       })
     ) || [];
 
-    const payouts = await withDbTimeout<any[]>((client as any).payout.findMany()) || [];
+    const payouts = offline ? [] : (await withDbTimeout<any[]>((client as any).payout.findMany())) || [];
 
     let grossRealizedRevenue = 0;
     let totalDisbursed = 0;
@@ -662,7 +645,7 @@ export async function getCeoFinancialOverviewAction(): Promise<FinanceActionResu
         netMargin: data.netMargin,
         marginPercent,
         currentRatePercent: cfg?.ratePercent ?? DEFAULT_PAYOUT_RATES[pkgName] ?? 60,
-        currentQaRatePercent: cfg?.qaRatePercent ?? DEFAULT_QA_PAYOUT_RATES[pkgName] ?? 10,
+        currentQaRatePercent: cfg?.qaRatePercent ?? 10,
       };
     });
 
@@ -695,57 +678,66 @@ export async function updatePayoutRateConfigAction(
   input: unknown
 ): Promise<FinanceActionResult<{ packageName: string; ratePercent: number; qaRatePercent: number }>> {
   const session = await requireRole("CEO");
-  const client = getDb();
 
   const parsed = UpdatePayoutRateSchema.safeParse(input);
   if (!parsed.success) {
     return {
       success: false,
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Please specify valid package commission rates (0–100%).",
-      },
+      error: { code: "VALIDATION_ERROR", message: "Please enter rates between 0% and 100%, and amounts of ₱0 or more." },
     };
   }
 
   const { packageName, mode, ratePercent, qaRatePercent, fixedAmount, fixedQaAmount } = parsed.data;
-  const customRates = readPackageRates();
-  const effectiveQaRate =
-    qaRatePercent !== undefined
-      ? qaRatePercent
-      : (customRates[packageName]?.qaRatePercent ?? DEFAULT_QA_PAYOUT_RATES[packageName] ?? 10.0);
+  if (!(packageName in DEFAULT_PAYOUT_RATES)) {
+    return { success: false, error: { code: "VALIDATION_ERROR", message: "That package doesn't exist." } };
+  }
 
-  customRates[packageName] = {
+  let before;
+  try {
+    before = await resolvePackagePayoutRule(packageName);
+  } catch {
+    return { success: false, error: { code: "SAVE_FAILED", message: "We couldn't load the current rates. Please try again." } };
+  }
+  const next = {
     packageName,
-    mode: mode || customRates[packageName]?.mode || "PERCENTAGE",
+    mode: mode ?? before.mode,
     ratePercent,
-    qaRatePercent: effectiveQaRate,
-    fixedAmount: fixedAmount !== undefined ? fixedAmount : (customRates[packageName]?.fixedAmount ?? DEFAULT_FIXED_RATES[packageName] ?? 1500.0),
-    fixedQaAmount: fixedQaAmount !== undefined ? fixedQaAmount : (customRates[packageName]?.fixedQaAmount ?? DEFAULT_FIXED_QA_RATES[packageName] ?? 250.0),
-    updatedAt: new Date().toISOString(),
-    approvedBy: session.user.id,
+    qaRatePercent: qaRatePercent ?? before.qaRatePercent,
+    fixedAmount: fixedAmount ?? before.fixedAmount,
+    fixedQaAmount: fixedQaAmount ?? before.fixedQaAmount,
   };
-  writePackageRates(customRates);
+  if (next.mode === "PERCENTAGE" && next.ratePercent + next.qaRatePercent > 100) {
+    return {
+      success: false,
+      error: { code: "VALIDATION_ERROR", message: `Both shares add up to ${next.ratePercent + next.qaRatePercent}%, which is more than the whole price.` },
+    };
+  }
 
   try {
+    await savePackagePayoutRule(next, session.user.id);
+  } catch (err: unknown) {
+    // Rates used to be "saved" to a file that can't change on the server, so the page said saved but nothing was.
+    console.error("[updatePayoutRateConfigAction] Save failed:", err);
+    return { success: false, error: { code: "SAVE_FAILED", message: "We couldn't save the new rates. Please try again." } };
+  }
+
+  // Who changed what, kept permanently.
+  try {
     await withDbTimeout(
-      (client as any).payoutRateConfig.upsert({
-        where: { packageName },
-        create: {
-          packageName,
-          ratePercent,
-          approvedBy: session.user.id,
-          effectiveFrom: new Date(),
-        },
-        update: {
-          ratePercent,
-          approvedBy: session.user.id,
-          effectiveFrom: new Date(),
+      getDb().auditLog.create({
+        data: {
+          actorId: session.user.id,
+          actorRole: "CEO",
+          action: "PAYOUT_RATE_CHANGED",
+          oldValue: JSON.stringify({ mode: before.mode, ratePercent: before.ratePercent, qaRatePercent: before.qaRatePercent, fixedAmount: before.fixedAmount, fixedQaAmount: before.fixedQaAmount }),
+          newValue: JSON.stringify({ mode: next.mode, ratePercent: next.ratePercent, qaRatePercent: next.qaRatePercent, fixedAmount: next.fixedAmount, fixedQaAmount: next.fixedQaAmount }),
+          reason: `Pay rates changed for ${packageName}`,
+          metadata: { packageName },
         },
       })
     );
-  } catch (err: any) {
-    console.warn("[updatePayoutRateConfigAction] DB upsert warning:", err.message);
+  } catch (err) {
+    console.warn("[updatePayoutRateConfigAction] Audit log write failed:", err);
   }
 
   revalidatePath("/dashboard/ceo/finance");
@@ -754,7 +746,7 @@ export async function updatePayoutRateConfigAction(
 
   return {
     success: true,
-    data: { packageName, ratePercent, qaRatePercent: effectiveQaRate },
+    data: { packageName, ratePercent: next.ratePercent, qaRatePercent: next.qaRatePercent },
   };
 }
 
