@@ -28,6 +28,27 @@ export const PAY_MODEL_OPTIONS: Array<{ id: CompensationType; title: string; sub
   { id: "HYBRID", title: "Salary + Per Study", subtitle: "A monthly salary plus study pay. No clock-in." },
 ];
 
+/** One plain sentence: how someone on this setting gets paid. Also saved as the role's note. */
+export function payModelSummary(c: { compensationType: CompensationType;
+  baseSalaryMonthly: number;
+  commissionPercentagePerStudy: number;
+  hourlyDutyRate: number;
+  fixedPerStudyBonus: number;
+  allowancesMonthly: number;
+}): string {
+  const money = (n: number) => Math.round(n).toLocaleString("en-PH");
+  const parts: string[] = [];
+  if (c.compensationType === "TIER_DELIVERABLE") parts.push("A share of each delivered study, at the package rates on Money & Pay Rates");
+  if (c.compensationType === "PERCENTAGE_PER_STUDY") parts.push(`${c.commissionPercentagePerStudy}% of each delivered study`);
+  if (c.compensationType === "FIXED_SALARY") parts.push(`₱${money(c.baseSalaryMonthly)} a month`);
+  if (c.compensationType === "HOURLY_DUTY") parts.push(`₱${money(c.hourlyDutyRate)} for each clocked-in hour`);
+  if (c.compensationType === "HYBRID")
+    parts.push(`₱${money(c.baseSalaryMonthly)} a month plus ${c.commissionPercentagePerStudy > 0 ? `${c.commissionPercentagePerStudy}%` : "the package rate"} of each delivered study`);
+  if (c.fixedPerStudyBonus > 0) parts.push(`plus ₱${money(c.fixedPerStudyBonus)} per study`);
+  if (c.allowancesMonthly > 0) parts.push(`plus a ₱${money(c.allowancesMonthly)} monthly allowance`);
+  return parts.join(", ") + ".";
+}
+
 /** Whether the signed-in person uses the time clock, and why not when they don't (plain words, shown to them). */
 export interface TimeClockAccess {
   enabled: boolean;

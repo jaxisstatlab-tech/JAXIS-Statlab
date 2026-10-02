@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Modal, Button, Badge, Peso } from "@repo/ui";
-import { IconLoader2, IconCheck, IconBuildingBank, IconDeviceMobile } from "@tabler/icons-react";
+import React, { useEffect, useState } from "react";
+import { Modal, Button } from "@repo/ui";
+import { Bank, DeviceMobile, WarningCircle } from "@phosphor-icons/react";
 import { saveStaffCompensationOverride, deleteStaffCompensationOverride } from "../actions";
 import type { InternalStaffMember } from "../actions";
-import { PAY_MODEL_OPTIONS, type CompensationType } from "../schemas";
+import { PAY_MODEL_OPTIONS, payModelSummary, type CompensationType } from "../schemas";
+
+// "Their own pay": pay for one person that differs from their role. The role's pay stays as it is.
 
 interface SpecialistOverrideModalProps {
   staff: InternalStaffMember | null;
@@ -14,42 +16,47 @@ interface SpecialistOverrideModalProps {
   onSuccess: () => void;
 }
 
-export function SpecialistOverrideModal({
-  staff,
-  open,
-  onClose,
-  onSuccess,
-}: SpecialistOverrideModalProps) {
+const ROLE_SHORT: Record<string, string> = {
+  STATISTICIAN: "analysts",
+  SENIOR_QA_LEAD: "reviewers",
+  FINANCE_OFFICER: "finance",
+  ADMIN: "admins",
+};
+
+const CHANNEL: Record<string, string> = { GCASH: "GCash", MAYA: "Maya", BANK_TRANSFER: "Bank", CASH: "Cash" };
+
+export function SpecialistOverrideModal({ staff, open, onClose, onSuccess }: SpecialistOverrideModalProps) {
   const [compensationType, setCompensationType] = useState<CompensationType>("TIER_DELIVERABLE");
   const [baseSalary, setBaseSalary] = useState(0);
-  const [commissionPct, setCommissionPct] = useState(50);
-  const [hourlyRate, setHourlyRate] = useState(450);
-  const [fixedBonus, setFixedBonus] = useState(1000);
-  const [allowances, setAllowances] = useState(2500);
+  const [commissionPct, setCommissionPct] = useState(0);
+  const [hourlyRate, setHourlyRate] = useState(0);
+  const [fixedBonus, setFixedBonus] = useState(0);
+  const [allowances, setAllowances] = useState(0);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [confirmReset, setConfirmReset] = useState(false);
 
   useEffect(() => {
-    if (staff) {
-      const cfg = staff.effectiveConfig;
-      setCompensationType(cfg.compensationType);
-      setBaseSalary(cfg.baseSalaryMonthly || 0);
-      setCommissionPct(cfg.commissionPercentagePerStudy || 0);
-      setHourlyRate(cfg.hourlyDutyRate || 0);
-      setFixedBonus(cfg.fixedPerStudyBonus || 0);
-      setAllowances(cfg.allowancesMonthly || 0);
-      setNotes(cfg.notes || "");
-    }
+    if (!staff) return;
+    const cfg = staff.effectiveConfig;
+    setCompensationType(cfg.compensationType);
+    setBaseSalary(cfg.baseSalaryMonthly || 0);
+    setCommissionPct(cfg.commissionPercentagePerStudy || 0);
+    setHourlyRate(cfg.hourlyDutyRate || 0);
+    setFixedBonus(cfg.fixedPerStudyBonus || 0);
+    setAllowances(cfg.allowancesMonthly || 0);
+    setNotes(staff.overrideConfig?.notes || "");
+    setConfirmReset(false);
+    setErrorMsg("");
   }, [staff]);
 
   if (!staff) return null;
+  const roleWord = ROLE_SHORT[staff.role] ?? "their role";
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const save = async () => {
     setIsSubmitting(true);
     setErrorMsg("");
-
     try {
       const res = await saveStaffCompensationOverride({
         userId: staff.id,
@@ -64,33 +71,32 @@ export function SpecialistOverrideModal({
         allowancesMonthly: Number(allowances),
         notes: notes.trim(),
       });
-
       if (res.success) {
         onSuccess();
         onClose();
-      } else {
-        setErrorMsg(res.error?.message || "Failed to save override.");
-      }
+      } else setErrorMsg(res.error?.message || "Couldn't save their pay. Please try again.");
     } catch {
-      setErrorMsg("Network error occurred while updating compensation override.");
+      setErrorMsg("Couldn't save their pay. Check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleResetToDefault = async () => {
-    if (!confirm(`Revert ${staff.fullName} back to default ${staff.role} compensation policy?`)) return;
+  const useRolePay = async () => {
+    if (!confirmReset) return setConfirmReset(true);
     setIsSubmitting(true);
     try {
       await deleteStaffCompensationOverride(staff.id);
       onSuccess();
       onClose();
+    } catch {
+      setErrorMsg("Couldn't switch back to the role's pay. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSelectModelType = (type: CompensationType) => {
+  const pickModel = (type: CompensationType) => {
     setCompensationType(type);
     if (type === "TIER_DELIVERABLE" || type === "PERCENTAGE_PER_STUDY") {
       setBaseSalary(0);
@@ -110,307 +116,135 @@ export function SpecialistOverrideModal({
       setHourlyRate(0);
       setFixedBonus(0);
       if (!baseSalary) setBaseSalary(12000);
-      if (!commissionPct) setCommissionPct(10);
     }
   };
+
+  const field = "h-9 w-full rounded-[2px] border border-white/10 bg-[#050513] font-mono text-[13px] text-white outline-none focus:border-[#CC6600]/60";
+  const amount = (label: string, value: number, set: (n: number) => void, step: number, hint?: string) => (
+    <label className="flex flex-col gap-1.5 text-[13px] text-white/70">
+      {label}
+      <span className="relative flex items-center">
+        <span className="pointer-events-none absolute left-3 text-white/45">₱</span>
+        <input type="number" min={0} step={step} value={value} onChange={(e) => set(Number(e.target.value))} className={`${field} pl-7 pr-3`} />
+      </span>
+      {hint ? <span className="text-[12px] text-white/40">{hint}</span> : null}
+    </label>
+  );
+
+  const summary = payModelSummary({
+    compensationType,
+    baseSalaryMonthly: baseSalary,
+    commissionPercentagePerStudy: commissionPct,
+    hourlyDutyRate: hourlyRate,
+    fixedPerStudyBonus: fixedBonus,
+    allowancesMonthly: allowances,
+  });
 
   return (
     <Modal
       open={open}
-      onClose={onClose}
-      title="Customize Staff Pay Rates"
-      description={`Set custom pay rates for ${staff.fullName} (${staff.role})`}
+      onClose={() => (isSubmitting ? undefined : onClose())}
+      title={`${staff.fullName}'s own pay`}
+      description={`Only for ${staff.fullName}. Pay for ${roleWord} stays the same.`}
       size="md"
       footer={
-        <div className="flex items-center justify-between w-full">
-          <div>
-            {staff.overrideConfig && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleResetToDefault}
-                disabled={isSubmitting}
-                className="text-red-400 border-red-500/30 hover:bg-red-950/40 text-xs cursor-pointer"
-              >
-                Reset to Role Default
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={onClose} disabled={isSubmitting}>
+        <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+          {staff.overrideConfig ? (
+            <Button variant="ghost" size="sm" onClick={useRolePay} disabled={isSubmitting}>
+              {confirmReset ? "Click Again to Confirm" : `Use Their Role's Pay`}
+            </Button>
+          ) : (
+            <span />
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="gap-1.5 font-sans font-semibold cursor-pointer rounded-[2px]"
-            >
-              {isSubmitting ? (
-                <IconLoader2 size={16} stroke={2.5} className="animate-spin text-white/90" />
-              ) : (
-                <IconCheck size={16} stroke={2} />
-              )}
-              <span>Save Custom Rates</span>
+            <Button variant="primary" size="sm" onClick={save} loading={isSubmitting} className="active:scale-[0.97]">
+              Save Their Pay
             </Button>
           </div>
         </div>
       }
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs text-white font-sans">
-        {errorMsg && (
-          <div className="p-3 bg-red-950/50 border border-red-500/30 rounded-[2px] text-red-300 font-mono text-xs">
-            {errorMsg}
-          </div>
-        )}
-
-        {/* Staff Payout Account Badge */}
-        <div className="p-3 bg-[#050513] border border-white/10 rounded-[2px] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {staff.payoutDetails?.payoutChannel === "BANK_TRANSFER" ? (
-              <IconBuildingBank size={16} stroke={1.5} className="text-[#FFA040]" />
-            ) : (
-              <IconDeviceMobile size={16} stroke={1.5} className="text-[#FFA040]" />
-            )}
-            <div className="flex flex-col">
-              <span className="text-[0.625rem] uppercase font-mono text-white/50">
-                Registered Payout Account
-              </span>
-              {staff.payoutDetails ? (
-                <div className="flex items-center gap-2 mt-0.5">
-                  <Badge variant="amber" className="text-[0.562rem] font-mono">
-                    {staff.payoutDetails.payoutChannel.replace(/_/g, " ")}
-                  </Badge>
-                  <span className="font-mono text-xs font-bold text-white">
-                    {staff.payoutDetails.accountNumber}
-                  </span>
-                  {staff.payoutDetails.bankName && (
-                    <span className="text-xs text-sky-400 font-sans">
-                      ({staff.payoutDetails.bankName})
-                    </span>
-                  )}
-                  <span className="text-xs text-white/60 font-sans">
-                    &bull; {staff.payoutDetails.accountName}
-                  </span>
-                </div>
-              ) : (
-                <span className="text-xs text-amber-400 font-sans">
-                  No e-wallet / bank account registered yet.
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Model Selector */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[13px] text-white/70">How this person is paid</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {PAY_MODEL_OPTIONS.map((item) => {
-              const isSelected = compensationType === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleSelectModelType(item.id as CompensationType)}
-                  className={`p-2.5 rounded-[2px] border text-left font-sans cursor-pointer transition-colors ${
-                    isSelected
-                      ? "bg-[#CC6600]/20 border-[#CC6600] text-white ring-1 ring-[#CC6600]"
-                      : "bg-[#050513] border-white/10 text-white/70 hover:text-white"
-                  }`}
-                >
-                  <div className="font-semibold text-xs text-white">{item.title}</div>
-                  <div className="text-[0.688rem] text-white/40">{item.subtitle}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Model-Specific Inputs */}
-        <div className="p-4 bg-[#050513] border border-white/10 rounded-[2px] flex flex-col gap-3.5">
-          {(compensationType === "TIER_DELIVERABLE" || compensationType === "PERCENTAGE_PER_STUDY") && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div>
-                <label className="text-xs font-mono text-white/80 block mb-1 font-semibold">
-                  Custom Commission % (Optional)
-                </label>
-                <div className="relative flex items-center">
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={commissionPct}
-                    onChange={(e) => setCommissionPct(Number(e.target.value))}
-                    className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
-                    placeholder="0"
-                  />
-                  <span className="absolute right-3 text-xs font-mono text-white/50">% of study</span>
-                </div>
-                <span className="text-[0.625rem] text-white/40 font-sans mt-0.5 block">
-                  Set 0 to automatically inherit the Treasury Package Key rate.
-                </span>
-              </div>
-
-              <div>
-                <label className="text-xs font-mono text-white/80 block mb-1 font-semibold">
-                  Deliverable Bonus (₱)
-                </label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-3"><Peso className="text-xs text-white/50" /></span>
-                  <input
-                    type="number"
-                    step={100}
-                    min={0}
-                    value={fixedBonus}
-                    onChange={(e) => setFixedBonus(Number(e.target.value))}
-                    className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-7 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {compensationType === "FIXED_SALARY" && (
-            <div>
-              <label className="text-xs font-mono text-white/80 block mb-1 font-semibold">
-                Monthly Base Salary (₱)
-              </label>
-              <div className="relative flex items-center max-w-sm">
-                <span className="absolute left-3"><Peso className="text-sm text-white/50" /></span>
-                <input
-                  type="number"
-                  step={500}
-                  min={0}
-                  value={baseSalary}
-                  onChange={(e) => setBaseSalary(Number(e.target.value))}
-                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-8 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
-                />
-              </div>
-              <span className="text-[0.688rem] text-white/40 font-sans mt-1 block">
-                Prorates to <Peso className="text-[0.688rem] text-white/40" />{(baseSalary / 2).toLocaleString()} per 15-day cut-off cycle.
-              </span>
-            </div>
-          )}
-
-          {compensationType === "HOURLY_DUTY" && (
-            <div>
-              <label className="text-xs font-mono text-white/80 block mb-1 font-semibold">
-                Hourly Duty Rate (₱ / hr)
-              </label>
-              <div className="relative flex items-center max-w-sm">
-                <span className="absolute left-3"><Peso className="text-sm text-white/50" /></span>
-                <input
-                  type="number"
-                  step={25}
-                  min={0}
-                  value={hourlyRate}
-                  onChange={(e) => setHourlyRate(Number(e.target.value))}
-                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-8 pr-14 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
-                />
-                <span className="absolute right-3 text-xs font-mono text-white/50">/ hr</span>
-              </div>
-            </div>
-          )}
-
-          {compensationType === "HYBRID" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div>
-                <label className="text-xs font-mono text-white/80 block mb-1 font-semibold">
-                  Monthly Base Retainer (₱)
-                </label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-3"><Peso className="text-sm text-white/50" /></span>
-                  <input
-                    type="number"
-                    step={500}
-                    min={0}
-                    value={baseSalary}
-                    onChange={(e) => setBaseSalary(Number(e.target.value))}
-                    className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-8 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-mono text-white/80 block mb-1 font-semibold">
-                  Commission % Per Study
-                </label>
-                <div className="relative flex items-center">
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={commissionPct}
-                    onChange={(e) => setCommissionPct(Number(e.target.value))}
-                    className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-sm text-white font-mono outline-none focus:border-[#CC6600]"
-                  />
-                  <span className="absolute right-3 text-xs font-mono text-white/50">% of study</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Optional Monthly Allowance */}
-          <div className="pt-2.5 border-t border-white/[0.08] flex items-center justify-between gap-3">
-            <span className="text-xs font-mono text-white/70">Monthly Allowance / Stipend (Optional)</span>
-            <div className="relative flex items-center w-36 shrink-0">
-              <span className="absolute left-3"><Peso className="text-xs text-white/50" /></span>
-              <input
-                type="number"
-                step={250}
-                min={0}
-                value={allowances}
-                onChange={(e) => setAllowances(Number(e.target.value))}
-                className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] pl-7 pr-3 py-1.5 text-xs text-white font-mono outline-none focus:border-[#CC6600]"
-                placeholder="0"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Human Summary */}
-        <div className="p-3 bg-[#050513] border border-emerald-500/20 rounded-[2px] text-xs font-sans text-white/90">
-          <strong className="text-emerald-400">Effective Pay Agreement: </strong>
-          {compensationType === "TIER_DELIVERABLE" && (
-            <span>
-              Earns <strong>{commissionPct > 0 ? `${commissionPct}%` : "active Treasury Package Key split"}</strong> of approved SOW contract price
-              {fixedBonus > 0 && <span> + <Peso />{fixedBonus.toLocaleString()} bonus</span>}
-              {allowances > 0 && <span> + <Peso />{allowances.toLocaleString()} monthly allowance</span>}.
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          save();
+        }}
+        className="flex flex-col gap-4 font-sans"
+      >
+        <p className="flex items-center gap-2 rounded-[2px] border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5 text-[13px] text-white/70">
+          {staff.payoutDetails?.payoutChannel === "BANK_TRANSFER" ? <Bank size={15} weight="fill" className="shrink-0 text-white/45" /> : <DeviceMobile size={15} weight="fill" className="shrink-0 text-white/45" />}
+          {staff.payoutDetails ? (
+            <span className="min-w-0 truncate">
+              Paid to {CHANNEL[staff.payoutDetails.payoutChannel] ?? staff.payoutDetails.payoutChannel}
+              {staff.payoutDetails.bankName ? ` (${staff.payoutDetails.bankName})` : ""}{" "}
+              <span className="font-mono text-white">{staff.payoutDetails.accountNumber}</span> · {staff.payoutDetails.accountName}
             </span>
+          ) : (
+            <span>No payout details yet. They add them under My HR.</span>
           )}
-          {compensationType === "PERCENTAGE_PER_STUDY" && (
-            <span>
-              Earns <strong>{commissionPct}%</strong> of approved SOW contract price
-              {fixedBonus > 0 && <span> + <Peso />{fixedBonus.toLocaleString()} bonus</span>}
-              {allowances > 0 && <span> + <Peso />{allowances.toLocaleString()} monthly allowance</span>}.
-            </span>
-          )}
-          {compensationType === "FIXED_SALARY" && (
-            <span>{staff.fullName} earns a fixed <strong><Peso />{baseSalary.toLocaleString()} / month</strong> (<Peso />{(baseSalary / 2).toLocaleString()} every 15 days).</span>
-          )}
-          {compensationType === "HOURLY_DUTY" && (
-            <span>{staff.fullName} is paid <strong><Peso />{hourlyRate.toLocaleString()} / hour</strong> for verified platform hours.</span>
-          )}
-          {compensationType === "HYBRID" && (
-            <span>{staff.fullName} receives <strong><Peso />{baseSalary.toLocaleString()} monthly base</strong> + <strong>{commissionPct}% commission</strong> per study.</span>
-          )}
+        </p>
+
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {PAY_MODEL_OPTIONS.map((item) => {
+            const on = compensationType === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => pickModel(item.id)}
+                aria-pressed={on}
+                className={`rounded-[2px] border px-3.5 py-2.5 text-left transition-colors ${
+                  on ? "border-[#CC6600]/70 bg-[#CC6600]/[0.06]" : "border-white/10 hover:border-white/25"
+                }`}
+              >
+                <p className="text-sm font-medium text-white">{item.title}</p>
+                <p className="mt-0.5 text-[12px] text-white/50">{item.subtitle}</p>
+              </button>
+            );
+          })}
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-[0.688rem] font-mono uppercase text-white/60 font-semibold">
-            Specialist Contract Justification / Notes
-          </label>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {compensationType === "FIXED_SALARY" || compensationType === "HYBRID"
+            ? amount("Monthly salary", baseSalary, setBaseSalary, 500, `Paid as ₱${Math.round(baseSalary / 2).toLocaleString("en-PH")} each payday when paid twice a month.`)
+            : null}
+          {compensationType === "HOURLY_DUTY" ? amount("Hourly wage", hourlyRate, setHourlyRate, 25) : null}
+          {compensationType !== "FIXED_SALARY" && compensationType !== "HOURLY_DUTY" ? (
+            <label className="flex flex-col gap-1.5 text-[13px] text-white/70">
+              Share of each study (%)
+              <input type="number" min={0} max={100} value={commissionPct} onChange={(e) => setCommissionPct(Number(e.target.value))} className={`${field} px-3`} />
+              <span className="text-[12px] text-white/40">0 uses the package rate.</span>
+            </label>
+          ) : null}
+          {compensationType === "TIER_DELIVERABLE" || compensationType === "PERCENTAGE_PER_STUDY" ? amount("Extra per study (optional)", fixedBonus, setFixedBonus, 100) : null}
+          {amount("Monthly allowance (optional)", allowances, setAllowances, 250)}
+        </div>
+
+        <p className="rounded-[2px] border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5 text-[13px] leading-relaxed text-white/75">
+          <span className="text-white/45">They get: </span>
+          {compensationType === "TIER_DELIVERABLE" && commissionPct > 0 ? summary.replace("at the package rates on Money & Pay Rates", `at ${commissionPct}%`) : summary}
+        </p>
+
+        <label className="flex flex-col gap-1.5 text-[13px] text-white/70">
+          Why they have their own pay (optional)
           <textarea
             rows={2}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. Senior PhD retention tier; elevated commission due to high-stakes biostatistical trial design."
-            className="w-full bg-[#050513] border border-white/10 rounded-[2px] p-2.5 text-xs text-white placeholder-white/30 outline-none focus:border-[#CC6600]"
+            placeholder="For example: senior analyst, agreed on a higher share"
+            className="w-full rounded-[2px] border border-white/10 bg-[#050513] p-2.5 text-[13px] text-white outline-none placeholder:text-white/30 focus:border-[#CC6600]/60"
           />
-        </div>
+        </label>
+
+        {errorMsg ? (
+          <p role="alert" className="flex items-start gap-2 text-[13px] text-red-300">
+            <WarningCircle size={15} weight="fill" className="mt-0.5 shrink-0" />
+            {errorMsg}
+          </p>
+        ) : null}
       </form>
     </Modal>
   );
