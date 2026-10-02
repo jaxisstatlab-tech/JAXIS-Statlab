@@ -1,5 +1,5 @@
 import { getMyHrPortalData } from "@/features/attendance/actions";
-import { getMyOfficialPayslip, getMyPayoutDetails } from "@/features/payroll/actions";
+import { getMyOfficialPayslip, getMyPayoutDetails, getTimeClockAccess } from "@/features/payroll/actions";
 import { HrPortalClient } from "./HrPortalClient";
 import type { Metadata } from "next";
 
@@ -13,10 +13,11 @@ export default async function StaffHrPortalPage() {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  const [portalData, payslipRes, payoutRes] = await Promise.all([
+  const [portalData, payslipRes, payoutRes, timeClock] = await Promise.all([
     getMyHrPortalData(currentYear, currentMonth),
     getMyOfficialPayslip(),
     getMyPayoutDetails(),
+    getTimeClockAccess(),
   ]);
 
   return (
@@ -25,6 +26,7 @@ export default async function StaffHrPortalPage() {
       initialAllMyPayslips={payslipRes.allMyPayslips}
       initialSelectedPayslip={payslipRes.payslip || payslipRes.allMyPayslips[0] || null}
       initialPayoutDetails={payoutRes?.data || null}
+      timeClock={timeClock}
     />
   );
 }

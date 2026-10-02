@@ -5,7 +5,7 @@ import { Modal, Button, Badge, Peso } from "@repo/ui";
 import { IconLoader2, IconCheck, IconBuildingBank, IconDeviceMobile } from "@tabler/icons-react";
 import { saveStaffCompensationOverride, deleteStaffCompensationOverride } from "../actions";
 import type { InternalStaffMember } from "../actions";
-import type { CompensationType } from "../schemas";
+import { PAY_MODEL_OPTIONS, type CompensationType } from "../schemas";
 
 interface SpecialistOverrideModalProps {
   staff: InternalStaffMember | null;
@@ -205,16 +205,9 @@ export function SpecialistOverrideModal({
 
         {/* Model Selector */}
         <div className="flex flex-col gap-2">
-          <label className="text-[0.688rem] font-mono uppercase text-white/60 font-semibold">
-            Select Compensation Model
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {[
-              { id: "TIER_DELIVERABLE", title: "Tier Deliverable Fee", subtitle: "SOW split via Package Key from Treasury" },
-              { id: "FIXED_SALARY", title: "Fixed Monthly Base", subtitle: "Guaranteed monthly/semi-monthly rate" },
-              { id: "HOURLY_DUTY", title: "Hourly Attendance Wage", subtitle: "Paid per verified platform hour" },
-              { id: "HYBRID", title: "Hybrid (Base + Tier Fee)", subtitle: "Base monthly pay + SOW tier split" },
-            ].map((item) => {
+          <label className="text-[13px] text-white/70">How this person is paid</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {PAY_MODEL_OPTIONS.map((item) => {
               const isSelected = compensationType === item.id;
               return (
                 <button

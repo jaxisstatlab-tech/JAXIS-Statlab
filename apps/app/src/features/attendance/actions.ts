@@ -21,6 +21,7 @@ import {
 } from "./schemas";
 import type { RoleName } from "@prisma/client";
 import { parseUserAgent } from "@/lib/attendance-device";
+import { getTimeClockAccess } from "@/features/payroll/actions";
 
 const INTERNAL_ROLES = ["STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO"] as const;
 
@@ -236,6 +237,15 @@ export async function clockIn(
 ): Promise<AttendanceActionResult<{ logId: string; clockInAt: string }>> {
   const session = await requireRole(...INTERNAL_ROLES);
   const userId = session.user.id;
+
+  // Only staff paid by the hour use the time clock (set per role, or per person, in Payroll Settings).
+  const access = await getTimeClockAccess();
+  if (!access.enabled) {
+    return {
+      success: false,
+      error: { code: "TIME_CLOCK_NOT_USED", message: access.reason || "You don't need to clock in." },
+    };
+  }
 
   const parsed = ClockInSchema.safeParse(input || {});
   if (!parsed.success) {
@@ -493,6 +503,14 @@ export async function clockOut(
  * 3. Fetch current user's live active shift status (for Topbar widget).
  */
 export async function getActiveShift(): Promise<ActiveShiftStatus> {
+  const [status, timeClock] = await Promise.all([
+    loadActiveShift(),
+    getTimeClockAccess().catch(() => undefined),
+  ]);
+  return timeClock ? { ...status, timeClock } : status;
+}
+
+async function loadActiveShift(): Promise<ActiveShiftStatus> {
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -733,6 +751,18 @@ export async function fileAttendanceCorrection(
 ): Promise<AttendanceActionResult<{ correctionId: string }>> {
   const session = await requireRole(...INTERNAL_ROLES);
   const userId = session.user.id;
+
+  // Missed punches and overtime only matter to people paid by the hour.
+  const access = await getTimeClockAccess();
+  if (!access.enabled) {
+    return {
+      success: false,
+      error: {
+        code: "TIME_CLOCK_NOT_USED",
+        message: access.reason || "Your pay doesn't use clock-in hours, so there's nothing to correct.",
+      },
+    };
+  }
 
   const parsed = AttendanceCorrectionSchema.safeParse(input);
   if (!parsed.success) {

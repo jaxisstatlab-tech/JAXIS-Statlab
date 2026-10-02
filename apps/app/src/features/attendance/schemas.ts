@@ -91,6 +91,8 @@ export interface ActiveShiftStatus {
   notes: string | null;
   isOnLeave: boolean;
   leaveReason?: string | null;
+  /** Whether this person uses the time clock (only staff paid by the hour). Missing means "yes" for older callers. */
+  timeClock?: import("@/features/payroll/schemas").TimeClockAccess;
 }
 
 export interface StaffAttendanceItem {

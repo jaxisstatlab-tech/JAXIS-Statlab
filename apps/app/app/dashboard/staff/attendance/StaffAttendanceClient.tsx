@@ -14,7 +14,6 @@ import {
   IconCoffee,
   IconDeviceMobile,
   IconDeviceDesktop,
-  IconBolt,
   IconChevronDown,
 } from "@tabler/icons-react";
 import { Button, Card, KpiCard, Badge, Modal, Toast, LoadingState, PageHeader, Pagination } from "@repo/ui";
@@ -299,17 +298,6 @@ export function StaffAttendanceClient({ initialData }: StaffAttendanceClientProp
                             </span>
                           )}
                         </div>
-                        {log.isZeroActivity ? (
-                          <span className="text-[0.625rem] font-mono text-amber-400/90 font-medium flex items-center gap-1">
-                            <IconAlertTriangle size={11} stroke={2} className="text-amber-400" />
-                            <span>0 Study Actions Logged</span>
-                          </span>
-                        ) : log.studyActionsCount > 0 ? (
-                          <span className="text-[0.625rem] font-mono text-emerald-400/80 flex items-center gap-1">
-                            <IconBolt size={12} stroke={2} />
-                            <span>{log.studyActionsCount} Study Events Verified</span>
-                          </span>
-                        ) : null}
                       </div>
                     </td>
                     <td className="py-3 px-3">

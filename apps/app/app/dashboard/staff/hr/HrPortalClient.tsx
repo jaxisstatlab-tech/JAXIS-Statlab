@@ -18,8 +18,6 @@ import {
   IconPrinter,
   IconDeviceMobile,
   IconDeviceDesktop,
-  IconAlertTriangle,
-  IconBolt,
   IconFileText,
   IconWallet,
   IconCoins,
@@ -32,24 +30,24 @@ import Link from "next/link";
 import { getMyHrPortalData, fileAttendanceCorrection } from "@/features/attendance/actions";
 import { requestLeave, returnFromLeave } from "@/features/staff/actions";
 import { getMyOfficialPayslip, getMyPayoutDetails, updateMyPayoutDetails } from "@/features/payroll/actions";
-import type { StaffPayslipDTO, StaffPayoutDetailsDTO, PayoutChannel } from "@/features/payroll/schemas";
+import type { StaffPayslipDTO, StaffPayoutDetailsDTO, PayoutChannel, TimeClockAccess } from "@/features/payroll/schemas";
 import { PayslipStatementModal } from "@/features/payroll/components/PayslipStatementModal";
 import type { HrPortalData, DailyAttendanceEvent } from "@/features/attendance/schemas";
 import { formatSettlementAccountNumber } from "@/lib/formatters";
 
 export function formatCompensationType(type?: string | null): string {
-  if (!type) return "Tier Deliverable Fee";
+  if (!type) return "Per Study";
   switch (type) {
     case "TIER_DELIVERABLE":
-      return "Tier Deliverable Fee";
+      return "Per Study";
     case "PERCENTAGE_PER_STUDY":
       return "Percentage per Study";
     case "FIXED_SALARY":
-      return "Fixed Salary";
+      return "Monthly Salary";
     case "HOURLY_DUTY":
-      return "Hourly Duty";
+      return "Hourly Wage";
     case "HYBRID":
-      return "Base + Study Fee";
+      return "Salary + Per Study";
     default:
       return type.replace(/_/g, " ");
   }
@@ -85,6 +83,8 @@ export interface HrPortalClientProps {
   initialAllMyPayslips: StaffPayslipDTO[];
   initialSelectedPayslip: StaffPayslipDTO | null;
   initialPayoutDetails: StaffPayoutDetailsDTO | null;
+  /** Whether this person uses the time clock (only staff paid by the hour). */
+  timeClock?: TimeClockAccess;
 }
 
 export function HrPortalClient({
@@ -92,8 +92,11 @@ export function HrPortalClient({
   initialAllMyPayslips,
   initialSelectedPayslip,
   initialPayoutDetails,
+  timeClock,
 }: HrPortalClientProps) {
-  const [activeTab, setActiveTab] = useState<ActiveHrTab>("TIMESHEETS");
+  // Staff not paid by the hour don't use the clock: no timesheets, overtime or missed-punch forms for them.
+  const usesClock = timeClock?.enabled !== false;
+  const [activeTab, setActiveTab] = useState<ActiveHrTab>(usesClock ? "TIMESHEETS" : "PAYSLIP");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [portalData, setPortalData] = useState<HrPortalData>(initialPortalData);
 
@@ -433,8 +436,12 @@ export function HrPortalClient({
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {/* Standardized PageHeader Component */}
       <PageHeader
-        title="My HR &amp; Timeclock"
-        description="Manage your timesheets, duty calendar, leave requests, and monthly payslips."
+        title={usesClock ? "My HR & Timeclock" : "My HR"}
+        description={
+          usesClock
+            ? "Your timesheets, calendar, leave requests, and payslips."
+            : "Your leave requests, payslips, and payout details."
+        }
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "My HR" },
@@ -450,18 +457,20 @@ export function HrPortalClient({
               <IconCalendarOff size={14} stroke={2} />
               <span>Request Leave</span>
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                setAdjDate(selectedDayEvent?.date || new Date().toISOString().split("T")[0]!);
-                setIsAdjModalOpen(true);
-              }}
-              className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold rounded-[2px]"
-            >
-              <IconPlus size={14} stroke={2.5} />
-              <span>File Overtime / Correction</span>
-            </Button>
+            {usesClock ? (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setAdjDate(selectedDayEvent?.date || new Date().toISOString().split("T")[0]!);
+                  setIsAdjModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold rounded-[2px]"
+              >
+                <IconPlus size={14} stroke={2.5} />
+                <span>File Overtime / Correction</span>
+              </Button>
+            ) : null}
           </div>
         }
       />
@@ -490,6 +499,18 @@ export function HrPortalClient({
         </div>
       )}
 
+      {!usesClock ? (
+        <div className="flex items-start gap-3 rounded-[2px] border border-white/10 bg-[#0A0A18] px-5 py-4">
+          <IconClock size={18} stroke={1.75} className="mt-0.5 shrink-0 text-white/45" />
+          <div className="font-sans text-[13px]">
+            <p className="font-medium text-white">You don&apos;t need to clock in</p>
+            <p className="mt-0.5 leading-relaxed text-white/60">
+              {timeClock?.reason || "Your pay doesn't use clock-in hours."} The time clock is only for staff paid by the hour.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       {/* Navigation Tab Bar */}
       <div className="flex items-center border-b border-white/10 gap-2 overflow-x-auto pb-1">
         {[
@@ -499,7 +520,9 @@ export function HrPortalClient({
           { id: "OVERTIME", label: "Overtime & Corrections", icon: IconClockPlay },
           { id: "PAYSLIP", label: "My Payslips", icon: IconReceipt },
           { id: "PAYOUT", label: "Payout Method", icon: IconBuildingBank },
-        ].map((tab) => {
+        ]
+          .filter((tab) => usesClock || (tab.id !== "TIMESHEETS" && tab.id !== "OVERTIME"))
+          .map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -610,17 +633,6 @@ export function HrPortalClient({
                               </span>
                             )}
                           </div>
-                          {log.isZeroActivity ? (
-                            <span className="text-[0.625rem] font-mono text-amber-400/90 font-medium flex items-center gap-1">
-                              <IconAlertTriangle size={11} stroke={2} className="text-amber-400" />
-                              <span>0 Study Actions Logged</span>
-                            </span>
-                          ) : log.studyActionsCount > 0 ? (
-                            <span className="text-[0.625rem] font-mono text-emerald-400/80 flex items-center gap-1">
-                              <IconBolt size={12} stroke={2} />
-                              <span>{log.studyActionsCount} Study Events Verified</span>
-                            </span>
-                          ) : null}
                         </div>
                       </td>
                       <td className="py-3 px-3">
@@ -642,7 +654,7 @@ export function HrPortalClient({
                         )}
                         {log.status === "AUTO_CLOSED" && (
                           <span className="text-[0.688rem] font-mono px-2 py-0.5 rounded-[2px] bg-amber-950/40 text-amber-300 border border-amber-500/30">
-                            Auto-Capped (14h)
+                            Closed automatically
                           </span>
                         )}
                       </td>
@@ -1257,7 +1269,9 @@ export function HrPortalClient({
             </div>
 
             {/* Compensation Breakdown Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-6 ${usesClock ? "lg:grid-cols-4" : ""}`}>
+              {usesClock ? (
+              <>
               <KpiCard
                 label="Verified Hours Worked"
                 value={activeDisplayPayslip?.verifiedDutyHours ?? portalData.payslip.totalDutyHours}
@@ -1270,6 +1284,8 @@ export function HrPortalClient({
                 value={<><Peso />{(activeDisplayPayslip?.hourlyDutyEarnings ?? portalData.payslip.dutyHourlyEarnings).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</>}
                 description="From verified duty punches"
               />
+              </>
+              ) : null}
 
               <KpiCard
                 label="Studies Completed Pay"

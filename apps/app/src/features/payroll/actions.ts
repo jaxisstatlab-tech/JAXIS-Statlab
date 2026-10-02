@@ -26,6 +26,9 @@ import {
   type PayrollKpiSummary,
   type PayslipItemizedStudy,
   type PayslipStatus,
+  type CompensationType,
+  type TimeClockAccess,
+  usesTimeClock,
 } from "./schemas";
 import { getDevUsers } from "@/lib/mock-data/users.data";
 
@@ -145,6 +148,47 @@ async function readPayrollStorage(): Promise<PayrollStorage> {
     staffOverrides: saved?.staffOverrides ?? {},
     scheduleConfig: saved?.scheduleConfig,
   };
+}
+
+// Read on every page for the clock button, so it's cached; saving pay settings clears it (CACHE_TAGS.PAYROLL).
+const cachedPayrollStorage = unstable_cache(readPayrollStorage, ["payroll-storage-v1"], {
+  tags: [CACHE_TAGS.PAYROLL],
+  revalidate: 300,
+});
+
+const PAID_HOW: Record<CompensationType, string> = {
+  TIER_DELIVERABLE: "per study",
+  PERCENTAGE_PER_STUDY: "per study",
+  FIXED_SALARY: "a monthly salary",
+  HYBRID: "a monthly salary plus study pay",
+  HOURLY_DUTY: "by the hour",
+};
+
+/**
+ * Whether the signed-in person uses the time clock: their own pay setting if the CEO set one, otherwise their
+ * role's. Only "Hourly Duty Wage" uses it (see `usesTimeClock`).
+ */
+export async function getTimeClockAccess(): Promise<TimeClockAccess> {
+  const session = await auth();
+  const user = session?.user;
+  if (!user?.id) return { enabled: false, payModel: null, reason: "Sign in to use the time clock." };
+  try {
+    const storage = await cachedPayrollStorage();
+    const role = user.role as RoleName;
+    const config = storage.staffOverrides[user.id] || storage.roleConfigs[role] || DEFAULT_ROLE_CONFIGS[role] || null;
+    const payModel = (config?.compensationType as CompensationType | undefined) ?? null;
+    if (usesTimeClock(payModel)) return { enabled: true, payModel, reason: null };
+    return {
+      enabled: false,
+      payModel,
+      reason: payModel
+        ? `You're paid ${PAID_HOW[payModel]}, so you don't need to clock in. Hours don't change your pay.`
+        : "Your pay doesn't use the time clock, so you don't need to clock in.",
+    };
+  } catch (err) {
+    console.warn("[getTimeClockAccess] Couldn't read pay settings:", err);
+    return { enabled: false, payModel: null, reason: "The time clock isn't available right now. Try again in a moment." };
+  }
 }
 
 /** Throws if it can't be saved, so the page never says "saved" when it wasn't. */
@@ -707,8 +751,10 @@ export async function generateBatchPayslips(
     }
     const config = staff.effectiveConfig;
 
-    // 1. Hours actually worked (clock-ins in the period)
-    const staffLogs = attendanceLogs.filter((l) => l.userId === staff.id);
+    // 1. Hours actually worked (clock-ins in the period). Only people paid by the hour use the time clock;
+    // for everyone else hours never count toward pay (no hourly pay and no overtime).
+    const paysHourly = usesTimeClock(config.compensationType);
+    const staffLogs = paysHourly ? attendanceLogs.filter((l) => l.userId === staff.id) : [];
     const totalMinutes = staffLogs.reduce((sum, l) => sum + (l.totalMinutes || 0), 0);
     const verifiedDutyHours = Math.round((totalMinutes / 60) * 10) / 10;
     const overtimeHours = staffLogs.filter((l) => (l.totalMinutes || 0) > 510).length * 1.5;
@@ -758,10 +804,10 @@ export async function generateBatchPayslips(
     // 3. Salary, hourly pay, overtime, allowance (salary and allowance halved for a half-month)
     const fullMonthlyBase = config.compensationType === "FIXED_SALARY" || config.compensationType === "HYBRID" ? config.baseSalaryMonthly : 0;
     const baseSalary = Math.round(fullMonthlyBase * prorationMultiplier * 100) / 100;
-    const hourlyRate = config.hourlyDutyRate || 0;
-    const paysHourly = ["HOURLY_DUTY", "HYBRID", "PERCENTAGE_PER_STUDY", "TIER_DELIVERABLE"].includes(config.compensationType);
-    const hourlyDutyEarnings = paysHourly ? Math.round(verifiedDutyHours * hourlyRate * 100) / 100 : 0;
-    const overtimeEarnings = Math.round(overtimeHours * (hourlyRate > 0 ? hourlyRate * 1.25 : 550) * 100) / 100;
+    const hourlyRate = paysHourly ? config.hourlyDutyRate || 0 : 0;
+    const hourlyDutyEarnings = Math.round(verifiedDutyHours * hourlyRate * 100) / 100;
+    // Overtime at 1.25x their own hourly rate (it used to fall back to ₱550 an hour for anyone, salaried staff included).
+    const overtimeEarnings = Math.round(overtimeHours * hourlyRate * 1.25 * 100) / 100;
     const allowances = Math.round((config.allowancesMonthly || 0) * prorationMultiplier * 100) / 100;
 
     const grossEarnings = Math.round((baseSalary + hourlyDutyEarnings + commissionEarnings + overtimeEarnings + allowances) * 100) / 100;

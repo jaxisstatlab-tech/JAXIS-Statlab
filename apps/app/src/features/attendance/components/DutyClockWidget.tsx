@@ -166,6 +166,11 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
 
   if (!isInternal) return null;
 
+  // Only staff paid by the hour use the clock (Payroll Settings). Someone already clocked in can still clock out.
+  const clockNotUsed = shiftStatus?.timeClock?.enabled === false && !shiftStatus?.isOnDuty && !shiftStatus?.isOnLeave;
+  const notUsedReason = shiftStatus?.timeClock?.reason || "You don't need to clock in.";
+  const explainNotUsed = () => setToast({ variant: "info", message: "No clock-in needed", description: notUsedReason });
+
   // Format seconds -> HH:MM:SS
   const formatTimer = (totalSecs: number) => {
     const hrs = Math.floor(totalSecs / 3600);
@@ -191,6 +196,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
       ipAddress: null,
       notes: null,
       isOnLeave: false,
+      timeClock: shiftStatus?.timeClock,
     };
 
     updateShiftState(optimisticStatus);
@@ -251,6 +257,7 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
       notes: null,
       isOnLeave: shiftStatus?.isOnLeave || false,
       leaveReason: shiftStatus?.leaveReason,
+      timeClock: shiftStatus?.timeClock,
     };
 
     updateShiftState(optimisticStatus);
@@ -297,7 +304,26 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
     <>
       {isSidebarCollapsed !== undefined ? (
         /* Sidebar Mode (Full width with 40px icon anchor + collapsing text) */
-        shiftStatus?.isOnLeave ? (
+        clockNotUsed ? (
+          <button
+            type="button"
+            aria-disabled="true"
+            onClick={explainNotUsed}
+            title={notUsedReason}
+            className="w-full flex items-center h-9 rounded-[2px] border border-white/[0.08] bg-white/[0.02] text-white/35 overflow-hidden cursor-default transition-colors hover:text-white/50"
+          >
+            <div className="w-10 max-w-full h-full shrink-0 flex items-center justify-center">
+              <Clock size={15} weight="fill" />
+            </div>
+            <div
+              className={`flex items-center flex-1 min-w-0 whitespace-nowrap overflow-hidden transition-all duration-200 ${
+                isSidebarCollapsed ? "max-w-0 opacity-0 pointer-events-none ml-0 pr-0" : "max-w-[200px] opacity-100 ml-1.5 pr-2"
+              }`}
+            >
+              <span className="text-xs font-sans font-medium">Clock in not needed</span>
+            </div>
+          </button>
+        ) : shiftStatus?.isOnLeave ? (
           <div
             className="w-full flex items-center h-9 rounded-[2px] bg-purple-950/40 text-purple-300 border border-purple-500/30 overflow-hidden transition-all duration-200"
             title="On Approved Leave"
@@ -379,7 +405,19 @@ export const DutyClockWidget: React.FC<DutyClockWidgetProps> = ({
       ) : (
         /* Topbar Mode (horizontal inline flex) */
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {shiftStatus?.isOnLeave ? (
+          {clockNotUsed ? (
+            <button
+              type="button"
+              aria-disabled="true"
+              onClick={explainNotUsed}
+              title={notUsedReason}
+              aria-label="Clock in not needed"
+              className="flex items-center gap-1.5 min-h-[32px] px-2.5 rounded-[2px] border border-white/[0.08] bg-white/[0.02] text-white/35 text-xs font-medium cursor-default"
+            >
+              <Clock size={13} weight="fill" />
+              <span className="hidden sm:inline">Clock in not needed</span>
+            </button>
+          ) : shiftStatus?.isOnLeave ? (
             <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-semibold rounded-[2px] bg-purple-950/50 text-purple-300 border border-purple-500/30 whitespace-nowrap shrink-0">
               <CalendarX size={13} weight="fill" />
               <span>On Leave</span>

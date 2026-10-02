@@ -11,6 +11,30 @@ export const CompensationTypeEnum = z.enum([
 
 export type CompensationType = z.infer<typeof CompensationTypeEnum>;
 
+/**
+ * The time clock is only for people paid by the hour ("Hourly Duty Wage"). For every other pay model (per study,
+ * monthly salary, salary plus study pay) clock-in hours never count toward pay, so the clock is switched off for
+ * them: the Clock In button is greyed out and the server refuses clock-ins.
+ */
+export function usesTimeClock(payModel?: CompensationType | null): boolean {
+  return payModel === "HOURLY_DUTY";
+}
+
+/** The pay models the CEO picks from, in plain words, with whether each one uses the time clock. */
+export const PAY_MODEL_OPTIONS: Array<{ id: CompensationType; title: string; subtitle: string }> = [
+  { id: "TIER_DELIVERABLE", title: "Per Study", subtitle: "A share of each delivered study. No clock-in." },
+  { id: "FIXED_SALARY", title: "Monthly Salary", subtitle: "The same pay every month. No clock-in." },
+  { id: "HOURLY_DUTY", title: "Hourly Wage", subtitle: "Paid for clocked-in hours. Uses the time clock." },
+  { id: "HYBRID", title: "Salary + Per Study", subtitle: "A monthly salary plus study pay. No clock-in." },
+];
+
+/** Whether the signed-in person uses the time clock, and why not when they don't (plain words, shown to them). */
+export interface TimeClockAccess {
+  enabled: boolean;
+  payModel: CompensationType | null;
+  reason: string | null;
+}
+
 export const PayrollFrequencyEnum = z.enum([
   "SEMI_MONTHLY", // Twice Monthly / 15-Day Cut-Off
   "MONTHLY",      // Full Calendar Month

@@ -45,6 +45,7 @@ import type {
   CorporatePayrollScheduleConfigDTO,
   CutOffCycle,
 } from "@/features/payroll/schemas";
+import { PAY_MODEL_OPTIONS } from "@/features/payroll/schemas";
 import { PayslipStatementModal } from "@/features/payroll/components/PayslipStatementModal";
 import { SpecialistOverrideModal } from "@/features/payroll/components/SpecialistOverrideModal";
 
@@ -820,32 +821,9 @@ export default function CeoPayrollPolicyPage() {
                       <form onSubmit={handleSaveRole} className="flex flex-col gap-5 text-xs">
                         {/* Compensation Model Selector */}
                         <div className="flex flex-col gap-2">
-                          <label className="text-[0.688rem] uppercase font-mono text-white/60 font-semibold">
-                            Select Compensation Model
-                          </label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                            {[
-                              {
-                                id: "TIER_DELIVERABLE",
-                                title: "Tier Deliverable Fee",
-                                subtitle: "SOW split via Package Key from Treasury",
-                              },
-                              {
-                                id: "FIXED_SALARY",
-                                title: "Fixed Monthly Base",
-                                subtitle: "Guaranteed monthly or 15-day salary",
-                              },
-                              {
-                                id: "HOURLY_DUTY",
-                                title: "Hourly Duty Wage",
-                                subtitle: "Paid per verified attendance hour",
-                              },
-                              {
-                                id: "HYBRID",
-                                title: "Hybrid (Base + Tier Fee)",
-                                subtitle: "Base monthly pay + SOW tier split",
-                              },
-                            ].map((m) => {
+                          <label className="text-[13px] text-white/70">How this role is paid</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                            {PAY_MODEL_OPTIONS.map((m) => {
                               const isSelected = formConfig.compensationType === m.id;
                               return (
                                 <button
@@ -864,6 +842,10 @@ export default function CeoPayrollPolicyPage() {
                               );
                             })}
                           </div>
+                          <p className="text-[0.688rem] leading-relaxed text-white/45">
+                            Only Hourly Wage uses the time clock. For the other choices, Clock In is greyed out for this role and
+                            clocked hours never change their pay.
+                          </p>
                         </div>
 
                         {(formConfig.roleName === "ADMIN" || formConfig.roleName === "FINANCE_OFFICER") &&
