@@ -92,7 +92,7 @@ export const CORE_TEAM: TeamMember[] = [
     photo: "/team/Jerome.jpg",
   },
   {
-    name: "Barth Bryan D. Sercena",
+    name: "Barth Brayan D. Sercena",
     role: "Chief Technology Officer & Co-founder",
     bio: "BS Information Technology. Lead developer of JAXIS StatLab.",
     photo: "/team/Barth.jpg",
@@ -110,7 +110,7 @@ export const CORE_TEAM: TeamMember[] = [
     photo: "/team/Kim.jpg",
   },
   {
-    name: "Jobelle S. Sorino-Simblante",
+    name: "Jobelle Sorino-Simblante",
     role: "Executive Quality Officer",
     bio: "BS Statistics and MS Statistics graduate, currently pursuing a doctoral degree in Statistics.",
     photo: "/team/Jobelle.jpg",
