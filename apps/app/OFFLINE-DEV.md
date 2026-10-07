@@ -85,5 +85,6 @@ Every account's password is `LocalTest123!`.
 - Saving settings offline writes to the shipped sample files (`dev_data/payment_channels.json`, `dev_data/payroll_configs.json`, `dev_data/package_rates.json`, `.dev-catalog.json`), and deleting a sample account writes to `.dev-users.json`. Don't commit those changes; undo them with `git checkout -- <file>` when you're done testing.
 - A sample account deleted from the CEO pages stays deleted (sign-in no longer falls back to the built-in list). Undo it by restoring `.dev-users.json` as above.
 - Good studies to open: **Study habits, sleep, and GWA…** (in analysis: workbench, review, chat) and **Financial literacy and saving habits…** (delivered: files, change requests).
+- The analyst (stat@jaxis.dev) and reviewer (qa@jaxis.dev) also get six studies from a second sample client, Carlo Mendoza (not a login), one in each state: not started and due within a day, late with a pause asked, deadline paused, changes asked by the reviewer, waiting for the reviewer, and client asked for changes. If My Studies or the QA Review Desk looks empty, run `npm run seed:local-dev` again.
 - **"Missing script: dev:offline"**: you're in the wrong folder. Run `cd app` from `apps`, then try again.
 - **Page shows old data or a 404 after big changes**: stop the server, delete the `.next-offline` folder, and start again.

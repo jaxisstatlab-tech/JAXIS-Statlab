@@ -94,8 +94,12 @@ export interface AssignmentDetailItem {
   projectIntakeId: string;
   projectTitle: string;
   projectMethod?: string | null;
+  /** Raw package code (e.g. JX_02_START), for the client-facing package name. */
+  packageName?: string | null;
   projectField?: string | null;
   masterStatus: string;
+  /** When the study was delivered to the client (null until then). */
+  deliveredAt?: string | null;
   statistician: {
     id: string;
     fullName: string;

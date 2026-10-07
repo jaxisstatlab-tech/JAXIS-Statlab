@@ -7,6 +7,7 @@ import {
   ANALYSIS_CATEGORY_METADATA,
   assertCanUploadAnalysis,
   assertStatisticianAssigned,
+  missingForReview,
   validateAnalysisFileFormat,
 } from "@/lib/analysis-rules";
 import {
@@ -29,7 +30,18 @@ import {
   QA_DECISION_METADATA,
   ERROR_CLASSIFICATION_METADATA,
 } from "@/lib/qa-rules";
-import { devStudyDataEnabled, devWorkbench } from "@/features/projects/dev-study-store";
+import {
+  devAnalysisDownload,
+  devAnalysisHistory,
+  devFlagScopeCreep,
+  devStudyDataEnabled,
+  devSubmitForQA,
+  devUploadAnalysis,
+  devWorkbench,
+} from "@/features/projects/dev-study-store";
+
+/** Uploads for a study go to its own workbench folder (same key format as generateR2StorageKey). */
+const workbenchFolder = (projectId: string) => `studies/${projectId.replace(/[^a-zA-Z0-9_-]/g, "_")}/workbench/`;
 
 type ProjectWithWorkbench = Prisma.ProjectGetPayload<{
   include: {
@@ -385,6 +397,15 @@ export async function uploadAnalysisFile(
 
   const { projectId, fileName, filePath, fileType, fileSize, fileCategory, notes } = parsed.data;
 
+  // The record must point at a file uploaded for this study. (The workbench used to save a made-up path without
+  // uploading the file, and nothing stopped a record pointing at another study's file.)
+  if (!filePath.startsWith(workbenchFolder(projectId))) {
+    return {
+      success: false,
+      error: { code: "INVALID_FILE_PATH", message: "That file wasn't uploaded for this study. Please upload it again." },
+    };
+  }
+
   // Validate format and size with category matching
   const formatValidation = validateAnalysisFileFormat(fileName, fileType, fileSize, fileCategory);
   if (!formatValidation.valid) {
@@ -514,6 +535,7 @@ export async function uploadAnalysisFile(
       },
     };
   } catch (err) {
+    if (devStudyDataEnabled()) return devUploadAnalysis(parsed.data, session.user);
     console.error("[uploadAnalysisFile] Error:", err);
     return {
       success: false,
@@ -538,6 +560,18 @@ export async function getAnalysisFileVersionHistory(
   }
 
   try {
+    // Only the study's analyst and reviewer, admins and the CEO (this used to answer anyone signed in).
+    const role = (session.user as { role?: RoleName }).role;
+    if (role !== "ADMIN" && role !== "CEO") {
+      const assignment = await db.assignment.findFirst({
+        where: { projectId, isActive: true, OR: [{ statisticianId: session.user.id }, { qaLeadId: session.user.id }] },
+        select: { id: true },
+      });
+      if (!assignment) {
+        return { success: false, error: { code: "FORBIDDEN", message: "You can't see this study's files." } };
+      }
+    }
+
     const files = await db.analysisFile.findMany({
       where: { projectId, fileCategory },
       orderBy: { version: "desc" },
@@ -566,6 +600,7 @@ export async function getAnalysisFileVersionHistory(
       })),
     };
   } catch (err) {
+    if (devStudyDataEnabled()) return devAnalysisHistory(projectId, fileCategory, session.user);
     console.error("[getAnalysisFileVersionHistory] Error:", err);
     return {
       success: false,
@@ -682,6 +717,7 @@ export async function flagScopeCreep(
       },
     };
   } catch (err) {
+    if (devStudyDataEnabled()) return devFlagScopeCreep(projectId, session.user, flagReason);
     console.error("[flagScopeCreep] Error:", err);
     return {
       success: false,
@@ -820,13 +856,20 @@ export async function submitForQA(
       };
     }
 
-    if (project.analysisFiles.length === 0) {
+    // After the reviewer asks for changes, at least one new upload is needed (an upload moves the study to IN_PROGRESS).
+    if (project.masterStatus === "QA_REVISION") {
       return {
         success: false,
-        error: {
-          code: "NO_FILES_UPLOADED",
-          message: "Please upload at least one current analysis output file or report before submitting for QA evaluation.",
-        },
+        error: { code: "FIX_NOT_UPLOADED", message: "Upload the fixed files before sending it for review again." },
+      };
+    }
+
+    // The reviewer needs the write-up and the code or output behind it (the page said so; now the server checks too).
+    const missing = missingForReview(project.analysisFiles.map((f) => f.fileCategory));
+    if (missing.length > 0) {
+      return {
+        success: false,
+        error: { code: "FILES_MISSING", message: `Add ${missing.join(" and ")} before sending it for review.` },
       };
     }
 
@@ -857,6 +900,7 @@ export async function submitForQA(
 
     return { success: true, data: undefined };
   } catch (err) {
+    if (devStudyDataEnabled()) return devSubmitForQA(projectId, session.user);
     console.error("[submitForQA] Error:", err);
     return {
       success: false,
@@ -935,6 +979,7 @@ export async function getAnalysisFileDownloadUrl(
 
     return { success: true, data: file.filePath || "#" };
   } catch (err) {
+    if (devStudyDataEnabled()) return devAnalysisDownload(fileId, session.user);
     console.error("[getAnalysisFileDownloadUrl] Error:", err);
     return {
       success: false,

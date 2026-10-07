@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { db, withDbTimeout } from "@/lib/db";
 import { clientFilesUnlocked } from "@/lib/delivery-rules";
 import { readDevUpload } from "@/lib/dev-uploads";
+import { devCanOpenStudyFile, devStudyDataEnabled } from "@/features/projects/dev-study-store";
 
 /**
  * Resilient File Streaming & Preview Proxy
@@ -226,6 +227,11 @@ export async function GET(req: NextRequest) {
         }
       } catch (dbErr) {
         console.warn("[File Preview Proxy] Authorization lookup warning:", dbErr);
+      }
+
+      // Offline mode has no database: a study's workbench files open for its analyst, reviewer, admins and the CEO.
+      if (!isAuthorized && devStudyDataEnabled() && devCanOpenStudyFile(storageKey, session.user)) {
+        isAuthorized = true;
       }
 
       // If object could not be verified against any study the user has rights to

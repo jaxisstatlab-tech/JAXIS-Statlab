@@ -4,7 +4,7 @@ import React, { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader, FormInput, FormTextarea, Button, Toast, LoadingState, Label } from "@repo/ui";
-import { ArrowLeft, ArrowRight, Check, CloudArrowUp, Database, FileText, GraduationCap, ListChecks, Warning } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight, Check, CloudArrowUp, Code, Database, FileText, GraduationCap, ListChecks, Warning } from "@phosphor-icons/react";
 import { createProject } from "@/features/projects/actions";
 import { ANALYSIS_GOALS, analysisGoalsFor, type AnalysisGoalCode } from "@/features/projects/analysis-goals";
 import { getClientProfile } from "@/features/client-profile/actions";
@@ -12,8 +12,11 @@ import { QuickProfileModal } from "@/features/client-profile/components/QuickPro
 import { uploadFileToR2 } from "@/lib/storage-client";
 import { Panel } from "@/components/dashboard/Panel";
 import type { FileCategory } from "@prisma/client";
+import { CODE_EXTENSIONS, DATA_EXTENSIONS, REPORT_AND_FIGURE_EXTENSIONS, STUDY_FILE_EXTENSIONS, hasAllowedExtension } from "@/lib/file-types";
 
 interface UploadedFileItem {
+  /** Which slot it was added to (two slots can share a file kind). */
+  slotId: SlotId;
   name: string;
   size: number;
   type: string;
@@ -56,7 +59,10 @@ const STEPS: Array<{ n: Step; label: string }> = [
 ];
 
 // The three file slots. Chapters 1–3 and the data file are required; the questionnaire is optional.
+type SlotId = "chapters" | "data" | "questionnaire" | "earlier";
+
 const SLOTS: Array<{
+  id: SlotId;
   category: FileCategory;
   title: string;
   body: string;
@@ -66,31 +72,44 @@ const SLOTS: Array<{
   icon: React.ReactNode;
 }> = [
   {
+    id: "chapters",
     category: "RESEARCH_DOCUMENT",
     title: "Chapters 1–3",
     body: "Your proposal or draft chapters, so we know your research questions and methods.",
     required: true,
-    extensions: [".pdf", ".docx", ".doc"],
+    extensions: [".pdf", ".docx", ".doc", ".odt", ".rtf"],
     formats: "PDF or Word",
     icon: <FileText size={18} weight="fill" />,
   },
   {
+    id: "data",
     category: "DATASET",
     title: "Data file",
     body: "Your survey answers or data table. Messy data is fine; cleaning it is included.",
     required: true,
-    extensions: [".xlsx", ".xls", ".csv", ".sav", ".dta", ".tsv"],
-    formats: "Excel, CSV, SPSS or Stata",
+    extensions: DATA_EXTENSIONS,
+    formats: "Excel, Google Sheets (download as .xlsx or .csv), CSV, SPSS, Stata, SAS, R, JASP or jamovi",
     icon: <Database size={18} weight="fill" />,
   },
   {
+    id: "questionnaire",
     category: "QUESTIONNAIRE",
     title: "Questionnaire",
     body: "Your survey form, interview guide or rating scale, if you have one.",
     required: false,
-    extensions: [".pdf", ".docx", ".doc", ".xlsx", ".csv"],
+    extensions: STUDY_FILE_EXTENSIONS.QUESTIONNAIRE,
     formats: "PDF, Word, Excel or CSV",
     icon: <ListChecks size={18} weight="fill" />,
+  },
+  {
+    id: "earlier",
+    category: "RESEARCH_DOCUMENT",
+    title: "Earlier analysis or code",
+    body: "If you or your adviser already started: R or Quarto, Python, SPSS, Stata, SAS, JASP or jamovi files, or their output.",
+    required: false,
+    extensions: [...new Set([...CODE_EXTENSIONS, ".rds", ".rdata", ".rda", ".sav", ".dta", ".sas7bdat", ...REPORT_AND_FIGURE_EXTENSIONS, ".pdf", ".docx", ".zip"])],
+    formats: "R, Quarto (.qmd), R Markdown, Python, SPSS, Stata, SAS, JASP, jamovi, HTML, PDF or ZIP",
+    icon: <Code size={18} weight="fill" />,
   },
 ];
 const MAX_BYTES = 15 * 1024 * 1024;
@@ -127,8 +146,8 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
   const [deadlineRequested, setDeadlineRequested] = useState("");
 
   const [filesList, setFilesList] = useState<UploadedFileItem[]>([]);
-  const [uploadingState, setUploadingState] = useState<Partial<Record<FileCategory, UploadProgressState | null>>>({});
-  const [dragActiveCategory, setDragActiveCategory] = useState<FileCategory | null>(null);
+  const [uploadingState, setUploadingState] = useState<Partial<Record<SlotId, UploadProgressState | null>>>({});
+  const [dragActiveSlot, setDragActiveSlot] = useState<SlotId | null>(null);
 
   const [integrityAgreed, setIntegrityAgreed] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -179,13 +198,14 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
   };
 
   // ── Files ────────────────────────────────────────────────────────────────────
-  const processFile = (file: File, category: FileCategory) => {
-    const slot = SLOTS.find((s) => s.category === category);
+  const processFile = (file: File, slotId: SlotId) => {
+    const slot = SLOTS.find((s) => s.id === slotId);
     if (!slot) return;
+    const { category } = slot;
     const lower = file.name.toLowerCase();
     const dot = lower.lastIndexOf(".");
     const ext = dot !== -1 ? lower.substring(dot) : "";
-    if (!slot.extensions.some((e) => lower.endsWith(e))) {
+    if (!hasAllowedExtension(file.name, slot.extensions)) {
       setToast({
         variant: "danger",
         message: "That file type isn't accepted here",
@@ -204,14 +224,14 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
     setUploadingState((prev) => ({
       ...prev,
-      [category]: { fileName: file.name, category, progress: 30, formattedSize: formatBytes(file.size) },
+      [slotId]: { fileName: file.name, category, progress: 30, formattedSize: formatBytes(file.size) },
     }));
 
     (async () => {
       try {
         const uploadRes = await uploadFileToR2(file, category, "intake");
         if (!uploadRes.success || !uploadRes.data) {
-          setUploadingState((prev) => ({ ...prev, [category]: null }));
+          setUploadingState((prev) => ({ ...prev, [slotId]: null }));
           setToast({
             variant: "danger",
             message: "Upload didn't finish",
@@ -222,12 +242,13 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
         const storageUrl = uploadRes.data.publicUrl;
         setUploadingState((prev) => ({
           ...prev,
-          [category]: { fileName: file.name, category, progress: 100, formattedSize: formatBytes(file.size) },
+          [slotId]: { fileName: file.name, category, progress: 100, formattedSize: formatBytes(file.size) },
         }));
         setTimeout(() => {
           setFilesList((prev) => [
-            ...prev.filter((f) => f.category !== category),
+            ...prev.filter((f) => f.slotId !== slotId),
             {
+              slotId,
               name: file.name,
               size: file.size,
               type: file.type || "application/octet-stream",
@@ -236,11 +257,11 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
               storageUrl,
             },
           ]);
-          setUploadingState((prev) => ({ ...prev, [category]: null }));
+          setUploadingState((prev) => ({ ...prev, [slotId]: null }));
           setToast({ variant: "success", message: "File added", description: `"${file.name}" is attached to your study.` });
         }, 250);
       } catch (err) {
-        setUploadingState((prev) => ({ ...prev, [category]: null }));
+        setUploadingState((prev) => ({ ...prev, [slotId]: null }));
         setToast({
           variant: "danger",
           message: "Upload didn't finish",
@@ -250,9 +271,9 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
     })();
   };
 
-  const removeFile = (category: FileCategory) => {
-    const f = filesList.find((x) => x.category === category);
-    setFilesList((prev) => prev.filter((x) => x.category !== category));
+  const removeFile = (slotId: SlotId) => {
+    const f = filesList.find((x) => x.slotId === slotId);
+    setFilesList((prev) => prev.filter((x) => x.slotId !== slotId));
     if (f) setToast({ variant: "info", message: "File removed", description: `"${f.name}" was removed.` });
   };
 
@@ -291,7 +312,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
   };
 
   const handleProceedToStep3 = () => {
-    const missing = SLOTS.filter((s) => s.required && !filesList.some((f) => f.category === s.category));
+    const missing = SLOTS.filter((s) => s.required && !filesList.some((f) => f.slotId === s.id));
     if (missing.length > 0) {
       setToast({
         variant: "warning",
@@ -316,8 +337,8 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
         researchObjectives: researchObjectives.trim(),
         hypotheses: hypotheses.trim() || null,
         deadlineRequested,
-        chapters13: filesList.find((f) => f.category === "RESEARCH_DOCUMENT")?.storageUrl || null,
-        questionnaire: filesList.find((f) => f.category === "QUESTIONNAIRE")?.storageUrl || null,
+        chapters13: filesList.find((f) => f.slotId === "chapters")?.storageUrl || null,
+        questionnaire: filesList.find((f) => f.slotId === "questionnaire")?.storageUrl || null,
         analysisGoals,
         files: filesList.map((f) => ({
           fileName: f.name,
@@ -566,14 +587,14 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 </div>
                 {SLOTS.map((slot) => (
                   <FileSlot
-                    key={slot.category}
+                    key={slot.id}
                     slot={slot}
-                    file={filesList.find((f) => f.category === slot.category) ?? null}
-                    uploading={uploadingState[slot.category] ?? null}
-                    dragActive={dragActiveCategory === slot.category}
-                    onDrag={(on) => setDragActiveCategory(on ? slot.category : null)}
-                    onPick={(f) => processFile(f, slot.category)}
-                    onRemove={() => removeFile(slot.category)}
+                    file={filesList.find((f) => f.slotId === slot.id) ?? null}
+                    uploading={uploadingState[slot.id] ?? null}
+                    dragActive={dragActiveSlot === slot.id}
+                    onDrag={(on) => setDragActiveSlot(on ? slot.id : null)}
+                    onPick={(f) => processFile(f, slot.id)}
+                    onRemove={() => removeFile(slot.id)}
                   />
                 ))}
                 <div className="flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-5 sm:flex-row sm:justify-between">
@@ -621,9 +642,10 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   <Summary label="Files" onEdit={() => setCurrentStep(2)}>
                     <ul className="flex flex-col gap-1">
                       {SLOTS.map((s) => {
-                        const f = filesList.find((x) => x.category === s.category);
+                        const f = filesList.find((x) => x.slotId === s.id);
+                        if (!f && !s.required && s.id === "earlier") return null;
                         return (
-                          <li key={s.category} className="flex flex-wrap gap-x-2">
+                          <li key={s.id} className="flex flex-wrap gap-x-2">
                             <span className="text-white/50">{s.title}:</span>
                             <span className={f ? "text-white/85" : "text-white/35"}>{f ? f.name : "Not added"}</span>
                           </li>

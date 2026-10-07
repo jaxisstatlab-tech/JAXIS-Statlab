@@ -48,6 +48,11 @@ export function StaffStudyHeader({
   const [copied, setCopied] = useState<string | null>(null);
   const firstPath = useRef(pathname);
 
+  // A page refresh (router.refresh after a decision) brings new values from the layout; show them.
+  useEffect(() => {
+    setStudy((s) => (s.status === initial.status && s.title === initial.title ? s : { ...s, status: initial.status, title: initial.title }));
+  }, [initial.status, initial.title]);
+
   // Actions on one tab (submit for QA, approve, release) move the study on; refresh on tab switch.
   useEffect(() => {
     if (pathname === firstPath.current) return;

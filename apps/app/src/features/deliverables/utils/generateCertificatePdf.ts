@@ -1,3 +1,4 @@
+import { LEGACY_PICTURE, drawnSignatureSvg } from "@/lib/signature-rules";
 import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
 import type { QaCertificateDTO } from "../schemas";
 import { CERTIFICATE_TEXT, certificateRows } from "../certificate-text";
@@ -143,25 +144,23 @@ async function imageToPngBytes(urlOrDataUrl: string): Promise<Uint8Array | null>
   if (typeof window === "undefined") {
     try {
       const sharp = (await import("sharp")).default;
+      // Only a signature drawn in the profile (a checked, plain SVG), a picture saved before signatures were drawn-only
+      // (PNG/JPEG/WebP), or the built-in sample file. Web addresses and other file paths are ignored: they used to be
+      // fetched or read on the server, whatever they pointed at.
       let inputBuffer: Buffer;
-      if (urlOrDataUrl.startsWith("data:")) {
-        const commaIdx = urlOrDataUrl.indexOf(",");
-        const base64Data = urlOrDataUrl.slice(commaIdx + 1);
-        if (urlOrDataUrl.startsWith("data:image/svg+xml")) {
-          inputBuffer = Buffer.from(decodeURIComponent(base64Data), "utf-8");
-        } else {
-          inputBuffer = Buffer.from(base64Data, "base64");
-        }
-      } else if (urlOrDataUrl.startsWith("http://") || urlOrDataUrl.startsWith("https://")) {
-        const res = await fetch(urlOrDataUrl);
-        const arrayBuf = await res.arrayBuffer();
-        inputBuffer = Buffer.from(arrayBuf);
-      } else {
+      const drawn = drawnSignatureSvg(urlOrDataUrl);
+      if (drawn) {
+        // Rendered at 3x so the line stays crisp when printed.
+        const png = await sharp(Buffer.from(drawn, "utf-8"), { density: 216 }).trim({ threshold: 15 }).png().toBuffer();
+        return new Uint8Array(png);
+      } else if (LEGACY_PICTURE.test(urlOrDataUrl)) {
+        inputBuffer = Buffer.from(urlOrDataUrl.slice(urlOrDataUrl.indexOf(",") + 1), "base64");
+      } else if (urlOrDataUrl === "/signatures/qa-lead-maria.png") {
         const fs = await import("fs");
         const path = await import("path");
-        const cleanPath = urlOrDataUrl.replace(/^\/+/, "");
-        const p = path.join(process.cwd(), "public", cleanPath);
-        inputBuffer = fs.readFileSync(p);
+        inputBuffer = fs.readFileSync(path.join(process.cwd(), "public", "signatures", "qa-lead-maria.png"));
+      } else {
+        return null;
       }
 
       const pngBuffer = await sharp(inputBuffer)

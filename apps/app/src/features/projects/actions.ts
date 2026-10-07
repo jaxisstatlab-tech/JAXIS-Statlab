@@ -3,6 +3,7 @@
 import { revalidatePath, unstable_cache } from "next/cache";
 import fs from "fs";
 import path from "path";
+import { allowedForCategory, hasAllowedExtension } from "@/lib/file-types";
 import { auth } from "@/lib/auth";
 import { db, withDbTimeout } from "@/lib/db";
 import { invalidateCacheTags, CACHE_TAGS } from "@/lib/cache-tags";
@@ -1430,19 +1431,8 @@ export async function addProjectFile(
       };
     }
 
-    const ALLOWED_CATEGORY_EXTENSIONS: Partial<Record<FileCategory, string[]>> = {
-      RESEARCH_DOCUMENT: [".pdf", ".docx", ".doc", ".zip"],
-      DATASET: [".xlsx", ".xls", ".csv", ".sav", ".dta", ".tsv"],
-      QUESTIONNAIRE: [".pdf", ".docx", ".doc", ".xlsx", ".csv"],
-      PAYMENT_PROOF: [".pdf", ".png", ".jpg", ".jpeg"],
-      ANALYSIS_OUTPUT: [".pdf", ".docx", ".xlsx", ".csv", ".zip", ".sav"],
-      DELIVERABLE: [".pdf", ".docx", ".xlsx", ".csv", ".zip"],
-      DISPUTE_EVIDENCE: [".pdf", ".docx", ".png", ".jpg", ".jpeg", ".zip"],
-    };
-
-    const fileNameLower = fileData.fileName.toLowerCase();
-    const allowed = ALLOWED_CATEGORY_EXTENSIONS[fileData.fileCategory] || [".pdf", ".docx", ".xlsx", ".csv", ".sav"];
-    const hasValidExtension = allowed.some((ext) => fileNameLower.endsWith(ext));
+    const allowed = allowedForCategory(fileData.fileCategory);
+    const hasValidExtension = hasAllowedExtension(fileData.fileName, allowed);
 
     if (!hasValidExtension) {
       return {

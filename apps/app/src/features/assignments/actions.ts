@@ -28,6 +28,7 @@ import {
   type AssignedStudySummary,
 } from "./schemas";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
+import { devRequestPause, devStudyDataEnabled, devWorkload } from "@/features/projects/dev-study-store";
 import type { ActionResponse } from "@/features/projects/schemas";
 
 /**
@@ -380,8 +381,10 @@ export async function requestSlaPause(
   try {
     const assignment = await db.assignment.findFirst({
       where: {
+        isActive: true,
         OR: [{ projectId }, { project: { intakeId: projectId } }],
       },
+      include: { project: { select: { masterStatus: true } } },
     });
 
     if (!assignment) {
@@ -398,6 +401,17 @@ export async function requestSlaPause(
         success: false,
         error: { code: "FORBIDDEN", message: "You can only request deadline pauses for your assigned studies." },
       };
+    }
+
+    // Only while the deadline is running, and only once: a second request used to overwrite the first and alert admins again.
+    if (WORK_DONE_STATUSES.has(assignment.project.masterStatus) || STOPPED_STATUSES.has(assignment.project.masterStatus)) {
+      return { success: false, error: { code: "INVALID_STATE", message: "This study is finished, so its deadline can't be paused." } };
+    }
+    if (assignment.slaPausedAt) {
+      return { success: false, error: { code: "ALREADY_PAUSED", message: "The deadline is already paused." } };
+    }
+    if (assignment.slaPauseReason) {
+      return { success: false, error: { code: "ALREADY_REQUESTED", message: "You already asked to pause this deadline. An admin will answer it." } };
     }
 
     await db.assignment.update({
@@ -436,6 +450,7 @@ export async function requestSlaPause(
       data: { message: "Pause request submitted for admin review." },
     };
   } catch (err: unknown) {
+    if (devStudyDataEnabled()) return devRequestPause(projectId, session.user, reason);
     return { success: false, error: { code: "SERVER_ERROR", message: (err as Error).message } };
   }
 }
@@ -467,6 +482,7 @@ export async function approveSlaPause(
   try {
     const assignment = await db.assignment.findFirst({
       where: {
+        isActive: true,
         OR: [{ projectId }, { project: { intakeId: projectId } }],
       },
     });
@@ -900,6 +916,7 @@ const WORKLOAD_SELECT = {
       researchTitle: true,
       packageName: true,
       masterStatus: true,
+      deliveredAt: true,
       researchObjectives: true,
       researchQuestions: true,
       hypotheses: true,
@@ -910,6 +927,64 @@ const WORKLOAD_SELECT = {
   statistician: { select: { id: true, fullName: true, email: true } },
   qaLead: { select: { id: true, fullName: true, email: true } },
 } satisfies Prisma.AssignmentSelect;
+
+/** Delivered (or disputed after delivery) and stopped studies: the deadline no longer runs, so they are never "late". */
+const WORK_DONE_STATUSES = new Set(["DELIVERED", "CLOSED", "DISPUTED"]);
+const STOPPED_STATUSES = new Set(["CANCELLED", "EXPIRED", "HALTED", "ETHICAL_BREACH"]);
+
+type WorkloadRow = Prisma.AssignmentGetPayload<{ select: typeof WORKLOAD_SELECT }>;
+
+function toWorkloadItem(a: WorkloadRow): AssignmentDetailItem {
+  const status = a.project.masterStatus;
+  const done = WORK_DONE_STATUSES.has(status);
+  const stopped = STOPPED_STATUSES.has(status);
+  // A change request after delivery has no new deadline; the original one was already met.
+  const afterDelivery = status === "REVISION_REQUESTED";
+  const timerRuns = !done && !stopped && !afterDelivery;
+  const remaining = calculateSlaRemaining(a.slaDueAt, timerRuns ? a.slaPausedAt : null);
+  return {
+    id: a.id,
+    projectId: a.projectId,
+    projectIntakeId: a.project.intakeId,
+    projectTitle: a.project.researchTitle,
+    projectMethod: a.project.packageName?.replace(/_/g, " "),
+    packageName: a.project.packageName,
+    projectField: a.project.client?.clientProfile?.academicProgram,
+    masterStatus: status,
+    deliveredAt: a.project.deliveredAt?.toISOString() ?? null,
+    researchObjectives: a.project.researchObjectives,
+    researchQuestions: a.project.researchQuestions,
+    hypotheses: a.project.hypotheses,
+    files: a.project.files.map((f) => ({
+      id: f.id,
+      fileName: f.fileName,
+      fileType: f.fileType,
+      fileCategory: f.fileCategory,
+    })),
+    statistician: {
+      id: a.statistician.id,
+      fullName: a.statistician.fullName,
+      email: a.statistician.email,
+    },
+    qaLead: {
+      id: a.qaLead.id,
+      fullName: a.qaLead.fullName,
+      email: a.qaLead.email,
+    },
+    assignedAt: a.assignedAt.toISOString(),
+    slaStartAt: a.slaStartAt.toISOString(),
+    slaDueAt: a.slaDueAt.toISOString(),
+    slaPausedAt: a.slaPausedAt?.toISOString() || null,
+    slaPauseReason: a.slaPauseReason,
+    slaPausedBy: a.slaPausedBy,
+    remainingHours: timerRuns ? remaining.remainingHours : 0,
+    remainingDays: timerRuns ? remaining.remainingDays : 0,
+    isUrgent: timerRuns && remaining.isUrgent,
+    isOverdue: timerRuns && remaining.isOverdue,
+    isPaused: timerRuns && remaining.isPaused,
+    slaLabel: done ? "Delivered" : stopped ? "Stopped" : afterDelivery ? "Client asked for changes" : remaining.label,
+  };
+}
 
 /**
  * 7. Retrieves assigned studies for the currently logged-in Statistician.
@@ -934,52 +1009,12 @@ export async function getStatisticianWorkload(): Promise<ActionResponse<Assignme
       orderBy: { slaDueAt: "asc" },
     });
 
-    const items: AssignmentDetailItem[] = assignments.map((a) => {
-      const remaining = calculateSlaRemaining(a.slaDueAt, a.slaPausedAt);
-      return {
-        id: a.id,
-        projectId: a.projectId,
-        projectIntakeId: a.project.intakeId,
-        projectTitle: a.project.researchTitle,
-        projectMethod: a.project.packageName?.replace(/_/g, " "),
-        projectField: a.project.client?.clientProfile?.academicProgram,
-        masterStatus: a.project.masterStatus,
-        researchObjectives: a.project.researchObjectives,
-        researchQuestions: a.project.researchQuestions,
-        hypotheses: a.project.hypotheses,
-        files: a.project.files.map((f) => ({
-          id: f.id,
-          fileName: f.fileName,
-          fileType: f.fileType,
-          fileCategory: f.fileCategory,
-        })),
-        statistician: {
-          id: a.statistician.id,
-          fullName: a.statistician.fullName,
-          email: a.statistician.email,
-        },
-        qaLead: {
-          id: a.qaLead.id,
-          fullName: a.qaLead.fullName,
-          email: a.qaLead.email,
-        },
-        assignedAt: a.assignedAt.toISOString(),
-        slaStartAt: a.slaStartAt.toISOString(),
-        slaDueAt: a.slaDueAt.toISOString(),
-        slaPausedAt: a.slaPausedAt?.toISOString() || null,
-        slaPauseReason: a.slaPauseReason,
-        slaPausedBy: a.slaPausedBy,
-        remainingHours: remaining.remainingHours,
-        remainingDays: remaining.remainingDays,
-        isUrgent: remaining.isUrgent,
-        isOverdue: remaining.isOverdue,
-        isPaused: remaining.isPaused,
-        slaLabel: remaining.label,
-      };
-    });
+    const items: AssignmentDetailItem[] = assignments.map(toWorkloadItem);
 
     return { success: true, data: items };
   } catch (err: unknown) {
+    // Offline mode (no database): the sample studies assigned to the dev analyst.
+    if (devStudyDataEnabled()) return { success: true, data: devWorkload(session.user, "STATISTICIAN").map((r) => toWorkloadItem(r as unknown as WorkloadRow)) };
     console.error("[getStatisticianWorkload] Error:", err);
     return { success: false, error: { code: "SERVER_ERROR", message: (err as Error).message } };
   }
@@ -1008,52 +1043,11 @@ export async function getQaWorkload(): Promise<ActionResponse<AssignmentDetailIt
       orderBy: { slaDueAt: "asc" },
     });
 
-    const items: AssignmentDetailItem[] = assignments.map((a) => {
-      const remaining = calculateSlaRemaining(a.slaDueAt, a.slaPausedAt);
-      return {
-        id: a.id,
-        projectId: a.projectId,
-        projectIntakeId: a.project.intakeId,
-        projectTitle: a.project.researchTitle,
-        projectMethod: a.project.packageName?.replace(/_/g, " "),
-        projectField: a.project.client?.clientProfile?.academicProgram,
-        masterStatus: a.project.masterStatus,
-        researchObjectives: a.project.researchObjectives,
-        researchQuestions: a.project.researchQuestions,
-        hypotheses: a.project.hypotheses,
-        files: a.project.files.map((f) => ({
-          id: f.id,
-          fileName: f.fileName,
-          fileType: f.fileType,
-          fileCategory: f.fileCategory,
-        })),
-        statistician: {
-          id: a.statistician.id,
-          fullName: a.statistician.fullName,
-          email: a.statistician.email,
-        },
-        qaLead: {
-          id: a.qaLead.id,
-          fullName: a.qaLead.fullName,
-          email: a.qaLead.email,
-        },
-        assignedAt: a.assignedAt.toISOString(),
-        slaStartAt: a.slaStartAt.toISOString(),
-        slaDueAt: a.slaDueAt.toISOString(),
-        slaPausedAt: a.slaPausedAt?.toISOString() || null,
-        slaPauseReason: a.slaPauseReason,
-        slaPausedBy: a.slaPausedBy,
-        remainingHours: remaining.remainingHours,
-        remainingDays: remaining.remainingDays,
-        isUrgent: remaining.isUrgent,
-        isOverdue: remaining.isOverdue,
-        isPaused: remaining.isPaused,
-        slaLabel: remaining.label,
-      };
-    });
+    const items: AssignmentDetailItem[] = assignments.map(toWorkloadItem);
 
     return { success: true, data: items };
   } catch (err: unknown) {
+    if (devStudyDataEnabled()) return { success: true, data: devWorkload(session.user, "SENIOR_QA_LEAD").map((r) => toWorkloadItem(r as unknown as WorkloadRow)) };
     console.error("[getQaWorkload] Error:", err);
     return { success: false, error: { code: "SERVER_ERROR", message: (err as Error).message } };
   }

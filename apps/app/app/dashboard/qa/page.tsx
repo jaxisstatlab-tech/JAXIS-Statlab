@@ -1,47 +1,29 @@
-import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { getQaWorkload } from "@/features/assignments/actions";
-import { getStaffSelfProfile } from "@/features/staff/actions";
+import { getOwnProfile } from "@/features/staff/actions";
 import { QADashboardClient } from "./QADashboardClient";
-import { LoadingState } from "@repo/ui";
 
 export const metadata: Metadata = {
-  title: "QA Review Desk | JAXIS StatLab",
-  description:
-    "Review study calculations, check formatting, and approve defense-ready packages for release.",
+  title: "Review Desk | JAXIS StatLab",
+  description: "Studies ready for you to check, the ones sent back to the analyst, and your deadlines.",
 };
 
 export const dynamic = "force-dynamic";
 
 export default async function QALeadDashboardPage() {
-  const [res, profileRes] = await Promise.all([
-    getQaWorkload(),
-    getStaffSelfProfile(),
-  ]);
+  const [res, profileRes] = await Promise.all([getQaWorkload(), getOwnProfile()]);
 
-  const initialAssignments = res.success && res.data ? res.data : [];
-  const initialProfileStatus = (profileRes.success && profileRes.data?.status) || "ACTIVE";
-  const initialLeaveData =
-    profileRes.success && profileRes.data
-      ? {
-          reason: (profileRes.data as { leaveReason?: string | null }).leaveReason,
-          until: (profileRes.data as { leaveUntil?: string | null }).leaveUntil,
-        }
-      : null;
+  const profile = profileRes.success ? profileRes.data : undefined;
 
   return (
-    <Suspense
-      fallback={
-        <div className="flex-1 w-full min-h-full flex items-center justify-center animate-content-fade my-auto">
-          <LoadingState variant="page" label="Loading QA review desk..." />
-        </div>
-      }
-    >
-      <QADashboardClient
-        initialAssignments={initialAssignments}
-        initialProfileStatus={initialProfileStatus}
-        initialLeaveData={initialLeaveData}
-      />
-    </Suspense>
+    <QADashboardClient
+      initialAssignments={res.success && res.data ? res.data : []}
+      // An empty list after a failed load would read as "nothing assigned"; say it didn't load instead.
+      initialLoadFailed={!res.success}
+      initialProfileStatus={profile?.status || "ACTIVE"}
+      initialLeaveData={profile ? { reason: profile.leaveReason, until: profile.leaveUntil } : null}
+      // Approving needs a signature (it goes on the client's certificate); remind fresh accounts.
+      hasSignature={profile ? Boolean(profile.signatureUrl) : true}
+    />
   );
 }

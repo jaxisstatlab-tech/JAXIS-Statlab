@@ -195,13 +195,13 @@ studies/{studyId}/{timestamp}-{cleanFileName}
 
 | File Category | Allowed Extensions | Max Size | Primary Content Stored |
 |---|---|---|---|
-| **`RESEARCH_DOCUMENT`** | `.pdf`, `.docx`, `.doc`, `.zip` | 15MB | Thesis proposals, Chapter 1–3 drafts, university guidelines, institutional review board (IRB) ethics approvals. |
-| **`DATASET`** | `.xlsx`, `.xls`, `.csv`, `.sav`, `.dta`, `.tsv` | 15MB | Raw research datasets, survey exports (Google Forms/Qualtrics), laboratory observations, experimental measurements, tabular research data. |
-| **`QUESTIONNAIRE`** | `.pdf`, `.docx`, `.doc`, `.xlsx`, `.csv` | 15MB | Survey instruments, measurement scales, interview question guides, Likert scale templates. |
+| **`RESEARCH_DOCUMENT`** | Documents (`.pdf`, `.docx`, `.doc`, `.odt`, `.rtf`, `.txt`, `.zip`), plus earlier analysis or code in the formats below | 15MB | Thesis proposals, Chapter 1–3 drafts, university guidelines, institutional review board (IRB) ethics approvals. |
+| **`DATASET`** | `.xlsx`, `.xls`, `.xlsm`, `.ods`, `.csv`, `.tsv`, `.txt`, `.dat`, `.json`, `.sav`, `.zsav`, `.por`, `.dta`, `.sas7bdat`, `.xpt`, `.rds`, `.rdata`, `.rda`, `.jasp`, `.omv`, `.mtw`, `.mpx` | 15MB | Raw research datasets, survey exports (Google Forms/Qualtrics), laboratory observations, experimental measurements, tabular research data. |
+| **`QUESTIONNAIRE`** | `.pdf`, `.docx`, `.doc`, `.odt`, `.rtf`, `.txt`, `.xlsx`, `.xls`, `.csv` | 15MB | Survey instruments, measurement scales, interview question guides, Likert scale templates. |
 | **`PAYMENT_PROOF`** | `.pdf`, `.png`, `.jpg`, `.jpeg` | 15MB | Optional payment screenshots (GCash, bank). |
 | **Payment QR codes** | `.png`, `.jpg`, `.jpeg` | 15MB | Our GCash or bank QR codes shown to clients, under `treasury/payments/SYSTEM_CONFIG/`. Only finance, admin and CEO can upload there; any signed-in user can view them. |
-| **`ANALYSIS_OUTPUT`** | `.pdf`, `.docx`, `.xlsx`, `.csv`, `.zip`, `.sav` | 15MB | Statistician working files: SPSS `.spv` output logs, R scripts (`.R`), Python notebooks, Stata `.log` files, preliminary statistical tables. |
-| **`DELIVERABLE`** | `.pdf`, `.docx`, `.xlsx`, `.csv`, `.zip` | 15MB | Final client-facing files: Verified and labeled datasets, APA-7th formatted Statistical Summary Reports, Certificates of Statistical Verification, defense slide decks. |
+| **`ANALYSIS_OUTPUT`** | Documents, data files, code and output (`.r`, `.rmd`, `.qmd`, `.py`, `.ipynb`, `.sps`, `.spv`, `.do`, `.log`, `.smcl`, `.sas`, `.jasp`, `.omv`, `.mtw`, `.mpx`), `.html`, figures, `.zip`. Stored under `studies/{study}/workbench/` | 15MB | Statistician working files: SPSS `.spv` output logs, R scripts (`.R`), Python notebooks, Stata `.log` files, preliminary statistical tables. |
+| **`DELIVERABLE`** | Same formats as `ANALYSIS_OUTPUT` | 15MB | Final client-facing files: Verified and labeled datasets, APA-7th formatted Statistical Summary Reports, Certificates of Statistical Verification, defense slide decks. |
 | **`DISPUTE_EVIDENCE`** | `.pdf`, `.docx`, `.png`, `.jpg`, `.jpeg`, `.zip` | 15MB | Client arbitration evidence: thesis committee comment sheets, panel rejection notes, screenshot logs. |
 | **Contract PDFs** | `.pdf` | 15MB | System-generated, digitally signed Scope of Work (SOW) legal agreements (`pdfPath` in `sows`). |
 | **DefenseLab Media** | `.mp4`, `.webm`, `.zip` | Presigned URL | Oral defense rehearsal recordings, mock defense video streams (`recordingUrl` in `defense_lab_sessions`). |

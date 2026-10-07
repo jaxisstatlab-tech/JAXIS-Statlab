@@ -170,7 +170,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
       groupTitle: "STUDIES & DATA",
       items: [
         {
-          label: "Statistical Analyst Workbench",
+          label: "My Studies",
           href: "/dashboard/statistician",
           icon: Icons.Terminal,
         },
@@ -198,7 +198,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
       groupTitle: "QUALITY CHECKS",
       items: [
         {
-          label: "QA Review Desk",
+          label: "Review Desk",
           href: "/dashboard/qa",
           icon: Icons.ShieldCheck,
         },
@@ -315,7 +315,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.FinanceVault,
         },
         {
-          label: "QA Review Desk",
+          label: "Review Desk",
           href: "/dashboard/qa",
           icon: Icons.ShieldCheck,
         },

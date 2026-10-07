@@ -5,18 +5,10 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { env } from "@/lib/env";
 import type { FileCategory } from "@prisma/client";
 import { canVerifyPayment } from "@/lib/payment-rules";
+import { allowedForCategory, hasAllowedExtension } from "@/lib/file-types";
 
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
 
-const ALLOWED_CATEGORY_EXTENSIONS: Partial<Record<FileCategory, string[]>> = {
-  RESEARCH_DOCUMENT: [".pdf", ".docx", ".doc", ".zip"],
-  DATASET: [".xlsx", ".xls", ".csv", ".sav", ".dta", ".tsv"],
-  QUESTIONNAIRE: [".pdf", ".docx", ".doc", ".xlsx", ".csv"],
-  PAYMENT_PROOF: [".pdf", ".png", ".jpg", ".jpeg"],
-  ANALYSIS_OUTPUT: [".pdf", ".docx", ".doc", ".xlsx", ".xls", ".csv", ".zip", ".sav", ".spv", ".sps", ".r", ".rmd", ".py", ".ipynb", ".dta", ".do", ".txt"],
-  DELIVERABLE: [".pdf", ".docx", ".xlsx", ".csv", ".zip"],
-  DISPUTE_EVIDENCE: [".pdf", ".docx", ".png", ".jpg", ".jpeg", ".zip"],
-};
 
 export async function POST(req: NextRequest) {
   try {
@@ -62,9 +54,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate extension
-    const fileNameLower = file.name.toLowerCase();
-    const allowed = ALLOWED_CATEGORY_EXTENSIONS[category] || [".pdf", ".docx", ".xlsx", ".csv", ".sav"];
-    const hasValidExtension = allowed.some((ext) => fileNameLower.endsWith(ext));
+    const allowed = allowedForCategory(String(category));
+    const hasValidExtension = hasAllowedExtension(file.name, allowed);
 
     if (!hasValidExtension) {
       return NextResponse.json(

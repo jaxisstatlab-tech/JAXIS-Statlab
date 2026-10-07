@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { signatureProblem } from "@/lib/signature-rules";
 import { RoleName, UserStatus, ViolationType, SuspensionAction } from "@prisma/client";
 
 export const STAFF_ROLES = [
@@ -100,7 +101,19 @@ export const UpdateStaffProfileSchema = z.object({
   specializations: z
     .array(z.string())
     .min(1, "Select at least one specialization area"),
-  signatureUrl: z.string().optional().nullable(),
+  signatureUrl: z
+    .string()
+    .optional()
+    .nullable()
+    .refine((v) => !signatureProblem(v), (v) => ({ message: signatureProblem(v) || "Invalid signature." })),
+});
+
+/** Saving only the signature (a fresh account has no skills picked yet, which the full profile form requires). */
+export const UpdateOwnSignatureSchema = z.object({
+  signatureUrl: z
+    .string()
+    .nullable()
+    .refine((v) => !signatureProblem(v), (v) => ({ message: signatureProblem(v) || "Invalid signature." })),
 });
 
 export type UpdateStaffProfileInput = z.infer<typeof UpdateStaffProfileSchema>;

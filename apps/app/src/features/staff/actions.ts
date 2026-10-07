@@ -1,5 +1,7 @@
 "use server";
 
+import { SIGNATURE_REQUIRED_ROLES } from "@/lib/signature-rules";
+
 import { revalidatePath, unstable_cache } from "next/cache";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
@@ -19,6 +21,7 @@ import {
   type PendingLeaveItem,
   type SpecialistLeaveOverviewData,
   type StaffActionResult,
+  UpdateOwnSignatureSchema,
 } from "./schemas";
 import {
   getDevUsers,
@@ -737,6 +740,49 @@ export async function terminateStaff(
 }
 
 /**
+ * Save only the signer's own signature picture (drawn or uploaded in the profile). Reviewers can replace it but not
+ * remove it: it is printed on every certificate they approve.
+ */
+export async function updateOwnSignature(input: unknown): Promise<StaffActionResult<{ signatureUrl: string | null }>> {
+  const session = await requireRole("STATISTICIAN", "SENIOR_QA_LEAD", "FINANCE_OFFICER", "ADMIN", "CEO");
+  const parsed = UpdateOwnSignatureSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message || "Invalid signature." } };
+  }
+  const { signatureUrl } = parsed.data;
+  if (signatureUrl === null && SIGNATURE_REQUIRED_ROLES.includes(session.user.role)) {
+    return {
+      success: false,
+      error: { code: "SIGNATURE_REQUIRED", message: "Reviewers need a signature for client certificates. Replace it instead of removing it." },
+    };
+  }
+  try {
+    const profile = await db.staffProfile.upsert({
+      where: { userId: session.user.id },
+      update: { signatureUrl },
+      create: { userId: session.user.id, specializations: [], signatureUrl },
+      select: { signatureUrl: true },
+    });
+    return { success: true, data: { signatureUrl: profile.signatureUrl } };
+  } catch (dbError) {
+    // Offline mode: the sample accounts keep their profile in the local dev-users file.
+    const devUser = getDevUserByEmail(session.user.email || "");
+    if (devUser) {
+      devUser.staffProfile = {
+        ...(devUser.staffProfile ?? { specializations: [] }),
+        specializations: devUser.staffProfile?.specializations ?? [],
+        signatureUrl,
+        updatedAt: new Date().toISOString(),
+      };
+      registerDevUser(devUser);
+      return { success: true, data: { signatureUrl } };
+    }
+    console.error("[updateOwnSignature] Error:", dbError);
+    return { success: false, error: { code: "SERVER_ERROR", message: "Couldn't save your signature. Please try again." } };
+  }
+}
+
+/**
  * 7. Self-edit own professional profile bio and specialization tags.
  * Accessible to any authenticated staff role.
  */
@@ -759,6 +805,12 @@ export async function updateOwnProfile(
 
   const { bio, specializations, signatureUrl } = parsed.data;
   const userId = session.user.id;
+  if (signatureUrl === null && SIGNATURE_REQUIRED_ROLES.includes(session.user.role)) {
+    return {
+      success: false,
+      error: { code: "SIGNATURE_REQUIRED", message: "Reviewers need a signature for client certificates. Replace it instead of removing it." },
+    };
+  }
 
   try {
     const updateData: { bio: string | null; specializations: string[]; signatureUrl?: string | null } = {

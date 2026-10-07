@@ -45,6 +45,22 @@ export function ProjectAssignmentCard({
     });
   };
 
+  // The analyst or reviewer asked to pause; the admin can pause (above) or say no, which lets them ask again later.
+  const handleDecline = () => {
+    setActionError(null);
+    startTransition(async () => {
+      const res = await approveSlaPause({
+        projectId: assignment.projectId,
+        approved: false,
+      });
+      if (res.success) {
+        onRefresh();
+      } else {
+        setActionError(res.error?.message || "Couldn't decline the request.");
+      }
+    });
+  };
+
   const handleResume = () => {
     setActionError(null);
     startTransition(async () => {
@@ -138,6 +154,23 @@ export function ProjectAssignmentCard({
           </div>
         )}
       </div>
+
+      {canManage && !assignment.isPaused && assignment.slaPauseReason ? (
+        <div className="flex flex-col gap-3 rounded-[2px] border border-white/10 bg-white/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 font-sans">
+            <p className="text-sm font-medium text-white">Asked to pause the deadline</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-white/60">&ldquo;{assignment.slaPauseReason}&rdquo;</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={handleDecline} disabled={isPending} className="font-sans text-xs">
+              Decline
+            </Button>
+            <Button variant="outline" size="sm" onClick={handlePause} disabled={isPending} className="font-sans text-xs">
+              Pause Timer
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {actionError && (
         <div className="p-3 bg-red-950/40 border border-red-500/30 rounded-[2px] text-xs text-red-200">

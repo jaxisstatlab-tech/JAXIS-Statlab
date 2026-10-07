@@ -25,6 +25,7 @@ import { getClientStage, type ClientStage } from "@/features/projects/client-sta
 import { clientPackageName } from "@/features/projects/client-packages";
 import { useDueText } from "@/features/projects/due-text";
 import type { ProjectDetailItem, ProjectFileItem } from "@/features/projects/schemas";
+import { CODE_EXTENSIONS, DATA_EXTENSIONS, REPORT_AND_FIGURE_EXTENSIONS, STUDY_FILE_EXTENSIONS } from "@/lib/file-types";
 import type { FileCategory } from "@prisma/client";
 import { Meter, Panel, PanelHeader } from "@/components/dashboard/Panel";
 
@@ -46,7 +47,7 @@ const FILE_TYPES: Array<{ id: string; category: FileCategory; label: string; hin
     category: "RESEARCH_DOCUMENT",
     label: "Chapters 1–3",
     hint: "Your proposal or draft chapters",
-    extensions: [".pdf", ".docx", ".doc"],
+    extensions: [".pdf", ".docx", ".doc", ".odt", ".rtf"],
     formats: "PDF or Word",
   },
   {
@@ -54,24 +55,32 @@ const FILE_TYPES: Array<{ id: string; category: FileCategory; label: string; hin
     category: "DATASET",
     label: "Data file",
     hint: "Your survey answers or data table",
-    extensions: [".xlsx", ".xls", ".csv", ".sav", ".dta", ".tsv"],
-    formats: "Excel, CSV, SPSS or Stata",
+    extensions: DATA_EXTENSIONS,
+    formats: "Excel, CSV, SPSS, Stata, SAS, R, JASP or jamovi",
   },
   {
     id: "questionnaire",
     category: "QUESTIONNAIRE",
     label: "Questionnaire",
     hint: "Survey form, interview guide or rating scale",
-    extensions: [".pdf", ".docx", ".doc", ".xlsx", ".csv"],
+    extensions: STUDY_FILE_EXTENSIONS.QUESTIONNAIRE,
     formats: "PDF, Word, Excel or CSV",
+  },
+  {
+    id: "earlier",
+    category: "RESEARCH_DOCUMENT",
+    label: "Earlier analysis or code",
+    hint: "R, Quarto, Python, SPSS, Stata, SAS, JASP or jamovi files, or their output",
+    extensions: [...new Set([...CODE_EXTENSIONS, ".rds", ".rdata", ".rda", ".sav", ".dta", ".sas7bdat", ...REPORT_AND_FIGURE_EXTENSIONS, ".pdf", ".docx", ".zip"])],
+    formats: "R, Quarto (.qmd), R Markdown, Python, SPSS, Stata, SAS, JASP, jamovi, HTML, PDF or ZIP",
   },
   {
     id: "other",
     category: "RESEARCH_DOCUMENT",
     label: "Something else",
     hint: "Adviser notes, ethics approval or a reference paper",
-    extensions: [".pdf", ".docx", ".doc", ".zip"],
-    formats: "PDF, Word or ZIP",
+    extensions: [".pdf", ".docx", ".doc", ".odt", ".rtf", ".txt", ".png", ".jpg", ".jpeg", ".zip"],
+    formats: "PDF, Word, picture or ZIP",
   },
 ];
 

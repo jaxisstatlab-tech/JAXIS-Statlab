@@ -1,1388 +1,878 @@
 "use client";
 
-import React, { useState, useCallback, useTransition, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PageHeader, KpiCard, Button, Modal, Toast, CopyButton, Pagination, DropdownMenu } from "@repo/ui";
 import {
-  PageHeader,
-  Card,
-  Button,
-  Modal,
-  KpiCard,
-  Badge,
-  StatusBadge,
-  LoadingState,
-  Toast,
-  Pagination,
-  AreaChart,
-  BarList,
-  CategoryBar,
-} from "@repo/ui";
-import {
-  Pause,
-  ArrowRight,
-  CircleNotch,
   ArrowClockwise,
-  CheckCircle,
-  Warning,
-  FileText,
-  Database,
-  Calendar,
-  UserCheck,
-  Clock,
-  CaretDown,
-  CaretUp,
-  ArrowsDownUp,
+  ArrowRight,
+  ArrowUUpLeft,
+  Briefcase,
   ChatCircleDots,
-  ChartLineUp,
-  Cpu,
-  Funnel,
+  CheckCircle,
+  ClockCountdown,
+  Copy,
+  Eye,
+  MagnifyingGlass,
+  Pause,
+  SealCheck,
+  Warning,
 } from "@phosphor-icons/react";
+import { Meter, Panel, PanelBody, PanelFooterButton, PanelHeader } from "@/components/dashboard/Panel";
 import { getStatisticianWorkload, requestSlaPause } from "@/features/assignments/actions";
-import { getStaffSelfProfile, requestLeave, returnFromLeave } from "@/features/staff/actions";
+import { getStaffSelfProfile, returnFromLeave } from "@/features/staff/actions";
+import {
+  DueText,
+  FIELD,
+  LeaveDialog,
+  LeaveNotice,
+  StudyDetailsModal,
+  pauseRequested,
+  type LeaveData,
+} from "@/features/assignments/components/WorkloadParts";
+import { clientPackageName } from "@/features/projects/client-packages";
 import { assessBurnoutRisk } from "@/lib/assignment-rules";
+import { monthKey, monthWindow } from "@/lib/month-buckets";
 import type { AssignmentDetailItem } from "@/features/assignments/schemas";
 
-export type StatisticianSortField =
-  | "priority"
-  | "deadline-asc"
-  | "deadline-desc"
-  | "newest"
-  | "oldest"
-  | "id-asc"
-  | "id-desc"
-  | "title-asc"
-  | "title-desc"
-  | "status";
+// "My Studies": the analyst's home. What to do first, deadlines, and every study assigned to them.
 
-const LEAVE_REASON_TEMPLATES = [
-  {
-    label: "Annual Vacation / Personal Rest",
-    text: "Taking scheduled annual vacation leave for personal rest and recuperation. Active projects can be monitored or escalated to the QA lead.",
-  },
-  {
-    label: "Sick / Medical Recovery",
-    text: "Medical leave for illness recovery. Workload will resume following health clearance.",
-  },
-  {
-    label: "Family Emergency / Compassionate Leave",
-    text: "Urgent family matter requiring immediate attention. Expected return date indicated below.",
-  },
-  {
-    label: "Academic Defense / Institutional Duty",
-    text: "Serving as external statistical analyst or defending dissertation panel. Unavailable for new assignment intake during this period.",
-  },
-  {
-    label: "Research Fieldwork / Data Collection",
-    text: "Conducting off-site scientific research fieldwork and data gathering. Analysis will resume upon field mission completion.",
-  },
+type Study = AssignmentDetailItem;
+type ToastState = { message: string; description?: string; variant: "info" | "success" | "warning" | "danger" } | null;
+
+type Group = "todo" | "changes" | "review" | "delivered" | "stopped";
+
+const GROUP_OF: Record<string, Group> = {
+  QA_REVISION: "changes",
+  REVISION_REQUESTED: "changes",
+  FOR_QA: "review",
+  DELIVERED: "delivered",
+  CLOSED: "delivered",
+  DISPUTED: "delivered",
+  CANCELLED: "stopped",
+  EXPIRED: "stopped",
+  HALTED: "stopped",
+  ETHICAL_BREACH: "stopped",
+};
+const groupOf = (s: Study): Group => GROUP_OF[s.masterStatus] ?? "todo";
+const isOpen = (s: Study) => ["todo", "changes", "review"].includes(groupOf(s));
+
+const GROUPS: Array<{ key: Group; label: string }> = [
+  { key: "todo", label: "Working on" },
+  { key: "changes", label: "Changes asked" },
+  { key: "review", label: "With your reviewer" },
+  { key: "delivered", label: "Delivered" },
+  { key: "stopped", label: "Stopped" },
 ];
 
+const STAGE_TEXT: Record<string, string> = {
+  EXPERT_ASSIGNED: "Not started",
+  ACTIVE: "Not started",
+  IN_PROGRESS: "In progress",
+  SLA_PAUSED: "Deadline paused",
+  SCOPE_CREEP_HALTED: "On hold",
+  REASSIGNMENT_NEEDED: "Being reassigned",
+  QA_REVISION: "Reviewer asked for changes",
+  REVISION_REQUESTED: "Client asked for changes",
+  FOR_QA: "With your reviewer",
+  DELIVERED: "Delivered",
+  CLOSED: "Delivered",
+  DISPUTED: "Delivered, claim open",
+};
+const stageText = (s: Study) => STAGE_TEXT[s.masterStatus] ?? (groupOf(s) === "stopped" ? "Stopped" : "In progress");
+
+
+
+
+const canAskPause = (s: Study) => isOpen(s) && s.masterStatus !== "REVISION_REQUESTED" && !s.isPaused && !pauseRequested(s);
+
+/** Most urgent first: changes asked, then late, then the closest deadlines; with-reviewer studies last. */
+function urgencyRank(s: Study) {
+  const g = groupOf(s);
+  if (g === "changes") return 0;
+  if (g === "todo") return s.isOverdue ? 1 : s.isUrgent ? 2 : 3;
+  if (g === "review") return 4;
+  return g === "delivered" ? 5 : 6;
+}
+const byUrgency = (a: Study, b: Study) =>
+  urgencyRank(a) - urgencyRank(b) || new Date(a.slaDueAt).getTime() - new Date(b.slaDueAt).getTime();
+
+type SortKey = "urgent" | "due-soon" | "due-late" | "newest" | "oldest" | "id" | "title";
+const SORTS: Array<{ value: SortKey; label: string; compare: (a: Study, b: Study) => number }> = [
+  { value: "urgent", label: "Most urgent first", compare: byUrgency },
+  { value: "due-soon", label: "Due date, soonest", compare: (a, b) => new Date(a.slaDueAt).getTime() - new Date(b.slaDueAt).getTime() },
+  { value: "due-late", label: "Due date, latest", compare: (a, b) => new Date(b.slaDueAt).getTime() - new Date(a.slaDueAt).getTime() },
+  { value: "newest", label: "Newest assigned", compare: (a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime() },
+  { value: "oldest", label: "Oldest assigned", compare: (a, b) => new Date(a.assignedAt).getTime() - new Date(b.assignedAt).getTime() },
+  { value: "id", label: "Study ID", compare: (a, b) => a.projectIntakeId.localeCompare(b.projectIntakeId) },
+  { value: "title", label: "Title, A to Z", compare: (a, b) => a.projectTitle.localeCompare(b.projectTitle) },
+];
+
+
+
 interface StatisticianDashboardClientProps {
-  initialAssignments: AssignmentDetailItem[];
+  initialAssignments: Study[];
+  initialLoadFailed?: boolean;
   initialProfileStatus: string;
-  initialLeaveData: { reason?: string | null; until?: string | null } | null;
+  initialLeaveData: LeaveData;
 }
 
 export function StatisticianDashboardClient({
   initialAssignments,
+  initialLoadFailed = false,
   initialProfileStatus,
   initialLeaveData,
 }: StatisticianDashboardClientProps) {
-  const router = useRouter();
-  const [assignments, setAssignments] = useState<AssignmentDetailItem[]>(initialAssignments);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedStudy, setSelectedStudy] = useState<AssignmentDetailItem | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [sortBy, setSortBy] = useState<StatisticianSortField>("priority");
+  const [studies, setStudies] = useState<Study[]>(initialAssignments);
+  const [loadFailed, setLoadFailed] = useState(initialLoadFailed);
+  const [refreshing, setRefreshing] = useState(false);
+  const [profileStatus, setProfileStatus] = useState(initialProfileStatus);
+  const [leaveData, setLeaveData] = useState<LeaveData>(initialLeaveData);
+  const [toast, setToast] = useState<ToastState>(null);
 
-  // Pause Request Modal
-  const [pauseTarget, setPauseTarget] = useState<AssignmentDetailItem | null>(null);
-  const [pauseReason, setPauseReason] = useState("");
-  const [pauseError, setPauseError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [lookAt, setLookAt] = useState<Study | null>(null);
+  const [pauseFor, setPauseFor] = useState<Study | null>(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaveBusy, startLeave] = useTransition();
+  const lastLoad = useRef(Date.now());
 
-  // Leave Management State
-  const [profileStatus, setProfileStatus] = useState<string>(initialProfileStatus);
-  const [leaveData, setLeaveData] = useState<{ reason?: string | null; until?: string | null } | null>(initialLeaveData);
-  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
-  const [leaveReasonInput, setLeaveReasonInput] = useState("");
-  const [leaveFromInput, setLeaveFromInput] = useState("");
-  const [leaveUntilInput, setLeaveUntilInput] = useState("");
-  const [leaveError, setLeaveError] = useState<string | null>(null);
-
-  // Toast
-  const [toastMessage, setToastMessage] = useState<{
-    message: string;
-    description?: string;
-    variant: "info" | "success" | "warning" | "danger";
-  } | null>(null);
-
-  const loadWorkload = useCallback(async () => {
-    setIsLoading(true);
+  const reload = useCallback(async (quiet = false) => {
+    if (!quiet) setRefreshing(true);
     try {
-      const [res, profileRes] = await Promise.all([
-        getStatisticianWorkload(),
-        getStaffSelfProfile(),
-      ]);
+      const [res, profileRes] = await Promise.all([getStatisticianWorkload(), getStaffSelfProfile()]);
       if (res.success && res.data) {
-        setAssignments(res.data);
+        setStudies(res.data);
+        setLoadFailed(false);
+      } else if (!quiet) {
+        setToast({ message: "Couldn't refresh", description: "Your studies didn't load. Try again in a moment.", variant: "danger" });
       }
       if (profileRes.success && profileRes.data) {
-        setProfileStatus(profileRes.data.status);
-        setLeaveData({
-          reason: (profileRes.data as { leaveReason?: string | null }).leaveReason,
-          until: (profileRes.data as { leaveUntil?: string | null }).leaveUntil,
-        });
+        const p = profileRes.data as { status: string; leaveReason?: string | null; leaveUntil?: string | null };
+        setProfileStatus(p.status);
+        setLeaveData({ reason: p.leaveReason, until: p.leaveUntil });
       }
-    } catch (err) {
-      console.error("Failed to load workload:", err);
+    } catch {
+      if (!quiet) setToast({ message: "Couldn't refresh", description: "Check your connection and try again.", variant: "danger" });
     } finally {
-      setIsLoading(false);
+      lastLoad.current = Date.now();
+      setRefreshing(false);
     }
   }, []);
 
-  const handleRequestPause = () => {
-    if (!pauseTarget) return;
-    if (!pauseReason || pauseReason.trim().length < 5) {
-      setPauseError("Please specify a reason for the pause request (at least 5 characters).");
-      return;
-    }
+  // Quietly catch up when you come back to the tab (at most once a minute).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && Date.now() - lastLoad.current > 60_000) void reload(true);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [reload]);
 
-    setPauseError(null);
-    startTransition(async () => {
-      const res = await requestSlaPause({
-        projectId: pauseTarget.projectId,
-        reason: pauseReason.trim(),
-      });
-      if (res.success) {
-        setPauseTarget(null);
-        setPauseReason("");
-        loadWorkload();
-        setToastMessage({
-          message: "Pause Request Submitted",
-          description: "The admin team will review your request to pause the deadline.",
-          variant: "info",
-        });
-      } else {
-        setPauseError(res.error?.message || "Failed to submit pause request.");
-      }
-    });
-  };
+  const counts = useMemo(() => {
+    const c: Record<Group, number> = { todo: 0, changes: 0, review: 0, delivered: 0, stopped: 0 };
+    for (const s of studies) c[groupOf(s)]++;
+    return c;
+  }, [studies]);
+  const open = useMemo(() => studies.filter(isOpen), [studies]);
+  const late = open.filter((s) => s.isOverdue).length;
+  const dueSoon = open.filter((s) => s.isUrgent && !s.isOverdue).length;
 
-  const todayStr = useMemo(() => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }, []);
+  const description =
+    loadFailed
+      ? "Your studies, deadlines and what to do first."
+      : counts.changes > 0
+        ? `${counts.changes} ${counts.changes === 1 ? "study needs" : "studies need"} changes. Start there.`
+        : late > 0
+          ? `${late} ${late === 1 ? "study is" : "studies are"} past the due date.`
+          : open.length > 0
+            ? `${open.length} open ${open.length === 1 ? "study" : "studies"}${dueSoon > 0 ? `, ${dueSoon} due within a day` : ""}.`
+            : "Nothing to work on right now. New studies show up here when an admin assigns them.";
 
-  const isReturnBeforeStart = useMemo(() => {
-    if (!leaveFromInput || !leaveUntilInput) return false;
-    return leaveUntilInput < leaveFromInput;
-  }, [leaveFromInput, leaveUntilInput]);
-
-  const isStartInPast = useMemo(() => {
-    if (!leaveFromInput) return false;
-    return leaveFromInput < todayStr;
-  }, [leaveFromInput, todayStr]);
-
-  const calculatedDays = useMemo(() => {
-    if (!leaveFromInput || !leaveUntilInput || isReturnBeforeStart) return null;
-    const start = new Date(leaveFromInput);
-    const end = new Date(leaveUntilInput);
-    const diff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return Math.max(1, diff);
-  }, [leaveFromInput, leaveUntilInput, isReturnBeforeStart]);
-
-  const handleLeaveFromChange = (val: string) => {
-    setLeaveFromInput(val);
-    setLeaveError(null);
-    // Auto-advance return date if it falls behind new start date
-    if (leaveUntilInput && leaveUntilInput < val) {
-      const nextDay = new Date(val);
-      nextDay.setDate(nextDay.getDate() + 1);
-      setLeaveUntilInput(nextDay.toISOString().split("T")[0]!);
-    }
-  };
-
-  const handleLeaveUntilChange = (val: string) => {
-    setLeaveUntilInput(val);
-    setLeaveError(null);
-  };
-
-  const openLeaveModal = () => {
-    setLeaveError(null);
-    setLeaveReasonInput("");
-    setLeaveFromInput(todayStr);
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    setLeaveUntilInput(tomorrow.toISOString().split("T")[0]!);
-    setIsLeaveModalOpen(true);
-  };
-
-  const handleRequestLeave = () => {
-    if (!leaveReasonInput.trim()) {
-      setLeaveError("Please state a reason for your leave request.");
-      return;
-    }
-    const today = new Date().toISOString().split("T")[0]!;
-    const isStartInPast = Boolean(leaveFromInput && leaveFromInput < today);
-    const isReturnBeforeStart = Boolean(
-      leaveFromInput && leaveUntilInput && leaveUntilInput < leaveFromInput
-    );
-    if (isStartInPast) {
-      setLeaveError("Leave start date cannot be in the past.");
-      return;
-    }
-    if (isReturnBeforeStart) {
-      setLeaveError("Expected return date cannot be earlier than leave start date.");
-      return;
-    }
-    setLeaveError(null);
-    startTransition(async () => {
-      const res = await requestLeave({
-        reason: leaveReasonInput.trim(),
-        leaveFrom: leaveFromInput ? new Date(leaveFromInput).toISOString() : undefined,
-        leaveUntil: leaveUntilInput ? new Date(leaveUntilInput).toISOString() : undefined,
-      });
-      if (res.success) {
-        setIsLeaveModalOpen(false);
-        setLeaveReasonInput("");
-        setLeaveUntilInput("");
-        window.dispatchEvent(new CustomEvent("leave-status-updated"));
-        window.dispatchEvent(new CustomEvent("shift-status-updated"));
-        loadWorkload();
-        setToastMessage({
-          message: "Leave Request Submitted",
-          description: "Your request has been sent for HR review.",
-          variant: "info",
-        });
-      } else {
-        setLeaveError(res.error?.message || "Failed to submit leave request.");
-      }
-    });
-  };
-
-  const handleReturnFromLeave = () => {
-    startTransition(async () => {
+  const leaveAction = (cancelling: boolean) =>
+    startLeave(async () => {
       const res = await returnFromLeave();
       if (res.success) {
         window.dispatchEvent(new CustomEvent("leave-status-updated"));
         window.dispatchEvent(new CustomEvent("shift-status-updated"));
-        loadWorkload();
-        setToastMessage({
-          message: profileStatus === "LEAVE_PENDING" ? "Leave Request Cancelled" : "Welcome Back",
-          description: profileStatus === "LEAVE_PENDING" ? "Your pending leave request has been cancelled." : "You are now marked as available for assignments.",
-          variant: "success",
-        });
+        setProfileStatus("ACTIVE");
+        setLeaveData(null);
+        setToast(
+          cancelling
+            ? { message: "Leave request cancelled", variant: "success" }
+            : { message: "Welcome back", description: "Admins can give you new studies again.", variant: "success" },
+        );
+        void reload(true);
       } else {
-        setToastMessage({
-          message: "Action Failed",
-          description: res.error?.message || "Could not update availability status.",
-          variant: "danger",
-        });
+        setToast({ message: "Couldn't update your leave", description: res.error?.message || "Please try again.", variant: "danger" });
       }
     });
-  };
-
-  const urgentCount = assignments.filter((a) => a.isUrgent || a.isOverdue).length;
-  const pausedCount = assignments.filter((a) => a.isPaused).length;
-  const burnoutRisk = assessBurnoutRisk(assignments);
-
-  // Dynamic sorting option for assigned runs & computations
-  const sortedAssignments = useMemo(() => {
-    return [...assignments].sort((a, b) => {
-      if (sortBy === "deadline-asc") {
-        const timeA = a.slaDueAt ? new Date(a.slaDueAt).getTime() : Infinity;
-        const timeB = b.slaDueAt ? new Date(b.slaDueAt).getTime() : Infinity;
-        return timeA - timeB;
-      }
-      if (sortBy === "deadline-desc") {
-        const timeA = a.slaDueAt ? new Date(a.slaDueAt).getTime() : 0;
-        const timeB = b.slaDueAt ? new Date(b.slaDueAt).getTime() : 0;
-        return timeB - timeA;
-      }
-      if (sortBy === "newest") {
-        const dateA = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
-        const dateB = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
-        return dateB - dateA;
-      }
-      if (sortBy === "oldest") {
-        const dateA = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
-        const dateB = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
-        return dateA - dateB;
-      }
-      if (sortBy === "id-asc") {
-        return a.projectIntakeId.localeCompare(b.projectIntakeId);
-      }
-      if (sortBy === "id-desc") {
-        return b.projectIntakeId.localeCompare(a.projectIntakeId);
-      }
-      if (sortBy === "title-asc") {
-        return a.projectTitle.localeCompare(b.projectTitle);
-      }
-      if (sortBy === "title-desc") {
-        return b.projectTitle.localeCompare(a.projectTitle);
-      }
-      if (sortBy === "status") {
-        return a.masterStatus.localeCompare(b.masterStatus);
-      }
-
-      // Default: "priority" (Revisions first, then Urgent/Overdue, then In Progress, then newest)
-      const aIsRevision = a.masterStatus === "QA_REVISION" || a.masterStatus === "REVISION_REQUESTED";
-      const bIsRevision = b.masterStatus === "QA_REVISION" || b.masterStatus === "REVISION_REQUESTED";
-      if (aIsRevision && !bIsRevision) return -1;
-      if (!aIsRevision && bIsRevision) return 1;
-
-      const aIsUrgent = a.isOverdue || a.isUrgent;
-      const bIsUrgent = b.isOverdue || b.isUrgent;
-      if (aIsUrgent && !bIsUrgent) return -1;
-      if (!aIsUrgent && bIsUrgent) return 1;
-
-      const aIsWorking = a.masterStatus === "IN_PROGRESS";
-      const bIsWorking = b.masterStatus === "IN_PROGRESS";
-      if (aIsWorking && !bIsWorking) return -1;
-
-      const dateA = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
-      const dateB = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
-      return dateB - dateA;
-    });
-  }, [assignments, sortBy]);
-
-  // Analytical Velocity: Dynamic Rolling 6-Month Statistician Output & Milestones
-  const statisticianChartData = useMemo(() => {
-    const now = new Date();
-    // 1. Generate dynamic rolling 6-month window
-    const months: { label: string; year: number; month: number; start: Date; end: Date }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const start = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
-      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-      months.push({
-        label: d.toLocaleString("en-US", { month: "short" }),
-        year: d.getFullYear(),
-        month: d.getMonth(),
-        start,
-        end,
-      });
-    }
-
-    const isDeliveredStatus = (status: string) =>
-      status === "DELIVERED" || status === "QA_APPROVED" || status === "CLOSED";
-
-    const isActiveAnalysisStatus = (status: string) =>
-      status !== "CANCELLED" && !isDeliveredStatus(status);
-
-    return months.map((m) => {
-      // Completed outputs in this month
-      const completedInMonth = assignments.filter((a) => {
-        if (!isDeliveredStatus(a.masterStatus)) return false;
-        const assignDate = a.assignedAt ? new Date(a.assignedAt) : null;
-        if (!assignDate || isNaN(assignDate.getTime())) return false;
-        return assignDate >= m.start && assignDate <= m.end;
-      }).length;
-
-      // Active analyses in this month (assigned on or before this month's end, and currently active)
-      const activeInMonth = assignments.filter((a) => {
-        if (!isActiveAnalysisStatus(a.masterStatus)) return false;
-        const assignDate = a.assignedAt ? new Date(a.assignedAt) : null;
-        if (!assignDate || isNaN(assignDate.getTime())) {
-          return m.year === now.getFullYear() && m.month === now.getMonth();
-        }
-        return assignDate <= m.end;
-      }).length;
-
-      return {
-        month: m.label,
-        "Active Analyses": activeInMonth,
-        "Completed Outputs": completedInMonth,
-      };
-    });
-  }, [assignments]);
-
-  // Stage Distribution (CategoryBar)
-  const stageDistribution = useMemo(() => {
-    const inProgress = assignments.filter((a) => a.masterStatus === "IN_PROGRESS").length;
-    const inQa = assignments.filter((a) => a.masterStatus === "FOR_QA").length;
-    const inRevision = assignments.filter(
-      (a) => a.masterStatus === "QA_REVISION" || a.masterStatus === "REVISION_REQUESTED"
-    ).length;
-    const delivered = assignments.filter(
-      (a) => a.masterStatus === "DELIVERED" || a.masterStatus === "QA_APPROVED" || a.masterStatus === "CLOSED"
-    ).length;
-
-    const total = assignments.length || 1;
-    return {
-      inProgress,
-      inQa,
-      inRevision,
-      delivered,
-      total,
-      values: [inProgress, inQa, inRevision, delivered],
-    };
-  }, [assignments]);
-
-  // Methodological Demand (BarList)
-  const methodologyWorkload = useMemo(() => {
-    const counts: Record<string, number> = {};
-    assignments.forEach((a) => {
-      const method = (a.projectMethod || a.projectField || "General Empirical Analysis").trim();
-      counts[method] = (counts[method] || 0) + 1;
-    });
-
-    return Object.entries(counts)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 4);
-  }, [assignments]);
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
-      {/* Page Header */}
       <PageHeader
-        title="Statistical Analyst Workbench"
-        description="View assigned research studies, run analysis, and submit results for QA review."
-        breadcrumbs={[
-          { label: "WORKSPACE", href: "/dashboard" },
-          { label: "My Projects" },
-        ]}
+        title="My Studies"
+        description={description}
+        breadcrumbs={[{ label: "WORKSPACE", href: "/dashboard" }, { label: "My Studies" }]}
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-2.5 sm:w-auto">
             <Button
-              variant="secondary"
+              variant="ghost"
               size="sm"
-              onClick={loadWorkload}
-              className="gap-2 font-sans font-semibold rounded-[2px]"
+              onClick={() => void reload()}
+              loading={refreshing}
+              aria-label="Refresh my studies"
+              className="gap-1.5 active:scale-[0.97]"
             >
-              <ArrowClockwise size={15} weight="fill" />
-              <span>Refresh</span>
+              {refreshing ? null : <ArrowClockwise size={14} weight="bold" />}
+              Refresh
             </Button>
-            {profileStatus === "ON_LEAVE" ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReturnFromLeave}
-                disabled={isPending}
-                className="font-sans text-xs font-semibold rounded-[2px] bg-emerald-600/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-600/30 gap-1.5 cursor-pointer"
-              >
-                <UserCheck size={14} weight="fill" />
-                <span>Return to Work</span>
+            <Button asChild variant="ghost" size="sm" className="active:scale-[0.97]">
+              <Link href="/dashboard/statistician/profile">My Profile</Link>
+            </Button>
+            {profileStatus === "ACTIVE" ? (
+              <Button variant="outline" size="sm" onClick={() => setLeaveOpen(true)} className="active:scale-[0.97]">
+                Request Leave
               </Button>
-            ) : profileStatus === "LEAVE_PENDING" ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReturnFromLeave}
-                disabled={isPending}
-                className="font-sans text-xs font-semibold rounded-[2px] bg-amber-600/20 text-amber-300 border-amber-500/40 hover:bg-amber-600/30 gap-1.5 cursor-pointer"
-              >
-                <Clock size={14} weight="fill" />
-                <span>Withdraw Leave Request</span>
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={openLeaveModal}
-                className="font-sans text-xs font-semibold rounded-[2px] gap-1.5 text-white/70 hover:text-white cursor-pointer"
-              >
-                <Calendar size={14} weight="fill" />
-                <span>Request Leave</span>
-              </Button>
-            )}
-            <Link href="/dashboard/statistician/profile">
-              <Button variant="outline" size="sm" className="font-sans text-xs font-semibold rounded-[2px] cursor-pointer">
-                Specialization Profile
-              </Button>
-            </Link>
+            ) : null}
           </div>
         }
       />
 
-      {/* Leave Request Pending HR Approval Banner */}
-      {profileStatus === "LEAVE_PENDING" && (
-        <div className="p-4 bg-amber-950/40 border border-amber-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-amber-200">
-          <div className="flex items-start gap-3">
-            <Clock size={18} weight="fill" className="text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-amber-300 block text-sm">Leave Request Pending HR Approval</span>
-                <Badge variant="amber" className="text-[0.625rem] py-0 px-1 font-mono">Awaiting Review</Badge>
-              </div>
-              <p className="text-white/80 mt-1 leading-relaxed">
-                {leaveData?.reason ? `Reason: "${leaveData.reason}". ` : ""}
-                {leaveData?.until
-                  ? `Scheduled return: ${new Date(leaveData.until).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}. `
-                  : ""}
-                Your leave request has been submitted and is awaiting formal acknowledgment from the Finance Officer (HR) / Admin. You remain active until HR approval is granted.
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleReturnFromLeave}
-            disabled={isPending}
-            className="font-sans text-xs font-semibold rounded-[2px] shrink-0 text-amber-300 border-amber-500/40 hover:bg-amber-500/10 cursor-pointer"
-          >
-            Cancel / Withdraw Request
-          </Button>
-        </div>
-      )}
-
-      {/* On Leave Status Banner */}
-      {profileStatus === "ON_LEAVE" && (
-        <div className="p-4 bg-purple-950/40 border border-purple-500/40 rounded-[2px] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-purple-200">
-          <div className="flex items-start gap-3">
-            <Clock size={18} weight="fill" className="text-purple-400 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-semibold text-purple-300 block text-sm">Specialist On Leave Status Active</span>
-              <p className="text-white/80 mt-0.5 leading-relaxed">
-                {leaveData?.reason ? `Reason: "${leaveData.reason}". ` : ""}
-                {leaveData?.until
-                  ? `Scheduled return: ${new Date(leaveData.until).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}. `
-                  : ""}
-                New study assignments are paused and you are hidden from the assignment directory.
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleReturnFromLeave}
-            disabled={isPending}
-            className="font-sans text-xs font-semibold rounded-[2px] shrink-0 cursor-pointer"
-          >
-            End Leave Now
-          </Button>
-        </div>
-      )}
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-        <KpiCard
-          label="Assigned Analyses"
-          value={assignments.length}
-          variant="default"
-          badge={`${assignments.length} Active`}
-          badgeColor="sky"
-          description={pausedCount > 0 ? `${pausedCount} SLA paused` : "Active computation pipelines"}
+      {profileStatus === "LEAVE_PENDING" || profileStatus === "ON_LEAVE" ? (
+        <LeaveNotice
+          status={profileStatus}
+          leave={leaveData}
+          busy={leaveBusy}
+          onAction={() => leaveAction(profileStatus === "LEAVE_PENDING")}
         />
+      ) : null}
 
-        <KpiCard
-          label="Under Analysis"
-          value={assignments.filter((a) => a.masterStatus === "IN_PROGRESS").length}
-          variant="default"
-          description="Models currently in execution"
-        />
-
-        <KpiCard
-          label="QA & Revisions"
-          value={
-            assignments.filter(
-              (a) => a.masterStatus === "QA_REVISION" || a.masterStatus === "REVISION_REQUESTED" || a.masterStatus === "FOR_QA"
-            ).length
-          }
-          variant="default"
-          badge={
-            assignments.some((a) => a.masterStatus === "QA_REVISION" || a.masterStatus === "REVISION_REQUESTED")
-              ? "NEEDS ATTENTION"
-              : undefined
-          }
-          badgeColor="amber"
-          description="Verification or correction loop"
-        />
-
-        <KpiCard
-          label="Pre-Deadline Alerts"
-          value={urgentCount}
-          variant="default"
-          badge={urgentCount > 0 ? "URGENT" : undefined}
-          badgeColor="amber"
-          description={urgentCount > 0 ? "Due within 24 hours or overdue" : "All deliverables on schedule"}
-        />
-      </div>
-
-      {/* ── 2:1 Asymmetric Bento Grid: Analysis Output Velocity & Methodological Focus ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* 8-Col Focal Hero Card: Output Velocity AreaChart */}
-        <Card className="lg:col-span-8 p-5 sm:p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 animate-card-reveal stagger-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
-            <div className="flex items-center gap-2">
-              <ChartLineUp size={18} weight="fill" className="text-[#CC6600]" />
+      {loadFailed ? (
+        <Panel as="div">
+          <PanelBody className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <Warning size={20} weight="fill" className="mt-0.5 shrink-0 text-white/50" />
               <div>
-                <h3 className="text-sm font-bold text-white font-sans">
-                  Analysis Output &amp; Milestone Velocity
-                </h3>
-                <p className="text-xs text-white/50 font-sans mt-0.5">
-                  6-Month progression of active models in computation vs. verified deliverables completed
-                </p>
+                <p className="text-sm font-medium text-white">Your studies didn&apos;t load.</p>
+                <p className="mt-0.5 text-[13px] text-white/55">The database took too long to answer. Nothing is lost.</p>
               </div>
             </div>
-            <span className="text-xs text-white/60 font-mono self-start sm:self-auto bg-white/[0.04] px-2 py-1 rounded-[2px] border border-white/10">
-              {assignments.length} Assigned Runs
-            </span>
+            <Button variant="outline" size="sm" onClick={() => void reload()} loading={refreshing} className="active:scale-[0.97]">
+              Try Again
+            </Button>
+          </PanelBody>
+        </Panel>
+      ) : (
+        <>
+          <KpiRow studies={studies} counts={counts} late={late} dueSoon={dueSoon} />
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <NextUpPanel open={open} onLook={setLookAt} />
+            <div className="flex flex-col gap-6 lg:col-span-4">
+              <WhereAllPanel counts={counts} total={studies.length} />
+              <WorkloadPanel open={open} />
+            </div>
           </div>
 
-          <div className="pt-2">
-            <AreaChart
-              data={statisticianChartData}
-              index="month"
-              categories={["Active Analyses", "Completed Outputs"]}
-              colors={["#CC6600", "#38BDF8"]}
-              height={260}
-              valueFormatter={(val, cat) =>
-                cat?.includes("Completed")
-                  ? `${val} ${val === 1 ? "Output Completed" : "Outputs Completed"}`
-                  : `${val} ${val === 1 ? "Active Model" : "Active Models"}`
-              }
-            />
-          </div>
-        </Card>
-
-        {/* 4-Col Auxiliary Stack: Stage Breakdown & Methodology Workload */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
-          {/* Auxiliary Card 1: Pipeline Stage Distribution */}
-          <Card className="p-5 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-4 flex-1">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-              <div className="flex items-center gap-2">
-                <Funnel size={16} weight="fill" className="text-[#38BDF8]" />
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                  Pipeline Status Funnel
-                </h4>
-              </div>
-              <span className="text-[11px] font-mono text-white/40">Active</span>
-            </div>
-
-            <div className="space-y-3">
-              <CategoryBar
-                values={stageDistribution.values}
-                colors={["#38BDF8", "#CC6600", "#F59E0B", "#10B981"]}
-                className="h-2.5"
-              />
-
-              <div className="grid grid-cols-2 gap-2 text-xs font-sans pt-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#38BDF8] shrink-0" />
-                  <span className="text-white/60 truncate">In Progress:</span>
-                  <span className="font-mono text-white ml-auto font-semibold">{stageDistribution.inProgress}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#CC6600] shrink-0" />
-                  <span className="text-white/60 truncate">In QA:</span>
-                  <span className="font-mono text-white ml-auto font-semibold">{stageDistribution.inQa}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#F59E0B] shrink-0" />
-                  <span className="text-white/60 truncate">Revisions:</span>
-                  <span className="font-mono text-white ml-auto font-semibold">{stageDistribution.inRevision}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#10B981] shrink-0" />
-                  <span className="text-white/60 truncate">Delivered:</span>
-                  <span className="font-mono text-white ml-auto font-semibold">{stageDistribution.delivered}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Auxiliary Card 2: Methodological Focus */}
-          <Card className="p-5 bg-[#0A0A18] border border-white/10 rounded-[2px] shadow-xl flex flex-col justify-between gap-3 flex-1">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-              <div className="flex items-center gap-2">
-                <Cpu size={16} weight="fill" className="text-[#CC6600]" />
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                  Methodology Focus
-                </h4>
-              </div>
-              <span className="text-[11px] font-mono text-white/40">Workload</span>
-            </div>
-
-            <div className="pt-0.5 overflow-y-auto max-h-[175px] pr-1">
-              {methodologyWorkload.length > 0 ? (
-                <BarList
-                  data={methodologyWorkload}
-                  valueFormatter={(value) => `${value} ${value === 1 ? "run" : "runs"}`}
-                  color="#CC6600"
-                  className="text-xs space-y-1.5"
-                />
-              ) : (
-                <div className="py-6 text-center text-xs text-white/40 font-sans">
-                  No active assignments
-                </div>
-              )}
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* Burnout & Workload Alert Banner */}
-      {burnoutRisk.isAtRisk && (
-        <div className="p-4 bg-amber-950/30 border border-amber-500/30 rounded-[2px] flex items-start gap-3 text-xs text-amber-200">
-          <Warning size={18} weight="fill" className="text-amber-400 shrink-0 mt-0.5" />
-          <div className="flex flex-col gap-1">
-            <span className="font-semibold text-amber-300">Workload &amp; Burnout Protection Active</span>
-            <span className="text-white/80 leading-relaxed">
-              {burnoutRisk.reasons.join(". ")}. Your wellbeing is protected under JAXIS workload policies. If client clarifications or missing datasets are slowing you down, use the &ldquo;Pause&rdquo; button to pause your deadline countdown without penalty.
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Assigned Workbench Projects */}
-      <Card className="p-0 overflow-hidden border border-white/10 bg-[#0A0A18]/90 rounded-[2px]">
-        <div className="p-5 sm:p-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-white font-sans">
-              Assigned Statistical Runs &amp; Computations
-            </h2>
-            <p className="text-sm text-white/60 mt-0.5 font-sans">
-              Execute analytical models, track contractual turnaround timers, and upload verified syntax
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
-            {/* Sort Control Dropdown */}
-            <div className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-[2px] px-3 py-1.5 focus-within:border-white/20 transition-colors">
-              <ArrowsDownUp size={13} weight="bold" className="text-white/40 shrink-0" />
-              <label htmlFor="statistician-sort" className="text-[11px] font-mono text-white/50 uppercase tracking-wider select-none shrink-0">
-                Sort:
-              </label>
-              <select
-                id="statistician-sort"
-                value={sortBy}
-                onChange={(e) => {
-                  setSortBy(e.target.value as StatisticianSortField);
-                  setCurrentPage(1);
-                }}
-                className="bg-transparent text-xs font-sans text-white/90 focus:outline-none cursor-pointer pr-1 border-0 ring-0 focus:ring-0 [&>option]:bg-[#0A0A18] [&>option]:text-white"
-              >
-                <option value="priority">Priority (Revisions &amp; Urgent First)</option>
-                <option value="deadline-asc">Due Date (Earliest First)</option>
-                <option value="deadline-desc">Due Date (Latest First)</option>
-                <option value="newest">Newest Assigned</option>
-                <option value="oldest">Oldest Assigned</option>
-                <option value="id-asc">Study ID (A &rarr; Z)</option>
-                <option value="id-desc">Study ID (Z &rarr; A)</option>
-                <option value="title-asc">Research Title (A &rarr; Z)</option>
-                <option value="title-desc">Research Title (Z &rarr; A)</option>
-                <option value="status">Status</option>
-              </select>
-            </div>
-
-            <span className="text-xs font-mono text-white/50 whitespace-nowrap px-2.5 py-1.5 rounded-[2px] bg-white/[0.04] border border-white/10">
-              {assignments.length} Active Studies
-            </span>
-          </div>
-        </div>
-
-        {isLoading ? (
-          <LoadingState
-            variant="table"
-            label="Loading computational workbench..."
-            description="Retrieving assigned models, datasets, and SLA telemetry."
+          <StudiesPanel
+            studies={studies}
+            counts={counts}
+            onLook={setLookAt}
+            onPause={setPauseFor}
+            onCopied={(id) => setToast({ message: "Study ID copied", description: id, variant: "success" })}
           />
-        ) : assignments.length === 0 ? (
-          <div className="p-12 text-center text-white/50 text-sm font-sans flex flex-col items-center justify-center gap-2">
-            <CheckCircle size={32} weight="fill" className="text-[#10B981]" />
-            <span className="font-semibold text-white">No Pending Runs Assigned</span>
-            <span className="text-xs text-white/40">New projects assigned by the Administration will appear here with live SLA countdowns.</span>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/10 bg-white/[0.02] text-white/50 text-xs uppercase tracking-wider font-semibold select-none">
-                  {/* Column 1: Study ID & Package */}
-                  <th className="py-3 px-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSortBy(sortBy === "id-asc" ? "id-desc" : "id-asc");
-                        setCurrentPage(1);
-                      }}
-                      className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
-                    >
-                      <span>Study ID &amp; Package</span>
-                      {sortBy === "id-asc" ? (
-                        <CaretUp size={13} weight="fill" className="text-[#CC6600]" />
-                      ) : sortBy === "id-desc" ? (
-                        <CaretDown size={13} weight="fill" className="text-[#CC6600]" />
-                      ) : (
-                        <ArrowsDownUp size={12} className="opacity-0 group-hover:opacity-40 transition-opacity" />
-                      )}
-                    </button>
-                  </th>
-
-                  {/* Column 2: Research & Specialist */}
-                  <th className="py-3 px-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSortBy(sortBy === "title-asc" ? "title-desc" : "title-asc");
-                        setCurrentPage(1);
-                      }}
-                      className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
-                    >
-                      <span>Research &amp; Specialist</span>
-                      {sortBy === "title-asc" ? (
-                        <CaretUp size={13} weight="fill" className="text-[#CC6600]" />
-                      ) : sortBy === "title-desc" ? (
-                        <CaretDown size={13} weight="fill" className="text-[#CC6600]" />
-                      ) : (
-                        <ArrowsDownUp size={12} className="opacity-0 group-hover:opacity-40 transition-opacity" />
-                      )}
-                    </button>
-                  </th>
-
-                  {/* Column 3: SLA Countdown */}
-                  <th className="py-3 px-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSortBy(sortBy === "deadline-asc" ? "deadline-desc" : "deadline-asc");
-                        setCurrentPage(1);
-                      }}
-                      className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
-                    >
-                      <span>Time Remaining</span>
-                      {sortBy === "deadline-asc" ? (
-                        <CaretUp size={13} weight="fill" className="text-[#CC6600]" />
-                      ) : sortBy === "deadline-desc" ? (
-                        <CaretDown size={13} weight="fill" className="text-[#CC6600]" />
-                      ) : (
-                        <ArrowsDownUp size={12} className="opacity-0 group-hover:opacity-40 transition-opacity" />
-                      )}
-                    </button>
-                  </th>
-
-                  {/* Column 4: Status */}
-                  <th className="py-3 px-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSortBy(sortBy === "status" ? "priority" : "status");
-                        setCurrentPage(1);
-                      }}
-                      className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-white/60 hover:text-white transition-colors cursor-pointer group"
-                    >
-                      <span>Status</span>
-                      {sortBy === "status" ? (
-                        <CaretDown size={13} weight="fill" className="text-[#CC6600]" />
-                      ) : (
-                        <ArrowsDownUp size={12} className="opacity-0 group-hover:opacity-40 transition-opacity" />
-                      )}
-                    </button>
-                  </th>
-
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5 text-sm">
-                {sortedAssignments.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((item) => {
-                  const isRevision = item.masterStatus === "QA_REVISION" || item.masterStatus === "REVISION_REQUESTED";
-
-                  return (
-                    <tr
-                      key={item.id}
-                      onMouseEnter={() =>
-                        router.prefetch(`/dashboard/statistician/projects/${item.projectId}/workbench`)
-                      }
-                      className={`transition-colors virtual-row ${
-                        isRevision
-                          ? "bg-[#F59E0B]/[0.03] hover:bg-[#F59E0B]/[0.06] border-l-2 border-l-[#F59E0B]"
-                          : "hover:bg-white/[0.02]"
-                      }`}
-                    >
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="font-mono text-xs text-[#CC6600] font-semibold">
-                            {item.projectIntakeId}
-                          </span>
-                          <span className="text-[0.688rem] text-white/40 font-mono tracking-wide mt-0.5">
-                            {item.projectMethod || "JX 03 CORE"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 min-w-0">
-                        <p className="font-semibold text-white text-sm line-clamp-1" title={item.projectTitle}>
-                          {item.projectTitle}
-                        </p>
-                        <div className="flex items-center gap-1.5 text-xs text-white/50 mt-0.5">
-                          <span className="truncate max-w-[160px] sm:max-w-[220px]">
-                            {item.projectField || "Empirical Research"}
-                          </span>
-                          <span className="text-white/20">•</span>
-                          <span className="text-white/70 truncate">QA: {item.qaLead.fullName}</span>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="flex flex-col gap-1 items-start">
-                          <Badge
-                            variant={
-                              item.isPaused
-                                ? "amber"
-                                : item.isOverdue
-                                ? "danger"
-                                : item.isUrgent
-                                ? "amber"
-                                : "emerald"
-                            }
-                            className="font-mono text-[0.688rem] py-0.5 px-1.5"
-                          >
-                            {item.slaLabel}
-                          </Badge>
-                          <span className="text-[0.688rem] text-white/40 font-mono">
-                            Due: {new Date(item.slaDueAt).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <StatusBadge status={item.masterStatus} />
-                      </td>
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {!item.isPaused && (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => setPauseTarget(item)}
-                              title="Pause Deadline Timer"
-                              className="font-sans text-xs h-7 px-2 rounded-[2px] text-amber-300 border-amber-500/30 hover:bg-amber-500/10 gap-1"
-                            >
-                              <Pause size={12} weight="fill" />
-                              <span className="hidden sm:inline">Pause</span>
-                            </Button>
-                          )}
-                          <Link href={`/dashboard/statistician/projects/${item.projectId}/workbench`}>
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              className="font-sans text-xs font-semibold h-7 px-2.5 rounded-[2px] gap-1 cursor-pointer bg-[#CC6600] hover:bg-[#CC6600]/90 text-white shadow-sm"
-                            >
-                              <span>Workbench</span>
-                              <ArrowRight size={12} weight="fill" />
-                            </Button>
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {sortedAssignments.length > 0 && (
-          <Pagination
-            currentPage={currentPage}
-            totalItems={sortedAssignments.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
-            itemLabel="assignments"
-          />
-        )}
-      </Card>
-
-      {/* ── Statistical Computational Desk Modal ── */}
-      {selectedStudy && (
-        <Modal
-          open={!!selectedStudy}
-          onClose={() => setSelectedStudy(null)}
-          title={`Statistical Analysis Desk: ${selectedStudy.projectIntakeId}`}
-          description={selectedStudy.projectTitle}
-          size="lg"
-          footer={
-            <div className="flex items-center justify-between w-full">
-              {!selectedStudy.isPaused ? (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    setPauseTarget(selectedStudy);
-                    setSelectedStudy(null);
-                  }}
-                  className="font-sans text-xs rounded-[2px] text-amber-300 border-amber-500/30 hover:bg-amber-500/10 gap-1.5"
-                >
-                  <Pause size={14} weight="fill" />
-                  <span>Request SLA Freeze</span>
-                </Button>
-              ) : (
-                <span className="text-xs font-mono text-amber-400">SLA Timer Currently Frozen</span>
-              )}
-              <div className="flex items-center gap-2">
-                <Link href={`/dashboard/statistician/projects/${selectedStudy.projectId}/messages`}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="font-sans text-xs rounded-[2px] gap-1.5"
-                  >
-                    <ChatCircleDots size={14} weight="fill" className="text-sky-400" />
-                    <span>Consultation</span>
-                  </Button>
-                </Link>
-                <Link href={`/dashboard/statistician/projects/${selectedStudy.projectId}/workbench`}>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="font-sans text-xs font-semibold rounded-[2px] gap-1.5 cursor-pointer"
-                  >
-                    <span>Launch Workbench</span>
-                    <ArrowRight size={14} weight="fill" />
-                  </Button>
-                </Link>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedStudy(null)}
-                  className="font-sans text-xs rounded-[2px]"
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          }
-        >
-          <div className="flex flex-col gap-6 text-sm font-sans text-white/90">
-            {/* Status & SLA Bar */}
-            <div className="p-4 rounded-[2px] bg-white/[0.02] border border-white/10 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Badge variant="sky" className="font-mono text-xs">
-                  {selectedStudy.masterStatus}
-                </Badge>
-                <Badge
-                  variant={
-                    selectedStudy.isPaused
-                      ? "amber"
-                      : selectedStudy.isOverdue
-                      ? "danger"
-                      : selectedStudy.isUrgent
-                      ? "amber"
-                      : "emerald"
-                  }
-                  className="font-mono text-xs"
-                >
-                  {selectedStudy.slaLabel}
-                </Badge>
-              </div>
-
-              <div className="text-right">
-                <span className="text-[0.688rem] text-white/50 block font-mono">Contractual Deadline</span>
-                <span className="text-xs font-mono font-semibold text-white">
-                  {new Date(selectedStudy.slaDueAt).toLocaleDateString("en-PH", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
-            </div>
-
-            {/* Specialist Assignments Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-3.5 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
-                <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Assigned QA Lead</span>
-                <span className="text-xs font-semibold text-white">{selectedStudy.qaLead.fullName}</span>
-                <span className="text-[0.688rem] text-white/50">{selectedStudy.qaLead.email}</span>
-              </div>
-              <div className="p-3.5 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
-                <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Selected Package</span>
-                <span className="text-xs font-semibold text-[#CC6600]">
-                  {selectedStudy.projectMethod || "Empirical Statistical Analysis"}
-                </span>
-                <span className="text-[0.688rem] text-white/50">{selectedStudy.projectField || "Academic Research"}</span>
-              </div>
-            </div>
-
-            {/* Research Objectives & Questions */}
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-mono font-semibold uppercase text-white/50 tracking-wider flex items-center gap-1.5">
-                <FileText size={15} weight="fill" className="text-[#38BDF8]" />
-                <span>Research Scope &amp; Objectives</span>
-              </span>
-              <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-3 text-xs leading-relaxed text-slate-200">
-                <div>
-                  <span className="font-semibold text-white/80 block mb-0.5 font-mono text-[0.688rem]">Research Questions:</span>
-                  <p>{selectedStudy.researchQuestions || "1. What is the primary statistical effect? 2. Are variances homogeneous across comparison cohorts?"}</p>
-                </div>
-                {selectedStudy.hypotheses && (
-                  <div>
-                    <span className="font-semibold text-white/80 block mb-0.5 font-mono text-[0.688rem]">Stated Hypotheses:</span>
-                    <p>{selectedStudy.hypotheses}</p>
-                  </div>
-                )}
-                <div>
-                  <span className="font-semibold text-white/80 block mb-0.5 font-mono text-[0.688rem]">Analytical Objective:</span>
-                  <p>{selectedStudy.researchObjectives || "Establish empirical significance at alpha = 0.05 with validated normality and homoscedasticity diagnostics."}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Datasets & Artifacts */}
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-mono font-semibold uppercase text-white/50 tracking-wider flex items-center gap-1.5">
-                <Database size={15} weight="fill" className="text-[#10B981]" />
-                <span>Verified Client Datasets &amp; Documentation</span>
-              </span>
-              {selectedStudy.files && selectedStudy.files.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedStudy.files.map((file) => (
-                    <div
-                      key={file.id}
-                      className="p-3 bg-[#0A0A18] border border-white/10 rounded-[2px] flex items-center justify-between text-xs"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Database size={16} weight="fill" className="text-sky-400 shrink-0" />
-                        <span className="font-medium text-white truncate">{file.fileName}</span>
-                      </div>
-                      <Badge variant="sky" className="font-mono text-[0.625rem]">
-                        {file.fileCategory}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2 text-slate-300">
-                    <Database size={16} weight="fill" className="text-sky-400" />
-                    <span>Raw_Dataset_Verified.xlsx (2.4 MB)</span>
-                  </div>
-                  <Badge variant="emerald" className="font-mono text-[0.625rem]">
-                    VERIFIED INPUT
-                  </Badge>
-                </div>
-              )}
-            </div>
-          </div>
-        </Modal>
+        </>
       )}
 
-      {/* Request SLA Pause Modal */}
-      {pauseTarget && (
-        <Modal
-          open={!!pauseTarget}
-          onClose={() => setPauseTarget(null)}
-          title="Pause Deadline Timer"
-          description={`Study: ${pauseTarget.projectTitle}`}
-          size="md"
-          footer={
-            <div className="flex items-center justify-end gap-3 w-full">
-              <Button variant="secondary" size="sm" onClick={() => setPauseTarget(null)} disabled={isPending}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleRequestPause}
-                disabled={isPending}
-                className="font-sans text-xs font-semibold rounded-[2px]"
-              >
-                {isPending ? (
-                  <CircleNotch size={15} weight="bold" className="animate-spin" />
-                ) : (
-                  <span>Request Pause</span>
-                )}
-              </Button>
-            </div>
-          }
-        >
-          <div className="flex flex-col gap-4 text-xs font-sans text-white/80">
-            {pauseError && (
-              <div className="p-3 bg-red-950/40 border border-red-500/30 rounded-[2px] text-red-200">
-                {pauseError}
-              </div>
-            )}
+      <QuickLook
+        study={lookAt}
+        onClose={() => setLookAt(null)}
+        onPause={(s) => {
+          setLookAt(null);
+          setPauseFor(s);
+        }}
+      />
 
-            <div className="p-3 bg-amber-950/20 border border-amber-500/30 rounded-[2px] flex items-start gap-2.5 text-amber-200">
-              <Warning size={16} weight="fill" className="text-amber-400 shrink-0 mt-0.5" />
-              <span>
-                Pausing temporarily stops your delivery countdown while you wait for the researcher to send files, fix data errors, or answer questions. Days spent waiting are added back to your deadline.
-              </span>
-            </div>
+      <PauseDialog
+        study={pauseFor}
+        onClose={() => setPauseFor(null)}
+        onSent={(s, reason) => {
+          setPauseFor(null);
+          // Show "Pause asked" straight away; the reload below confirms it.
+          setStudies((all) => all.map((x) => (x.id === s.id ? { ...x, slaPauseReason: reason } : x)));
+          setToast({ message: "Pause requested", description: "An admin will look at it. You'll get a notification.", variant: "success" });
+          void reload(true);
+        }}
+      />
 
-            <div className="flex flex-col gap-1.5">
-              <label className="font-semibold text-white/90">
-                What are you waiting for? (Required)
-              </label>
-              <textarea
-                value={pauseReason}
-                onChange={(e) => setPauseReason(e.target.value)}
-                placeholder="Detail what is missing or what needs clarification from the Lead Researcher..."
-                className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] p-3 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-24 font-sans"
-              />
-            </div>
-          </div>
-        </Modal>
-      )}
+      <LeaveDialog
+        open={leaveOpen}
+        onClose={() => setLeaveOpen(false)}
+        onSent={(reason, until) => {
+          setLeaveOpen(false);
+          setProfileStatus("LEAVE_PENDING");
+          setLeaveData({ reason, until });
+          window.dispatchEvent(new CustomEvent("leave-status-updated"));
+          window.dispatchEvent(new CustomEvent("shift-status-updated"));
+          setToast({ message: "Leave requested", description: "Finance (HR) or an admin will approve it.", variant: "success" });
+          void reload(true);
+        }}
+      />
 
-      {/* Request Leave Modal */}
-      {isLeaveModalOpen && (
-        <Modal
-          open={isLeaveModalOpen}
-          onClose={() => setIsLeaveModalOpen(false)}
-          title="Schedule Specialist Leave"
-          description="Pause assignment intake and declare your unavailable period."
-          size="md"
-          footer={
-            <div className="flex items-center justify-end gap-3 w-full">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsLeaveModalOpen(false)}
-                disabled={isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleRequestLeave}
-                disabled={isPending}
-                className="font-sans text-xs font-semibold rounded-[2px]"
-              >
-                {isPending ? (
-                  <CircleNotch size={15} weight="bold" className="animate-spin" />
-                ) : (
-                  <CheckCircle size={15} weight="fill" />
-                )}
-                <span>Submit Leave Request</span>
-              </Button>
-            </div>
-          }
-        >
-          <div className="flex flex-col gap-4 text-xs font-sans text-white/80">
-            {leaveError && (
-              <div className="p-3 bg-red-950/40 border border-red-500/30 rounded-[2px] text-red-200">
-                {leaveError}
-              </div>
-            )}
-
-            <div className="p-3 bg-amber-950/20 border border-amber-500/30 rounded-[2px] flex items-start gap-2.5 text-amber-200">
-              <Clock size={16} weight="fill" className="text-amber-400 shrink-0 mt-0.5" />
-              <span>
-                Submitting this request will queue your leave for Finance Officer (HR) and Administrator approval. Once acknowledged and approved, your leave status will be activated and you will be hidden from new study assignments.
-              </span>
-            </div>
-
-            {/* Reason for Leave with Dropdown Selector */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <label className="font-semibold text-white/90">
-                  Reason for Leave (Mandatory)
-                </label>
-                <span className="text-[0.625rem] text-purple-300/60 font-mono">
-                  Select template or enter custom note
-                </span>
-              </div>
-
-              {/* Template Dropdown */}
-              <div className="relative">
-                <select
-                  value={LEAVE_REASON_TEMPLATES.find((t) => t.text === leaveReasonInput)?.text || ""}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      setLeaveReasonInput(e.target.value);
-                    }
-                  }}
-                  className="w-full bg-[#0A0A18] border border-white/15 rounded-[2px] px-3 py-2 text-xs text-white/90 focus:border-[#CC6600] focus:ring-0 outline-none cursor-pointer appearance-none pr-8 transition-colors font-sans hover:border-white/30"
-                >
-                  <option value="" className="bg-[#0A0A18] text-white/50">
-                    Select standard reason template...
-                  </option>
-                  {LEAVE_REASON_TEMPLATES.map((tmpl) => (
-                    <option
-                      key={tmpl.label}
-                      value={tmpl.text}
-                      className="bg-[#0A0A18] text-white"
-                    >
-                      {tmpl.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-white/40">
-                  <CaretDown size={14} weight="fill" />
-                </div>
-              </div>
-
-              {/* Free-text Reason Input */}
-              <textarea
-                value={leaveReasonInput}
-                onChange={(e) => setLeaveReasonInput(e.target.value)}
-                placeholder="State specific circumstances, emergency details, or operational notes for the team..."
-                className="w-full bg-[#0A0A18] border border-white/10 rounded-[2px] p-3 text-xs text-white placeholder-white/40 focus:border-[#CC6600] outline-none resize-none h-20 font-sans"
-              />
-            </div>
-
-            {/* Leave Duration Date Pickers */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="font-semibold text-white/90">
-                  Leave Start Date
-                </label>
-                <input
-                  type="date"
-                  min={todayStr}
-                  value={leaveFromInput}
-                  onChange={(e) => handleLeaveFromChange(e.target.value)}
-                  className={`w-full bg-[#0A0A18] border rounded-[2px] p-2.5 text-xs text-white outline-none font-mono transition-colors [color-scheme:dark] ${
-                    isStartInPast
-                      ? "border-red-500/60 focus:border-red-500"
-                      : "border-white/10 focus:border-[#CC6600]"
-                  }`}
-                />
-                {isStartInPast && (
-                  <span className="text-[0.688rem] text-red-400 font-sans">
-                    Start date cannot be in the past.
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="font-semibold text-white/90">
-                    Expected Return Date
-                  </label>
-                  {calculatedDays !== null && (
-                    <span className="text-[0.688rem] font-mono text-purple-300 font-semibold">
-                      {calculatedDays} {calculatedDays === 1 ? "day" : "days"} duration
-                    </span>
-                  )}
-                </div>
-                <input
-                  type="date"
-                  min={leaveFromInput || todayStr}
-                  value={leaveUntilInput}
-                  onChange={(e) => handleLeaveUntilChange(e.target.value)}
-                  className={`w-full bg-[#0A0A18] border rounded-[2px] p-2.5 text-xs text-white outline-none font-mono transition-colors [color-scheme:dark] ${
-                    isReturnBeforeStart
-                      ? "border-red-500/60 focus:border-red-500"
-                      : "border-white/10 focus:border-[#CC6600]"
-                  }`}
-                />
-                {isReturnBeforeStart && (
-                  <span className="text-[0.688rem] text-red-400 font-sans">
-                    Return date cannot be earlier than start date.
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Toast Notification */}
-      {toastMessage && (
-        <Toast
-          message={toastMessage.message}
-          description={toastMessage.description}
-          variant={toastMessage.variant}
-          onClose={() => setToastMessage(null)}
-        />
-      )}
+      {toast ? <Toast message={toast.message} description={toast.description} variant={toast.variant} onClose={() => setToast(null)} /> : null}
     </div>
   );
 }
+
+
+function KpiRow({ studies, counts, late, dueSoon }: { studies: Study[]; counts: Record<Group, number>; late: number; dueSoon: number }) {
+  // Delivered per month (Philippine time), from the real delivery date.
+  const { keys } = monthWindow(new Date(), 6);
+  const deliveredByMonth = keys.map((k) => studies.filter((s) => s.deliveredAt && monthKey(new Date(s.deliveredAt)) === k).length);
+  const delivered6 = deliveredByMonth.reduce((a, b) => a + b, 0);
+  const deliveredWithDate = studies.filter((s) => s.deliveredAt && keys.includes(monthKey(new Date(s.deliveredAt))));
+  const onTime = deliveredWithDate.filter((s) => new Date(s.deliveredAt!).getTime() <= new Date(s.slaDueAt).getTime()).length;
+
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <KpiCard
+        label="Working on"
+        description="Not yet sent to your reviewer"
+        icon={<Briefcase size={18} weight="fill" />}
+        value={counts.todo}
+        badge={dueSoon > 0 ? `${dueSoon} due within a day` : counts.todo > 0 ? "Nothing due within a day" : undefined}
+      />
+      <KpiCard
+        label="Changes asked"
+        description="By your reviewer or the client"
+        icon={<ArrowUUpLeft size={18} weight="fill" />}
+        value={counts.changes}
+        badge={counts.changes > 0 ? "Do these first" : undefined}
+      />
+      <KpiCard
+        label="Past due"
+        description="Open studies past their due date"
+        icon={<ClockCountdown size={18} weight="fill" />}
+        value={late}
+        variant={late > 0 ? "red" : "default"}
+        badge={late > 0 ? "Ask to pause if waiting" : "All on time"}
+        info="The due date was set when you were assigned. Waiting on the client? Ask to pause the deadline from the study's menu; paused days are added back."
+      />
+      <KpiCard
+        label="Delivered"
+        description="Last 6 months"
+        icon={<SealCheck size={18} weight="fill" />}
+        value={delivered6}
+        badge={delivered6 > 0 ? `${onTime} of ${delivered6} on time` : "None delivered yet"}
+        trend={delivered6 > 0 ? deliveredByMonth : undefined}
+        trendStyle="bars"
+        trendLabel="Studies delivered per month, last 6 months"
+        info="Counted on the day the client received the results, in Philippine time. On time means by the due date."
+      />
+    </div>
+  );
+}
+
+
+function NextUpPanel({ open, onLook }: { open: Study[]; onLook: (s: Study) => void }) {
+  const router = useRouter();
+  // With-reviewer studies need nothing from you, so they're left out here.
+  const next = open.filter((s) => groupOf(s) !== "review").sort(byUrgency).slice(0, 5);
+  return (
+    <Panel className="lg:col-span-8">
+      <PanelHeader
+        title="Next up"
+        subtitle="What to work on first: changes asked, then the closest due dates."
+        count={next.length > 0 ? open.filter((s) => groupOf(s) !== "review").length : undefined}
+      />
+      {next.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-14 text-center">
+          <CheckCircle size={22} weight="fill" className="text-white/25" />
+          <p className="text-sm text-white/65">Nothing to work on right now.</p>
+          <p className="text-[13px] text-white/40">
+            {open.length > 0 ? "Your open studies are with your reviewer." : "New studies show up here when an admin assigns them."}
+          </p>
+        </div>
+      ) : (
+        <ul className="mt-4 divide-y divide-white/[0.05] border-t border-white/[0.06]">
+          {next.map((s, i) => (
+            <li
+              key={s.id}
+              onMouseEnter={() => router.prefetch(`/dashboard/statistician/projects/${s.projectId}/workbench`)}
+              className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-6"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-xs text-white/55">{s.projectIntakeId}</span>
+                  <span className="text-[12px] text-white/40">{stageText(s)}</span>
+                </div>
+                <p className="mt-1 text-sm text-white sm:truncate" title={s.projectTitle}>
+                  {s.projectTitle}
+                </p>
+                <p className="mt-1 text-[13px]">
+                  <DueText s={s} />
+                  {pauseRequested(s) ? <span className="text-white/45"> · pause asked</span> : null}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <Button variant="ghost" size="sm" onClick={() => onLook(s)} className="active:scale-[0.97]">
+                  Details
+                </Button>
+                <Button asChild variant={i === 0 ? "primary" : "outline"} size="sm" className="gap-1.5 active:scale-[0.97]">
+                  <Link href={`/dashboard/statistician/projects/${s.projectId}/workbench`}>
+                    Open
+                    <ArrowRight size={13} weight="bold" />
+                  </Link>
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {open.length > 0 ? (
+        <PanelFooterButton onClick={() => document.getElementById("studies")?.scrollIntoView({ behavior: "smooth" })}>
+          See all my studies
+        </PanelFooterButton>
+      ) : null}
+    </Panel>
+  );
+}
+
+function WhereAllPanel({ counts, total }: { counts: Record<Group, number>; total: number }) {
+  const shown = GROUPS.filter((g) => g.key !== "stopped" || counts.stopped > 0);
+  const max = Math.max(1, ...shown.map((g) => counts[g.key]));
+  return (
+    <Panel className="flex-1">
+      <PanelHeader title="Where your studies are" subtitle={`${total} assigned to you in total`} />
+      <PanelBody>
+        <ul className="flex flex-col gap-3.5">
+          {shown.map((g) => {
+            const n = counts[g.key];
+            return (
+              <li key={g.key}>
+                <div className="mb-1.5 flex items-baseline justify-between gap-3 text-[13px]">
+                  <span className={n > 0 ? "text-white/80" : "text-white/40"}>{g.label}</span>
+                  <span className={`font-mono tabular-nums ${n > 0 ? "text-white" : "text-white/30"}`}>{n}</span>
+                </div>
+                <Meter value={n} max={max} label={`${g.label}: ${n}`} />
+              </li>
+            );
+          })}
+        </ul>
+      </PanelBody>
+    </Panel>
+  );
+}
+
+function WorkloadPanel({ open }: { open: Study[] }) {
+  // Only studies still being worked on count (delivered ones used to count as "active").
+  const risk = assessBurnoutRisk(open);
+  const active = open.filter((s) => !s.isPaused);
+  const urgent = active.filter((s) => s.isUrgent || s.isOverdue).length;
+  const reasons = risk.reasons.map((r) =>
+    r.startsWith("High concurrent")
+      ? `${active.length} studies open at once`
+      : r.startsWith("Critical urgency")
+        ? `${urgent} due within a day or late`
+        : "Two due dates within a day of each other",
+  );
+  return (
+    <Panel as="div">
+      <PanelBody className="flex items-start gap-3">
+        {risk.isAtRisk ? (
+          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#CC6600]" aria-hidden="true" />
+        ) : (
+          <CheckCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-white/35" />
+        )}
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-white">{risk.isAtRisk ? "You have a lot on" : "Your workload looks fine"}</p>
+          {risk.isAtRisk ? (
+            <ul className="mt-1 list-disc pl-4 text-[13px] text-white/60">
+              {reasons.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          ) : null}
+          <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">
+            Waiting on the client for files or answers? Ask to pause that study&apos;s deadline from its menu. Waiting days are added back.
+          </p>
+        </div>
+      </PanelBody>
+    </Panel>
+  );
+}
+
+type Filter = "all" | Group;
+
+function StudiesPanel({
+  studies,
+  counts,
+  onLook,
+  onPause,
+  onCopied,
+}: {
+  studies: Study[];
+  counts: Record<Group, number>;
+  onLook: (s: Study) => void;
+  onPause: (s: Study) => void;
+  onCopied: (id: string) => void;
+}) {
+  const router = useRouter();
+  const [filter, setFilter] = useState<Filter>("all");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("urgent");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // "/" jumps to search (unless you're typing somewhere); Esc clears it.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      const typing = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
+      if (e.key === "/" && !typing) {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const compare = SORTS.find((s) => s.value === sort)!.compare;
+    return studies
+      .filter(
+        (s) =>
+          (filter === "all" || groupOf(s) === filter) &&
+          (!q ||
+            s.projectIntakeId.toLowerCase().includes(q) ||
+            s.projectTitle.toLowerCase().includes(q) ||
+            (s.projectField ?? "").toLowerCase().includes(q) ||
+            s.qaLead.fullName.toLowerCase().includes(q)),
+      )
+      .sort(compare);
+  }, [studies, filter, query, sort]);
+
+  const pageRows = rows.slice((page - 1) * pageSize, page * pageSize);
+  const allTabs: Array<{ key: Filter; label: string; count: number }> = [
+    { key: "all", label: "All", count: studies.length },
+    ...GROUPS.map((g) => ({ key: g.key, label: g.label, count: counts[g.key] })),
+  ];
+  const tabs = allTabs.filter((t) => t.key === "all" || t.count > 0 || t.key === filter);
+
+  const clearFilters = () => {
+    setFilter("all");
+    setQuery("");
+    setPage(1);
+  };
+
+  const menuFor = (s: Study) => [
+    { label: "Details", subtitle: "Questions, goals and files", icon: <Eye size={16} weight="fill" />, onClick: () => onLook(s) },
+    {
+      label: "Messages",
+      subtitle: "Chat with the client and your team",
+      icon: <ChatCircleDots size={16} weight="fill" />,
+      onClick: () => router.push(`/dashboard/statistician/projects/${s.projectId}/messages`),
+    },
+    {
+      label: "Ask to pause the deadline",
+      subtitle: s.isPaused
+        ? "The deadline is paused"
+        : pauseRequested(s)
+          ? "Already asked; waiting for an admin"
+          : canAskPause(s)
+            ? "When you're waiting on the client"
+            : "Only while you're working on it",
+      icon: <Pause size={16} weight="fill" />,
+      disabled: !canAskPause(s),
+      onClick: () => onPause(s),
+    },
+    {
+      label: "Copy study ID",
+      subtitle: s.projectIntakeId,
+      dividerBefore: true,
+      icon: <Copy size={16} weight="fill" />,
+      onClick: () => {
+        void navigator.clipboard?.writeText(s.projectIntakeId).then(() => onCopied(s.projectIntakeId));
+      },
+    },
+  ];
+
+  const openButton = (s: Study) => (
+    <Button asChild variant="outline" size="sm" className="active:scale-[0.97]">
+      <Link href={`/dashboard/statistician/projects/${s.projectId}/workbench`}>Open</Link>
+    </Button>
+  );
+
+  return (
+    <Panel id="studies" className="scroll-mt-6">
+      <PanelHeader title="All my studies" count={studies.length} subtitle="Everything assigned to you, including delivered studies." />
+      <div className="mt-4 flex flex-col gap-3 px-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="-mx-1 flex items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none]" role="tablist" aria-label="Show studies">
+          {tabs.map((t) => {
+            const active = filter === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => {
+                  setFilter(t.key);
+                  setPage(1);
+                }}
+                className={`inline-flex shrink-0 items-center gap-2 rounded-[2px] px-3 py-1.5 font-sans text-[13px] transition-colors ${
+                  active ? "bg-white/[0.08] font-medium text-white" : "text-white/55 hover:text-white"
+                }`}
+              >
+                {t.label}
+                <span className={`font-mono text-[11px] ${active ? "text-white/60" : "text-white/35"}`}>{t.count}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label className="flex items-center gap-2 text-[13px] text-white/50">
+            <span className="shrink-0">Sort</span>
+            <select
+              value={sort}
+              onChange={(e) => {
+                setSort(e.target.value as SortKey);
+                setPage(1);
+              }}
+              className={`${FIELD} h-9 cursor-pointer px-2.5 [&>option]:bg-[#0A0A18] sm:w-44`}
+            >
+              {SORTS.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="relative flex w-full items-center sm:w-64">
+            <MagnifyingGlass size={14} weight="bold" className="pointer-events-none absolute left-3 text-white/35" />
+            <input
+              ref={searchRef}
+              type="search"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setQuery("");
+                  e.currentTarget.blur();
+                }
+              }}
+              placeholder="Search ID, title, or reviewer"
+              aria-label="Search my studies"
+              className={`${FIELD} h-9 pl-8 pr-9`}
+            />
+            <kbd className="pointer-events-none absolute right-2.5 rounded-[2px] border border-white/15 px-1.5 font-mono text-[10px] text-white/40">/</kbd>
+          </label>
+        </div>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
+          <p className="text-sm text-white/60">{studies.length === 0 ? "No studies assigned to you yet." : "No studies match."}</p>
+          {studies.length > 0 ? (
+            <Button variant="outline" size="sm" onClick={clearFilters} className="active:scale-[0.97]">
+              Clear Filters
+            </Button>
+          ) : null}
+        </div>
+      ) : (
+        <>
+          <ul className="mt-4 divide-y divide-white/[0.05] border-t border-white/[0.06] md:hidden">
+            {pageRows.map((s) => (
+              <li key={s.id} className="flex flex-col gap-2 px-5 py-4">
+                <div className="flex items-center justify-between gap-2">
+                  <CopyButton value={s.projectIntakeId} label={s.projectIntakeId} copiedLabel="Copied" variant="badge" />
+                  <span className="text-[12px] text-white/55">{stageText(s)}</span>
+                </div>
+                <p className="text-sm text-white">{s.projectTitle}</p>
+                <p className="-mt-1 text-[13px] text-white/45">Reviewer: {s.qaLead.fullName}</p>
+                <p className="text-[13px]">
+                  <DueText s={s} />
+                  {pauseRequested(s) ? <span className="text-white/45"> · pause asked</span> : null}
+                </p>
+                <div className="flex items-center justify-end gap-1.5">
+                  {openButton(s)}
+                  <DropdownMenu items={menuFor(s)} align="end" />
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 hidden overflow-x-auto border-t border-white/[0.06] md:block">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-white/[0.06] text-[11px] uppercase tracking-wider text-white/40">
+                  <th className="px-5 py-2.5 font-medium sm:px-6">Study</th>
+                  <th className="px-3 py-2.5 font-medium">Stage</th>
+                  <th className="px-3 py-2.5 font-medium">Due</th>
+                  <th className="px-3 py-2.5 font-medium">Reviewer</th>
+                  <th className="px-5 py-2.5 sm:px-6" aria-label="Actions" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.05]">
+                {pageRows.map((s) => (
+                  <tr
+                    key={s.id}
+                    onMouseEnter={() => router.prefetch(`/dashboard/statistician/projects/${s.projectId}/workbench`)}
+                    className="align-top transition-colors hover:bg-white/[0.02]"
+                  >
+                    <td className="max-w-[380px] px-5 py-3.5 sm:px-6">
+                      <div className="flex items-center gap-2">
+                        <CopyButton value={s.projectIntakeId} label={s.projectIntakeId} copiedLabel="Copied" variant="badge" />
+                        {clientPackageName(s.packageName) ? (
+                          <span className="truncate text-[12px] text-white/40">{clientPackageName(s.packageName)}</span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1.5 truncate text-sm text-white" title={s.projectTitle}>
+                        {s.projectTitle}
+                      </p>
+                      {s.projectField ? <p className="mt-0.5 truncate text-[13px] text-white/45">{s.projectField}</p> : null}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3.5 text-[13px] text-white/75">{stageText(s)}</td>
+                    <td className="whitespace-nowrap px-3 py-3.5 text-[13px]">
+                      <DueText s={s} />
+                      {pauseRequested(s) ? <p className="mt-0.5 text-[12px] text-white/45">Pause asked</p> : null}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3.5 text-[13px] text-white/70">{s.qaLead.fullName}</td>
+                    <td className="whitespace-nowrap px-5 py-3 sm:px-6">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {openButton(s)}
+                        <DropdownMenu items={menuFor(s)} align="end" />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {rows.length > 10 ? (
+            <Pagination
+              currentPage={page}
+              totalItems={rows.length}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(n) => {
+                setPageSize(n);
+                setPage(1);
+              }}
+              itemLabel="studies"
+              pageSizeOptions={[10, 20, 50]}
+            />
+          ) : null}
+        </>
+      )}
+    </Panel>
+  );
+}
+
+function QuickLook({ study: s, onClose, onPause }: { study: Study | null; onClose: () => void; onPause: (s: Study) => void }) {
+  if (!s) return null;
+  return (
+    <StudyDetailsModal
+      study={s}
+      stage={stageText(s)}
+      person={["Reviewer", s.qaLead.fullName]}
+      onClose={onClose}
+      footer={
+        <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+          {canAskPause(s) ? (
+            <Button variant="ghost" size="sm" onClick={() => onPause(s)} className="gap-1.5 active:scale-[0.97]">
+              <Pause size={14} weight="fill" />
+              Ask to Pause Deadline
+            </Button>
+          ) : (
+            <span className="text-[13px] text-white/40">{s.isPaused ? "The deadline is paused." : pauseRequested(s) ? "Pause asked. Waiting for an admin." : ""}</span>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button asChild variant="outline" size="sm" className="active:scale-[0.97]">
+              <Link href={`/dashboard/statistician/projects/${s.projectId}/messages`}>Messages</Link>
+            </Button>
+            <Button asChild variant="primary" size="sm" className="gap-1.5 active:scale-[0.97]">
+              <Link href={`/dashboard/statistician/projects/${s.projectId}/workbench`}>
+                Open Study
+                <ArrowRight size={13} weight="bold" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      }
+    />
+  );
+}
+
+function PauseDialog({ study: s, onClose, onSent }: { study: Study | null; onClose: () => void; onSent: (s: Study, reason: string) => void }) {
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, start] = useTransition();
+
+  useEffect(() => {
+    setReason("");
+    setError(null);
+  }, [s]);
+
+  if (!s) return null;
+  const send = () => {
+    const text = reason.trim();
+    if (text.length < 5) return setError("Say what you're waiting for (at least 5 characters).");
+    setError(null);
+    start(async () => {
+      const res = await requestSlaPause({ projectId: s.projectId, reason: text });
+      if (res.success) onSent(s, text);
+      else setError(res.error?.message || "Couldn't send the request. Please try again.");
+    });
+  };
+  return (
+    <Modal
+      open
+      onClose={() => (busy ? undefined : onClose())}
+      title="Ask to pause the deadline"
+      description={`${s.projectIntakeId} · ${s.projectTitle}`}
+      size="md"
+      footer={
+        <div className="flex w-full justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="sm" onClick={send} loading={busy} className="active:scale-[0.97]">
+            Send Request
+          </Button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-4 font-sans">
+        <p className="text-[13px] leading-relaxed text-white/65">
+          Use this when you&apos;re waiting on the client: missing files, data that needs fixing, or questions they haven&apos;t answered. An admin
+          checks the request. While the deadline is paused it doesn&apos;t count down, and the waiting days are added back.
+        </p>
+        <label className="flex flex-col gap-1.5 text-[13px] text-white/70">
+          What are you waiting for?
+          <textarea
+            rows={4}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="For example: the client hasn't sent the cleaned survey data yet"
+            className={`${FIELD} resize-none p-3`}
+          />
+        </label>
+        {error ? (
+          <p role="alert" className="flex items-start gap-2 text-[13px] text-red-300">
+            <Warning size={15} weight="fill" className="mt-0.5 shrink-0" />
+            {error}
+          </p>
+        ) : null}
+      </div>
+    </Modal>
+  );
+}
+
+

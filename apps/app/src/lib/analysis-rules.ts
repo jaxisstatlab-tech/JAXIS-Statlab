@@ -1,115 +1,77 @@
 import { db } from "@/lib/db";
 import { AnalysisFileCategory, type ProjectStatus } from "@prisma/client";
-
-export const ALLOWED_ANALYSIS_MIME_TYPES = [
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/vnd.ms-excel",
-  "text/csv",
-  "application/octet-stream",
-  "text/x-r-source",
-  "text/x-python",
-  "text/plain",
-  "application/zip",
-  "application/x-zip-compressed",
-  "application/json",
-];
-
-export const ALLOWED_ANALYSIS_EXTENSIONS = [
-  ".pdf",
-  ".xlsx",
-  ".xls",
-  ".csv",
-  ".sav",
-  ".spv",
-  ".r",
-  ".rmd",
-  ".py",
-  ".ipynb",
-  ".dta",
-  ".do",
-  ".zip",
-  ".txt",
-  ".docx",
-];
+import { DATA_EXTENSIONS, REPORT_AND_FIGURE_EXTENSIONS, fileExtension } from "@/lib/file-types";
 
 export const MAX_ANALYSIS_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
 
 export interface AnalysisCategoryMeta {
+  /** Plain name shown in the workbench, the review page and file lists. */
   label: string;
   description: string;
   badgeVariant: "sky" | "emerald" | "amber" | "info" | "secondary" | "warning" | "muted";
   allowedExtensions: string[];
+  /** For the file picker (the extensions, comma separated). */
   accept: string;
+  /** Short list of the formats, e.g. ".r, .rmd, .qmd". */
   hint: string;
 }
 
+const meta = (
+  label: string,
+  description: string,
+  badgeVariant: AnalysisCategoryMeta["badgeVariant"],
+  allowedExtensions: string[]
+): AnalysisCategoryMeta => ({
+  label,
+  description,
+  badgeVariant,
+  allowedExtensions,
+  accept: allowedExtensions.join(","),
+  hint: allowedExtensions.join(", "),
+});
+
+// Each kind of analysis file and the formats it takes. Lists come from src/lib/file-types.ts.
 export const ANALYSIS_CATEGORY_METADATA: Record<AnalysisFileCategory, AnalysisCategoryMeta> = {
-  PDF_REPORT: {
-    label: "1. Client Results & Discussion (PDF / DOCX)",
-    description: "Written statistical narrative, APA tables, and results interpretation",
-    badgeVariant: "warning",
-    allowedExtensions: [".pdf", ".docx", ".doc"],
-    accept: ".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword",
-    hint: ".pdf, .docx, .doc",
-  },
-  R_OUTPUT: {
-    label: "2. R Script / Markdown (.r, .rmd)",
-    description: "Reproducible R source code (.r), RMarkdown (.rmd), or serialized output (.rds)",
-    badgeVariant: "sky",
-    allowedExtensions: [".r", ".rmd", ".rds"],
-    accept: ".r,.rmd,.rds,text/x-r-source,text/plain",
-    hint: ".r, .rmd, .rds",
-  },
-  PYTHON_OUTPUT: {
-    label: "2. Python Script / Notebook (.py, .ipynb)",
-    description: "Python reproducible script (.py) or computational notebook (.ipynb)",
-    badgeVariant: "emerald",
-    allowedExtensions: [".py", ".ipynb"],
-    accept: ".py,.ipynb,text/x-python,application/x-ipynb+json,text/plain",
-    hint: ".py, .ipynb",
-  },
-  SPSS_OUTPUT: {
-    label: "2. SPSS Syntax / Output (.sps, .spv, .sav)",
-    description: "SPSS dataset (.sav), output viewer (.spv), or syntax (.sps)",
-    badgeVariant: "secondary",
-    allowedExtensions: [".sav", ".spv", ".sps"],
-    accept: ".sav,.spv,.sps,application/x-spss-sav,application/octet-stream",
-    hint: ".sav, .spv, .sps",
-  },
-  EXCEL_WORKBOOK: {
-    label: "Excel Calculation Workbook (.xlsx)",
-    description: "Statistical summary tables, crosstabs, and raw calculations (.xlsx)",
-    badgeVariant: "emerald",
-    allowedExtensions: [".xlsx", ".xls", ".csv"],
-    accept: ".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv",
-    hint: ".xlsx, .xls, .csv",
-  },
-  STATA_OUTPUT: {
-    label: "Stata Do-File / Output (.do, .dta)",
-    description: "Stata dataset (.dta), command log, or do-file (.do)",
-    badgeVariant: "info",
-    allowedExtensions: [".do", ".dta"],
-    accept: ".do,.dta,application/octet-stream,text/plain",
-    hint: ".do, .dta",
-  },
-  RAW_DATASET: {
-    label: "Cleaned / Imputed Dataset",
-    description: "Preprocessed and imputed research dataset (.csv, .xlsx, .sav)",
-    badgeVariant: "sky",
-    allowedExtensions: [".csv", ".xlsx", ".sav", ".dta", ".json"],
-    accept: ".csv,.xlsx,.sav,.dta,.json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/json",
-    hint: ".csv, .xlsx, .sav, .dta, .json",
-  },
-  OTHER: {
-    label: "Other Analytical Asset",
-    description: "Supplementary archive (.zip), figure, or documentation",
-    badgeVariant: "muted",
-    allowedExtensions: [".pdf", ".docx", ".xlsx", ".csv", ".zip", ".txt"],
-    accept: ".pdf,.docx,.xlsx,.csv,.zip,.txt",
-    hint: ".pdf, .docx, .xlsx, .csv, .zip, .txt",
-  },
+  PDF_REPORT: meta("Results write-up", "Chapter 4 or the results and discussion, with APA tables", "warning", [".pdf", ".docx", ".doc", ".odt", ".html"]),
+  R_OUTPUT: meta("R or Quarto", "R scripts, R Markdown or Quarto files, and saved R data", "sky", [".r", ".rmd", ".qmd", ".rds", ".rdata", ".rda", ".html"]),
+  PYTHON_OUTPUT: meta("Python", "Python scripts or Jupyter notebooks", "emerald", [".py", ".ipynb", ".html"]),
+  SPSS_OUTPUT: meta("SPSS", "Syntax, output and data files", "secondary", [".sps", ".spv", ".sav", ".zsav", ".por"]),
+  EXCEL_WORKBOOK: meta("Excel workbook", "Tables and calculations in a spreadsheet", "emerald", [".xlsx", ".xls", ".xlsm", ".ods", ".csv"]),
+  STATA_OUTPUT: meta("Stata", "Do-files, logs and data files", "info", [".do", ".log", ".smcl", ".dta"]),
+  RAW_DATASET: meta("Cleaned data", "The data after cleaning, in any common format", "sky", DATA_EXTENSIONS),
+  OTHER: meta(
+    "Other files",
+    "SAS, JASP, jamovi or Minitab files, figures, or a ZIP of everything",
+    "muted",
+    [...new Set([".sas", ".sas7bdat", ".xpt", ".jasp", ".omv", ".mtw", ".mpx", ...REPORT_AND_FIGURE_EXTENSIONS, ".pdf", ".docx", ".txt", ".zip"])]
+  ),
 };
+
+/** Every extension any analysis file kind accepts. */
+export const ALLOWED_ANALYSIS_EXTENSIONS = [...new Set(Object.values(ANALYSIS_CATEGORY_METADATA).flatMap((m) => m.allowedExtensions))];
+
+/** The kinds that count as "code or output" for sending to the reviewer (the write-up is the other half). */
+export const CODE_OR_OUTPUT_CATEGORIES: AnalysisFileCategory[] = [
+  "R_OUTPUT",
+  "PYTHON_OUTPUT",
+  "SPSS_OUTPUT",
+  "STATA_OUTPUT",
+  "EXCEL_WORKBOOK",
+  "OTHER",
+];
+
+/**
+ * What's still missing before the work can go to the reviewer: a current results write-up, and current code or
+ * output so the reviewer can check the numbers. Empty when ready. Used by the workbench and by submitForQA.
+ */
+export function missingForReview(currentCategories: string[]): string[] {
+  const missing: string[] = [];
+  if (!currentCategories.includes("PDF_REPORT")) missing.push("a results write-up");
+  if (!currentCategories.some((c) => CODE_OR_OUTPUT_CATEGORIES.includes(c as AnalysisFileCategory))) {
+    missing.push("your code or output (R, Quarto, Python, SPSS, Stata, Excel or similar)");
+  }
+  return missing;
+}
 
 /**
  * Asserts that the given statistician is actively assigned to the project.
@@ -141,21 +103,21 @@ export function assertCanUploadAnalysis(status: ProjectStatus): {
   if (status === "SCOPE_CREEP_HALTED") {
     return {
       allowed: false,
-      reason: "Work is currently halted due to an active scope creep flag. Uploads will unlock once the supplemental quotation is resolved.",
+      reason: "Work is on hold while the extra work you flagged is priced. Uploads open again once that is settled.",
     };
   }
 
   if (status === "FOR_QA") {
     return {
       allowed: false,
-      reason: "This study is currently submitted for QA evaluation. File uploads are locked pending Senior QA Lead review.",
+      reason: "Your files are with the reviewer. Uploads open again if they ask for changes.",
     };
   }
 
   if (["DELIVERED", "CLOSED", "HALTED", "CANCELLED", "DISPUTED", "EXPIRED", "ETHICAL_BREACH"].includes(status)) {
     return {
       allowed: false,
-      reason: `File modifications are disabled because the study is in ${status} state.`,
+      reason: status === "DELIVERED" || status === "CLOSED" || status === "DISPUTED" ? "This study is delivered, so its files can't change." : "This study was stopped, so its files can't change.",
     };
   }
 
@@ -181,7 +143,7 @@ export function validateAnalysisFileFormat(
     };
   }
 
-  const ext = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
+  const ext = fileExtension(fileName);
 
   // If specific category is provided, validate against category-specific allowed extensions
   if (category && ANALYSIS_CATEGORY_METADATA[category]) {
@@ -189,7 +151,7 @@ export function validateAnalysisFileFormat(
     if (!catMeta.allowedExtensions.includes(ext)) {
       return {
         valid: false,
-        error: `File "${fileName}" does not match "${catMeta.label}". Expected file format: ${catMeta.hint} (received "${ext}").`,
+        error: `"${fileName}" can't be added as ${catMeta.label}. Use ${catMeta.hint}.`,
       };
     }
     return { valid: true };
@@ -199,7 +161,7 @@ export function validateAnalysisFileFormat(
   if (!hasValidExt) {
     return {
       valid: false,
-      error: `File extension "${ext}" is not supported. Supported extensions: ${ALLOWED_ANALYSIS_EXTENSIONS.join(", ")}`,
+      error: `"${ext || "Files without an extension"}" can't be uploaded here.`,
     };
   }
 

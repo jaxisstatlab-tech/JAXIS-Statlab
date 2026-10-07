@@ -3,10 +3,10 @@ import path from "path";
 import type { RoleName, AnalysisFileCategory, DeliverableCategory } from "@prisma/client";
 import { getDevUserByEmail, getDevUsers } from "@/lib/mock-data/users.data";
 import { clientPackageName } from "@/features/projects/client-packages";
-import { ANALYSIS_CATEGORY_METADATA, assertCanUploadAnalysis } from "@/lib/analysis-rules";
+import { ANALYSIS_CATEGORY_METADATA, assertCanUploadAnalysis, missingForReview, validateAnalysisFileFormat } from "@/lib/analysis-rules";
 import { QA_DECISION_METADATA, ERROR_CLASSIFICATION_METADATA, assertCanSubmitQaReview } from "@/lib/qa-rules";
 import { DELIVERABLE_CATEGORY_METADATA, REVISION_CLASSIFICATION_METADATA, getRevisionWindowCountdown, isRevisionWindowActive } from "@/lib/delivery-rules";
-import type { WorkbenchDataDTO } from "@/features/analysis/schemas";
+import type { AnalysisFileDTO, ScopeCreepLogDTO, WorkbenchDataDTO } from "@/features/analysis/schemas";
 import type { QaInspectionDeskDTO, QaReviewDTO } from "@/features/qa/schemas";
 import type { AdminDeliverablesDeskDTO, ClientDeliverablesDTO, DeliverableDTO, RevisionRequestDTO } from "@/features/deliverables/schemas";
 
@@ -38,14 +38,22 @@ type DevProject = {
   deliveredAt?: string | null;
   filesPurgeAt?: string | null;
   qaApproved?: boolean;
+  isLocked?: boolean;
   client?: { id?: string; fullName?: string; email?: string; clientProfile?: { institutionSchool?: string; academicProgram?: string } };
   assignment?: {
     statisticianId?: string | null;
     qaLeadId?: string | null;
-    statistician?: { fullName?: string } | null;
-    qaLead?: { fullName?: string } | null;
+    statistician?: { fullName?: string; email?: string } | null;
+    qaLead?: { fullName?: string; email?: string } | null;
+    assignedAt?: string | null;
+    slaDueAt?: string | null;
+    slaPausedAt?: string | null;
+    slaPauseReason?: string | null;
+    slaPausedBy?: string | null;
   } | null;
   financialSummary?: { totalAmount?: number } | null;
+  /** Offline "Flag Extra Work": the open flag, if any. */
+  scopeCreep?: { flagReason: string; flaggedAt: string; flaggedBy: string; flaggerName: string } | null;
   files?: Array<{ id: string; fileName: string; filePath: string; fileType?: string; fileCategory?: string; uploadedAt?: string }>;
 };
 
@@ -55,6 +63,8 @@ export type DevAnalysisFile = {
   statisticianId: string;
   statisticianName: string;
   fileName: string;
+  /** Set for files uploaded offline (kept in .dev-uploads under this key); sample files have none. */
+  filePath?: string;
   fileType: string;
   fileSize: number;
   fileCategory: AnalysisFileCategory;
@@ -68,10 +78,12 @@ export type DevQaReview = {
   projectId: string;
   reviewerId: string;
   reviewerName: string;
-  decision: "QA_APPROVED" | "QA_REJECTED";
+  decision: "QA_APPROVED" | "QA_REJECTED" | "ESCALATED_TO_CEO";
   errorClassification: string | null;
   comments: string;
   reviewedAt: string;
+  /** Set when the reviewer sends the work back: the analyst's fix-by time. */
+  qaRevisionDueAt?: string | null;
 };
 export type DevDeliverable = {
   id: string;
@@ -144,7 +156,7 @@ function sowInfo(sow: Json | undefined) {
 
 function sla(p: DevProject) {
   if (!p.assignment?.statisticianId) return null;
-  const due = new Date(p.deadlineRequested ?? Date.now() + 7 * 864e5);
+  const due = new Date(p.assignment.slaDueAt ?? p.deadlineRequested ?? Date.now() + 7 * 864e5);
   const diffMs = due.getTime() - Date.now();
   const days = Math.ceil(diffMs / 864e5);
   return { due, diffMs, days };
@@ -162,7 +174,7 @@ const reviewDTO = (r: DevQaReview): QaReviewDTO => ({
     ? ERROR_CLASSIFICATION_METADATA[r.errorClassification as keyof typeof ERROR_CLASSIFICATION_METADATA]?.label || r.errorClassification
     : null,
   comments: r.comments,
-  qaRevisionDueAt: null,
+  qaRevisionDueAt: r.qaRevisionDueAt ?? null,
   reviewedAt: r.reviewedAt,
 });
 
@@ -240,7 +252,7 @@ export function devWorkbench(projectId: string, user: User): Result<WorkbenchDat
         statisticianId: f.statisticianId,
         statisticianName: f.statisticianName,
         fileName: f.fileName,
-        filePath: `dev/${f.projectId}/${f.fileName}`,
+        filePath: f.filePath ?? `dev/${f.projectId}/${f.fileName}`,
         fileType: f.fileType,
         fileSize: f.fileSize,
         fileCategory: f.fileCategory,
@@ -251,14 +263,14 @@ export function devWorkbench(projectId: string, user: User): Result<WorkbenchDat
         uploadedAt: f.uploadedAt,
         versionCount: counts.get(f.fileCategory) ?? 1,
       })),
-      activeScopeCreep: null,
+      activeScopeCreep: p.scopeCreep ? scopeCreepDTO(p) : null,
       canUpload: w.isStatistician && upload.allowed,
       uploadDisabledReason: w.isStatistician ? upload.reason : "Only the assigned statistical analyst can upload analysis files.",
       isAssignedStatistician: w.isStatistician,
       isAssignedQaLead: w.isQaLead,
       isManagement: w.isManagement,
       qaReviews: reviews,
-      activeRevision: reviews.find((r) => r.decision === "QA_REJECTED") ?? null,
+      activeRevision: [...reviews].sort((a, b) => b.reviewedAt.localeCompare(a.reviewedAt)).find((r) => r.decision === "QA_REJECTED") ?? null,
     },
   };
 }
@@ -294,7 +306,7 @@ export function devQaDesk(projectId: string, user: User): Result<QaInspectionDes
         clientSchool: p.client?.clientProfile?.institutionSchool ?? null,
         createdAt: p.createdAt,
         qaApproved,
-        isLocked: false,
+        isLocked: p.isLocked ?? false,
       },
       assignment: s
         ? {
@@ -318,7 +330,7 @@ export function devQaDesk(projectId: string, user: User): Result<QaInspectionDes
         .map((f) => ({
           id: f.id,
           fileName: f.fileName,
-          filePath: `dev/${f.projectId}/${f.fileName}`,
+          filePath: f.filePath ?? `dev/${f.projectId}/${f.fileName}`,
           fileType: f.fileType,
           fileSize: f.fileSize,
           fileCategory: f.fileCategory,
@@ -332,7 +344,7 @@ export function devQaDesk(projectId: string, user: User): Result<QaInspectionDes
       clientFiles: clientFiles(p),
       reviewHistory: reviews,
       rejectionCount: d.reviews.filter((r) => r.decision === "QA_REJECTED").length,
-      activeRevision: reviews.find((r) => r.decision === "QA_REJECTED") ?? null,
+      activeRevision: [...reviews].sort((a, b) => b.reviewedAt.localeCompare(a.reviewedAt)).find((r) => r.decision === "QA_REJECTED") ?? null,
       canReview: (w.isQaLead || w.isManagement) && status.allowed,
       reviewDisabledReason: !(w.isQaLead || w.isManagement)
         ? "Only the assigned reviewer or an admin can submit a review."
@@ -592,4 +604,334 @@ export function devSubmitRevision(
     fs.writeFileSync(FILES.projects, JSON.stringify(projects, null, 2), "utf-8");
   }
   return revisionDTO(rev, p);
+}
+
+/** One study on an analyst's or reviewer's list, in the same shape the database query returns. */
+export type DevWorkloadRow = {
+  id: string;
+  projectId: string;
+  assignedAt: Date;
+  slaStartAt: Date;
+  slaDueAt: Date;
+  slaPausedAt: Date | null;
+  slaPauseReason: string | null;
+  slaPausedBy: string | null;
+  project: {
+    intakeId: string;
+    researchTitle: string;
+    packageName: string | null;
+    masterStatus: string;
+    deliveredAt: Date | null;
+    researchObjectives: string | null;
+    researchQuestions: string | null;
+    hypotheses: string | null;
+    client: { clientProfile: { academicProgram: string | null } | null } | null;
+    files: Array<{ id: string; fileName: string; fileType: string; fileCategory: string }>;
+  };
+  statistician: { id: string; fullName: string; email: string };
+  qaLead: { id: string; fullName: string; email: string };
+};
+
+/** The sample studies assigned to this analyst or reviewer (My Studies, QA Review Desk). */
+export function devWorkload(user: User, as: "STATISTICIAN" | "SENIOR_QA_LEAD"): DevWorkloadRow[] {
+  const users = getDevUsers();
+  const person = (id: string, fallback?: { fullName?: string; email?: string } | null) => {
+    const u = Object.values(users).find((x) => x.id === id);
+    return { id, fullName: u?.fullName ?? fallback?.fullName ?? "Team member", email: u?.email ?? fallback?.email ?? "" };
+  };
+  return readJson<DevProject>(FILES.projects)
+    .filter((p) => {
+      if (!p.assignment?.statisticianId || !p.assignment.qaLeadId) return false;
+      const w = who(user, p);
+      return as === "STATISTICIAN" ? w.isStatistician : w.isQaLead;
+    })
+    .map((p) => {
+      const a = p.assignment!;
+      const assignedAt = new Date(a.assignedAt ?? p.createdAt);
+      return {
+        id: `dev_asg_${p.id}`,
+        projectId: p.id,
+        assignedAt,
+        slaStartAt: assignedAt,
+        slaDueAt: new Date(a.slaDueAt ?? p.deadlineRequested ?? Date.now() + 7 * 864e5),
+        slaPausedAt: a.slaPausedAt ? new Date(a.slaPausedAt) : null,
+        slaPauseReason: a.slaPauseReason ?? null,
+        slaPausedBy: a.slaPausedBy ?? null,
+        project: {
+          intakeId: p.intakeId,
+          researchTitle: p.researchTitle,
+          packageName: p.packageName ?? null,
+          masterStatus: p.masterStatus,
+          deliveredAt: p.deliveredAt ? new Date(p.deliveredAt) : null,
+          researchObjectives: p.researchObjectives ?? null,
+          researchQuestions: p.researchQuestions ?? null,
+          hypotheses: p.hypotheses ?? null,
+          client: { clientProfile: { academicProgram: p.client?.clientProfile?.academicProgram ?? null } },
+          files: (p.files ?? []).map((f) => ({
+            id: f.id,
+            fileName: f.fileName,
+            fileType: f.fileType ?? "application/octet-stream",
+            fileCategory: f.fileCategory ?? "OTHER",
+          })),
+        },
+        statistician: person(a.statisticianId!, a.statistician),
+        qaLead: person(a.qaLeadId!, a.qaLead),
+      };
+    })
+    .sort((x, y) => x.slaDueAt.getTime() - y.slaDueAt.getTime());
+}
+
+/** Offline "Ask to pause the deadline": same rules as the database version, saved in .dev-projects.json. */
+export function devRequestPause(projectId: string, user: User, reason: string): Result<{ message: string }> {
+  const projects = readJson<DevProject>(FILES.projects);
+  const p = projects.find((x) => x.id === projectId || x.intakeId === projectId);
+  if (!p?.assignment) return { success: false, error: { code: "NOT_FOUND", message: "Assignment not found." } };
+  const w = who(user, p);
+  if (!w.isStatistician && !w.isQaLead && !w.isManagement) {
+    return { success: false, error: { code: "FORBIDDEN", message: "You can only request deadline pauses for your assigned studies." } };
+  }
+  if (["DELIVERED", "CLOSED", "DISPUTED", "CANCELLED", "EXPIRED", "HALTED", "ETHICAL_BREACH"].includes(p.masterStatus)) {
+    return { success: false, error: { code: "INVALID_STATE", message: "This study is finished, so its deadline can't be paused." } };
+  }
+  if (p.assignment.slaPausedAt) return { success: false, error: { code: "ALREADY_PAUSED", message: "The deadline is already paused." } };
+  if (p.assignment.slaPauseReason) {
+    return { success: false, error: { code: "ALREADY_REQUESTED", message: "You already asked to pause this deadline. An admin will answer it." } };
+  }
+  p.assignment.slaPauseReason = reason;
+  p.assignment.slaPausedBy = user.id ?? null;
+  fs.writeFileSync(FILES.projects, JSON.stringify(projects, null, 2), "utf-8");
+  return { success: true, data: { message: "Pause request submitted for admin review." } };
+}
+
+// ── Offline workbench actions (upload, version history, download, send for review, flag extra work) ──
+
+const scopeCreepDTO = (p: DevProject): ScopeCreepLogDTO => ({
+  id: `dev_scope_${p.id}`,
+  projectId: p.id,
+  flaggedBy: p.scopeCreep!.flaggedBy,
+  flaggerName: p.scopeCreep!.flaggerName,
+  flagReason: p.scopeCreep!.flagReason,
+  flaggedAt: p.scopeCreep!.flaggedAt,
+  resolvedAt: null,
+  resolvedBy: null,
+  resolverName: null,
+  resolutionNotes: null,
+  supplementalQuotationId: null,
+  isResolved: false,
+});
+
+const analysisDTO = (f: DevAnalysisFile, versionCount?: number): AnalysisFileDTO => ({
+  id: f.id,
+  projectId: f.projectId,
+  statisticianId: f.statisticianId,
+  statisticianName: f.statisticianName,
+  fileName: f.fileName,
+  filePath: f.filePath ?? `dev/${f.projectId}/${f.fileName}`,
+  fileType: f.fileType,
+  fileSize: f.fileSize,
+  fileCategory: f.fileCategory,
+  categoryLabel: ANALYSIS_CATEGORY_METADATA[f.fileCategory]?.label || f.fileCategory,
+  version: f.version,
+  isCurrent: f.isCurrent,
+  notes: f.notes,
+  uploadedAt: f.uploadedAt,
+  versionCount,
+});
+
+function saveProjects(projects: DevProject[]) {
+  fs.writeFileSync(FILES.projects, JSON.stringify(projects, null, 2), "utf-8");
+}
+
+function personName(user: User): string {
+  const dev = user.email ? getDevUserByEmail(user.email) : undefined;
+  return dev?.fullName ?? "Statistical Analyst";
+}
+
+/** The workbench folder a study's uploads go to (same key format as generateR2StorageKey). */
+const workbenchFolder = (projectId: string) => `studies/${projectId.replace(/[^a-zA-Z0-9_-]/g, "_")}/workbench/`;
+
+export function devUploadAnalysis(
+  input: { projectId: string; fileName: string; filePath: string; fileType: string; fileSize?: number; fileCategory: AnalysisFileCategory; notes?: string },
+  user: User
+): Result<AnalysisFileDTO> {
+  const projects = readJson<DevProject>(FILES.projects);
+  const p = projects.find((x) => x.id === input.projectId);
+  if (!p) return { success: false, error: { code: "PROJECT_NOT_FOUND", message: "Project not found." } };
+  if (!who(user, p).isStatistician) {
+    return { success: false, error: { code: "FORBIDDEN", message: "Only the assigned analyst can upload files." } };
+  }
+  const allowed = assertCanUploadAnalysis(p.masterStatus as never);
+  if (!allowed.allowed) return { success: false, error: { code: "UPLOAD_BLOCKED", message: allowed.reason || "Uploads are locked." } };
+  const format = validateAnalysisFileFormat(input.fileName, input.fileType, input.fileSize, input.fileCategory);
+  if (!format.valid) return { success: false, error: { code: "INVALID_FILE_FORMAT", message: format.error || "Unsupported file." } };
+  if (!input.filePath.startsWith(workbenchFolder(p.id))) {
+    return { success: false, error: { code: "INVALID_FILE_PATH", message: "That file wasn't uploaded for this study. Please upload it again." } };
+  }
+
+  const all = readJson<{ id: string; projectId: string; files?: DevAnalysisFile[]; reviews?: DevQaReview[] }>(FILES.analysis);
+  let entry = all.find((a) => a.projectId === p.id);
+  if (!entry) {
+    entry = { id: `dev_analysis_${p.id}`, projectId: p.id, files: [], reviews: [] };
+    all.push(entry);
+  }
+  const files = entry.files ?? [];
+  const sameKind = files.filter((f) => f.fileCategory === input.fileCategory);
+  sameKind.forEach((f) => (f.isCurrent = false));
+  const row: DevAnalysisFile = {
+    id: `dev_af_${Date.now().toString(36)}`,
+    projectId: p.id,
+    statisticianId: p.assignment?.statisticianId ?? user.id ?? "",
+    statisticianName: personName(user),
+    fileName: input.fileName,
+    filePath: input.filePath,
+    fileType: input.fileType,
+    fileSize: input.fileSize ?? 0,
+    fileCategory: input.fileCategory,
+    version: Math.max(0, ...sameKind.map((f) => f.version)) + 1,
+    isCurrent: true,
+    notes: input.notes?.trim() || null,
+    uploadedAt: new Date().toISOString(),
+  };
+  entry.files = [row, ...files];
+  fs.writeFileSync(FILES.analysis, JSON.stringify(all, null, 2), "utf-8");
+
+  if (["EXPERT_ASSIGNED", "ACTIVE", "QA_REVISION"].includes(p.masterStatus)) {
+    p.masterStatus = "IN_PROGRESS";
+    saveProjects(projects);
+  }
+  return { success: true, data: analysisDTO(row, sameKind.length + 1) };
+}
+
+export function devAnalysisHistory(projectId: string, category: AnalysisFileCategory, user: User): Result<AnalysisFileDTO[]> {
+  const d = load(projectId);
+  if (!d) return { success: false, error: { code: "PROJECT_NOT_FOUND", message: "Project not found." } };
+  const w = who(user, d.project);
+  if (!w.isStatistician && !w.isQaLead && !w.isManagement) {
+    return { success: false, error: { code: "FORBIDDEN", message: "You can't see this study's files." } };
+  }
+  const rows = d.files.filter((f) => f.fileCategory === category).sort((a, b) => b.version - a.version);
+  return { success: true, data: rows.map((f) => analysisDTO(f, rows.length)) };
+}
+
+export function devAnalysisDownload(fileId: string, user: User): Result<string> {
+  const analysis = readJson<{ projectId: string; files?: DevAnalysisFile[] }>(FILES.analysis);
+  const file = analysis.flatMap((a) => a.files ?? []).find((f) => f.id === fileId);
+  if (!file) return { success: false, error: { code: "FILE_NOT_FOUND", message: "File not found." } };
+  const d = load(file.projectId);
+  const w = d ? who(user, d.project) : null;
+  if (!w || (!w.isStatistician && !w.isQaLead && !w.isManagement)) {
+    return { success: false, error: { code: "FORBIDDEN", message: "You can't download this file." } };
+  }
+  if (!file.filePath) {
+    return { success: false, error: { code: "SAMPLE_FILE", message: "This is a sample file with nothing inside (offline mode). Files you upload offline can be downloaded." } };
+  }
+  return { success: true, data: `/api/files/preview?url=${encodeURIComponent(file.filePath)}` };
+}
+
+export function devSubmitForQA(projectId: string, user: User): Result<void> {
+  const projects = readJson<DevProject>(FILES.projects);
+  const p = projects.find((x) => x.id === projectId);
+  if (!p) return { success: false, error: { code: "PROJECT_NOT_FOUND", message: "Project not found." } };
+  if (!who(user, p).isStatistician) {
+    return { success: false, error: { code: "FORBIDDEN", message: "Only the assigned analyst can send the work for review." } };
+  }
+  if (p.masterStatus === "SCOPE_CREEP_HALTED") {
+    return { success: false, error: { code: "SCOPE_CREEP_HALTED", message: "Work is on hold for the extra work you flagged." } };
+  }
+  const allowed = assertCanUploadAnalysis(p.masterStatus as never);
+  if (!allowed.allowed) return { success: false, error: { code: "INVALID_STATE", message: allowed.reason || "This study can't be sent for review now." } };
+  if (p.masterStatus === "QA_REVISION") {
+    return { success: false, error: { code: "FIX_NOT_UPLOADED", message: "Upload the fixed files before sending it for review again." } };
+  }
+  const current = load(projectId)!.files.filter((f) => f.isCurrent).map((f) => f.fileCategory);
+  const missing = missingForReview(current);
+  if (missing.length > 0) {
+    return { success: false, error: { code: "FILES_MISSING", message: `Add ${missing.join(" and ")} before sending it for review.` } };
+  }
+  p.masterStatus = "FOR_QA";
+  saveProjects(projects);
+  return { success: true, data: undefined };
+}
+
+export function devFlagScopeCreep(projectId: string, user: User, flagReason: string): Result<ScopeCreepLogDTO> {
+  const projects = readJson<DevProject>(FILES.projects);
+  const p = projects.find((x) => x.id === projectId);
+  if (!p) return { success: false, error: { code: "PROJECT_NOT_FOUND", message: "Project not found." } };
+  if (!who(user, p).isStatistician) {
+    return { success: false, error: { code: "FORBIDDEN", message: "Only the assigned analyst can flag extra work." } };
+  }
+  if (p.masterStatus === "SCOPE_CREEP_HALTED") {
+    return { success: false, error: { code: "ALREADY_FLAGGED", message: "Extra work is already flagged for this study." } };
+  }
+  p.masterStatus = "SCOPE_CREEP_HALTED";
+  p.scopeCreep = { flagReason, flaggedAt: new Date().toISOString(), flaggedBy: user.id ?? "", flaggerName: personName(user) };
+  saveProjects(projects);
+  return { success: true, data: scopeCreepDTO(p) };
+}
+
+/** File viewer, offline: files in a study's workbench folder open for its analyst, reviewer, admins and the CEO. */
+export function devCanOpenStudyFile(storageKey: string, user: User): boolean {
+  const m = /^studies\/([^/]+)\/workbench\//.exec(storageKey);
+  if (!m) return false;
+  const p = readJson<DevProject>(FILES.projects).find((x) => workbenchFolder(x.id) === `studies/${m[1]}/workbench/`);
+  if (!p) return false;
+  const w = who(user, p);
+  return w.isStatistician || w.isQaLead || w.isManagement;
+}
+
+/** Offline QA decision: same rules as submitQaReview, saved in the sample files. */
+export function devSubmitQaReview(
+  input: { projectId: string; decision: "QA_APPROVED" | "QA_REJECTED" | "ESCALATED_TO_CEO"; errorClassification?: string; comments: string },
+  user: User
+): Result<QaReviewDTO> {
+  const projects = readJson<DevProject>(FILES.projects);
+  const p = projects.find((x) => x.id === input.projectId || x.intakeId === input.projectId);
+  if (!p) return { success: false, error: { code: "PROJECT_NOT_FOUND", message: "Research study record not found." } };
+  const w = who(user, p);
+  if (!w.isQaLead && !w.isManagement) {
+    return { success: false, error: { code: "FORBIDDEN", message: "Only the assigned reviewer or an admin can submit a review." } };
+  }
+  const allowed = assertCanSubmitQaReview(p.masterStatus as never);
+  if (!allowed.allowed) return { success: false, error: { code: "INVALID_STATUS", message: allowed.reason || "This study can't be reviewed now." } };
+  const signer = user.email ? getDevUserByEmail(user.email) : undefined;
+  if (input.decision === "QA_APPROVED" && !signer?.staffProfile?.signatureUrl) {
+    return {
+      success: false,
+      error: { code: "SIGNATURE_REQUIRED", message: "Add your signature in My Profile before approving. It goes on the client's certificate." },
+    };
+  }
+
+  const now = new Date();
+  const review: DevQaReview = {
+    id: `dev_qa_${now.getTime().toString(36)}`,
+    projectId: p.id,
+    reviewerId: user.id ?? "",
+    reviewerName: personName(user),
+    decision: input.decision,
+    errorClassification: input.decision === "QA_APPROVED" ? null : input.errorClassification ?? null,
+    comments: input.comments.trim(),
+    reviewedAt: now.toISOString(),
+    qaRevisionDueAt: input.decision === "QA_REJECTED" ? new Date(now.getTime() + 24 * 3_600_000).toISOString() : null,
+  };
+  const all = readJson<{ id: string; projectId: string; files?: DevAnalysisFile[]; reviews?: DevQaReview[] }>(FILES.analysis);
+  let entry = all.find((a) => a.projectId === p.id);
+  if (!entry) {
+    entry = { id: `dev_analysis_${p.id}`, projectId: p.id, files: [], reviews: [] };
+    all.push(entry);
+  }
+  entry.reviews = [...(entry.reviews ?? []), review];
+  fs.writeFileSync(FILES.analysis, JSON.stringify(all, null, 2), "utf-8");
+
+  if (input.decision === "QA_APPROVED") {
+    p.masterStatus = "DELIVERED";
+    p.qaApproved = true;
+    p.deliveredAt = now.toISOString();
+  } else if (input.decision === "QA_REJECTED") {
+    p.masterStatus = "QA_REVISION";
+  } else {
+    p.masterStatus = "ETHICAL_BREACH";
+    p.isLocked = true;
+  }
+  saveProjects(projects);
+  return { success: true, data: reviewDTO(review) };
 }

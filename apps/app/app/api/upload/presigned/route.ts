@@ -2,21 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getR2UploadUrl, generateR2StorageKey } from "@/lib/storage";
 import { env } from "@/lib/env";
-import type { FileCategory } from "@prisma/client";
 import { canVerifyPayment } from "@/lib/payment-rules";
+import { allowedForCategory, hasAllowedExtension } from "@/lib/file-types";
 
 // Strict 15MB file size ceiling
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
 
-const ALLOWED_CATEGORY_EXTENSIONS: Partial<Record<FileCategory, string[]>> = {
-  RESEARCH_DOCUMENT: [".pdf", ".docx", ".doc", ".zip"],
-  DATASET: [".xlsx", ".xls", ".csv", ".sav", ".dta", ".tsv"],
-  QUESTIONNAIRE: [".pdf", ".docx", ".doc", ".xlsx", ".csv"],
-  PAYMENT_PROOF: [".pdf", ".png", ".jpg", ".jpeg"],
-  ANALYSIS_OUTPUT: [".pdf", ".docx", ".doc", ".xlsx", ".xls", ".csv", ".zip", ".sav", ".spv", ".sps", ".r", ".rmd", ".py", ".ipynb", ".dta", ".do", ".txt"],
-  DELIVERABLE: [".pdf", ".docx", ".xlsx", ".csv", ".zip"],
-  DISPUTE_EVIDENCE: [".pdf", ".docx", ".png", ".jpg", ".jpeg", ".zip"],
-};
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,9 +59,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate extension
-    const fileNameLower = fileName.toLowerCase();
-    const allowed = ALLOWED_CATEGORY_EXTENSIONS[category as FileCategory] || [".pdf", ".docx", ".xlsx", ".csv", ".sav"];
-    const hasValidExtension = allowed.some((ext) => fileNameLower.endsWith(ext));
+    const allowed = allowedForCategory(String(category));
+    const hasValidExtension = hasAllowedExtension(fileName, allowed);
 
     if (!hasValidExtension) {
       return NextResponse.json(

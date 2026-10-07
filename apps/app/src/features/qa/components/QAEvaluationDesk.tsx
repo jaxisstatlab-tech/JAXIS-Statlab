@@ -1,866 +1,643 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Card,
-  Button,
-  Badge,
-  Modal,
-  Toast,
-} from "@repo/ui";
-import {
-  IconShieldCheck,
-  IconAlertTriangle,
-  IconCheck,
-  IconDownload,
-  IconFileText,
-  IconFiles,
-  IconClock,
-  IconHistory,
-  IconAlertOctagon,
-  } from "@tabler/icons-react";
+import { Button, Modal, Toast } from "@repo/ui";
+import { ArrowRight, Check, DownloadSimple, Warning } from "@phosphor-icons/react";
 import { submitQaReview } from "../actions";
 import { getAnalysisFileDownloadUrl } from "@/features/analysis/actions";
-import { formatFileCategory, resolveStoredFileUrl } from "@/lib/file-utils";
-import {
-  ERROR_CLASSIFICATION_METADATA,
-  QA_DECISION_METADATA,
-  isTier2Package,
-} from "@/lib/qa-rules";
+import { resolveStoredFileUrl } from "@/lib/file-utils";
+import { isTier2Package } from "@/lib/qa-rules";
+import { clientPackageName } from "@/features/projects/client-packages";
+import { StudySection } from "@/features/projects/components/StudySection";
+import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import type { QaInspectionDeskDTO } from "../schemas";
 import { QADecision, ErrorClassification } from "@prisma/client";
-import { StudySection } from "@/features/projects/components/StudySection";
 
-interface QAEvaluationDeskProps {
-  data: QaInspectionDeskDTO;
-}
+// The reviewer's page for one study: the analyst's current files to check, what the client asked for, past
+// reviews, and the decision (approve, send back, or report a serious problem).
 
-const QA_FEEDBACK_TEMPLATES = [
-  {
-    label: "Approved — Dual-Blind Recalculation Passed",
-    decision: QADecision.QA_APPROVED,
-    error: undefined,
-    comment:
-      "All empirical statistical models, p-values, and effect sizes have been independently recalculated and verified against the raw dataset. APA 7th formatting complies with publication standards.",
-  },
-  {
-    label: "Revision — APA 7th Table Formatting Required",
-    decision: QADecision.QA_REJECTED,
-    error: ErrorClassification.MINOR,
-    comment:
-      "Please update regression tables to strictly follow APA 7th edition guidelines (italicize statistical symbols like p, t, F, and remove vertical borders).",
-  },
-  {
-    label: "Revision — Model Assumption Diagnostics Missing",
-    decision: QADecision.QA_REJECTED,
-    error: ErrorClassification.MAJOR,
-    comment:
-      "Normality, multicollinearity (VIF), and homoscedasticity diagnostic plots are missing from the workbook. Please compute and append these diagnostic outputs.",
-  },
-  {
-    label: "Revision — Calculation Discrepancy Found",
-    decision: QADecision.QA_REJECTED,
-    error: ErrorClassification.CRITICAL,
-    comment:
-      "Independent recalculation of the moderator interaction term yielded a discrepancy with the submitted table. Please re-check data filtering and sample exclusion criteria.",
-  },
-  {
-    label: "Ethical Escalation — Data Fabrication / Manipulation",
-    decision: QADecision.ESCALATED_TO_CEO,
-    error: ErrorClassification.ETHICAL_BREACH,
-    comment:
-      "RULE_ETH_01 Violation: Observed statistical distribution exhibits artificial uniform clustering inconsistent with authentic survey data. Immediate CEO intervention required.",
-  },
+type Data = QaInspectionDeskDTO;
+type ToastState = { message: string; description?: string; variant: "info" | "success" | "warning" | "danger" } | null;
+
+const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
+
+const FIELD =
+  "w-full rounded-[2px] border border-white/10 bg-[#050513] font-sans text-[13px] text-white outline-none placeholder:text-white/30 focus:border-[#CC6600]/60";
+
+/** Plain names for the reviewer's error levels (the stored values stay the same). */
+const LEVELS: Array<{ id: ErrorClassification; label: string; hint: string }> = [
+  { id: ErrorClassification.MINOR, label: "Small fix", hint: "Formatting, table labels, wording" },
+  { id: ErrorClassification.MAJOR, label: "Analysis needs changes", hint: "Wrong test, assumptions not checked, missing output" },
+  { id: ErrorClassification.CRITICAL, label: "Calculation error", hint: "Numbers or conclusions are wrong" },
+];
+const LEVEL_LABEL: Record<string, string> = {
+  MINOR: "Small fix",
+  MAJOR: "Analysis needs changes",
+  CRITICAL: "Calculation error",
+  ETHICAL_BREACH: "Serious problem reported",
+};
+
+const DECISIONS: Array<{ id: QADecision; title: string; body: string }> = [
+  { id: QADecision.QA_APPROVED, title: "Approve", body: "Everything checks out. The study is delivered to the client." },
+  { id: QADecision.QA_REJECTED, title: "Send back for changes", body: "The analyst fixes it within 24 hours and sends it again." },
+  { id: QADecision.ESCALATED_TO_CEO, title: "Report a serious problem", body: "Faked or manipulated data. Locks the study and alerts the CEO." },
 ];
 
-export function QAEvaluationDesk({ data }: QAEvaluationDeskProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+/** Starting text the reviewer can pick and edit. */
+const TEMPLATES: Record<QADecision, Array<{ label: string; level?: ErrorClassification; text: string }>> = {
+  QA_APPROVED: [
+    {
+      label: "Checked and matches",
+      text: "I re-ran the analysis from the files. The numbers, p-values and effect sizes match, and the tables follow APA 7.",
+    },
+  ],
+  QA_REJECTED: [
+    {
+      label: "APA table format",
+      level: ErrorClassification.MINOR,
+      text: "Please format the tables in APA 7: italicize statistical symbols (p, t, F), remove vertical lines, and add a note under each table.",
+    },
+    {
+      label: "Assumption checks missing",
+      level: ErrorClassification.MAJOR,
+      text: "The normality, multicollinearity (VIF) and equal-variance checks are missing. Please run them, add the output, and say in the write-up whether they were met.",
+    },
+    {
+      label: "Numbers don't match",
+      level: ErrorClassification.CRITICAL,
+      text: "When I re-ran the analysis, Table __ gave different results. Please check which cases were included and how the variables were coded.",
+    },
+  ],
+  ESCALATED_TO_CEO: [
+    {
+      label: "Data looks made up",
+      level: ErrorClassification.ETHICAL_BREACH,
+      text: "The answers in the data follow a pattern that real survey answers don't (for example, many identical rows or a too-even spread). This needs the CEO to look at it before anything else happens.",
+    },
+  ],
+};
 
-  // Evaluation Form State
-  const [selectedDecision, setSelectedDecision] = useState<QADecision>(QADecision.QA_APPROVED);
-  const [selectedError, setSelectedError] = useState<ErrorClassification | undefined>(undefined);
-  const [comments, setComments] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+function dateTime(iso: string) {
+  return new Date(iso).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+function shortDate(iso?: string | null) {
+  return iso ? new Date(iso).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "—";
+}
+function size(bytes?: number | null) {
+  if (!bytes) return null;
+  return bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
 
-  // Downloading file state
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+export function QAEvaluationDesk({ data, hasSignature = true }: { data: Data; hasSignature?: boolean }) {
+  const [toast, setToast] = useState<ToastState>(null);
+  const status = data.project.masterStatus;
+  const analyst = data.assignment?.statisticianName ?? "the analyst";
 
-  // Toast
-  const [toastMessage, setToastMessage] = useState<{
-    message: string;
-    description?: string;
-    variant: "info" | "success" | "warning" | "danger";
-  } | null>(null);
+  const description =
+    status === "FOR_QA"
+      ? `Check ${analyst}'s files, then approve them or send them back with notes.`
+      : status === "QA_REVISION"
+        ? `Sent back to ${analyst}. You'll get a notification when the fixed files come in.`
+        : status === "ETHICAL_BREACH"
+          ? "Reported to the CEO. The study is locked until they decide."
+          : data.project.qaApproved || ["DELIVERED", "CLOSED", "DISPUTED"].includes(status)
+            ? "Approved and delivered."
+            : `${analyst} is still working on it. You'll get a notification when it's ready for you.`;
 
-  const isTier2 = isTier2Package(data.project.packageName);
+  return (
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
+      <StudySection
+        title="Review"
+        description={description}
+        actions={
+          <Button asChild variant="ghost" size="sm" className="active:scale-[0.97]">
+            <Link href={`/dashboard/qa/projects/${data.project.id}/files`}>Every Version</Link>
+          </Button>
+        }
+      />
 
-  // Handle Download
-  const handleDownload = async (fileId: string, fileName: string) => {
-    setDownloadingId(fileId);
+      <StatusNotice data={data} />
+      <Facts data={data} />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="flex flex-col gap-6 lg:col-span-8">
+          <FilesPanel data={data} onError={(m) => setToast({ message: "Couldn't download", description: m, variant: "danger" })} />
+          {data.canReview ? (
+            <DecisionPanel data={data} hasSignature={hasSignature} onDone={(t) => setToast(t)} />
+          ) : data.reviewDisabledReason && status === "FOR_QA" ? (
+            <p className="rounded-[2px] border border-white/[0.07] bg-[#0A0A18] px-5 py-4 text-[13px] text-white/60">{data.reviewDisabledReason}</p>
+          ) : null}
+        </div>
+        <div className="flex flex-col gap-6 lg:col-span-4">
+          <AskedPanel data={data} />
+          <ClientFilesPanel data={data} />
+          <HistoryPanel data={data} />
+        </div>
+      </div>
+
+      {toast ? <Toast message={toast.message} description={toast.description} variant={toast.variant} onClose={() => setToast(null)} /> : null}
+    </div>
+  );
+}
+
+function Notice({ title, children }: { title: string; children?: React.ReactNode }) {
+  return (
+    <Panel as="div">
+      <PanelBody className="flex items-start gap-3">
+        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#CC6600]" aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-white">{title}</p>
+          {children}
+        </div>
+      </PanelBody>
+    </Panel>
+  );
+}
+
+function StatusNotice({ data }: { data: Data }) {
+  const status = data.project.masterStatus;
+  const r = data.activeRevision;
+  if (status === "ETHICAL_BREACH") {
+    return (
+      <Notice title="Reported to the CEO">
+        <p className="mt-0.5 text-[13px] text-white/55">The study is locked: no file changes or client messages until the CEO decides.</p>
+      </Notice>
+    );
+  }
+  if (status === "QA_REVISION" && r) {
+    return (
+      <Notice title={`You sent it back${r.errorClassification ? `: ${LEVEL_LABEL[r.errorClassification] ?? r.errorClassificationLabel}` : ""}`}>
+        <p className="mt-0.5 text-[13px] text-white/55">
+          {dateTime(r.reviewedAt)}.{r.qaRevisionDueAt ? ` The analyst should fix it by ${dateTime(r.qaRevisionDueAt)}.` : ""}
+        </p>
+        <blockquote className="mt-3 whitespace-pre-wrap rounded-[2px] border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-[13px] leading-relaxed text-white/85">
+          {r.comments}
+        </blockquote>
+      </Notice>
+    );
+  }
+  if (status === "FOR_QA" && data.rejectionCount > 0) {
+    return (
+      <Notice title={`Sent again after ${data.rejectionCount} ${data.rejectionCount === 1 ? "round" : "rounds"} of changes`}>
+        <p className="mt-0.5 text-[13px] text-white/55">Check that your last notes were fixed. Past reviews are on the right.</p>
+      </Notice>
+    );
+  }
+  return null;
+}
+
+function DueValue({ data }: { data: Data }) {
+  const a = data.assignment;
+  const status = data.project.masterStatus;
+  if (data.project.qaApproved || ["DELIVERED", "CLOSED", "DISPUTED"].includes(status)) return <>Delivered</>;
+  if (!a) return <span className="text-white/40">—</span>;
+  if (a.isPaused || status === "SLA_PAUSED") return <span className="text-white/70">Paused</span>;
+  const diff = new Date(a.slaDueAt).getTime() - Date.now();
+  if (diff < 0) {
+    const days = Math.floor(-diff / DAY);
+    return (
+      <span className="inline-flex items-center gap-1.5 font-medium">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#CC6600]" aria-hidden="true" />
+        {days === 0 ? "Due today, late" : `Late by ${days} ${days === 1 ? "day" : "days"}`}
+      </span>
+    );
+  }
+  if (diff <= DAY) {
+    return (
+      <span className="inline-flex items-center gap-1.5 font-medium">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#CC6600]" aria-hidden="true" />
+        Due in {Math.max(1, Math.round(diff / HOUR))}h
+      </span>
+    );
+  }
+  return (
+    <>
+      {shortDate(a.slaDueAt)}
+      <span className="text-white/40"> · in {Math.ceil(diff / DAY)} days</span>
+    </>
+  );
+}
+
+function Facts({ data }: { data: Data }) {
+  const pkg = clientPackageName(data.project.packageName);
+  const items: Array<[string, React.ReactNode, string | null]> = [
+    ["Client", data.project.clientName, data.project.clientSchool],
+    ["Analyst", data.assignment?.statisticianName ?? <span className="text-white/40">Not assigned</span>, null],
+    ["Package", pkg ?? <span className="text-white/40">—</span>, isTier2Package(data.project.packageName) ? "Can't be delivered without your approval" : null],
+    ["Due", <DueValue key="due" data={data} />, null],
+  ];
+  return (
+    <Panel as="div">
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 px-5 py-4 sm:px-6 lg:grid-cols-4">
+        {items.map(([label, value, sub]) => (
+          <div key={label} className="min-w-0">
+            <dt className="text-[12px] text-white/45">{label}</dt>
+            <dd className="mt-0.5 truncate text-sm text-white">{value}</dd>
+            {sub ? <dd className="truncate text-[12px] text-white/45">{sub}</dd> : null}
+          </div>
+        ))}
+      </dl>
+    </Panel>
+  );
+}
+
+function FilesPanel({ data, onError }: { data: Data; onError: (message: string) => void }) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const current = data.analysisFiles.filter((f) => f.isCurrent);
+  const older = data.analysisFiles.length - current.length;
+
+  const download = async (id: string, name: string) => {
+    setBusyId(id);
     try {
-      const res = await getAnalysisFileDownloadUrl(fileId);
-      if (res.success && res.data) {
-        const link = document.createElement("a");
-        link.href = res.data;
-        link.download = fileName;
-        link.target = "_blank";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        setToastMessage({
-          message: "Download Failed",
-          description: !res.success ? res.error?.message : "Could not generate secure download URL.",
-          variant: "danger",
-        });
-      }
-    } catch (err) {
-      console.error("Download error:", err);
-      setToastMessage({
-        message: "Download Failed",
-        description: "An unexpected error occurred during download.",
-        variant: "danger",
-      });
+      const res = await getAnalysisFileDownloadUrl(id);
+      if (!res.success) return onError(res.error.message || "Please try again.");
+      const link = document.createElement("a");
+      link.href = res.data;
+      link.download = name;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch {
+      onError("Check your connection and try again.");
     } finally {
-      setDownloadingId(null);
+      setBusyId(null);
     }
-  };
-
-  // Template select
-  const handleApplyTemplate = (tmpl: typeof QA_FEEDBACK_TEMPLATES[0]) => {
-    setSelectedDecision(tmpl.decision);
-    setSelectedError(tmpl.error);
-    setComments(tmpl.comment);
-    setFormError(null);
-  };
-
-  // Pre-validate before confirm modal
-  const handlePreSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!comments || comments.trim().length < 10) {
-      setFormError("Please provide detailed evaluation comments (at least 10 characters).");
-      return;
-    }
-    if (selectedDecision !== QADecision.QA_APPROVED && !selectedError) {
-      setFormError("Please select an error classification for this rejection/escalation.");
-      return;
-    }
-    if (selectedDecision === QADecision.ESCALATED_TO_CEO && selectedError !== ErrorClassification.ETHICAL_BREACH) {
-      setFormError("Ethical escalations must be classified as 'ETHICAL_BREACH'.");
-      return;
-    }
-    setFormError(null);
-    setIsConfirmModalOpen(true);
-  };
-
-  // Execute Review Submission
-  const handleConfirmSubmit = () => {
-    startTransition(async () => {
-      const res = await submitQaReview({
-        projectId: data.project.id,
-        decision: selectedDecision,
-        errorClassification: selectedDecision !== QADecision.QA_APPROVED ? selectedError : undefined,
-        comments: comments.trim(),
-      });
-
-      if (res.success) {
-        setIsConfirmModalOpen(false);
-        setToastMessage({
-          message:
-            selectedDecision === QADecision.QA_APPROVED
-              ? "Study Approved"
-              : selectedDecision === QADecision.QA_REJECTED
-              ? "Revisions Requested"
-              : "Ethical Breach Escalated to CEO",
-          description:
-            selectedDecision === QADecision.QA_APPROVED
-              ? "Statistical outputs verified and cleared for deliverable release."
-              : selectedDecision === QADecision.QA_REJECTED
-              ? "Lead Statistical Analyst notified with a 24-hour revision deadline."
-              : "Project locked immediately. Chief Executive Officer alerted.",
-          variant:
-            selectedDecision === QADecision.QA_APPROVED
-              ? "success"
-              : selectedDecision === QADecision.QA_REJECTED
-              ? "warning"
-              : "danger",
-        });
-        router.refresh();
-      } else {
-        setFormError(!res.success ? res.error?.message : "Failed to submit QA review.");
-        setIsConfirmModalOpen(false);
-      }
-    });
   };
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
-      {/* Canonical Page Header */}
-      <StudySection
-          title="Review"
-          description="Check the statistical analyst's files, then approve them or send them back with notes."
-        />
-
-      {/* Ethical Breach Lockout Banner */}
-      {data.project.isLocked && data.project.masterStatus === "ETHICAL_BREACH" && (
-        <div className="p-4 sm:p-5 rounded-[2px] bg-red-950/50 border border-red-500/50 flex items-start gap-4 animate-content-fade">
-          <IconAlertOctagon size={24} stroke={2} className="text-red-400 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold text-red-300 block text-sm">
-              Study Locked: Active Ethical Breach Escalation (RULE_ETH_01)
-            </span>
-            <p className="text-white/80 text-xs mt-1 leading-relaxed">
-              This research study is strictly locked due to a flagged data manipulation or academic integrity violation.
-              All file modifications and client communications are paused until executive clearance from the CEO.
-            </p>
-          </div>
-        </div>
+    <Panel>
+      <PanelHeader
+        title="Files to check"
+        count={current.length}
+        subtitle="The analyst's current version of each file. Download them and re-run the analysis."
+        aside={
+          older > 0 ? (
+            <Link href={`/dashboard/qa/projects/${data.project.id}/files`} className="text-[13px] text-white/55 transition-colors hover:text-white">
+              {older} older {older === 1 ? "version" : "versions"}
+            </Link>
+          ) : null
+        }
+      />
+      {current.length === 0 ? (
+        <PanelBody>
+          <p className="text-[13px] text-white/45">The analyst hasn&apos;t uploaded any files yet.</p>
+        </PanelBody>
+      ) : (
+        <ul className="mt-4 divide-y divide-white/[0.05] border-t border-white/[0.06]">
+          {current.map((f) => (
+            <li key={f.id} className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-start sm:gap-4 sm:px-6">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm text-white" title={f.fileName}>
+                  {f.fileName}
+                </p>
+                <p className="mt-0.5 text-[12px] text-white/45">
+                  {f.categoryLabel} · <span className="font-mono">v{f.version}</span>
+                  {size(f.fileSize) ? ` · ${size(f.fileSize)}` : ""} · {dateTime(f.uploadedAt)}
+                </p>
+                {f.notes ? (
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-white/70">
+                    <span className="text-white/45">Analyst&apos;s note: </span>
+                    {f.notes}
+                  </p>
+                ) : null}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => download(f.id, f.fileName)} loading={busyId === f.id} className="shrink-0 gap-1.5 active:scale-[0.97]">
+                {busyId === f.id ? null : <DownloadSimple size={13} weight="fill" />}
+                Download
+              </Button>
+            </li>
+          ))}
+        </ul>
       )}
+    </Panel>
+  );
+}
 
-      {/* Active Revision Alert Banner */}
-      {data.project.masterStatus === "QA_REVISION" && data.activeRevision && (
-        <div className="p-4 sm:p-5 rounded-[2px] bg-amber-950/40 border border-amber-500/40 flex items-start justify-between gap-4 animate-content-fade">
-          <div className="flex items-start gap-3">
-            <IconAlertTriangle size={22} stroke={2} className="text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-amber-300 block text-sm">
-                  Revisions Active: Lead Statistical Analyst Correcting Models
-                </span>
-                <Badge variant="amber" className="text-[0.625rem] font-mono">
-                  {data.activeRevision.errorClassificationLabel || "REVISION_REQUIRED"}
-                </Badge>
-              </div>
-              <p className="text-white/80 text-xs mt-1 leading-relaxed">
-                Feedback: &ldquo;{data.activeRevision.comments}&rdquo;
-              </p>
-              {data.activeRevision.qaRevisionDueAt && (
-                <span className="text-[0.688rem] font-mono text-white/50 block mt-2">
-                  24-Hour Revision Deadline:{" "}
-                  {new Date(data.activeRevision.qaRevisionDueAt).toLocaleString("en-PH", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              )}
-            </div>
-          </div>
+function DecisionPanel({ data, hasSignature, onDone }: { data: Data; hasSignature: boolean; onDone: (t: ToastState) => void }) {
+  const router = useRouter();
+  const [decision, setDecision] = useState<QADecision>(QADecision.QA_APPROVED);
+  const [level, setLevel] = useState<ErrorClassification | undefined>(undefined);
+  const [comments, setComments] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [busy, start] = useTransition();
+  const current = data.analysisFiles.filter((f) => f.isCurrent);
+
+  const pick = (d: QADecision) => {
+    setDecision(d);
+    setLevel(d === QADecision.QA_REJECTED ? (level && level !== ErrorClassification.ETHICAL_BREACH ? level : ErrorClassification.MINOR) : d === QADecision.ESCALATED_TO_CEO ? ErrorClassification.ETHICAL_BREACH : undefined);
+    setError(null);
+  };
+
+  const check = () => {
+    if (comments.trim().length < 10) return setError("Write what you checked or what needs fixing (at least 10 characters).");
+    if (decision === QADecision.QA_REJECTED && !level) return setError("Pick how serious the problem is.");
+    setError(null);
+    setConfirmOpen(true);
+  };
+
+  const send = () =>
+    start(async () => {
+      const res = await submitQaReview({
+        projectId: data.project.id,
+        decision,
+        errorClassification: decision === QADecision.QA_APPROVED ? undefined : level,
+        comments: comments.trim(),
+      });
+      setConfirmOpen(false);
+      if (!res.success) {
+        setError(res.error?.message || "Couldn't save your review. Please try again.");
+        return;
+      }
+      onDone(
+        decision === QADecision.QA_APPROVED
+          ? { message: "Approved", description: "The study is delivered and the client is told their files are ready.", variant: "success" }
+          : decision === QADecision.QA_REJECTED
+            ? { message: "Sent back", description: `${data.assignment?.statisticianName ?? "The analyst"} has 24 hours to fix it.`, variant: "success" }
+            : { message: "Reported to the CEO", description: "The study is locked until they decide.", variant: "success" },
+      );
+      router.refresh();
+    });
+
+  const choice = DECISIONS.find((d) => d.id === decision)!;
+  const buttonLabel = decision === QADecision.QA_APPROVED ? "Approve Study" : decision === QADecision.QA_REJECTED ? "Send Back" : "Report to CEO";
+
+  return (
+    <Panel>
+      <PanelHeader title="Your decision" subtitle="Every decision is saved with your name and the time." />
+      <PanelBody className="flex flex-col gap-5">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Decision">
+          {DECISIONS.map((d) => {
+            const on = d.id === decision;
+            return (
+              <button
+                key={d.id}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => pick(d.id)}
+                className={`rounded-[2px] border px-3.5 py-3 text-left transition-colors ${on ? "border-[#CC6600]/70 bg-[#CC6600]/[0.06]" : "border-white/10 hover:border-white/25"}`}
+              >
+                <p className="text-sm font-medium text-white">{d.title}</p>
+                <p className="mt-0.5 text-[12px] leading-relaxed text-white/50">{d.body}</p>
+              </button>
+            );
+          })}
         </div>
-      )}
 
-      {/* Top Status & SLA Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
-          <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Lead Statistical Analyst</span>
-          <span className="text-sm font-semibold text-white truncate">
-            {data.assignment?.statisticianName || "Unassigned"}
-          </span>
-          <span className="text-[0.688rem] text-white/50">{data.assignment?.statisticianEmail || "analyst@jaxis.dev"}</span>
-        </div>
-
-        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
-          <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Senior QA Lead</span>
-          <span className="text-sm font-semibold text-sky-400 truncate">
-            {data.assignment?.qaLeadName || "Senior QA Officer"}
-          </span>
-          <span className="text-[0.688rem] text-white/50">{data.assignment?.qaLeadEmail || "qa@jaxis.dev"}</span>
-        </div>
-
-        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
-          <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Contract Package</span>
-          <span className="text-sm font-semibold text-[#CC6600]">
-            {data.project.packageName || "Standard Empirical Analysis"}
-          </span>
-          <span className="text-[0.688rem] text-white/50 font-mono">
-            {isTier2 ? "Tier 2 (Mandatory QA Clearance)" : "Standard Tier"}
-          </span>
-        </div>
-
-        <div className="p-4 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-1">
-          <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Contractual SLA</span>
-          <span
-            className={`text-sm font-mono font-bold ${
-              data.assignment?.isOverdue
-                ? "text-red-400"
-                : (data.assignment?.slaDueDays ?? 99) <= 1
-                ? "text-amber-400"
-                : "text-emerald-400"
-            }`}
-          >
-            {data.assignment?.isOverdue
-              ? "OVERDUE"
-              : data.assignment?.slaDueDays !== undefined
-              ? `${data.assignment.slaDueDays} Days Remaining`
-              : "Active"}
-          </span>
-          <span className="text-[0.688rem] font-mono text-white/50">
-            Due:{" "}
-            {data.assignment?.slaDueAt
-              ? new Date(data.assignment.slaDueAt).toLocaleDateString("en-PH", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })
-              : "N/A"}
-          </span>
-        </div>
-      </div>
-
-      {/* Main 2-Column Desk Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Column: Scope of Work, Client Datasets, Review Linage (1 col) */}
-        <div className="flex flex-col gap-6 lg:col-span-1">
-          {/* SOW & Deliverable Scope Reference */}
-          <Card className="p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <IconFileText size={18} stroke={2} className="text-[#38BDF8]" />
-              <h2 className="text-sm font-bold text-white">SOW Deliverables Reference</h2>
-            </div>
-
-            {data.sow ? (
-              <div className="space-y-3 text-xs text-white/80">
-                {data.sow.deliverables.length > 0 && (
-                  <div>
-                    <span className="text-[0.625rem] font-mono uppercase text-white/40 block mb-1.5 font-semibold">
-                      Required Deliverables:
-                    </span>
-                    <ul className="space-y-1.5 pl-3 list-disc text-slate-300">
-                      {data.sow.deliverables.map((deliv, idx) => (
-                        <li key={idx}>{deliv}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {data.sow.scopeOfWork && (
-                  <div>
-                    <span className="text-[0.625rem] font-mono uppercase text-white/40 block mb-1 font-semibold">
-                      Scope Summary:
-                    </span>
-                    <p className="text-slate-300 leading-relaxed max-h-36 overflow-y-auto pr-1">
-                      {data.sow.scopeOfWork}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="p-4 text-center text-white/40 text-xs border border-dashed border-white/10 rounded-[2px]">
-                No active signed SOW document found.
-              </div>
-            )}
-          </Card>
-
-          {/* Client Uploaded Files (Inputs) */}
-          <Card className="p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <IconFiles size={18} stroke={2} className="text-[#38BDF8]" />
-                <h2 className="text-sm font-bold text-white">Client Uploaded Files ({data.clientFiles.length})</h2>
-              </div>
-            </div>
-
-            {data.clientFiles.length === 0 ? (
-              <div className="p-4 text-center text-white/40 text-xs border border-white/5 rounded-[2px]">
-                No client study files uploaded.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {data.clientFiles.map((file) => {
-                  const catMeta = formatFileCategory(file.fileCategory);
-                  return (
-                    <div
-                      key={file.id}
-                      className="p-3 bg-black/20 border border-white/5 rounded-[2px] flex items-center justify-between gap-3 text-xs"
-                    >
-                      <div className="min-w-0 flex flex-col gap-1">
-                        <span className="font-medium text-white block truncate">{file.fileName}</span>
-                        <div>
-                          <span
-                            className={`text-[0.625rem] font-mono font-medium px-1.5 py-0.5 rounded-[2px] border inline-block ${catMeta.badgeClass}`}
-                          >
-                            {catMeta.label}
-                          </span>
-                        </div>
-                      </div>
-                      <a
-                        href={resolveStoredFileUrl(file.filePath) ?? file.filePath}
-                        download
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-[2px] transition-colors shrink-0"
-                        title="Download Study File"
-                      >
-                        <IconDownload size={15} stroke={2} />
-                      </a>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-
-          {/* QA Review Lineage & Scorecards */}
-          <Card className="p-6 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <IconHistory size={18} stroke={2} className="text-white/60" />
-                <h2 className="text-sm font-bold text-white">Evaluation Scorecards ({data.reviewHistory.length})</h2>
-              </div>
-              {data.rejectionCount > 0 && (
-                <Badge variant={data.rejectionCount >= 2 ? "danger" : "amber"} className="font-mono text-[0.625rem]">
-                  {data.rejectionCount} {data.rejectionCount === 1 ? "Rejection" : "Rejections"}
-                </Badge>
-              )}
-            </div>
-
-            {data.reviewHistory.length === 0 ? (
-              <div className="p-4 text-center text-white/40 text-xs border border-white/5 rounded-[2px]">
-                No evaluations recorded yet. This is the initial submission.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {data.reviewHistory.map((rev) => (
-                  <div
-                    key={rev.id}
-                    className="p-3.5 bg-black/25 border border-white/5 rounded-[2px] flex flex-col gap-2 text-xs"
+        {decision === QADecision.QA_REJECTED ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-[12px] font-medium text-white/45">How serious is it?</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="How serious">
+              {LEVELS.map((l) => {
+                const on = l.id === level;
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => setLevel(l.id)}
+                    className={`rounded-[2px] border px-3 py-2.5 text-left transition-colors ${on ? "border-white/40 bg-white/[0.05]" : "border-white/10 hover:border-white/25"}`}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <Badge
-                        variant={
-                          rev.decision === QADecision.QA_APPROVED
-                            ? "emerald"
-                            : rev.decision === QADecision.QA_REJECTED
-                            ? "warning"
-                            : "danger"
-                        }
-                        className="font-mono text-[0.625rem] px-2 py-0.5"
-                      >
-                        {rev.decisionLabel}
-                      </Badge>
-                      <span className="text-[0.625rem] font-mono text-white/40">
-                        {new Date(rev.reviewedAt).toLocaleDateString("en-PH", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
-                    </div>
+                    <p className="text-[13px] font-medium text-white">{l.label}</p>
+                    <p className="mt-0.5 text-[12px] text-white/45">{l.hint}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
-                    {rev.errorClassificationLabel && (
-                      <span className="text-[0.688rem] font-mono text-amber-300/80">
-                        Classification: {rev.errorClassificationLabel}
-                      </span>
-                    )}
-
-                    <p className="text-slate-300 leading-relaxed text-xs">{rev.comments}</p>
-
-                    <span className="text-[0.625rem] font-mono text-white/40 pt-1 border-t border-white/5">
-                      Evaluated by: {rev.reviewerName}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-[12px] font-medium text-white/45">Start from:</span>
+            {TEMPLATES[decision].map((t) => (
+              <button
+                key={t.label}
+                type="button"
+                onClick={() => {
+                  setComments(t.text);
+                  if (t.level) setLevel(t.level);
+                  setError(null);
+                }}
+                className="rounded-[2px] border border-white/10 px-2.5 py-1 text-[12px] text-white/70 transition-colors hover:border-white/25 hover:text-white"
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <label className="flex flex-col gap-1.5 text-[13px] text-white/70">
+            {decision === QADecision.QA_APPROVED ? "What you checked" : decision === QADecision.QA_REJECTED ? "What the analyst should fix" : "What you found"}
+            <textarea
+              rows={5}
+              maxLength={3000}
+              value={comments}
+              onChange={(e) => {
+                setComments(e.target.value);
+                setError(null);
+              }}
+              placeholder={
+                decision === QADecision.QA_REJECTED
+                  ? "Be specific: which table or test, what's wrong, and what to change."
+                  : decision === QADecision.QA_APPROVED
+                    ? "For example: re-ran the regression from the R file; coefficients and p-values match Table 4."
+                    : "What looks wrong, and where in the data or files."
+              }
+              className={`${FIELD} resize-none p-3 leading-relaxed`}
+            />
+            <span className="self-end font-mono text-[11px] text-white/35">{comments.length} / 3000</span>
+          </label>
+          {decision === QADecision.QA_REJECTED ? <p className="text-[12px] text-white/45">The analyst sees exactly what you write here.</p> : null}
         </div>
 
-        {/* Right Column: Submitted Working Files & Interactive Scoring Desk (2 cols) */}
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          {/* Submitted Statistical Output Files */}
-          <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <IconShieldCheck size={20} stroke={2} className="text-[#10B981]" />
-                <div>
-                  <h2 className="text-base font-bold text-white">Statistical Output Assets for Verification</h2>
-                  <p className="text-xs text-white/50">
-                    Download and re-execute scripts to verify calculations, effect sizes, and APA 7th formatting
+        {error ? (
+          <p role="alert" className="flex items-start gap-2 text-[13px] text-red-300">
+            <Warning size={15} weight="fill" className="mt-0.5 shrink-0" />
+            {error}
+          </p>
+        ) : null}
+
+        {decision === QADecision.QA_APPROVED && !hasSignature ? (
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[2px] border border-[#CC6600]/40 px-3.5 py-2.5 text-[13px] text-white/75">
+            Add your signature before approving. It goes on the client&apos;s certificate.
+            <Link href="/dashboard/qa/profile#signature" className="font-medium text-white underline underline-offset-2">
+              Add Signature
+            </Link>
+          </p>
+        ) : null}
+
+        <div className="flex justify-end border-t border-white/[0.07] pt-4">
+          <Button
+            variant={decision === QADecision.ESCALATED_TO_CEO ? "danger" : "primary"}
+            size="sm"
+            onClick={check}
+            disabled={decision === QADecision.QA_APPROVED && !hasSignature}
+            className="gap-1.5 active:scale-[0.97]"
+          >
+            {buttonLabel}
+            <ArrowRight size={13} weight="bold" />
+          </Button>
+        </div>
+      </PanelBody>
+
+      <Modal
+        open={confirmOpen}
+        onClose={() => (busy ? undefined : setConfirmOpen(false))}
+        title={decision === QADecision.QA_APPROVED ? "Approve this study?" : decision === QADecision.QA_REJECTED ? "Send it back?" : "Report this to the CEO?"}
+        description={`${data.project.intakeId} · ${data.project.researchTitle}`}
+        size="md"
+        footer={
+          <div className="flex w-full justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setConfirmOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button variant={decision === QADecision.ESCALATED_TO_CEO ? "danger" : "primary"} size="sm" onClick={send} loading={busy} className="active:scale-[0.97]">
+              {buttonLabel}
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-4 font-sans text-[13px]">
+          <p className="leading-relaxed text-white/70">
+            {decision === QADecision.QA_APPROVED
+              ? "The study is delivered right away and the client is told their files are ready. These files become the client's final files (they can download them once the study is paid in full):"
+              : decision === QADecision.QA_REJECTED
+                ? `${data.assignment?.statisticianName ?? "The analyst"} gets your notes and 24 hours to fix it${level ? ` (${LEVEL_LABEL[level]})` : ""}.`
+                : "The study is locked right away (no file changes or client messages) and the CEO is alerted."}
+          </p>
+          {decision === QADecision.QA_APPROVED ? (
+            <ul className="rounded-[2px] border border-white/[0.08] px-3.5 py-2.5 text-white/80">
+              {current.length === 0 ? <li className="text-white/45">No files</li> : current.map((f) => <li key={f.id} className="truncate">{f.fileName}</li>)}
+            </ul>
+          ) : null}
+          <div>
+            <p className="text-[12px] font-medium text-white/45">{choice.title === "Approve" ? "What you checked" : "Your notes"}</p>
+            <p className="mt-1 whitespace-pre-wrap leading-relaxed text-white/85">{comments.trim()}</p>
+          </div>
+        </div>
+      </Modal>
+    </Panel>
+  );
+}
+
+function AskedPanel({ data }: { data: Data }) {
+  const p = data.project;
+  const block = (title: string, text?: string | null) =>
+    text?.trim() ? (
+      <div>
+        <p className="text-[12px] font-medium text-white/45">{title}</p>
+        <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-white/80">{text}</p>
+      </div>
+    ) : null;
+  return (
+    <Panel>
+      <PanelHeader title="What the client asked" subtitle={data.sow?.signedAt ? `From the agreement signed ${shortDate(data.sow.signedAt)}` : "From the study request"} />
+      <PanelBody className="flex flex-col gap-4">
+        {block("Research questions", p.researchQuestions)}
+        {block("Hypotheses", p.hypotheses)}
+        {block("What the study wants to find out", p.researchObjectives)}
+        {data.sow?.deliverables && data.sow.deliverables.length > 0 ? (
+          <div>
+            <p className="text-[12px] font-medium text-white/45">What we agreed to deliver</p>
+            <ul className="mt-1.5 flex flex-col gap-1.5">
+              {data.sow.deliverables.map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-[13px] text-white/80">
+                  <Check size={12} weight="bold" className="mt-1 shrink-0 text-white/40" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {!data.sow ? <p className="text-[12px] text-white/40">No signed agreement found for this study.</p> : null}
+      </PanelBody>
+    </Panel>
+  );
+}
+
+const CLIENT_KIND: Record<string, string> = { DATASET: "Data file", RESEARCH_DOCUMENT: "Document", QUESTIONNAIRE: "Questionnaire" };
+
+function ClientFilesPanel({ data }: { data: Data }) {
+  const files = data.clientFiles;
+  return (
+    <Panel>
+      <PanelHeader title="Client's files" count={files.length} />
+      {files.length === 0 ? (
+        <PanelBody>
+          <p className="text-[13px] text-white/45">The client hasn&apos;t added any files.</p>
+        </PanelBody>
+      ) : (
+        <ul className="mt-4 divide-y divide-white/[0.05] border-t border-white/[0.06]">
+          {files.map((f) => {
+            const url = resolveStoredFileUrl(f.filePath);
+            return (
+              <li key={f.id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] text-white" title={f.fileName}>
+                    {f.fileName}
+                  </p>
+                  <p className="text-[12px] text-white/45">
+                    {CLIENT_KIND[f.fileCategory] ?? "File"} · {shortDate(f.uploadedAt)}
                   </p>
                 </div>
-              </div>
-              <span className="text-[0.688rem] font-mono text-white/40">
-                {data.analysisFiles.filter((f) => f.isCurrent).length} Current Assets
-              </span>
-            </div>
-
-            {data.analysisFiles.length === 0 ? (
-              <div className="p-12 text-center text-white/40 text-xs border border-dashed border-white/10 rounded-[2px] flex flex-col items-center gap-2">
-                <IconFileText size={28} stroke={1.5} className="text-white/20" />
-                <span>No statistical analysis files uploaded for this study.</span>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {data.analysisFiles
-                  .filter((f) => f.isCurrent)
-                  .map((file) => (
-                    <div
-                      key={file.id}
-                      className="p-4 rounded-[2px] bg-[#0F0F1D] border border-white/10 hover:border-white/20 transition-all flex flex-col gap-2.5"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <Badge variant="emerald" className="font-mono text-xs font-bold px-2 py-0.5 shrink-0">
-                            v{file.version} • CURRENT
-                          </Badge>
-                          <div className="min-w-0">
-                            <span className="font-bold text-white text-sm block truncate">{file.fileName}</span>
-                            <span className="text-[0.688rem] font-mono text-white/50">
-                              {file.categoryLabel} &bull;{" "}
-                              {file.fileSize ? `${(file.fileSize / 1024).toFixed(1)} KB` : "File"}
-                            </span>
-                          </div>
-                        </div>
-
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => handleDownload(file.id, file.fileName)}
-                          loading={downloadingId === file.id}
-                          className="rounded-[2px] text-xs font-semibold px-4 py-1.5 gap-1.5 cursor-pointer shrink-0"
-                        >
-                          <IconDownload size={14} stroke={2} />
-                          <span>Download for Recalculation</span>
-                        </Button>
-                      </div>
-
-                      {file.notes && (
-                        <div className="p-2.5 bg-black/25 rounded-[2px] border border-white/5 text-xs text-slate-200 leading-relaxed">
-                          <span className="text-[0.625rem] font-mono uppercase text-white/40 block mb-0.5">
-                            Statistical Analyst Notes:
-                          </span>
-                          <p>{file.notes}</p>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between text-[0.688rem] text-white/40 font-mono pt-1.5 border-t border-white/5">
-                        <span>Uploaded by: {file.statisticianName}</span>
-                        <span>
-                          {new Date(file.uploadedAt).toLocaleString("en-PH", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </Card>
-
-          {/* QA Evaluation & Scoring Form */}
-          <Card className="p-6 sm:p-8 bg-[#0A0A18] border border-white/10 rounded-[2px] flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-white">Quality Assurance Scorecard Decision</h2>
-                <p className="text-xs text-white/50 mt-0.5">
-                  Issue an official verification verdict for statistical clearance or revision requirements
-                </p>
-              </div>
-              <Badge variant="sky" className="font-mono text-xs">
-                SENIOR QA DESK
-              </Badge>
-            </div>
-
-            {formError && (
-              <div className="p-3.5 bg-red-950/50 border border-red-500/40 rounded-[2px] text-xs text-red-200">
-                {formError}
-              </div>
-            )}
-
-            {data.canReview ? (
-              <form onSubmit={handlePreSubmit} className="flex flex-col gap-5 text-xs font-sans">
-                {/* Decision Selector */}
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-white/90">
-                    Evaluation Verdict: <span className="text-red-400">*</span>
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {/* Approve */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDecision(QADecision.QA_APPROVED);
-                        setSelectedError(undefined);
-                        setFormError(null);
-                      }}
-                      className={`p-3.5 rounded-[2px] border text-left transition-all cursor-pointer flex flex-col gap-1 ${
-                        selectedDecision === QADecision.QA_APPROVED
-                          ? "bg-emerald-950/40 border-emerald-500/60 ring-1 ring-emerald-500/40"
-                          : "bg-[#0F0F1D] border-white/10 hover:border-white/20 text-white/70"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-emerald-300">Approve Study</span>
-                        <IconCheck size={16} stroke={2.5} className="text-emerald-400" />
-                      </div>
-                      <span className="text-[0.688rem] text-white/60 leading-relaxed">
-                        Calculations verified. Clear study for deliverable packaging.
-                      </span>
-                    </button>
-
-                    {/* Reject / Revision */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDecision(QADecision.QA_REJECTED);
-                        if (!selectedError) setSelectedError(ErrorClassification.MINOR);
-                        setFormError(null);
-                      }}
-                      className={`p-3.5 rounded-[2px] border text-left transition-all cursor-pointer flex flex-col gap-1 ${
-                        selectedDecision === QADecision.QA_REJECTED
-                          ? "bg-amber-950/40 border-amber-500/60 ring-1 ring-amber-500/40"
-                          : "bg-[#0F0F1D] border-white/10 hover:border-white/20 text-white/70"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-amber-300">Require Revisions</span>
-                        <IconClock size={16} stroke={2} className="text-amber-400" />
-                      </div>
-                      <span className="text-[0.688rem] text-white/60 leading-relaxed">
-                        Requires corrections within a 24-hour turnaround window.
-                      </span>
-                    </button>
-
-                    {/* Escalate */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDecision(QADecision.ESCALATED_TO_CEO);
-                        setSelectedError(ErrorClassification.ETHICAL_BREACH);
-                        setFormError(null);
-                      }}
-                      className={`p-3.5 rounded-[2px] border text-left transition-all cursor-pointer flex flex-col gap-1 ${
-                        selectedDecision === QADecision.ESCALATED_TO_CEO
-                          ? "bg-red-950/40 border-red-500/60 ring-1 ring-red-500/40"
-                          : "bg-[#0F0F1D] border-white/10 hover:border-white/20 text-white/70"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-red-400">Ethical Breach</span>
-                        <IconAlertOctagon size={16} stroke={2} className="text-red-400" />
-                      </div>
-                      <span className="text-[0.688rem] text-white/60 leading-relaxed">
-                        RULE_ETH_01: Immediate lock and executive CEO escalation.
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Error Classification (If Rejected or Escalated) */}
-                {selectedDecision !== QADecision.QA_APPROVED && (
-                  <div className="flex flex-col gap-1.5 p-3.5 bg-black/25 border border-white/10 rounded-[2px]">
-                    <label className="font-semibold text-white/90">
-                      Error Classification: <span className="text-red-400">*</span>
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                      {Object.entries(ERROR_CLASSIFICATION_METADATA)
-                        .filter(([key]) => {
-                          if (selectedDecision === QADecision.ESCALATED_TO_CEO) {
-                            return key === "ETHICAL_BREACH";
-                          }
-                          return key !== "ETHICAL_BREACH";
-                        })
-                        .map(([key, meta]) => (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() => setSelectedError(key as ErrorClassification)}
-                            className={`p-2.5 rounded-[2px] border text-left transition-colors cursor-pointer flex flex-col gap-0.5 ${
-                              selectedError === key
-                                ? "bg-[#CC6600]/20 border-[#CC6600] text-white"
-                                : "bg-[#0F0F1D] border-white/10 hover:border-white/20 text-white/70"
-                            }`}
-                          >
-                            <span className="font-bold text-xs text-white">{meta.label}</span>
-                            <span className="text-[0.688rem] text-white/50 leading-relaxed">
-                              {meta.description}
-                            </span>
-                          </button>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Quick Feedback Templates */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">
-                    Quick Verification Templates:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {QA_FEEDBACK_TEMPLATES.map((tmpl, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleApplyTemplate(tmpl)}
-                        className="px-2.5 py-1 rounded-[2px] bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 text-[0.688rem] font-mono transition-colors cursor-pointer text-left"
-                      >
-                        {tmpl.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Detailed Comments */}
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="font-semibold text-white/90">
-                      Scorecard Comments &amp; Correction Requirements: <span className="text-red-400">*</span>
-                    </label>
-                    <span className="text-[0.688rem] font-mono text-white/40">{comments.length}/3000 chars</span>
-                  </div>
-                  <textarea
-                    value={comments}
-                    onChange={(e) => setComments(e.target.value)}
-                    rows={4}
-                    maxLength={3000}
-                    placeholder="Document exact dual-blind recalculated values, discrepancies, and specific table/model adjustments..."
-                    className="p-3 bg-[#0F0F1D] border border-white/15 rounded-[2px] text-xs text-white placeholder:text-white/30 focus:border-[#CC6600] focus:outline-none transition-colors font-sans leading-relaxed resize-none"
-                  />
-                </div>
-
-                {/* Submit Action */}
-                <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                  <span className="text-[0.688rem] text-white/40 font-mono">
-                    All decisions are timestamped in the audit lineage.
-                  </span>
-
-                  <Button
-                    type="submit"
-                    variant={
-                      selectedDecision === QADecision.QA_APPROVED
-                        ? "primary"
-                        : selectedDecision === QADecision.QA_REJECTED
-                        ? "secondary"
-                        : "outline"
-                    }
-                    size="md"
-                    className="rounded-[2px] text-xs font-semibold px-6 py-2.5 cursor-pointer"
+                {url ? (
+                  <a
+                    href={url}
+                    download
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Download ${f.fileName}`}
+                    className="shrink-0 rounded-[2px] p-2 text-white/50 transition-colors hover:bg-white/[0.06] hover:text-white"
                   >
-                    <span>Proceed to Confirm Verdict &rarr;</span>
-                  </Button>
-                </div>
-              </form>
-            ) : (
-              <div className="p-4 rounded-[2px] bg-[#0A0A18] border border-white/10 text-xs text-white/60 flex items-center gap-3">
-                <IconAlertTriangle size={18} stroke={1.5} className="text-amber-400 shrink-0" />
-                <span>
-                  {data.reviewDisabledReason || "QA evaluation is currently locked for this research study."}
-                </span>
-              </div>
-            )}
-          </Card>
-        </div>
-      </div>
-
-      {/* Confirmation Modal */}
-      {isConfirmModalOpen && (
-        <Modal
-          open={isConfirmModalOpen}
-          onClose={() => setIsConfirmModalOpen(false)}
-          title={`Confirm QA Verdict: ${QA_DECISION_METADATA[selectedDecision]?.label || selectedDecision}`}
-          description={`Research Study: ${data.project.intakeId}`}
-          size="md"
-          footer={
-            <div className="flex items-center justify-end gap-3 w-full">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsConfirmModalOpen(false)}
-                disabled={isPending}
-                className="font-sans text-xs rounded-[2px]"
-              >
-                Cancel
-              </Button>
-              <Button
-                variant={
-                  selectedDecision === QADecision.QA_APPROVED
-                    ? "primary"
-                    : selectedDecision === QADecision.QA_REJECTED
-                    ? "secondary"
-                    : "outline"
-                }
-                size="sm"
-                onClick={handleConfirmSubmit}
-                loading={isPending}
-                className="font-sans text-xs font-semibold rounded-[2px] px-5"
-              >
-                <span>Confirm &amp; Issue Verdict</span>
-              </Button>
-            </div>
-          }
-        >
-          <div className="flex flex-col gap-4 text-xs font-sans text-white/80">
-            <div className="p-3.5 bg-[#0F0F1D] border border-white/10 rounded-[2px] flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Decision</span>
-                <Badge
-                  variant={
-                    selectedDecision === QADecision.QA_APPROVED
-                      ? "emerald"
-                      : selectedDecision === QADecision.QA_REJECTED
-                      ? "warning"
-                      : "danger"
-                  }
-                  className="font-mono text-xs font-bold"
-                >
-                  {QA_DECISION_METADATA[selectedDecision]?.label || selectedDecision}
-                </Badge>
-              </div>
-
-              {selectedError && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[0.688rem] font-mono uppercase text-white/40 font-semibold">Classification</span>
-                  <span className="text-amber-300 font-semibold">
-                    {ERROR_CLASSIFICATION_METADATA[selectedError]?.label}
+                    <DownloadSimple size={15} weight="fill" />
+                  </a>
+                ) : (
+                  <span className="shrink-0 text-[12px] text-white/30" title="This sample file has nothing inside (offline mode).">
+                    Sample
                   </span>
-                </div>
-              )}
-            </div>
-
-            <div className="p-3 bg-black/30 border border-white/5 rounded-[2px]">
-              <span className="text-[0.625rem] font-mono uppercase text-white/40 block mb-1">
-                Scorecard Comments:
-              </span>
-              <p className="text-white/90 text-xs leading-relaxed">{comments}</p>
-            </div>
-
-            {selectedDecision === QADecision.QA_REJECTED && (
-              <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-[2px] text-amber-200 text-xs flex items-start gap-2">
-                <IconClock size={16} stroke={2} className="text-amber-400 shrink-0 mt-0.5" />
-                <span>
-                  The Lead Statistical Analyst will receive an immediate revision notice and a 24-hour turnaround timer.
-                </span>
-              </div>
-            )}
-
-            {selectedDecision === QADecision.ESCALATED_TO_CEO && (
-              <div className="p-3 bg-red-950/30 border border-red-500/30 rounded-[2px] text-red-200 text-xs flex items-start gap-2">
-                <IconAlertOctagon size={16} stroke={2} className="text-red-400 shrink-0 mt-0.5" />
-                <span>
-                  This study will be locked immediately and the Chief Executive Officer will receive an emergency briefing.
-                </span>
-              </div>
-            )}
-          </div>
-        </Modal>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
+    </Panel>
+  );
+}
 
-      {/* Toast Notification */}
-      {toastMessage && (
-        <Toast
-          message={toastMessage.message}
-          description={toastMessage.description}
-          variant={toastMessage.variant}
-          onClose={() => setToastMessage(null)}
-        />
+function HistoryPanel({ data }: { data: Data }) {
+  const reviews = [...data.reviewHistory].sort((a, b) => b.reviewedAt.localeCompare(a.reviewedAt));
+  return (
+    <Panel>
+      <PanelHeader title="Past reviews" count={reviews.length} subtitle={reviews.length === 0 ? "This is the first time it's been sent." : undefined} />
+      {reviews.length > 0 ? (
+        <ul className="mt-4 divide-y divide-white/[0.05] border-t border-white/[0.06]">
+          {reviews.map((r) => (
+            <li key={r.id} className="px-5 py-3.5 sm:px-6">
+              <p className="flex items-center gap-1.5 text-[13px] font-medium text-white">
+                {r.decision === "QA_APPROVED" ? (
+                  <Check size={12} weight="bold" className="text-white/60" />
+                ) : (
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#CC6600]" aria-hidden="true" />
+                )}
+                {r.decision === "QA_APPROVED" ? "Approved" : r.decision === "QA_REJECTED" ? "Sent back" : "Reported to the CEO"}
+              </p>
+              <p className="mt-0.5 text-[12px] text-white/45">
+                {r.reviewerName} · {dateTime(r.reviewedAt)}
+                {r.errorClassification ? ` · ${LEVEL_LABEL[r.errorClassification] ?? r.errorClassificationLabel}` : ""}
+              </p>
+              {r.comments ? <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-relaxed text-white/70">{r.comments}</p> : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="pb-5" />
       )}
-    </div>
+    </Panel>
   );
 }

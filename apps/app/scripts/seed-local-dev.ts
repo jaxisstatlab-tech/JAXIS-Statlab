@@ -82,6 +82,12 @@ interface Seed {
   sow?: "pending" | "signed";
   paid?: "deposit" | "full";
   deliveredDaysAgo?: number;
+  /** Belongs to the second sample client (not a login), so Ana's own pages stay the same. */
+  otherClient?: boolean;
+  /** Deadline paused by an admin this many days ago. */
+  pausedDaysAgo?: number;
+  /** Why the analyst asked to pause (with pausedDaysAgo: approved; without: still waiting for an admin). */
+  pauseReason?: string;
 }
 
 const SEEDS: Seed[] = [
@@ -178,6 +184,89 @@ const SEEDS: Seed[] = [
     paid: "full",
     deliveredDaysAgo: 42,
   },
+  // ── Extra studies for the analyst (stat@jaxis.dev) and reviewer (qa@jaxis.dev) lists: one of each state ──
+  {
+    key: "start",
+    intakeId: "JAXIS-202609-0039",
+    title: "Online learning readiness of senior high students in Malaybalay City",
+    status: "EXPERT_ASSIGNED",
+    pkg: "JX_03_CORE",
+    createdDaysAgo: 8,
+    dueInDays: 0.6,
+    quote: "approved",
+    sow: "signed",
+    paid: "deposit",
+    otherClient: true,
+  },
+  {
+    key: "late",
+    intakeId: "JAXIS-202609-0033",
+    title: "Job satisfaction and turnover intention of BPO employees in Cagayan de Oro",
+    status: "IN_PROGRESS",
+    pkg: "JX_04_ADVANCED",
+    createdDaysAgo: 16,
+    dueInDays: -2,
+    quote: "approved",
+    sow: "signed",
+    paid: "deposit",
+    otherClient: true,
+    pauseReason: "The client hasn't said which of the two job satisfaction scales to use. I asked in Messages two days ago.",
+  },
+  {
+    key: "paused",
+    intakeId: "JAXIS-202609-0030",
+    title: "Mobile banking use among small store owners in Valencia City",
+    status: "SLA_PAUSED",
+    pkg: "JX_03_CORE",
+    createdDaysAgo: 14,
+    dueInDays: 9,
+    quote: "approved",
+    sow: "signed",
+    paid: "deposit",
+    otherClient: true,
+    pausedDaysAgo: 1,
+    pauseReason: "Waiting for the client to send the second batch of survey answers.",
+  },
+  {
+    key: "fixes",
+    intakeId: "JAXIS-202609-0027",
+    title: "Exercise frequency and stress levels among nursing students",
+    status: "QA_REVISION",
+    pkg: "JX_03_CORE",
+    createdDaysAgo: 15,
+    dueInDays: 3,
+    quote: "approved",
+    sow: "signed",
+    paid: "deposit",
+    otherClient: true,
+  },
+  {
+    key: "check",
+    intakeId: "JAXIS-202609-0024",
+    title: "Household income and the nutritional status of school-age children",
+    status: "FOR_QA",
+    pkg: "JX_03_CORE",
+    createdDaysAgo: 13,
+    dueInDays: 4,
+    quote: "approved",
+    sow: "signed",
+    paid: "deposit",
+    otherClient: true,
+  },
+  {
+    key: "clientfix",
+    intakeId: "JAXIS-202608-0021",
+    title: "Principals' leadership style and teacher morale in private schools",
+    status: "REVISION_REQUESTED",
+    pkg: "JX_02_START",
+    createdDaysAgo: 24,
+    dueInDays: -6,
+    quote: "approved",
+    sow: "signed",
+    paid: "full",
+    deliveredDaysAgo: 5,
+    otherClient: true,
+  },
 ];
 
 // ── Build records ──────────────────────────────────────────────────────────────
@@ -186,8 +275,21 @@ const quotations: Json[] = [];
 const sows: Json[] = [];
 const payments: Json[] = [];
 
+// Second sample client for the extra analyst/reviewer studies. Not a login: made-up name, reserved example address.
+const OTHER_CLIENT = {
+  id: "seed_client_other",
+  name: "Carlo Mendoza",
+  email: "carlo.mendoza@example.com",
+  profile: { ...profile, institutionSchool: "Bukidnon State University", academicProgram: "BS Nursing" },
+};
+const ASSIGNED_STATUSES = ["EXPERT_ASSIGNED", "IN_PROGRESS", "SLA_PAUSED", "QA_REVISION", "FOR_QA", "DELIVERED", "REVISION_REQUESTED", "CLOSED"];
+
 for (const s of SEEDS) {
   const id = `seed_proj_${s.key}`;
+  const cId = s.otherClient ? OTHER_CLIENT.id : clientId;
+  const cName = s.otherClient ? OTHER_CLIENT.name : clientName;
+  const cEmail = s.otherClient ? OTHER_CLIENT.email : clientEmail;
+  const cProfile = s.otherClient ? OTHER_CLIENT.profile : profile;
   const def = PACKAGES_CATALOG[s.pkg];
   const calc = calculateQuotationTotals({
     packageName: s.pkg,
@@ -208,7 +310,7 @@ for (const s of SEEDS) {
   projects.push({
     id,
     intakeId: s.intakeId,
-    clientId,
+    clientId: cId,
     researchTitle: s.title,
     researchQuestions: questions,
     researchObjectives: objectives,
@@ -228,15 +330,20 @@ for (const s of SEEDS) {
     hasPendingRefund: false,
     createdAt: iso(-s.createdDaysAgo),
     updatedAt: iso(-Math.max(0, s.createdDaysAgo - 1)),
-    client: { id: clientId, fullName: clientName, email: clientEmail, clientProfile: profile },
-    // Studies past the deposit have a statistician (the dev account stat@jaxis.dev).
-    assignment: ["IN_PROGRESS", "DELIVERED", "CLOSED"].includes(s.status)
+    client: { id: cId, fullName: cName, email: cEmail, clientProfile: cProfile },
+    // Studies past the deposit have a statistician (the dev account stat@jaxis.dev) and a reviewer (qa@jaxis.dev).
+    assignment: ASSIGNED_STATUSES.includes(s.status)
       ? {
           statisticianId: "cmt5plu1k0003lrrkl1kribvh",
           qaLeadId: "cmt5pluuu0004lrrk5qu5ul2t",
           isActive: true,
           statistician: { fullName: "Dr. Juan Reyes" },
           qaLead: { fullName: "QA Lead Maria" },
+          assignedAt: iso(-s.createdDaysAgo + 3.5),
+          slaDueAt: iso(s.dueInDays),
+          slaPausedAt: s.pausedDaysAgo !== undefined ? iso(-s.pausedDaysAgo) : null,
+          slaPauseReason: s.pauseReason ?? null,
+          slaPausedBy: s.pauseReason ? "cmt5plu1k0003lrrkl1kribvh" : null,
         }
       : null,
     financialSummary: s.quote
@@ -318,8 +425,8 @@ for (const s of SEEDS) {
     ],
     projectIntakeId: s.intakeId,
     projectTitle: s.title,
-    clientName,
-    clientEmail,
+    clientName: cName,
+    clientEmail: cEmail,
   });
 
   if (!s.sow) continue;
@@ -333,11 +440,11 @@ for (const s of SEEDS) {
     parentSowId: null,
     contentSnapshot: buildSOWSnapshot({
       client: {
-        fullName: clientName,
-        email: clientEmail,
-        institution: profile.institutionSchool,
-        academicProgram: profile.academicProgram,
-        phone: profile.contactNumber,
+        fullName: cName,
+        email: cEmail,
+        institution: cProfile.institutionSchool,
+        academicProgram: cProfile.academicProgram,
+        phone: cProfile.contactNumber,
       },
       project: {
         intakeId: s.intakeId,
@@ -362,9 +469,9 @@ for (const s of SEEDS) {
     turnaroundDays: 7,
     addOns: s.addDefenseLab ? ["DEFENSELAB"] : [],
     isLocked: signed,
-    signedByName: signed ? clientName : null,
+    signedByName: signed ? cName : null,
     signedAt: signed ? iso(-s.createdDaysAgo + 2) : null,
-    signedByUserId: signed ? clientId : null,
+    signedByUserId: signed ? cId : null,
     generatedBy: "usr_dev_admin_001",
     generatedAt: iso(-s.createdDaysAgo + 1.5),
     pdfPath: null,
@@ -563,6 +670,45 @@ const analysis = [
       qaReview("delivered", "QA_APPROVED", "All tables checked against the output. Ready to release.", 30),
     ],
   },
+  {
+    id: "seed_analysis_late",
+    projectId: "seed_proj_late",
+    files: [aFile("late", 1, "SPSS_OUTPUT", "0033_descriptives_output.spv", 1, true, 70, "Profile of respondents only. Waiting on the scale question.")],
+    reviews: [],
+  },
+  {
+    id: "seed_analysis_fixes",
+    projectId: "seed_proj_fixes",
+    files: [
+      aFile("fixes", 1, "SPSS_OUTPUT", "0027_correlation_output.spv", 1, true, 40),
+      aFile("fixes", 2, "PDF_REPORT", "0027_chapter4_results.pdf", 1, true, 38),
+    ],
+    reviews: [
+      qaReview(
+        "fixes",
+        "QA_REJECTED",
+        "Stress scores aren't normal (Shapiro-Wilk p < .05), so please use Spearman instead of Pearson in Table 5 and update the write-up to match.",
+        20,
+        "MAJOR"
+      ),
+    ],
+  },
+  {
+    id: "seed_analysis_check",
+    projectId: "seed_proj_check",
+    files: [
+      aFile("check", 1, "SPSS_OUTPUT", "0024_chi_square_output.spv", 1, true, 10),
+      aFile("check", 2, "EXCEL_WORKBOOK", "0024_apa_tables.xlsx", 1, true, 9),
+      aFile("check", 3, "PDF_REPORT", "0024_chapter4_results.pdf", 1, true, 8, "Ready for your check, Maria."),
+    ],
+    reviews: [],
+  },
+  {
+    id: "seed_analysis_clientfix",
+    projectId: "seed_proj_clientfix",
+    files: [aFile("clientfix", 1, "PDF_REPORT", "0021_chapter4_results.pdf", 1, true, 140)],
+    reviews: [qaReview("clientfix", "QA_APPROVED", "Checked every table against the output. Ready to release.", 125)],
+  },
 ];
 const finalFile = (projectKey: string, n: number, category: string, fileName: string, ageHours: number) => ({
   id: `seed_dlv_${projectKey}_${n}`,
@@ -625,6 +771,20 @@ const revisions = [
     createdAt: claimDay(41.5),
     updatedAt: claimDay(40),
   },
+  {
+    id: "seed_rev_clientfix",
+    projectId: "seed_proj_clientfix",
+    clientId: OTHER_CLIENT.id,
+    description: "My adviser asked to report the mean and standard deviation for each leadership style in Table 3, not only the percentages.",
+    requestedSections: "Table 3, Chapter 4 section 4.2",
+    status: "PENDING_REVIEW",
+    classification: null,
+    classificationNotes: null,
+    classifiedAt: null,
+    resolvedAt: null,
+    createdAt: claimDay(2),
+    updatedAt: claimDay(2),
+  },
 ];
 
 // ── Write (keep any non-seed records already in each file) ─────────────────────
@@ -635,7 +795,8 @@ write(file("dev_data/payments.json"), [...payments, ...keepUnseeded(read(file("d
 write(file(".dev-alerts.json"), [...alerts, ...keepUnseeded(read(file(".dev-alerts.json")))]);
 write(file(".dev-defenselab.json"), [...defenseLabSessions, ...keepUnseeded(read(file(".dev-defenselab.json")))]);
 write(file(".dev-messages.json"), [...messages, ...keepUnseeded(read(file(".dev-messages.json")))]);
-write(file(".dev-analysis.json"), [...analysis, ...keepUnseeded(read(file(".dev-analysis.json")))]);
+// Offline uploads made on the sample studies are cleared too, so each study starts again as seeded.
+write(file(".dev-analysis.json"), [...analysis, ...keepUnseeded(read(file(".dev-analysis.json"))).filter((r) => !String(r.projectId ?? "").startsWith("seed_proj_"))]);
 write(file(".dev-deliverables.json"), [...deliverables, ...keepUnseeded(read(file(".dev-deliverables.json")))]);
 write(file(".dev-disputes.json"), [...disputes, ...keepUnseeded(read(file(".dev-disputes.json")))]);
 write(file(".dev-revisions.json"), [...revisions, ...keepUnseeded(read(file(".dev-revisions.json")))]);

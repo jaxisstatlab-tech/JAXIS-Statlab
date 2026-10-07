@@ -23,7 +23,7 @@ import { dispatchRealtimeNotification } from "@/features/notifications/dispatche
 import { emailClient } from "@/lib/email/notify";
 import { computePurgeDeadline, computeRevisionWindowExpiry } from "@/lib/delivery-rules";
 import type { RoleName, DeliverableCategory } from "@prisma/client";
-import { devStudyDataEnabled, devQaDesk } from "@/features/projects/dev-study-store";
+import { devQaDesk, devStudyDataEnabled, devSubmitQaReview } from "@/features/projects/dev-study-store";
 
 export type QaActionResult<T = void> =
   | { success: true; data: T }
@@ -430,6 +430,20 @@ export async function submitQaReview(
 
     await assertQaLeadAssigned(project.id, user.id, callerRole);
 
+    // The approver's signature is printed on the client's certificate, so approving needs one on file.
+    if (decision === "QA_APPROVED") {
+      const sig = await db.staffProfile.findUnique({ where: { userId: user.id }, select: { signatureUrl: true } });
+      if (!sig?.signatureUrl) {
+        return {
+          success: false,
+          error: {
+            code: "SIGNATURE_REQUIRED",
+            message: "Add your signature in My Profile before approving. It goes on the client's certificate.",
+          },
+        };
+      }
+    }
+
     const statusCheck = assertCanSubmitQaReview(project.masterStatus);
     if (!statusCheck.allowed) {
       return {
@@ -528,9 +542,10 @@ export async function submitQaReview(
             }
           }
 
-          // Update Project master status and delivery timestamps
-          await tx.project.update({
-            where: { id: project.id },
+          // Update Project master status and delivery timestamps, only if it is still waiting for review: two
+          // reviews at once (two people, or a double click) would otherwise both apply.
+          const claimed = await tx.project.updateMany({
+            where: { id: project.id, masterStatus: project.masterStatus },
             data: {
               masterStatus: newProjectStatus,
               qaApproved,
@@ -538,6 +553,7 @@ export async function submitQaReview(
               ...(deliveredAt ? { deliveredAt, filesPurgeAt, revisionWindowExpiresAt } : {}),
             },
           });
+          if (claimed.count === 0) throw new Error("REVIEW_CONFLICT");
 
           // Create QAReview scorecard
           const review = await tx.qAReview.create({
@@ -623,6 +639,13 @@ export async function submitQaReview(
       },
     };
   } catch (error) {
+    if ((error as Error).message === "REVIEW_CONFLICT") {
+      return {
+        success: false,
+        error: { code: "CONFLICT", message: "This study was already reviewed. Reload the page to see the latest." },
+      };
+    }
+    if (devStudyDataEnabled()) return devSubmitQaReview(parsed.data, session.user);
     console.error("[submitQaReview] Error:", error);
     return {
       success: false,
