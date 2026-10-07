@@ -1,5 +1,7 @@
 "use server";
 
+import { normalizeFacebook, normalizeInstagram } from "@/lib/person-rules";
+import { devReadSocials, devSaveSocials, devSocialsEnabled, devStudyClientEmail } from "./dev-socials";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { db, withDbTimeout } from "@/lib/db";
@@ -40,6 +42,20 @@ export async function upsertClientProfile(
     }
 
     const { institutionSchool, academicProgram, contactNumber, region } = parsed.data;
+    // Facebook and Instagram only, saved as clean links.
+    const facebookUrl = normalizeFacebook(parsed.data.facebookUrl);
+    const instagramUrl = normalizeInstagram(parsed.data.instagramUrl);
+    const socialErrors: Record<string, string[]> = {};
+    if (facebookUrl === "INVALID") socialErrors.facebookUrl = ["Paste the link to your Facebook profile, e.g. facebook.com/your.name"];
+    if (instagramUrl === "INVALID") socialErrors.instagramUrl = ["Enter your Instagram username or link, e.g. @your.name"];
+    if (Object.keys(socialErrors).length) {
+      return { success: false, error: { message: "Please check the highlighted fields.", fieldErrors: socialErrors } };
+    }
+    // Left out (e.g. the quick profile window): keep what's saved.
+    const socials = {
+      ...(parsed.data.facebookUrl !== undefined ? { facebookUrl: facebookUrl as string | null } : {}),
+      ...(parsed.data.instagramUrl !== undefined ? { instagramUrl: instagramUrl as string | null } : {}),
+    };
 
     try {
       await withDbTimeout(
@@ -50,6 +66,7 @@ export async function upsertClientProfile(
             academicProgram,
             contactNumber,
             region,
+            ...socials,
           },
           create: {
             userId: resolvedUserId,
@@ -57,11 +74,19 @@ export async function upsertClientProfile(
             academicProgram,
             contactNumber,
             region,
+            ...socials,
           },
         })
       );
     } catch (dbErr) {
-      console.warn("[upsertClientProfile] DB slow or offline, falling back to cookie mirror", dbErr);
+      // Offline mode keeps a copy in a cookie; on the live site a failed save must say so (it used to say "saved").
+      if (process.env.NODE_ENV === "production" || process.env.JAXIS_OFFLINE !== "1") {
+        console.error("[upsertClientProfile] Save failed:", dbErr);
+        return { success: false, error: { message: "We couldn't save your details. Please try again." } };
+      }
+      console.warn("[upsertClientProfile] DB offline, keeping the cookie copy", dbErr);
+      // Offline: also where the admin's browser can read them.
+      if (Object.keys(socials).length) devSaveSocials(session.user.email ?? "", socials);
     }
 
     // Always mirror to cookie for resilient offline testing
@@ -74,6 +99,7 @@ export async function upsertClientProfile(
         academicProgram,
         contactNumber,
         region,
+        ...socials,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
@@ -161,4 +187,31 @@ export async function assertClientProfileComplete() {
   }
 
   return profile;
+}
+
+/**
+ * A study's client's Facebook and Instagram, and whether they have a photo, for the admin and CEO study page.
+ * Admins and the CEO only: analysts and reviewers never get a client's social accounts.
+ */
+export async function getClientContactForManagers(projectId: string): Promise<{ facebookUrl: string | null; instagramUrl: string | null; clientId: string } | null> {
+  const session = await auth();
+  const role = session?.user?.role;
+  if (role !== "ADMIN" && role !== "CEO") return null;
+  try {
+    const p = await withDbTimeout(
+      db.project.findUnique({
+        where: { id: projectId },
+        select: { clientId: true, client: { select: { clientProfile: { select: { facebookUrl: true, instagramUrl: true } } } } },
+      })
+    );
+    if (!p) return null;
+    return { clientId: p.clientId, facebookUrl: p.client.clientProfile?.facebookUrl ?? null, instagramUrl: p.client.clientProfile?.instagramUrl ?? null };
+  } catch {
+    if (devSocialsEnabled()) {
+      const c = devStudyClientEmail(projectId);
+      const saved = c ? devReadSocials(c.email) : null;
+      if (c) return { clientId: c.clientId, facebookUrl: saved?.facebookUrl ?? null, instagramUrl: saved?.instagramUrl ?? null };
+    }
+    return null;
+  }
 }

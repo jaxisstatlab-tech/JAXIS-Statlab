@@ -5,6 +5,7 @@ import { getQuotationByProject, getCommercialCatalog } from "@/features/quotatio
 import { getSOWByProject } from "@/features/sow/actions";
 import { getProjectAssignment } from "@/features/assignments/actions";
 import { getClientDeliverables } from "@/features/deliverables/actions";
+import { getClientContactForManagers } from "@/features/client-profile/actions";
 import { AdminStudyOverview } from "./AdminStudyOverview";
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
 // Loaded on the server in one go (it used to load in the browser after the page appeared, behind a spinner).
 export default async function AdminStudyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [projectRes, quotation, assignRes, sowRes, catalog, final] = await Promise.all([
+  const [projectRes, quotation, assignRes, sowRes, catalog, final, contact] = await Promise.all([
     getProjectById(id),
     getQuotationByProject(id).catch(() => null),
     getProjectAssignment(id).catch(() => null),
@@ -25,6 +26,8 @@ export default async function AdminStudyPage({ params }: { params: Promise<{ id:
     getCommercialCatalog().catch(() => undefined),
     // The final files and certificate (all of them for staff; see clientGetsFile for what the client gets).
     getClientDeliverables(id).catch(() => null),
+    // Facebook and Instagram (admins and the CEO only).
+    getClientContactForManagers(id).catch(() => null),
   ]);
 
   if (!projectRes.success) {
@@ -41,6 +44,7 @@ export default async function AdminStudyPage({ params }: { params: Promise<{ id:
       catalog={catalog ?? undefined}
       finalFiles={final?.deliverables ?? []}
       certificate={final?.qaCertificate ?? null}
+      contact={contact}
     />
   );
 }

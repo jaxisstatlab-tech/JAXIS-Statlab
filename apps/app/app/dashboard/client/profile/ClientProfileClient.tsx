@@ -3,14 +3,21 @@
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PageHeader, FormInput, Button, FormSelect, Toast, Tabs, TabsList, TabsTrigger, TabsContent, CopyButton } from "@repo/ui";
-import { GraduationCap, Phone } from "@phosphor-icons/react";
+import { PageHeader, Button, Toast, CopyButton } from "@repo/ui";
+import { CheckCircle, Circle, FacebookLogo, InstagramLogo, Warning } from "@phosphor-icons/react";
 import { ChangePasswordCard } from "@/features/auth/components/ChangePasswordCard";
 import { upsertClientProfile } from "@/features/client-profile/actions";
-import { ClientProfileFormData } from "@/features/client-profile/schemas";
+import type { ClientProfileFormData } from "@/features/client-profile/schemas";
 import { formatPhilippinePhoneNumber } from "@/lib/formatters";
-import { Panel } from "@/components/dashboard/Panel";
+import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { REGION_OPTIONS, regionValue } from "@/features/client-profile/regions";
+import { PersonPhoto } from "@/components/dashboard/PersonPhoto";
+import { MyIdentityCard } from "@/features/account/components/MyIdentityCard";
+import type { MyAccount } from "@/features/account/actions";
+
+// The client's My Profile: name and photo, school and how we reach them (with Facebook and Instagram, seen only by
+// the JAXIS office), and password. A short checklist on the side shows what's still missing before they can send
+// a study.
 
 export interface ClientProfileClientProps {
   initialProfile: {
@@ -18,231 +25,299 @@ export interface ClientProfileClientProps {
     academicProgram?: string | null;
     contactNumber?: string | null;
     region?: string | null;
+    facebookUrl?: string | null;
+    instagramUrl?: string | null;
   } | null;
-  sessionUser?: {
-    id: string;
-    fullName: string;
-    email: string;
-  };
+  account?: MyAccount | null;
+  sessionUser?: { id: string; fullName: string; email: string };
 }
 
-export function ClientProfileClient({ initialProfile, sessionUser }: ClientProfileClientProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
-  const [toastMessage, setToastMessage] = useState<{
-    message: string;
-    description?: string;
-    variant: "info" | "success" | "warning" | "danger";
-  } | null>(null);
+type ToastState = { message: string; description?: string; variant: "success" | "danger" | "info" } | null;
 
-  const [formData, setFormData] = useState<ClientProfileFormData>({
+const FIELD =
+  "h-10 w-full rounded-[2px] border border-white/10 bg-[#050513] px-3 font-sans text-[13px] text-white outline-none placeholder:text-white/30 focus:border-[#CC6600]/60 disabled:opacity-60";
+
+export function ClientProfileClient({ initialProfile, sessionUser, account = null }: ClientProfileClientProps) {
+  const router = useRouter();
+  const [busy, start] = useTransition();
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [toast, setToast] = useState<ToastState>(null);
+  const [saved, setSaved] = useState(initialProfile);
+  const [form, setForm] = useState<ClientProfileFormData>({
     institutionSchool: initialProfile?.institutionSchool || "",
     academicProgram: initialProfile?.academicProgram || "",
     contactNumber: formatPhilippinePhoneNumber(initialProfile?.contactNumber || ""),
     region: regionValue(initialProfile?.region),
+    facebookUrl: initialProfile?.facebookUrl || "",
+    instagramUrl: initialProfile?.instagramUrl || "",
   });
-  const isComplete = Boolean(initialProfile?.institutionSchool && initialProfile?.contactNumber);
 
-  // Our own messages for empty fields (instead of the browser's pop-up).
-  const checkFields = () => {
-    const errors: Record<string, string[]> = {};
-    if (formData.institutionSchool.trim().length < 2) errors.institutionSchool = ["Enter your school or university."];
-    if (formData.academicProgram.trim().length < 2) errors.academicProgram = ["Enter your program."];
-    if (formData.contactNumber.replace(/\D/g, "").length < 5) errors.contactNumber = ["Enter your mobile number."];
-    return errors;
-  };
+  const name = account?.fullName || sessionUser?.fullName || "Your account";
+  const email = account?.email || sessionUser?.email || "";
+  const wasComplete = Boolean(saved?.institutionSchool && saved?.contactNumber);
 
   const update = (field: keyof ClientProfileFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (fieldErrors[field]) {
-      setFieldErrors((prev) => {
-        const next = { ...prev };
+    setForm((f) => ({ ...f, [field]: value }));
+    if (errors[field]) {
+      setErrors((all) => {
+        const next = { ...all };
         delete next[field];
         return next;
       });
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const save = (e: React.FormEvent) => {
     e.preventDefault();
-    const errors = checkFields();
-    setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
-    startTransition(async () => {
-      const res = await upsertClientProfile(formData);
+    const found: Record<string, string[]> = {};
+    if (form.institutionSchool.trim().length < 2) found.institutionSchool = ["Enter your school or university."];
+    if (form.academicProgram.trim().length < 2) found.academicProgram = ["Enter your program."];
+    if (form.contactNumber.replace(/\D/g, "").length < 5) found.contactNumber = ["Enter your mobile number."];
+    setErrors(found);
+    if (Object.keys(found).length) return;
+    start(async () => {
+      const res = await upsertClientProfile(form);
       if (!res.success) {
-        if (res.error.fieldErrors) setFieldErrors(res.error.fieldErrors);
-        setToastMessage({
-          message: "Your changes weren't saved",
-          description: res.error.message || "Please check the fields and try again.",
-          variant: "danger",
-        });
+        setErrors(res.error.fieldErrors ?? {});
+        setToast({ message: "Not saved", description: res.error.message || "Check the highlighted fields.", variant: "danger" });
         return;
       }
-      setToastMessage({ message: "Profile saved", description: "Your school and contact details are updated.", variant: "success" });
-      setTimeout(() => router.push("/dashboard/client"), 1200);
+      setSaved({ ...form });
+      setToast({ message: "Saved", description: "Your school and contact details are updated.", variant: "success" });
+      // First time through: back to the dashboard, where they were heading to send a study.
+      if (!wasComplete) setTimeout(() => router.push("/dashboard/client"), 1200);
+      else router.refresh();
     });
   };
 
-  const name = sessionUser?.fullName || "Your account";
-  const initials =
-    name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase() || "?";
+  const steps = [
+    { label: "Your name", done: Boolean(account?.firstName && account?.lastName) },
+    { label: "School and program", done: Boolean(saved?.institutionSchool && saved?.academicProgram) },
+    { label: "Mobile number", done: Boolean(saved?.contactNumber) },
+    { label: "Photo", done: Boolean(account?.avatarUrl), optional: true },
+    { label: "Facebook or Instagram", done: Boolean(saved?.facebookUrl || saved?.instagramUrl), optional: true },
+  ];
 
   return (
     <div data-portal="client" className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-24 font-sans animate-content-fade">
-      {toastMessage ? (
-        <Toast
-          message={toastMessage.message}
-          description={toastMessage.description}
-          variant={toastMessage.variant}
-          onClose={() => setToastMessage(null)}
-        />
-      ) : null}
-
       <PageHeader
+        title="My Profile"
+        description="Your name and photo, your school, how we reach you, and your password."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "My Studies", href: "/dashboard/client" },
-          { label: "Profile" },
+          { label: "My Profile" },
         ]}
-        title="Your profile"
-        description="Your school, how we reach you, and your password."
+        actions={
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/dashboard/client">Back to My Studies</Link>
+          </Button>
+        }
       />
 
-      {/* Who's logged in */}
-      <Panel as="div">
-        <div className="flex flex-wrap items-center gap-4 px-5 py-5 sm:px-6">
-          <span
-            aria-hidden
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[2px] bg-white/[0.08] text-base font-semibold text-white/85"
-          >
-            {initials}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-semibold text-white">{name}</p>
-            {sessionUser?.email ? (
-              <p className="mt-0.5 flex items-center gap-1.5 text-sm text-white/55">
-                <span className="truncate">{sessionUser.email}</span>
-                <CopyButton
-                  value={sessionUser.email}
-                  variant="ghost"
-                  className="shrink-0 p-0.5 text-white/40 hover:text-white"
-                  onCopy={() => setToastMessage({ message: "Email copied", description: `${sessionUser.email} is on your clipboard.`, variant: "info" })}
-                />
-              </p>
-            ) : null}
-          </div>
-          {!isComplete ? (
-            <span className="rounded-[2px] border border-[#CC6600]/40 bg-[#CC6600]/10 px-2 py-0.5 text-xs font-medium text-[#F08A2E]">
-              Add your school to send a study
-            </span>
-          ) : null}
-        </div>
-      </Panel>
+      {!wasComplete ? (
+        <Panel as="div" className="border-[#CC6600]/40">
+          <PanelBody className="flex items-start gap-3">
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#CC6600]" aria-hidden="true" />
+            <div>
+              <p className="text-sm font-medium text-white">Add your school and mobile number to send a study</p>
+              <p className="mt-0.5 text-[13px] text-white/55">It takes a minute. Your school appears on your certificate.</p>
+            </div>
+          </PanelBody>
+        </Panel>
+      ) : null}
 
-      <Tabs defaultValue="profile" className="flex w-full flex-col gap-6">
-        <TabsList className="self-start">
-          <TabsTrigger value="profile">School &amp; contact</TabsTrigger>
-          <TabsTrigger value="security">Password</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profile" className="outline-none">
-          <form onSubmit={handleSubmit} noValidate>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="flex flex-col gap-6 lg:col-span-8">
+          {account ? (
+            <MyIdentityCard account={account} onToast={setToast} />
+          ) : (
             <Panel as="div">
-              <div className="flex flex-col gap-8 px-5 py-6 sm:px-6">
-                <div className="grid grid-cols-1 gap-8 2xl:grid-cols-2 2xl:gap-12">
-                  <fieldset className="flex flex-col gap-4">
-                    <legend className="mb-4 flex items-start gap-2.5">
-                      <GraduationCap size={18} weight="fill" className="mt-0.5 shrink-0 text-[#CC6600]" />
-                      <span>
-                        <span className="block text-base font-semibold text-white">Your school</span>
-                        <span className="mt-0.5 block text-[13px] text-white/55">
-                          We format your tables the way your school asks, and it appears on your certificate.
-                        </span>
-                      </span>
-                    </legend>
-                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                      <FormInput
-                        label="School or university"
-                        required
-                        placeholder="e.g. University of the Philippines Diliman"
-                        value={formData.institutionSchool}
+              <PanelBody className="flex items-center justify-between gap-4">
+                <p className="text-[13px] text-white/60">Your name and photo didn&apos;t load.</p>
+                <Button variant="outline" size="sm" onClick={() => router.refresh()}>
+                  Try Again
+                </Button>
+              </PanelBody>
+            </Panel>
+          )}
+
+          <form onSubmit={save} noValidate>
+            <Panel>
+              <PanelHeader title="School and contact" subtitle="We format your tables the way your school asks, and reach you about your study." />
+              <PanelBody className="flex flex-col gap-6">
+                <section className="flex flex-col gap-4">
+                  <h3 className="text-[13px] font-medium text-white">Your school</h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <Field label="School or university" required error={errors.institutionSchool?.[0]}>
+                      <input
+                        value={form.institutionSchool}
                         onChange={(e) => update("institutionSchool", e.target.value)}
-                        error={fieldErrors.institutionSchool?.[0]}
-                        disabled={isPending}
+                        placeholder="e.g. University of the Philippines Diliman"
+                        maxLength={100}
+                        disabled={busy}
+                        className={FIELD}
                       />
-                      <FormInput
-                        label="Program"
-                        required
-                        placeholder="e.g. BS Psychology or MA in Education"
-                        value={formData.academicProgram}
+                    </Field>
+                    <Field label="Program" required error={errors.academicProgram?.[0]}>
+                      <input
+                        value={form.academicProgram}
                         onChange={(e) => update("academicProgram", e.target.value)}
-                        error={fieldErrors.academicProgram?.[0]}
-                        disabled={isPending}
+                        placeholder="e.g. BS Psychology or MA in Education"
+                        maxLength={100}
+                        disabled={busy}
+                        className={FIELD}
                       />
-                    </div>
-                  </fieldset>
+                    </Field>
+                  </div>
+                </section>
 
-                  <div aria-hidden className="-my-1 border-t border-white/[0.07] 2xl:hidden" />
-                  <fieldset className="flex flex-col gap-4">
-                    <legend className="mb-4 flex items-start gap-2.5">
-                      <Phone size={18} weight="fill" className="mt-0.5 shrink-0 text-[#CC6600]" />
-                      <span>
-                        <span className="block text-base font-semibold text-white">How we reach you</span>
-                        <span className="mt-0.5 block text-[13px] text-white/55">
-                          For updates about your study, like reminders and quick questions from our team.
-                        </span>
-                      </span>
-                    </legend>
-                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                      <FormInput
-                        label="Mobile number"
+                <section className="flex flex-col gap-4 border-t border-white/[0.07] pt-5">
+                  <h3 className="text-[13px] font-medium text-white">How we reach you</h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <Field label="Mobile number" required error={errors.contactNumber?.[0]}>
+                      <input
                         type="tel"
-                        required
-                        placeholder="09XX XXX XXXX"
-                        value={formData.contactNumber}
+                        value={form.contactNumber}
                         onChange={(e) => update("contactNumber", formatPhilippinePhoneNumber(e.target.value))}
-                        error={fieldErrors.contactNumber?.[0]}
-                        disabled={isPending}
+                        placeholder="09XX XXX XXXX"
+                        disabled={busy}
+                        className={FIELD}
                       />
-                      <FormSelect
-                        label="Region"
-                        value={formData.region}
+                    </Field>
+                    <Field label="Region">
+                      <select
+                        value={form.region}
                         onChange={(e) => update("region", e.target.value)}
-                        options={REGION_OPTIONS}
-                        disabled={isPending}
+                        disabled={busy}
+                        className={`${FIELD} cursor-pointer [&>option]:bg-[#0A0A18]`}
+                      >
+                        {REGION_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Facebook" hint="Optional" icon={<FacebookLogo size={14} weight="fill" />} error={errors.facebookUrl?.[0]}>
+                      <input
+                        value={form.facebookUrl ?? ""}
+                        onChange={(e) => update("facebookUrl", e.target.value)}
+                        placeholder="facebook.com/your.name"
+                        disabled={busy}
+                        className={FIELD}
                       />
-                    </div>
-                  </fieldset>
-                </div>
+                    </Field>
+                    <Field label="Instagram" hint="Optional" icon={<InstagramLogo size={14} weight="fill" />} error={errors.instagramUrl?.[0]}>
+                      <input
+                        value={form.instagramUrl ?? ""}
+                        onChange={(e) => update("instagramUrl", e.target.value)}
+                        placeholder="@your.name"
+                        disabled={busy}
+                        className={FIELD}
+                      />
+                    </Field>
+                  </div>
+                  <p className="text-[12px] leading-relaxed text-white/45">
+                    Only the JAXIS office can see your Facebook and Instagram, to reach you if a message or text doesn&apos;t get through. Your
+                    analyst and reviewer can&apos;t.
+                  </p>
+                </section>
 
-                <div className="flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-5 sm:flex-row sm:justify-end">
-                  <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
-                    <Link href="/dashboard/client">Cancel</Link>
-                  </Button>
-                  <Button type="submit" variant="primary" size="sm" loading={isPending} className="w-full sm:w-auto">
-                    {isPending ? "Saving..." : "Save Changes"}
+                <div className="flex justify-end border-t border-white/[0.07] pt-4">
+                  <Button type="submit" variant={wasComplete ? "outline" : "primary"} size="sm" loading={busy} className="active:scale-[0.97]">
+                    Save Changes
                   </Button>
                 </div>
-              </div>
+              </PanelBody>
             </Panel>
           </form>
-        </TabsContent>
 
-        <TabsContent value="security" className="flex max-w-3xl flex-col gap-4 outline-none">
-          <p className="text-[13px] leading-relaxed text-white/60">
-            Use a password you don&apos;t use anywhere else. After you change it, you&apos;ll be logged out on your other devices.
-          </p>
           <ChangePasswordCard />
-        </TabsContent>
-      </Tabs>
+        </div>
+
+        <div className="flex flex-col gap-6 lg:col-span-4">
+          <Panel>
+            <PanelHeader title="Account" />
+            <PanelBody className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <PersonPhoto src={account?.avatarUrl ?? null} name={name} className="h-11 w-11 text-sm" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-white">{name}</p>
+                  <p className="text-[12px] text-white/50">Client</p>
+                </div>
+              </div>
+              {email ? (
+                <div className="text-[13px]">
+                  <p className="text-[12px] text-white/45">Email</p>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-white">
+                    <span className="truncate">{email}</span>
+                    <CopyButton
+                      value={email}
+                      variant="ghost"
+                      className="shrink-0 p-0.5 text-white/40 hover:text-white"
+                      onCopy={() => setToast({ message: "Email copied", variant: "info" })}
+                    />
+                  </p>
+                </div>
+              ) : null}
+            </PanelBody>
+          </Panel>
+
+          <Panel>
+            <PanelHeader title="Your profile" subtitle={wasComplete ? "Ready to send studies." : "A few things before your first study."} />
+            <ul className="mt-4 divide-y divide-white/[0.05] border-t border-white/[0.06]">
+              {steps.map((s) => (
+                <li key={s.label} className="flex items-center gap-2.5 px-5 py-2.5 text-[13px] sm:px-6">
+                  {s.done ? (
+                    <CheckCircle size={15} weight="fill" className="shrink-0 text-white/80" />
+                  ) : (
+                    <Circle size={15} weight="bold" className={`shrink-0 ${s.optional ? "text-white/25" : "text-[#CC6600]"}`} />
+                  )}
+                  <span className={s.done ? "text-white" : "text-white/60"}>{s.label}</span>
+                  {s.optional && !s.done ? <span className="ml-auto text-[11px] text-white/35">Optional</span> : null}
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        </div>
+      </div>
+
+      {toast ? <Toast message={toast.message} description={toast.description} variant={toast.variant} onClose={() => setToast(null)} /> : null}
     </div>
+  );
+}
+
+function Field({
+  label,
+  hint,
+  icon,
+  required,
+  error,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  icon?: React.ReactNode;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5 text-[13px] text-white/70">
+      <span className="flex items-center gap-1.5">
+        {icon ? <span className="text-white/45">{icon}</span> : null}
+        {label}
+        {required ? <span className="text-[#CC6600]">*</span> : null}
+        {hint ? <span className="text-[11px] text-white/35">{hint}</span> : null}
+      </span>
+      {children}
+      {error ? (
+        <span className="flex items-start gap-1.5 text-[12px] text-red-300">
+          <Warning size={13} weight="fill" className="mt-0.5 shrink-0" />
+          {error}
+        </span>
+      ) : null}
+    </label>
   );
 }

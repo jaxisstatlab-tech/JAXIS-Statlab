@@ -16,6 +16,10 @@ export interface MockUser {
   password: string; // Dev plain password for dev validation
   status: UserStatus;
   staffProfile?: MockStaffProfile;
+  /** Offline My Profile edits. */
+  firstName?: string;
+  lastName?: string;
+  avatarPath?: string | null;
 }
 
 export const DEV_USERS: Record<string, MockUser> = {

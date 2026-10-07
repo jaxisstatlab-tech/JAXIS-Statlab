@@ -7,7 +7,7 @@ import { isOfflineDev } from "@/lib/app-settings";
 // Never used outside `npm run dev:offline`.
 
 const ROOT = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-uploads");
-const ALLOWED_PREFIXES = ["studies/", "deliverables/", "treasury/", "disputes/", "sows/", "uploads/", "intake-uploads/"];
+const ALLOWED_PREFIXES = ["studies/", "deliverables/", "treasury/", "disputes/", "sows/", "uploads/", "intake-uploads/", "avatars/"];
 
 /** The local file for a storage key, or null when the key isn't one we'd store (or offline mode is off). */
 export function devUploadPath(storageKey: string): string | null {

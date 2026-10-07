@@ -3,7 +3,8 @@
 import React from "react";
 import type { MessageDTO } from "../schemas";
 import { Check, Checks, Clock, WarningCircle } from "@phosphor-icons/react";
-import { firstName, fullTimeLabel, initials, roleLabel, timeLabel } from "./chat-format";
+import { firstName, fullTimeLabel, roleLabel, timeLabel } from "./chat-format";
+import { PersonPhoto } from "@/components/dashboard/PersonPhoto";
 
 /** A message as the chat holds it: server data plus local send state. */
 export type ChatMessage = MessageDTO & {
@@ -50,13 +51,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       {/* Avatar on the first row; hover time in the gutter on the rest */}
       <div className="w-8 shrink-0">
         {firstInGroup ? (
-          <span
-            aria-hidden
-            className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-[2px] text-[0.688rem] font-semibold select-none ${
-              isMine ? "bg-[#CC6600]/20 text-[#F08A2E]" : "bg-white/[0.08] text-white/75"
-            }`}
-          >
-            {initials(senderName)}
+          <span aria-hidden className="mt-0.5 block">
+            <PersonPhoto userId={message.senderId} name={senderName} rounded="rounded-[2px]" className="h-8 w-8 text-[0.688rem]" />
           </span>
         ) : (
           <span className="block pt-[3px] text-right text-[0.625rem] leading-5 text-white/30 opacity-0 transition-opacity select-none group-hover:opacity-100">

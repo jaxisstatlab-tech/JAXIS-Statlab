@@ -96,6 +96,8 @@ export function generateR2StorageKey(
       return `treasury/payments/${sanitizedId}/${timestamp}-${cleanFileName}`;
     case "DELIVERABLE":
       return `deliverables/${sanitizedId}/${timestamp}-${cleanFileName}`;
+    case "AVATAR":
+      return `avatars/${sanitizedId}/${timestamp}-${cleanFileName}`;
     case "ANALYSIS_OUTPUT":
       return `studies/${sanitizedId}/workbench/${timestamp}-${cleanFileName}`;
     case "DISPUTE_EVIDENCE":

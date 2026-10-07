@@ -805,6 +805,9 @@ export async function updateOwnProfile(
 
   const { bio, specializations, signatureUrl } = parsed.data;
   const userId = session.user.id;
+  if (specializations.length === 0 && (session.user.role === "STATISTICIAN" || session.user.role === "SENIOR_QA_LEAD")) {
+    return { success: false, error: { code: "VALIDATION_ERROR", message: "Add at least one thing you're good at." } };
+  }
   if (signatureUrl === null && SIGNATURE_REQUIRED_ROLES.includes(session.user.role)) {
     return {
       success: false,

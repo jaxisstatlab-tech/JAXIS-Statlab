@@ -11,6 +11,7 @@ import { startPresence } from "@/lib/presence";
 
 export interface DashboardShellProps {
   userFullName: string;
+  userAvatarUrl?: string | null;
   userRole: RoleName | string;
   userEmail: string;
   /** Id used for the "online" dot other people see. */
@@ -23,6 +24,7 @@ export interface DashboardShellProps {
 
 export function DashboardShell({
   userFullName,
+  userAvatarUrl = null,
   userRole,
   userEmail,
   presenceId,
@@ -141,6 +143,7 @@ export function DashboardShell({
             role={userRole}
             roleLabel={userRole}
             userFullName={userFullName}
+            userAvatarUrl={userAvatarUrl}
             userEmail={userEmail}
             clientProfileIncomplete={clientProfileIncomplete}
             initialUnreadMessagesCount={initialUnreadMessagesCount}

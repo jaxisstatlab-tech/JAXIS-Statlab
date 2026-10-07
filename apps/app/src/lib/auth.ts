@@ -378,6 +378,9 @@ export const getLiveAccountState = cache(async (userId: string) => {
           email: true,
           status: true,
           passwordHash: true,
+          // My Profile edits show at once (the session keeps the name from sign-in).
+          fullName: true,
+          avatarPath: true,
           userRoles: {
             select: { role: { select: { name: true } } },
           },

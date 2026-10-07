@@ -1,5 +1,6 @@
 "use client";
 
+import { PersonPhoto } from "@/components/dashboard/PersonPhoto";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link, { useLinkStatus } from "next/link";
@@ -49,7 +50,6 @@ import {
   Gavel,
   CaretDown,
   User,
-  GraduationCap,
   SignOut,
   CircleNotch,
   Trash,
@@ -78,6 +78,7 @@ export interface SidebarProps {
   role?: RoleName | string;
   roleLabel?: string;
   userFullName?: string;
+  userAvatarUrl?: string | null;
   userEmail?: string;
   clientProfileIncomplete?: boolean;
   initialUnreadMessagesCount?: number;
@@ -519,6 +520,7 @@ function getRoleDisplayLabel(role?: string): string {
 export const Sidebar: React.FC<SidebarProps> = ({
   role = "ADMIN",
   userFullName = "Developer Account",
+  userAvatarUrl = null,
   userEmail = "dev@jaxis.local",
   clientProfileIncomplete = false,
   initialUnreadMessagesCount = 0,
@@ -992,7 +994,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 aria-label="Account menu"
                 title={`${userFullName} (${getRoleDisplayLabel(role)})`}
               >
-                <AccountAvatar name={userFullName} role={role} needsSetup={isClient && clientProfileIncomplete} />
+                <AccountAvatar name={userFullName} role={role} photo={userAvatarUrl} needsSetup={isClient && clientProfileIncomplete} />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -1001,7 +1003,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               sideOffset={12}
               className="w-64 p-1.5 bg-[#07071C] border border-white/[0.1] rounded-[2px] z-50"
             >
-              <AccountHeader name={userFullName} email={userEmail} role={role} />
+              <AccountHeader name={userFullName} email={userEmail} role={role} photo={userAvatarUrl} />
               <DropdownMenuSeparator className="-mx-1.5 my-1.5 bg-white/[0.08]" />
               <DropdownMenuItem asChild>
                 <Link href={getProfileHref(role)} className={MENU_ITEM}>
@@ -1040,7 +1042,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="min-h-0 overflow-hidden">
                 <div className="mb-1.5 p-1.5 bg-[#07071C] border border-white/[0.1] rounded-[2px] flex flex-col">
-                  <AccountHeader name={userFullName} email={userEmail} role={role} />
+                  <AccountHeader name={userFullName} email={userEmail} role={role} photo={userAvatarUrl} />
                   <div className="-mx-1.5 my-1.5 h-px bg-white/[0.08]" />
                   <Link href={getProfileHref(role)} onClick={closeAndNavigate} className={MENU_ITEM}>
                     <ProfileRowContent isClient={isClient} needsSetup={isClient && clientProfileIncomplete} />
@@ -1081,7 +1083,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               aria-label="Account menu"
               aria-expanded={isProfileExpanded}
             >
-              <AccountAvatar name={userFullName} role={role} needsSetup={isClient && clientProfileIncomplete} />
+              <AccountAvatar name={userFullName} role={role} photo={userAvatarUrl} needsSetup={isClient && clientProfileIncomplete} />
               <span className="flex flex-col min-w-0 flex-1">
                 <span className="font-sans text-[13px] font-medium text-white truncate">{userFullName}</span>
                 <span className="font-mono text-[11px] text-white/45 truncate">{getRoleDisplayLabel(role)}</span>
@@ -1134,10 +1136,10 @@ const MENU_ITEM =
 const MENU_ITEM_DANGER =
   "flex items-center gap-2.5 w-full px-2.5 py-2 rounded-[2px] font-sans text-[13px] font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer outline-none focus-visible:bg-red-500/10";
 
-function AccountAvatar({ name, role, needsSetup }: { name: string; role?: string; needsSetup: boolean }) {
+function AccountAvatar({ name, role, photo, needsSetup }: { name: string; role?: string; photo?: string | null; needsSetup: boolean }) {
   return (
     <span className="relative shrink-0 flex items-center justify-center w-7">
-      <UserAvatar name={name} role={role} size="sm" />
+      {photo ? <PersonPhoto src={photo} name={name} className="h-7 w-7 text-[0.625rem]" /> : <UserAvatar name={name} role={role} size="sm" />}
       {needsSetup && (
         <span
           className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#CC6600] ring-2 ring-[#010114]"
@@ -1148,25 +1150,24 @@ function AccountAvatar({ name, role, needsSetup }: { name: string; role?: string
   );
 }
 
-function AccountHeader({ name, email, role }: { name: string; email: string; role?: string }) {
+function AccountHeader({ name, email, role, photo }: { name: string; email: string; role?: string; photo?: string | null }) {
   return (
-    <div className="px-2.5 py-2 flex flex-col gap-0.5 min-w-0">
-      <span className="font-sans text-[13px] font-medium text-white truncate">{name}</span>
-      <span className="font-mono text-[11px] text-white/45 truncate">{email}</span>
-      <span className="mt-1 font-mono text-[10px] uppercase tracking-wider text-white/40">{getRoleDisplayLabel(role)}</span>
+    <div className="flex items-center gap-2.5 px-2.5 py-2 min-w-0">
+      <PersonPhoto src={photo ?? null} name={name} className="h-9 w-9 text-xs" />
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <span className="font-sans text-[13px] font-medium text-white truncate">{name}</span>
+        <span className="font-mono text-[11px] text-white/45 truncate">{email}</span>
+        <span className="font-sans text-[11px] text-white/40">{getRoleDisplayLabel(role)}</span>
+      </div>
     </div>
   );
 }
 
-function ProfileRowContent({ isClient, needsSetup }: { isClient: boolean; needsSetup: boolean }) {
+function ProfileRowContent({ needsSetup }: { isClient?: boolean; needsSetup: boolean }) {
   return (
     <>
-      {isClient ? (
-        <GraduationCap size={16} weight="fill" className="text-white/50 shrink-0" />
-      ) : (
-        <User size={16} weight="fill" className="text-white/50 shrink-0" />
-      )}
-      <span className="truncate">{isClient ? "School & profile" : "My profile"}</span>
+      <User size={16} weight="fill" className="text-white/50 shrink-0" />
+      <span className="truncate">My profile</span>
       {needsSetup && (
         <span className="ml-auto font-mono text-[10px] uppercase text-[#FFA040] border border-[#CC6600]/40 px-1.5 py-0.5 rounded-[2px] shrink-0">
           Set up

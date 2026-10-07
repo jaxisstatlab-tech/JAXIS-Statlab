@@ -3,10 +3,10 @@
 import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button, CopyButton, KpiCard, Modal, PageHeader, Toast } from "@repo/ui";
-import { CheckCircle, Files, HandWaving, MagnifyingGlass, Star, Warning } from "@phosphor-icons/react";
+import { CheckCircle, DownloadSimple, Eye, Files, HandWaving, MagnifyingGlass, Star, Warning } from "@phosphor-icons/react";
+import dynamic from "next/dynamic";
+import { triggerFileDownload } from "@/lib/file-utils";
 import { Panel, PanelBody } from "@/components/dashboard/Panel";
-import { AnalysisGoalsList } from "@/features/projects/components/AnalysisGoalsList";
-import { ProjectFilesCard } from "@/features/projects/components/ProjectFilesCard";
 import { analysisGoalsFor } from "@/features/projects/analysis-goals";
 import { volunteerForStudy, withdrawVolunteer } from "@/features/volunteers/actions";
 import { ordinal } from "@/features/volunteers/rules";
@@ -14,9 +14,15 @@ import type { OpenStudyItem } from "@/features/volunteers/schemas";
 import type { ProjectFileItem } from "@/features/projects/schemas";
 
 // Open Studies: every study without an analyst yet. Analysts read the request and the client's files and offer to
-// take the ones they want ("I'll Take This Study"). Admins choose; without a pick the best-ranked volunteer gets
-// it when the deposit clears.
+// take the ones they want ("I'll Take This Study"). Admins choose; without a pick the first to offer gets it when
+// the deposit clears.
 
+const DocumentViewerLightbox = dynamic(
+  () => import("@/features/projects/components/DocumentViewerLightbox").then((m) => m.DocumentViewerLightbox),
+  { ssr: false }
+);
+
+const FILE_KIND: Record<string, string> = { RESEARCH_DOCUMENT: "Paper or manuscript", DATASET: "Data", QUESTIONNAIRE: "Questionnaire" };
 const DAY = 86_400_000;
 const FIELD =
   "w-full rounded-[2px] border border-white/10 bg-[#050513] font-sans text-[13px] text-white outline-none placeholder:text-white/30 focus:border-[#CC6600]/60";
@@ -31,6 +37,7 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
   const [sort, setSort] = useState<"newest" | "due">("newest");
   const [q, setQ] = useState("");
   const [details, setDetails] = useState<OpenStudyItem | null>(null);
+  const [preview, setPreview] = useState<OpenStudyItem["files"][number] | null>(null);
   const [offering, setOffering] = useState<OpenStudyItem | null>(null);
   const [toast, setToast] = useState<{ message: string; description?: string; variant: "success" | "danger" } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -188,55 +195,63 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
           <ul className="divide-y divide-white/[0.05]">
             {rows.map((s) => {
               const dueIn = s.deadlineRequested && now ? Math.ceil((Date.parse(s.deadlineRequested) - now) / DAY) : null;
+              const where = [s.program, s.school].filter(Boolean).join(", ");
               return (
-                <li key={s.id} className="flex flex-col gap-3 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:gap-6">
-                  <div className="min-w-0 flex-1">
-                    <button type="button" onClick={() => setDetails(s)} className="text-left text-sm font-semibold leading-snug text-white hover:underline hover:underline-offset-2">
+                <li key={s.id} className="grid grid-cols-1 gap-4 px-5 py-5 transition-colors hover:bg-white/[0.015] sm:px-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-8">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-[2px] border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[11px] text-white/70">{s.stageLabel}</span>
+                      <MyStatus s={s} quiet />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDetails(s)}
+                      className="mt-2 block text-left text-[15px] font-semibold leading-snug text-white hover:underline hover:underline-offset-2"
+                    >
                       {s.researchTitle}
                     </button>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-white/50">
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-white/50">
                       <CopyButton variant="badge" value={s.intakeId} label={s.intakeId} />
-                      <span>{s.stageLabel}</span>
-                      {s.school ? <span>· {s.program ? `${s.program}, ` : ""}{s.school}</span> : null}
+                      {where ? <span className="truncate">{where}</span> : null}
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {analysisGoalsFor(s.analysisGoals).map((g) => (
-                        <span key={g.code} title={`Usual tests: ${g.typicalTests}`} className="rounded-[2px] border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[11px] text-white/70">
-                          {g.title}
-                        </span>
-                      ))}
-                    </div>
+                    {s.analysisGoals.length ? (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {analysisGoalsFor(s.analysisGoals).map((g) => (
+                          <span key={g.code} title={`Usual tests: ${g.typicalTests}`} className="rounded-[2px] border border-white/10 px-1.5 py-0.5 text-[11px] text-white/65">
+                            {g.title}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
 
-                  <dl className="grid shrink-0 grid-cols-3 gap-4 text-[12px] lg:w-[330px]">
-                    <div>
-                      <dt className="text-white/40">Due</dt>
-                      <dd className="mt-0.5 whitespace-nowrap text-white">{date(s.deadlineRequested)}</dd>
-                      {dueIn !== null ? <dd className="text-white/45">{dueIn >= 0 ? `in ${dueIn} days` : `${-dueIn} days ago`}</dd> : null}
-                    </div>
-                    <div>
-                      <dt className="text-white/40">Files</dt>
-                      <dd className="mt-0.5 text-white">{s.files.length}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-white/40">Offers</dt>
-                      <dd className="mt-0.5 text-white">{s.volunteerCount}</dd>
-                    </div>
-                  </dl>
-
-                  <div className="flex shrink-0 flex-col items-start gap-2 lg:w-[230px] lg:items-end">
-                    <MyStatus s={s} />
+                  <div className="flex flex-col justify-between gap-4">
+                    <dl className="grid grid-cols-3 gap-3 text-[12px]">
+                      <div>
+                        <dt className="text-white/40">Due</dt>
+                        <dd className="mt-0.5 whitespace-nowrap text-white">{date(s.deadlineRequested)}</dd>
+                        {dueIn !== null ? <dd className="text-white/45">{dueIn >= 0 ? `in ${dueIn} days` : `${-dueIn} days ago`}</dd> : null}
+                      </div>
+                      <div>
+                        <dt className="text-white/40">Files</dt>
+                        <dd className="mt-0.5 text-white">{s.files.length}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-white/40">Offers</dt>
+                        <dd className="mt-0.5 text-white">{s.volunteerCount}</dd>
+                      </div>
+                    </dl>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => setDetails(s)}>
+                      <Button variant="outline" size="sm" onClick={() => setDetails(s)} className="flex-1">
                         Details
                       </Button>
                       {s.mine ? (
-                        <Button variant="outline" size="sm" onClick={() => withdraw(s)} loading={busyId === s.id}>
-                          Take Back Offer
+                        <Button variant="ghost" size="sm" onClick={() => withdraw(s)} loading={busyId === s.id} className="flex-1">
+                          Take Back
                         </Button>
                       ) : (
-                        <Button variant="primary" size="sm" onClick={() => setOffering(s)} className="active:scale-[0.97]">
-                          I&apos;ll Take This Study
+                        <Button variant="primary" size="sm" onClick={() => setOffering(s)} className="flex-1 active:scale-[0.97]">
+                          I&apos;ll Take It
                         </Button>
                       )}
                     </div>
@@ -249,41 +264,115 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
       </div>
 
       {details ? (
-        <Modal open onClose={() => setDetails(null)} title={details.researchTitle} description={`${details.intakeId} · ${details.stageLabel} · sent ${date(details.createdAt)}`} size="2xl">
-          <div className="flex flex-col gap-5 font-sans text-[13px]">
-            <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <Fact label="Due" value={date(details.deadlineRequested)} />
+        <Modal
+          open
+          onClose={() => setDetails(null)}
+          title={details.researchTitle}
+          description={`${details.intakeId} · ${details.stageLabel} · sent ${date(details.createdAt)}`}
+          size="2xl"
+          footer={
+            <div className="flex w-full flex-wrap items-center justify-between gap-3">
+              <MyStatus s={details} />
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setDetails(null)}>
+                  Close
+                </Button>
+                {details.mine ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    loading={busyId === details.id}
+                    onClick={() => {
+                      withdraw(details);
+                      setDetails(null);
+                    }}
+                  >
+                    Take Back Offer
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      setOffering(details);
+                      setDetails(null);
+                    }}
+                  >
+                    I&apos;ll Take This Study
+                  </Button>
+                )}
+              </div>
+            </div>
+          }
+        >
+          <div className="flex flex-col gap-6 font-sans text-[13px]">
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-4 rounded-[2px] border border-white/[0.08] bg-white/[0.02] px-4 py-3 sm:grid-cols-4">
+              <Fact label="Client needs it by" value={date(details.deadlineRequested)} />
               <Fact label="Package" value={details.packageName ?? "Not priced yet"} />
               <Fact label="School" value={details.school ?? "—"} />
               <Fact label="Program" value={details.program ?? "—"} />
             </dl>
-            <Block title="Statement of the problem" text={details.researchQuestions} />
-            <Block title="What the study wants to find out" text={details.researchObjectives} />
+
+            <Block title="Research objectives" text={details.researchObjectives} />
+            {details.researchQuestions?.trim() ? <Block title="Statement of the problem" text={details.researchQuestions} /> : null}
             {details.hypotheses?.trim() ? <Block title="Hypotheses" text={details.hypotheses} /> : null}
-            <div>
-              <p className="text-[12px] font-medium text-white/45">What they want the analysis to do</p>
-              <div className="mt-1.5">
-                <AnalysisGoalsList codes={details.analysisGoals} />
-              </div>
-            </div>
-            <ProjectFilesCard files={details.files as unknown as ProjectFileItem[]} studyId={details.intakeId} />
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
-              <MyStatus s={details} />
-              {details.mine ? null : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
-                    setOffering(details);
-                    setDetails(null);
-                  }}
-                >
-                  I&apos;ll Take This Study
-                </Button>
+
+            <section>
+              <p className="text-[12px] font-medium text-white/45">What the analysis should do</p>
+              {details.analysisGoals.length ? (
+                <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {analysisGoalsFor(details.analysisGoals).map((g) => (
+                    <li key={g.code} className="rounded-[2px] border border-white/[0.08] px-3 py-2.5">
+                      <p className="text-[13px] font-medium text-white">{g.title}</p>
+                      <p className="mt-0.5 text-[12px] leading-relaxed text-white/50">{g.typicalTests}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-white/40">Not given</p>
               )}
-            </div>
+            </section>
+
+            <section>
+              <p className="text-[12px] font-medium text-white/45">
+                Client&apos;s files <span className="font-mono text-white/35">{details.files.length}</span>
+              </p>
+              {details.files.length ? (
+                <ul className="mt-2 divide-y divide-white/[0.05] rounded-[2px] border border-white/[0.08]">
+                  {details.files.map((f) => (
+                    <li key={f.id} className="flex items-center gap-3 px-3 py-2.5">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] border border-white/10 bg-white/[0.04] font-mono text-[10px] uppercase text-white/60">
+                        {f.fileName.split(".").pop()?.slice(0, 4)}
+                      </span>
+                      <button type="button" onClick={() => setPreview(f)} className="min-w-0 flex-1 text-left">
+                        <span className="block truncate text-white hover:underline hover:underline-offset-2">{f.fileName}</span>
+                        <span className="block text-[12px] text-white/45">{FILE_KIND[f.fileCategory] ?? "File"}</span>
+                      </button>
+                      <Button variant="ghost" size="sm" onClick={() => setPreview(f)} className="gap-1.5">
+                        <Eye size={14} weight="fill" />
+                        Preview
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => void triggerFileDownload(f.filePath, f.fileName)} aria-label={`Download ${f.fileName}`}>
+                        <DownloadSimple size={14} weight="fill" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-white/40">The client didn&apos;t add any files.</p>
+              )}
+            </section>
           </div>
         </Modal>
+      ) : null}
+
+      {preview && details ? (
+        <DocumentViewerLightbox
+          file={preview as unknown as ProjectFileItem}
+          files={details.files as unknown as ProjectFileItem[]}
+          onNavigateFile={(f) => setPreview(f as unknown as OpenStudyItem["files"][number])}
+          onClose={() => setPreview(null)}
+        />
       ) : null}
 
       <OfferDialog
@@ -305,22 +394,24 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
   );
 }
 
-function MyStatus({ s }: { s: OpenStudyItem }) {
+function MyStatus({ s, quiet = false }: { s: OpenStudyItem; quiet?: boolean }) {
   if (s.mine?.picked)
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-[2px] border border-[#CC6600]/50 px-2 py-0.5 text-[12px] text-white">
-        <Star size={12} weight="fill" className="text-[#CC6600]" />
+      <span className="inline-flex items-center gap-1 rounded-[2px] border border-[#CC6600]/50 px-1.5 py-0.5 text-[11px] text-white">
+        <Star size={11} weight="fill" className="text-[#CC6600]" />
         Picked for you
       </span>
     );
   if (s.mine)
     return (
-      <span className="inline-flex items-center gap-1.5 text-[12px] text-white/70">
-        <CheckCircle size={13} weight="fill" />
-        You offered ({ordinal(s.mine.place)}){s.pickedSomeoneElse ? " · admin picked someone else" : ""}
+      <span className="inline-flex items-center gap-1 rounded-[2px] border border-white/15 px-1.5 py-0.5 text-[11px] text-white/80">
+        <CheckCircle size={11} weight="fill" />
+        You offered {ordinal(s.mine.place)}
+        {s.pickedSomeoneElse ? " · someone else was picked" : ""}
       </span>
     );
-  if (s.pickedSomeoneElse) return <span className="text-[12px] text-white/45">Admin already picked an analyst</span>;
+  if (s.pickedSomeoneElse) return <span className="text-[11px] text-white/45">An analyst was already picked</span>;
+  if (quiet) return null;
   return <span className="text-[12px] text-white/45">{s.volunteerCount === 0 ? "No offers yet" : `${s.volunteerCount} ${s.volunteerCount === 1 ? "offer" : "offers"} so far`}</span>;
 }
 

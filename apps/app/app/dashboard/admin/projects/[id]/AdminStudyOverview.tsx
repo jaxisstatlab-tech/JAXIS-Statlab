@@ -4,11 +4,13 @@ import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, DropdownMenu, Modal, Peso, Toast } from "@repo/ui";
-import { ArrowRight, Calculator, Copy, FileText, Question, SlidersHorizontal, Warning } from "@phosphor-icons/react";
+import { ArrowRight, Calculator, Copy, FileText, Question, SlidersHorizontal, Warning, FacebookLogo, InstagramLogo } from "@phosphor-icons/react";
 import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { StudySection } from "@/features/projects/components/StudySection";
 import { ProjectFilesCard } from "@/features/projects/components/ProjectFilesCard";
 import { FinalFilesCard } from "@/features/deliverables/components/FinalFilesCard";
+import { PersonPhoto } from "@/components/dashboard/PersonPhoto";
+import { socialLabel } from "@/lib/person-rules";
 import type { DeliverableDTO, QaCertificateDTO } from "@/features/deliverables/schemas";
 import { AnalysisGoalsList } from "@/features/projects/components/AnalysisGoalsList";
 import { clientPackageName } from "@/features/projects/client-packages";
@@ -50,8 +52,10 @@ export function AdminStudyOverview({
   catalog,
   finalFiles = [],
   certificate = null,
+  contact = null,
   loadError,
 }: {
+  contact?: { facebookUrl: string | null; instagramUrl: string | null } | null;
   project?: ProjectDetailItem;
   finalFiles?: DeliverableDTO[];
   certificate?: QaCertificateDTO | null;
@@ -390,8 +394,41 @@ export function AdminStudyOverview({
           <Panel>
             <PanelHeader title="Client" />
             <PanelBody>
+              <div className="mb-4 flex items-center gap-3">
+                <PersonPhoto userId={project.client.id} name={project.client.fullName} className="h-11 w-11 text-sm" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-white">{project.client.fullName}</p>
+                  {contact?.facebookUrl || contact?.instagramUrl ? (
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {contact.facebookUrl ? (
+                        <a
+                          href={contact.facebookUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-[2px] border border-white/10 bg-white/[0.03] px-1.5 py-0.5 text-[11px] text-white/80 hover:border-white/25 hover:text-white"
+                        >
+                          <FacebookLogo size={12} weight="fill" />
+                          {socialLabel(contact.facebookUrl)}
+                        </a>
+                      ) : null}
+                      {contact.instagramUrl ? (
+                        <a
+                          href={contact.instagramUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-[2px] border border-white/10 bg-white/[0.03] px-1.5 py-0.5 text-[11px] text-white/80 hover:border-white/25 hover:text-white"
+                        >
+                          <InstagramLogo size={12} weight="fill" />
+                          {socialLabel(contact.instagramUrl)}
+                        </a>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="text-[12px] text-white/40">No Facebook or Instagram added</p>
+                  )}
+                </div>
+              </div>
               <dl className="flex flex-col gap-3 text-[13px]">
-                <Row label="Name" value={project.client.fullName} />
                 <Row label="Email" value={project.client.email} copy />
                 {project.client.clientProfile ? (
                   <>

@@ -1,3 +1,4 @@
+import { AVATAR_EXTENSIONS, AVATAR_MAX_BYTES } from "./person-rules";
 import type { FileCategory } from "@prisma/client";
 
 // One list of the file types JAXIS accepts, shared by the upload routes, the server actions and the upload forms
@@ -63,8 +64,17 @@ export function hasAllowedExtension(fileName: string, allowed: string[]): boolea
 
 /** Allowed extensions for a study file kind (falls back to documents for anything unknown). */
 export function allowedForCategory(category: string): string[] {
+  if (category === "AVATAR") return AVATAR_EXTENSIONS;
   return STUDY_FILE_EXTENSIONS[category as FileCategory] ?? DOCUMENT_EXTENSIONS;
 }
+
+/** Upload size limit: 2 MB for profile photos, 15 MB for everything else. */
+export function maxBytesForCategory(category: string): number {
+  return category === "AVATAR" ? AVATAR_MAX_BYTES : 15 * 1024 * 1024;
+}
+
+/** Upload kinds: the study file kinds plus profile photos. */
+export type UploadCategory = FileCategory | "AVATAR";
 
 /**
  * Final files a client gets: the written results (PDF or Word). Code, data, output tables and other working

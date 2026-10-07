@@ -5,7 +5,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { env } from "@/lib/env";
 import type { FileCategory } from "@prisma/client";
 import { canVerifyPayment } from "@/lib/payment-rules";
-import { allowedForCategory, hasAllowedExtension } from "@/lib/file-types";
+import { allowedForCategory, hasAllowedExtension, maxBytesForCategory } from "@/lib/file-types";
 
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
 
@@ -38,6 +38,16 @@ export async function POST(req: NextRequest) {
         { success: false, error: { code: "MISSING_FILE", message: "No file was provided." } },
         { status: 400 }
       );
+    }
+
+    // Profile photos: 2 MB at most, and always into the uploader's own folder (whatever id the browser sent).
+    if (String(category) === "AVATAR") {
+      if (file.size > maxBytesForCategory("AVATAR")) {
+        return NextResponse.json(
+          { success: false, error: { code: "FILE_TOO_LARGE", message: "Your photo is over 2 MB. Please use a smaller picture." } },
+          { status: 400 }
+        );
+      }
     }
 
     if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -73,7 +83,7 @@ export async function POST(req: NextRequest) {
     // Prepare buffer and Cloudflare R2 Key
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const storageKey = generateR2StorageKey(category, studyId, file.name);
+    const storageKey = generateR2StorageKey(category, String(category) === "AVATAR" ? session.user.id : studyId, file.name);
     const contentType = file.type || "application/octet-stream";
 
     // Upload directly to Cloudflare R2

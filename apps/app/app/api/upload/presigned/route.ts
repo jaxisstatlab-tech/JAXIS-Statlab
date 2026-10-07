@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { getR2UploadUrl, generateR2StorageKey } from "@/lib/storage";
 import { env } from "@/lib/env";
 import { canVerifyPayment } from "@/lib/payment-rules";
-import { allowedForCategory, hasAllowedExtension } from "@/lib/file-types";
+import { allowedForCategory, hasAllowedExtension, maxBytesForCategory } from "@/lib/file-types";
 
 // Strict 15MB file size ceiling
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
@@ -44,6 +44,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Profile photos: 2 MB at most, and always into the uploader's own folder (whatever id the browser sent).
+    if (String(category) === "AVATAR") {
+      if (fileSize > maxBytesForCategory("AVATAR")) {
+        return NextResponse.json(
+          { success: false, error: { code: "FILE_TOO_LARGE", message: "Your photo is over 2 MB. Please use a smaller picture." } },
+          { status: 400 }
+        );
+      }
+    }
+
     // Strict 15MB ceiling validation
     if (fileSize > MAX_FILE_SIZE_BYTES) {
       return NextResponse.json(
@@ -75,7 +85,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const storageKey = generateR2StorageKey(category, studyId, fileName);
+    const storageKey = generateR2StorageKey(category, String(category) === "AVATAR" ? session.user.id : studyId, fileName);
     const contentType = fileType || "application/octet-stream";
 
     // Offline dev only: no real storage. The sink keeps the file in a local folder under the same key,

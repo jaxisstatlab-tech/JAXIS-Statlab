@@ -53,4 +53,5 @@ next-env.d.ts
 /.dev-disputes.json
 /.dev-revisions.json
 /.dev-volunteers.json
+/.dev-client-socials.json
 /dev_data/payments.json

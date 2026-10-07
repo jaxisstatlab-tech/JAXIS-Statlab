@@ -1,4 +1,4 @@
-import type { FileCategory } from "@prisma/client";
+import { maxBytesForCategory, type UploadCategory } from "@/lib/file-types";
 
 // Strict 15MB file size ceiling
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB
@@ -9,7 +9,7 @@ export interface R2UploadResult {
   publicUrl: string;
   fileType: string;
   fileSize: number;
-  fileCategory: FileCategory;
+  fileCategory: UploadCategory;
 }
 
 export interface UploadResponse {
@@ -26,11 +26,11 @@ export interface UploadResponse {
  */
 export async function uploadFileToR2(
   file: File,
-  category: FileCategory,
+  category: UploadCategory,
   studyId?: string
 ): Promise<UploadResponse> {
   // 1. Strict 15MB client-side ceiling guard
-  if (file.size > MAX_FILE_SIZE_BYTES) {
+  if (file.size > Math.min(MAX_FILE_SIZE_BYTES, maxBytesForCategory(category))) {
     return {
       success: false,
       error: {

@@ -77,8 +77,15 @@ export default async function DashboardLayout({
     console.warn("[DashboardLayout] Live account check non-blocking warning:", err);
   }
 
-  const userFullName = user?.fullName || user?.name || "Research Staff";
   const userEmail = user?.email || "";
+  // Name and photo from the live account read, so My Profile changes show without signing in again.
+  const offlineDev =
+    process.env.JAXIS_OFFLINE === "1" && process.env.NODE_ENV !== "production" && userEmail ? getDevUserByEmail(userEmail) : undefined;
+  const liveName = liveResult.state?.fullName ?? offlineDev?.fullName;
+  const livePhoto = liveResult.state ? liveResult.state.avatarPath : offlineDev?.avatarPath;
+  const userFullName = liveName || user?.fullName || user?.name || "Research Staff";
+  const photoOwner = liveResult.state ? user.id : (offlineDev?.id ?? user.id);
+  const userAvatarUrl = livePhoto ? `/api/avatar/${encodeURIComponent(photoOwner)}?v=${/\/(\d+)-/.exec(livePhoto)?.[1] ?? "1"}` : null;
   // Offline dev sessions can carry a different id than the offline study files use.
   const presenceId =
     (process.env.JAXIS_OFFLINE === "1" && process.env.NODE_ENV !== "production" && userEmail
@@ -96,6 +103,7 @@ export default async function DashboardLayout({
   return (
     <DashboardShell
       userFullName={userFullName}
+      userAvatarUrl={userAvatarUrl}
       userRole={userRole}
       userEmail={userEmail}
       presenceId={presenceId}

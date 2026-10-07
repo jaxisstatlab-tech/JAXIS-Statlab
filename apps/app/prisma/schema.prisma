@@ -55,6 +55,11 @@ model User {
   email        String     @unique
   passwordHash String
   fullName     String
+  /// Name parts from My Profile; fullName is built from them ("Juan Reyes"). Null for accounts not yet edited.
+  firstName    String?
+  lastName     String?
+  /// Profile photo (storage key under avatars/{userId}/), shown in the sidebar, messages and profile.
+  avatarPath   String?
   phone        String?
   status       UserStatus @default(ACTIVE)
   leaveReason  String?
@@ -207,6 +212,9 @@ model ClientProfile {
   academicProgram   String
   contactNumber     String
   region            String
+  /// So admins and the CEO can reach the client; never shown to analysts or reviewers.
+  facebookUrl       String?
+  instagramUrl      String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

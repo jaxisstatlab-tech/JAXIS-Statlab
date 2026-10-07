@@ -73,7 +73,7 @@
   "stat@jaxis.dev": {
     "id": "cmt5plu1k0003lrrkl1kribvh",
     "email": "stat@jaxis.dev",
-    "fullName": "Dr. Juan Reyes",
+    "fullName": "Juan Reyes",
     "role": "STATISTICIAN",
     "password": "JaxisStat2026!",
     "status": "ACTIVE",
@@ -88,7 +88,11 @@
       ],
       "signatureUrl": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='60'><path d='M10 40 Q 30 10, 50 35 T 90 20 T 130 40 T 170 15' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round'/><text x='110' y='55' font-family='serif' font-style='italic' font-size='14'>Dr. Juan Reyes</text></svg>",
       "updatedAt": "2026-09-22T03:47:36.125Z"
-    }
+    },
+    "firstName": "Juan",
+    "middleInitial": "D",
+    "lastName": "Reyes",
+    "avatarPath": "avatars/cmu99botv0003lrowauyj8dwi/1791414053145-Untitled_design.png"
   },
   "qa@jaxis.dev": {
     "id": "cmt5pluuu0004lrrk5qu5ul2t",
@@ -116,5 +120,23 @@
     "role": "CLIENT",
     "password": "LocalTest123!",
     "status": "ACTIVE"
+  },
+  "admin@jaxis.dev": {
+    "id": "cmt5plrh90000lrrkrk76bb0b",
+    "email": "admin@jaxis.dev",
+    "fullName": "Operations Manager",
+    "role": "ADMIN",
+    "password": "JaxisAdmin2026!",
+    "status": "ACTIVE",
+    "avatarPath": "avatars/cmu99bmds0000lrow6sbc7luy/1791413106134-494853422_122104837058851572_2625700208391891821_n.jpg"
+  },
+  "client@jaxis.dev": {
+    "id": "cmt5plvqe0005lrrkcoiysc7j",
+    "email": "client@jaxis.dev",
+    "fullName": "Client Ana Cruz",
+    "role": "CLIENT",
+    "password": "JaxisClient2026!",
+    "status": "ACTIVE",
+    "avatarPath": "avatars/cmu99bqf70005lrowvdx8odq6/1791413216237-d01fe65c-7746-43ba-83e0-4fbb66174815.png"
   }
 }

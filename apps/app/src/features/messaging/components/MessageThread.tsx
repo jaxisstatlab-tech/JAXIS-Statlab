@@ -693,7 +693,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             <Lock size={16} weight="fill" className="text-white/45" />
           </PresenceAvatar>
         ) : (
-          <GroupAvatar people={people.map((p) => ({ name: p.name, online: presence.isOnline(p.id) }))} />
+          <GroupAvatar people={people.map((p) => ({ id: p.id, name: p.name, online: presence.isOnline(p.id) }))} />
         )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-[0.938rem] font-semibold text-white">{title}</p>

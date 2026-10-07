@@ -406,7 +406,7 @@ function ChatRow({
       }`}
     >
       {isOpen ? (
-        <GroupAvatar people={team.map((p) => ({ name: p.name, online: isOnline?.(p.id) }))} />
+        <GroupAvatar people={team.map((p) => ({ id: p.id, name: p.name, online: isOnline?.(p.id) }))} />
       ) : (
         <PresenceAvatar>
           <Lock size={15} weight="fill" className="text-white/35" />

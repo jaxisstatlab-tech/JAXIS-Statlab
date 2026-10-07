@@ -5,6 +5,9 @@ export const ClientProfileSchema = z.object({
   academicProgram: z.string().trim().min(2, "Enter your program.").max(100, "Keep this under 100 characters."),
   contactNumber: z.string().trim().min(5, "Enter your mobile number.").max(30, "That number looks too long."),
   region: z.string().min(2, "Choose your region."),
+  /** Optional; only admins and the CEO see these (to reach you if needed). Checked and cleaned on the server. */
+  facebookUrl: z.string().trim().max(300).optional(),
+  instagramUrl: z.string().trim().max(300).optional(),
 });
 
 export type ClientProfileFormData = z.infer<typeof ClientProfileSchema>;

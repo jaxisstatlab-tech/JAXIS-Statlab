@@ -98,9 +98,8 @@ export type TerminateStaffInput = z.infer<typeof TerminateStaffSchema>;
 
 export const UpdateStaffProfileSchema = z.object({
   bio: z.string().max(1000, "Bio cannot exceed 1000 characters").optional(),
-  specializations: z
-    .array(z.string())
-    .min(1, "Select at least one specialization area"),
+  // Required for analysts and reviewers (checked in updateOwnProfile); optional for finance, admins and the CEO.
+  specializations: z.array(z.string().trim().min(1).max(60)).max(30, "Keep it to 30 at most."),
   signatureUrl: z
     .string()
     .optional()
