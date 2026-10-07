@@ -44,6 +44,8 @@ export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
 export const UpdateProjectStatusSchema = z.object({
   projectId: z.string().min(1, "Project ID is required"),
   status: z.custom<ProjectStatus>(),
+  /** Why (saved in the audit log). */
+  reason: z.string().max(500).optional(),
 });
 
 export type UpdateProjectStatusInput = z.infer<typeof UpdateProjectStatusSchema>;

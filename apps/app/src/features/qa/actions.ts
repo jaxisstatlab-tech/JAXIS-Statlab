@@ -20,6 +20,7 @@ import {
   type AdminQaRejectionWarningDTO,
 } from "./schemas";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
+import { assertStudyAccess } from "@/lib/access-control";
 import { emailClient } from "@/lib/email/notify";
 import { computePurgeDeadline, computeRevisionWindowExpiry } from "@/lib/delivery-rules";
 import type { RoleName, DeliverableCategory } from "@prisma/client";
@@ -585,17 +586,17 @@ export async function submitQaReview(
     try {
       const decisionTitle =
         decision === "QA_APPROVED"
-          ? "QA Review Passed (Delivered)"
+          ? `Approved and delivered: ${project.intakeId}`
           : decision === "QA_REJECTED"
-          ? "QA Revision Required"
-          : "Ethical Violation Escalated to CEO";
+            ? `Sent back for changes: ${project.intakeId}`
+            : `Reported to the CEO: ${project.intakeId}`;
 
       const decisionMsg =
         decision === "QA_APPROVED"
-          ? `Study ${project.intakeId} passed QA inspection and is now delivered to the researcher.`
+          ? `${user.fullName} approved ${project.intakeId}. It is delivered to the client.`
           : decision === "QA_REJECTED"
-          ? `Study ${project.intakeId} rejected: ${comments.slice(0, 120)}`
-          : `Study ${project.intakeId} halted for ethical breach: ${comments.slice(0, 120)}`;
+            ? `${user.fullName} sent ${project.intakeId} back to the analyst: ${comments.slice(0, 120)}`
+            : `${user.fullName} reported ${project.intakeId} to the CEO: ${comments.slice(0, 120)}`;
 
       // Admins (and the CEO for a report): the decision in staff words.
       await dispatchRealtimeNotification({
@@ -710,6 +711,16 @@ export async function getQaReviewHistory(
       success: false,
       error: { code: "UNAUTHORIZED", message: "You must be signed in to view review history." },
     };
+  }
+
+  // Staff on the study, admins and the CEO only (it used to answer anyone signed in, for any study).
+  const access = await assertStudyAccess(projectId, {
+    id: session.user.id ?? "",
+    role: (session.user as { role?: string }).role,
+    email: session.user.email,
+  });
+  if (!access.hasAccess || access.role === "CLIENT" || access.isFinance) {
+    return { success: false, error: { code: "FORBIDDEN", message: "You can't see this study's reviews." } };
   }
 
   try {

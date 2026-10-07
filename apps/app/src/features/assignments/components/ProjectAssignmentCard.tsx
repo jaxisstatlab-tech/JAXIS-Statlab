@@ -1,18 +1,19 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import { Card, Button, Badge } from "@repo/ui";
-import {
-  IconUserCheck,
-  IconShieldCheck,
-  IconClock,
-  IconPlayerPause,
-  IconPlayerPlay,
-  IconRefresh,
-  IconLoader2,
-} from "@tabler/icons-react";
+import { Button } from "@repo/ui";
+import { Warning } from "@phosphor-icons/react";
+import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { approveSlaPause, resumeSla } from "../actions";
 import type { AssignmentDetailItem } from "../schemas";
+
+// The study's analyst and reviewer and the deadline. Admins can pause or resume the deadline, answer a pause
+// request, and change the team.
+
+const OPEN = ["EXPERT_ASSIGNED", "IN_PROGRESS", "SLA_PAUSED", "SCOPE_CREEP_HALTED", "FOR_QA", "QA_REVISION", "REVISION_REQUESTED"];
+
+const dateTime = (d: string) =>
+  new Date(d).toLocaleString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 
 interface ProjectAssignmentCardProps {
   assignment: AssignmentDetailItem;
@@ -21,230 +22,118 @@ interface ProjectAssignmentCardProps {
   canManage?: boolean;
 }
 
-export function ProjectAssignmentCard({
-  assignment,
-  onRefresh,
-  onReassign,
-  canManage = true,
-}: ProjectAssignmentCardProps) {
-  const [isPending, startTransition] = useTransition();
-  const [actionError, setActionError] = useState<string | null>(null);
+export function ProjectAssignmentCard({ assignment, onRefresh, onReassign, canManage = true }: ProjectAssignmentCardProps) {
+  const [busy, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const open = OPEN.includes(assignment.masterStatus);
+  const canPause = assignment.masterStatus === "IN_PROGRESS" && !assignment.isPaused;
 
-  const handlePause = () => {
-    setActionError(null);
-    startTransition(async () => {
-      const res = await approveSlaPause({
-        projectId: assignment.projectId,
-        approved: true,
-      });
-      if (res.success) {
-        onRefresh();
-      } else {
-        setActionError(res.error?.message || "Failed to pause SLA.");
-      }
+  const run = (fn: () => Promise<{ success: boolean; error?: { message?: string } }>, fallback: string) => {
+    setError(null);
+    start(async () => {
+      const res = await fn();
+      if (res.success) onRefresh();
+      else setError(res.error?.message || fallback);
     });
   };
+  const pause = () => run(() => approveSlaPause({ projectId: assignment.projectId, approved: true }), "The deadline didn't pause.");
+  const decline = () => run(() => approveSlaPause({ projectId: assignment.projectId, approved: false }), "Couldn't say no to the request.");
+  const resume = () => run(() => resumeSla({ projectId: assignment.projectId }), "The deadline didn't resume.");
 
-  // The analyst or reviewer asked to pause; the admin can pause (above) or say no, which lets them ask again later.
-  const handleDecline = () => {
-    setActionError(null);
-    startTransition(async () => {
-      const res = await approveSlaPause({
-        projectId: assignment.projectId,
-        approved: false,
-      });
-      if (res.success) {
-        onRefresh();
-      } else {
-        setActionError(res.error?.message || "Couldn't decline the request.");
-      }
-    });
-  };
-
-  const handleResume = () => {
-    setActionError(null);
-    startTransition(async () => {
-      const res = await resumeSla({
-        projectId: assignment.projectId,
-      });
-      if (res.success) {
-        onRefresh();
-      } else {
-        setActionError(res.error?.message || "Failed to resume SLA.");
-      }
-    });
-  };
+  const deadline = !open
+    ? null
+    : assignment.isPaused
+      ? "Paused"
+      : assignment.isOverdue
+        ? "Past due"
+        : assignment.isUrgent
+          ? "Due within a day"
+          : null;
 
   return (
-    <Card className="p-6 border border-white/10 bg-[#0A0A18]/90 rounded-[2px] flex flex-col gap-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-white text-base font-sans">
-              Specialist Assignment &amp; Deadline Tracking
-            </h3>
-            {assignment.isPaused ? (
-              <Badge variant="amber" className="font-mono text-[0.625rem] py-0 px-2">
-                TIMER PAUSED
-              </Badge>
-            ) : assignment.isOverdue ? (
-              <Badge variant="danger" className="font-mono text-[0.625rem] py-0 px-2">
-                OVERDUE
-              </Badge>
-            ) : assignment.isUrgent ? (
-              <Badge variant="amber" className="font-mono text-[0.625rem] py-0 px-2">
-                URGENT (&lt;24H)
-              </Badge>
-            ) : (
-              <Badge variant="emerald" className="font-mono text-[0.625rem] py-0 px-2">
-                ON SCHEDULE
-              </Badge>
-            )}
-          </div>
-          <p className="text-xs text-white/60 mt-0.5 font-sans">
-            Assigned on {new Date(assignment.assignedAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+    <Panel>
+      <PanelHeader
+        title="Team"
+        subtitle={`Assigned ${dateTime(assignment.assignedAt)}`}
+        aside={
+          canManage ? (
+            <Button variant="ghost" size="sm" onClick={onReassign} disabled={busy}>
+              Change
+            </Button>
+          ) : null
+        }
+      />
+      <PanelBody className="flex flex-col gap-4 font-sans text-[13px]">
+        <Person role="Analyst" name={assignment.statistician.fullName} email={assignment.statistician.email} />
+        <Person role="Reviewer" name={assignment.qaLead.fullName} email={assignment.qaLead.email} />
+
+        <div className="border-t border-white/[0.06] pt-4">
+          <p className="text-[12px] text-white/45">Deadline</p>
+          <p className="mt-0.5 text-white">
+            {dateTime(assignment.slaDueAt)}
+            {deadline ? <span className={assignment.isOverdue && !assignment.isPaused ? "text-red-300" : "text-white/55"}> · {deadline}</span> : null}
           </p>
+          {open ? <p className="mt-0.5 text-white/45">{assignment.slaLabel}</p> : null}
         </div>
 
-        {canManage && (
-          <div className="flex items-center gap-2">
-            {assignment.isPaused ? (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleResume}
-                disabled={isPending}
-                className="font-sans text-xs font-semibold rounded-[2px] bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
-              >
-                {isPending ? (
-                  <IconLoader2 size={14} className="animate-spin" />
-                ) : (
-                  <IconPlayerPlay size={14} stroke={2} />
-                )}
-                <span>Resume Timer</span>
-              </Button>
-            ) : (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handlePause}
-                disabled={isPending}
-                className="font-sans text-xs font-semibold rounded-[2px] gap-1.5 text-amber-300 border-amber-500/30 hover:bg-amber-500/10"
-              >
-                {isPending ? (
-                  <IconLoader2 size={14} className="animate-spin" />
-                ) : (
-                  <IconPlayerPause size={14} stroke={2} />
-                )}
-                <span>Pause Timer</span>
-              </Button>
-            )}
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onReassign}
-              disabled={isPending}
-              className="font-sans text-xs font-semibold rounded-[2px] gap-1.5"
-            >
-              <IconRefresh size={14} stroke={2} />
-              <span>Reassign</span>
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {canManage && !assignment.isPaused && assignment.slaPauseReason ? (
-        <div className="flex flex-col gap-3 rounded-[2px] border border-white/10 bg-white/[0.02] p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0 font-sans">
+        {canManage && open && !assignment.isPaused && assignment.slaPauseReason ? (
+          <div className="rounded-[2px] border border-white/10 bg-white/[0.02] p-3.5">
             <p className="text-sm font-medium text-white">Asked to pause the deadline</p>
-            <p className="mt-0.5 text-xs leading-relaxed text-white/60">&ldquo;{assignment.slaPauseReason}&rdquo;</p>
+            <p className="mt-1 leading-relaxed text-white/65">&ldquo;{assignment.slaPauseReason}&rdquo;</p>
+            {!canPause ? <p className="mt-1 text-[12px] text-white/45">Only work in progress can be paused.</p> : null}
+            <div className="mt-3 flex gap-2">
+              {canPause ? (
+                <Button variant="primary" size="sm" onClick={pause} loading={busy}>
+                  Pause Deadline
+                </Button>
+              ) : null}
+              <Button variant="ghost" size="sm" onClick={decline} disabled={busy}>
+                Say No
+              </Button>
+            </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleDecline} disabled={isPending} className="font-sans text-xs">
-              Decline
+        ) : null}
+
+        {assignment.isPaused && assignment.slaPauseReason ? (
+          <p className="text-white/55">Paused because: &ldquo;{assignment.slaPauseReason}&rdquo;</p>
+        ) : null}
+
+        {canManage && open ? (
+          assignment.isPaused ? (
+            <Button variant="outline" size="sm" onClick={resume} loading={busy} className="self-start">
+              Resume Deadline
             </Button>
-            <Button variant="outline" size="sm" onClick={handlePause} disabled={isPending} className="font-sans text-xs">
-              Pause Timer
+          ) : canPause && !assignment.slaPauseReason ? (
+            <Button variant="ghost" size="sm" onClick={pause} loading={busy} className="self-start">
+              Pause Deadline
             </Button>
-          </div>
-        </div>
-      ) : null}
+          ) : null
+        ) : null}
 
-      {actionError && (
-        <div className="p-3 bg-red-950/40 border border-red-500/30 rounded-[2px] text-xs text-red-200">
-          {actionError}
-        </div>
-      )}
-
-      {/* Directory & SLA Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Statistician */}
-        <div className="p-4 bg-[#0F0F1D] border border-white/10 rounded-[2px] flex flex-col gap-1.5">
-          <span className="text-[0.688rem] font-sans font-semibold uppercase tracking-wider text-white/40 flex items-center gap-1.5">
-            <IconUserCheck size={14} stroke={2} className="text-[#38BDF8]" />
-            <span>Lead Statistical Analyst</span>
-          </span>
-          <p className="font-semibold text-white text-sm truncate">
-            {assignment.statistician.fullName}
+        {assignment.reassignedAt ? (
+          <p className="text-[12px] text-white/45">
+            Team changed {dateTime(assignment.reassignedAt)}
+            {assignment.reassignReason ? `: ${assignment.reassignReason}` : ""}
           </p>
-          <span className="text-xs text-white/50 truncate font-mono">
-            {assignment.statistician.email}
-          </span>
-        </div>
+        ) : null}
 
-        {/* QA Lead */}
-        <div className="p-4 bg-[#0F0F1D] border border-white/10 rounded-[2px] flex flex-col gap-1.5">
-          <span className="text-[0.688rem] font-sans font-semibold uppercase tracking-wider text-white/40 flex items-center gap-1.5">
-            <IconShieldCheck size={14} stroke={2} className="text-[#10B981]" />
-            <span>Senior QA Lead</span>
-          </span>
-          <p className="font-semibold text-white text-sm truncate">
-            {assignment.qaLead.fullName}
+        {error ? (
+          <p role="alert" className="flex items-start gap-2 text-red-300">
+            <Warning size={15} weight="fill" className="mt-0.5 shrink-0" />
+            {error}
           </p>
-          <span className="text-xs text-white/50 truncate font-mono">
-            {assignment.qaLead.email}
-          </span>
-        </div>
+        ) : null}
+      </PanelBody>
+    </Panel>
+  );
+}
 
-        {/* SLA Due Date */}
-        <div className="p-4 bg-[#0F0F1D] border border-white/10 rounded-[2px] flex flex-col gap-1.5">
-          <span className="text-[0.688rem] font-sans font-semibold uppercase tracking-wider text-white/40 flex items-center gap-1.5">
-            <IconClock size={14} stroke={2} className="text-[#CC6600]" />
-            <span>Contractual Deadline</span>
-          </span>
-          <p className="font-semibold text-white text-sm">
-            {new Date(assignment.slaDueAt).toLocaleDateString("en-PH", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </p>
-          <span
-            className={`text-xs font-mono font-semibold ${
-              assignment.isPaused
-                ? "text-amber-400"
-                : assignment.isOverdue
-                ? "text-red-400"
-                : assignment.isUrgent
-                ? "text-amber-300"
-                : "text-emerald-400"
-            }`}
-          >
-            {assignment.slaLabel}
-          </span>
-        </div>
-      </div>
-
-      {assignment.reassignedAt && (
-        <div className="p-3 bg-white/[0.02] border border-white/10 rounded-[2px] text-xs text-white/60 font-sans flex items-center gap-2">
-          <span className="text-amber-400 font-semibold">Specialist Reassigned:</span>
-          <span>
-            {assignment.reassignReason} (at {new Date(assignment.reassignedAt).toLocaleString("en-PH")})
-          </span>
-        </div>
-      )}
-    </Card>
+function Person({ role, name, email }: { role: string; name: string; email: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[12px] text-white/45">{role}</p>
+      <p className="mt-0.5 truncate font-medium text-white">{name}</p>
+      <p className="truncate text-[12px] text-white/45">{email}</p>
+    </div>
   );
 }

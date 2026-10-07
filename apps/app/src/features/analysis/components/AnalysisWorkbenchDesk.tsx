@@ -256,8 +256,14 @@ function StatusNotice({ data }: { data: Data }) {
     return (
       <Notice title={`Fixing what ${latest.reviewerName} asked`}>
         <p className="mt-0.5 text-[13px] text-white/55">
-          {dateTime(latest.reviewedAt)}.{latest.errorClassification ? ` ${LEVEL[latest.errorClassification] ?? latest.errorClassificationLabel}.` : ""}
-          {latest.qaRevisionDueAt ? ` Fix by ${dateTime(latest.qaRevisionDueAt)}.` : ""} Send it for review again when you&apos;re done.
+          {[
+            `${dateTime(latest.reviewedAt)}.`,
+            latest.errorClassification ? `${LEVEL[latest.errorClassification] ?? latest.errorClassificationLabel}.` : "",
+            latest.qaRevisionDueAt ? `Fix by ${dateTime(latest.qaRevisionDueAt)}.` : "",
+            "Send it for review again when you're done.",
+          ]
+            .filter(Boolean)
+            .join(" ")}
         </p>
         {latest.comments ? (
           <blockquote className="mt-3 whitespace-pre-wrap rounded-[2px] border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-[13px] leading-relaxed text-white/85">

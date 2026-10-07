@@ -9,7 +9,7 @@ import { db, withDbTimeout } from "@/lib/db";
 import { invalidateCacheTags, CACHE_TAGS } from "@/lib/cache-tags";
 import { emailClient, emailTeam } from "@/lib/email/notify";
 import { analysisGoalsFor } from "./analysis-goals";
-import { assertValidStatusTransition, generateIntakeId } from "@/lib/project-rules";
+import { assertValidStatusTransition, generateIntakeId, manualTransitionsFrom, PROJECT_STATUS_LABELS } from "@/lib/project-rules";
 import { calculateProjectBalance } from "@/lib/payment-rules";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { resolveOrProvisionUser } from "@/lib/user-healing";
@@ -907,10 +907,26 @@ export async function updateProjectStatus(
 
     // Assert state machine legality
     assertValidStatusTransition(existing.masterStatus, targetStatus);
+    if (existing.masterStatus !== targetStatus && !manualTransitionsFrom(existing.masterStatus).includes(targetStatus)) {
+      return {
+        success: false,
+        error: {
+          code: "USE_ITS_OWN_STEP",
+          message: `"${PROJECT_STATUS_LABELS[targetStatus] ?? targetStatus}" happens through its own step (quote, agreement, payment, assignment or review), not by changing the status by hand.`,
+        },
+      };
+    }
 
-    const updated = await db.project.update({
-      where: { id: existing.id },
+    // Only if nobody moved the study in the meantime.
+    const claimed = await db.project.updateMany({
+      where: { id: existing.id, masterStatus: existing.masterStatus },
       data: { masterStatus: targetStatus },
+    });
+    if (claimed.count === 0) {
+      return { success: false, error: { code: "CONFLICT", message: "The study changed while you were looking. Reload the page and try again." } };
+    }
+    const updated = await db.project.findUniqueOrThrow({
+      where: { id: existing.id },
       include: {
         client: {
           select: {
@@ -924,17 +940,50 @@ export async function updateProjectStatus(
       },
     });
 
-    // Real-time multi-role notification dispatch
+    // Manual changes used to leave no trace.
     try {
+      await db.auditLog.create({
+        data: {
+          projectId: existing.id,
+          actorId: session.user.id,
+          actorRole: session.user.role as RoleName,
+          action: "STATUS_CHANGED_BY_HAND",
+          oldValue: existing.masterStatus,
+          newValue: targetStatus,
+          reason: parsed.data.reason?.trim() || null,
+        },
+      });
+    } catch (logErr) {
+      console.warn("[updateProjectStatus] Couldn't write the audit log:", logErr);
+    }
+
+    // Staff hear about it; the client only about a cancellation or expiry (internal stages are never shown to them).
+    try {
+      const label = PROJECT_STATUS_LABELS[targetStatus] ?? targetStatus;
       await dispatchRealtimeNotification({
         eventType: "STATUS_UPDATE",
         projectId: existing.id,
         intakeId: existing.intakeId,
-        title: "Study Status Updated",
-        message: `Study "${existing.researchTitle}" transitioned to ${targetStatus.replace(/_/g, " ")}.`,
+        title: `${existing.intakeId}: ${label}`,
+        message: `${session.user.fullName || "An admin"} changed ${existing.intakeId} from ${PROJECT_STATUS_LABELS[existing.masterStatus] ?? existing.masterStatus} to ${label}.`,
         targetRoles: ["ADMIN", "CEO"],
         includeProjectParties: true,
+        staffOnly: true,
+        excludeUserId: session.user.id,
       });
+      if (targetStatus === "CANCELLED" || targetStatus === "EXPIRED") {
+        await dispatchRealtimeNotification({
+          eventType: "STATUS_UPDATE",
+          projectId: existing.id,
+          intakeId: existing.intakeId,
+          title: targetStatus === "CANCELLED" ? "Your study was cancelled" : "Your study expired",
+          message:
+            targetStatus === "CANCELLED"
+              ? `${existing.intakeId} was cancelled. Message us if you have questions.`
+              : `${existing.intakeId} expired because the deposit wasn't paid in time. Message us if you still want to go ahead.`,
+          targetUserIds: [existing.clientId],
+        });
+      }
     } catch (notifyErr) {
       console.warn("[updateProjectStatus] Realtime notification dispatch failed:", notifyErr);
     }
@@ -953,6 +1002,10 @@ export async function updateProjectStatus(
       };
     }
 
+    if (!devProjectsEnabled()) {
+      console.error("[updateProjectStatus] Error:", dbError);
+      return { success: false, error: { code: "SERVER_ERROR", message: "The status didn't change. Please try again." } };
+    }
     console.warn("[updateProjectStatus] DB offline, updating in dev cache.", dbError);
 
     const devProjects = readPersistedDevProjects();
@@ -966,6 +1019,12 @@ export async function updateProjectStatus(
     }
 
     const currentStatus = devProjects[index]!.masterStatus;
+    if (currentStatus !== targetStatus && !manualTransitionsFrom(currentStatus as ProjectStatus).includes(targetStatus)) {
+      return {
+        success: false,
+        error: { code: "USE_ITS_OWN_STEP", message: "That change happens through its own step, not by changing the status by hand." },
+      };
+    }
     try {
       assertValidStatusTransition(currentStatus, targetStatus);
     } catch (e) {

@@ -232,7 +232,8 @@ export function DropdownMenu({
         ) : (
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-[4px] border border-white/15 bg-white/5 text-white/70 transition-colors hover:border-white/30 hover:bg-white/10 hover:text-white cursor-pointer"
+            aria-label="More actions"
+            className="flex h-9 w-9 items-center justify-center rounded-[2px] border border-white/15 bg-white/5 text-white/70 transition-colors hover:border-white/30 hover:bg-white/10 hover:text-white cursor-pointer"
           >
             <DotsThreeVertical size={18} weight="bold" />
           </button>

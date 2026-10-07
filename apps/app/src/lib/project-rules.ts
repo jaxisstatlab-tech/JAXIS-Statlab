@@ -32,6 +32,36 @@ export const VALID_TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> = {
 };
 
 /**
+ * Moves an admin or the CEO may make by hand with "Change Status". Every other move belongs to its own step, which
+ * also records what goes with it: sending the quote, the client accepting it, issuing and signing the agreement,
+ * finance confirming a payment, assigning the team, the analyst sending work, the reviewer's decision, a client's
+ * claim. A manual "Signed", "Paid" or "Delivered" used to skip all of that (no signature, payment, review or files).
+ */
+const MANUAL_TARGETS: ProjectStatus[] = ["UNDER_EVALUATION", "CANCELLED", "EXPIRED", "HALTED", "CLOSED", "REASSIGNMENT_NEEDED"];
+
+/** Allowed manual moves from a status (a subset of VALID_TRANSITIONS). */
+export function manualTransitionsFrom(status: ProjectStatus): ProjectStatus[] {
+  const valid = VALID_TRANSITIONS[status] ?? [];
+  return valid.filter(
+    (t) =>
+      MANUAL_TARGETS.includes(t) ||
+      // A client's change request has no step of its own that restarts the work.
+      (status === "REVISION_REQUESTED" && t === "IN_PROGRESS")
+  );
+}
+
+/** What a manual move means, in plain words, for the Change Status window. */
+export const MANUAL_STATUS_HELP: Partial<Record<ProjectStatus, string>> = {
+  UNDER_EVALUATION: "Back to pricing: you'll build or change the quote.",
+  CANCELLED: "Stop the study for good. The client is told.",
+  EXPIRED: "The deposit wasn't paid in time. The client is told.",
+  HALTED: "Pause everything while something is sorted out.",
+  CLOSED: "Finish the study. Nothing more will happen on it.",
+  REASSIGNMENT_NEEDED: "The analyst or reviewer can't continue; pick new ones.",
+  IN_PROGRESS: "The client's change request is accepted: the analyst works on it again.",
+};
+
+/**
  * Checks if transitioning from currentStatus to targetStatus is valid.
  */
 export function isValidStatusTransition(
@@ -81,29 +111,29 @@ export function generateIntakeId(seq?: number): string {
  */
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   NEW_REQUEST: "New Request",
-  AWAITING_INFORMATION: "Awaiting Information",
-  UNDER_EVALUATION: "Under Evaluation",
+  AWAITING_INFORMATION: "Waiting for Client Info",
+  UNDER_EVALUATION: "Pricing",
   QUOTE_SENT: "Quote Sent",
-  CLIENT_APPROVED: "Client Approved",
-  SOW_PENDING: "SOW Pending",
-  SOW_SIGNED: "SOW Signed",
-  AWAITING_PAYMENT: "Awaiting Payment",
-  ACTIVE: "Pending Assignment",
-  EXPERT_ASSIGNED: "Specialists Assigned",
+  CLIENT_APPROVED: "Quote Accepted",
+  SOW_PENDING: "Agreement Sent",
+  SOW_SIGNED: "Agreement Signed",
+  AWAITING_PAYMENT: "Waiting for Deposit",
+  ACTIVE: "Needs a Team",
+  EXPERT_ASSIGNED: "Team Assigned",
   IN_PROGRESS: "In Progress",
-  SCOPE_CREEP_HALTED: "Scope Creep Halted",
-  SLA_PAUSED: "SLA Paused",
-  FOR_QA: "For QA Review",
-  QA_REVISION: "QA Revision Required",
+  SCOPE_CREEP_HALTED: "On Hold: Extra Work",
+  SLA_PAUSED: "Deadline Paused",
+  FOR_QA: "With Reviewer",
+  QA_REVISION: "Sent Back for Changes",
   DELIVERED: "Delivered",
-  REVISION_REQUESTED: "Revision Requested",
+  REVISION_REQUESTED: "Client Asked for Changes",
   CLOSED: "Closed",
-  HALTED: "Halted",
+  HALTED: "On Hold",
   CANCELLED: "Cancelled",
-  DISPUTED: "Disputed",
-  ETHICAL_BREACH: "Ethical Breach",
+  DISPUTED: "Claim Open",
+  ETHICAL_BREACH: "Reported to the CEO",
   EXPIRED: "Expired",
-  REASSIGNMENT_NEEDED: "Reassignment Needed",
+  REASSIGNMENT_NEEDED: "Needs a New Team",
 };
 
 /**
@@ -111,6 +141,8 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
  * 1. If in AWAITING_PAYMENT / SOW_SIGNED with proof submitted -> "Awaiting Payment Confirmation"
  * 2. If ACTIVE (payment confirmed, in queue for specialists assignment) -> "Pending Assignment"
  */
+const CLIENT_SEES_IN_PROGRESS: ProjectStatus[] = ["FOR_QA", "QA_REVISION", "SLA_PAUSED", "SCOPE_CREEP_HALTED", "ETHICAL_BREACH", "REASSIGNMENT_NEEDED"];
+
 export function getProjectDisplayStatus(
   project: {
     masterStatus: ProjectStatus | string;
@@ -133,18 +165,18 @@ export function getProjectDisplayStatus(
   ) {
     return {
       status: "PROOF_SUBMITTED",
-      label: "Awaiting Payment Confirmation",
+      label: "Checking Payment",
       pulse: true,
-      description: "Payment proof submitted. Waiting for finance to verify cleared funds.",
+      description: "Payment sent. Finance is checking it.",
     };
   }
 
   if (project.masterStatus === "ACTIVE") {
     return {
       status: "PENDING_ASSIGNMENT",
-      label: "Pending Assignment",
+      label: viewerRole === "CLIENT" ? "Getting Your Team Ready" : "Needs a Team",
       pulse: true,
-      description: "Payment confirmed. In queue for Lead Statistical Analyst and QA Lead assignment.",
+      description: "Deposit confirmed. An analyst and a reviewer are being assigned.",
     };
   }
 
@@ -152,11 +184,11 @@ export function getProjectDisplayStatus(
     const isAdmin = viewerRole === "ADMIN" || viewerRole === "CEO";
     return {
       status: "CLIENT_APPROVED",
-      label: isAdmin ? "Draft SOW Needed" : "Quote Accepted",
+      label: isAdmin ? "Draft the Agreement" : "Quote Accepted",
       pulse: true,
       description: isAdmin
-        ? "Client accepted quote. Action required: Compile and issue the Statement of Work."
-        : "Commercial proposal accepted. JAXIS Operations is preparing your official Statement of Work.",
+        ? "The client accepted the quote. Draft the agreement for them to sign."
+        : "You accepted the quote. We're preparing your agreement.",
     };
   }
 
@@ -164,12 +196,17 @@ export function getProjectDisplayStatus(
     const isAdmin = viewerRole === "ADMIN" || viewerRole === "CEO";
     return {
       status: "SOW_PENDING",
-      label: isAdmin ? "Awaiting Client Signature" : "Action: Sign SOW",
+      label: isAdmin ? "Waiting for Signature" : "Sign the Agreement",
       pulse: true,
       description: isAdmin
-        ? "Statement of Work dispatched to client. Awaiting client signature."
-        : "Statement of Work issued. Review terms and type your signature to execute the contract.",
+        ? "The agreement was sent. Waiting for the client to sign it."
+        : "Your agreement is ready. Read it and sign to continue.",
     };
+  }
+
+  // Clients don't see the inside of the work (review, pauses, extra-work holds, reports): to them it's in progress.
+  if (viewerRole === "CLIENT" && CLIENT_SEES_IN_PROGRESS.includes(project.masterStatus as ProjectStatus)) {
+    return { status: "IN_PROGRESS", label: PROJECT_STATUS_LABELS.IN_PROGRESS, pulse: true };
   }
 
   return {

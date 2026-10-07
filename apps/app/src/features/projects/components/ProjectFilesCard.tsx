@@ -1,19 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, Button, Toast, FileTypeIcon } from "@repo/ui";
-import {
-  DownloadSimple,
-  Check,
-  Eye,
-  Trash,
-  CircleNotch,
-} from "@phosphor-icons/react";
-import {
-  getFileMeta,
-  formatFileCategory,
-  triggerFileDownload,
-} from "@/lib/file-utils";
+import { Button, Toast } from "@repo/ui";
+import { DownloadSimple, Eye, Trash } from "@phosphor-icons/react";
+import { getFileMeta, triggerFileDownload } from "@/lib/file-utils";
+import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import type { ProjectFileItem } from "@/features/projects/schemas";
 import dynamic from "next/dynamic";
 
@@ -21,6 +12,21 @@ const DocumentViewerLightbox = dynamic(
   () => import("./DocumentViewerLightbox").then((m) => m.DocumentViewerLightbox),
   { ssr: false }
 );
+
+// The files the client added to a study: preview (with arrow keys between files), download one, or download all.
+
+const KIND: Record<string, string> = {
+  RESEARCH_DOCUMENT: "Paper or manuscript",
+  DATASET: "Data",
+  QUESTIONNAIRE: "Questionnaire",
+  PAYMENT_PROOF: "Payment proof",
+  ANALYSIS_OUTPUT: "Analysis output",
+  DELIVERABLE: "Final file",
+  DISPUTE_EVIDENCE: "Claim evidence",
+};
+
+const shortDate = (d: Date | string) =>
+  new Date(d).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric" });
 
 export interface ProjectFilesCardProps {
   files: ProjectFileItem[];
@@ -30,232 +36,138 @@ export interface ProjectFilesCardProps {
   onDeleteFile?: (file: ProjectFileItem) => void;
 }
 
-export function ProjectFilesCard({
-  files,
-  className = "",
-  canDelete = false,
-  onDeleteFile,
-}: ProjectFilesCardProps) {
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [downloadSuccessId, setDownloadSuccessId] = useState<string | null>(null);
-  const [isBatchDownloading, setIsBatchDownloading] = useState(false);
+export function ProjectFilesCard({ files, className = "", canDelete = false, onDeleteFile }: ProjectFilesCardProps) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [allBusy, setAllBusy] = useState(false);
   const [previewFile, setPreviewFile] = useState<ProjectFileItem | null>(null);
-  const [toastMessage, setToastMessage] = useState<{
-    message: string;
-    description?: string;
-    variant: "info" | "success" | "danger";
-  } | null>(null);
+  const [toast, setToast] = useState<{ message: string; description?: string; variant: "success" | "danger" } | null>(null);
 
-  // Single file download
-  const handleDownload = async (file: ProjectFileItem) => {
-    setDownloadingId(file.id);
-    setToastMessage({
-      message: "Download Started",
-      description: `Downloading "${file.fileName}" to your device.`,
-      variant: "info",
-    });
+  const download = async (file: ProjectFileItem) => {
+    setBusyId(file.id);
     try {
       await triggerFileDownload(file.filePath, file.fileName);
-      setDownloadingId(null);
-      setDownloadSuccessId(file.id);
-      setTimeout(() => setDownloadSuccessId((prev) => (prev === file.id ? null : prev)), 2000);
     } catch {
-      setDownloadingId(null);
+      setToast({ message: "Couldn't download", description: "Check your connection and try again.", variant: "danger" });
+    } finally {
+      setBusyId(null);
     }
   };
 
-  // Batch download all files
-  const handleBatchDownloadAll = async () => {
-    if (files.length === 0 || isBatchDownloading) return;
-    setIsBatchDownloading(true);
-    setToastMessage({
-      message: "Download Started",
-      description: `Downloading ${files.length} files to your device.`,
-      variant: "info",
-    });
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]!;
-      await triggerFileDownload(file.filePath, file.fileName);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+  const downloadAll = async () => {
+    if (files.length === 0 || allBusy) return;
+    setAllBusy(true);
+    try {
+      for (const file of files) {
+        await triggerFileDownload(file.filePath, file.fileName);
+        // Browsers block several downloads fired at once.
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      setToast({ message: "Downloading", description: `${files.length} files are on their way to your device.`, variant: "success" });
+    } catch {
+      setToast({ message: "Some files didn't download", description: "Try them one at a time.", variant: "danger" });
+    } finally {
+      setAllBusy(false);
     }
-    setIsBatchDownloading(false);
   };
 
   return (
-    <Card className={`p-6 sm:p-8 flex flex-col gap-6 ${className}`}>
-      {/* ── Card Header ── */}
-      <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 px-1">
-        <div className="flex items-center gap-3">
-          <h3 className="text-base font-bold text-white font-sans flex items-center gap-2.5">
-            <span>Attached Research Documents &amp; Datasets</span>
-            <span className="text-xs font-mono px-2.5 py-0.5 rounded-[2px] bg-white/[0.06] text-sky-300 border border-white/10 font-semibold">
-              {files.length}
-            </span>
-          </h3>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {files.length > 1 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBatchDownloadAll}
-              loading={isBatchDownloading}
-            >
-              <DownloadSimple size={15} weight="bold" className="text-amber-400" />
-              <span>Download All</span>
+    <Panel className={className}>
+      <PanelHeader
+        title="Client's files"
+        count={files.length}
+        subtitle="What the client uploaded with the request. Click a file to preview it."
+        aside={
+          files.length > 1 ? (
+            <Button variant="outline" size="sm" onClick={downloadAll} loading={allBusy} className="gap-1.5 active:scale-[0.97]">
+              {allBusy ? null : <DownloadSimple size={13} weight="fill" />}
+              Download All
             </Button>
-          )}
-
-          <span className="text-xs font-mono text-white/40 hidden sm:inline">
-            Cloud Storage
-          </span>
-        </div>
-      </div>
-
-      {/* ── Files List ── */}
+          ) : null
+        }
+      />
       {files.length === 0 ? (
-        <div className="p-8 rounded-[2px] bg-[#10101E]/40 border border-dashed border-white/10 flex flex-col items-center justify-center text-center gap-2">
-          <span className="text-xs font-mono text-white/40">
-            No research files or dataset packages uploaded with this submission.
-          </span>
-        </div>
+        <PanelBody>
+          <p className="text-[13px] text-white/45">The client didn&apos;t add any files.</p>
+        </PanelBody>
       ) : (
-        <div className="flex flex-col gap-3.5">
+        <ul className="mt-4 divide-y divide-white/[0.05] border-t border-white/[0.06] font-sans">
           {files.map((file) => {
             const meta = getFileMeta(file.fileName, file.fileType);
-            const category = formatFileCategory(file.fileCategory);
-            const isDownloading = downloadingId === file.id;
-            const isSuccess = downloadSuccessId === file.id;
-
             return (
-              <div
-                key={file.id}
-                className="group rounded-[2px] bg-[#10101E] border border-white/[0.08] hover:border-white/20 transition-colors px-6 sm:px-8 lg:px-9 py-4.5 sm:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6"
-              >
-                {/* Left: Type Icon + File Details */}
-                <div
-                  className="flex items-center gap-4 sm:gap-5 min-w-0 flex-1 cursor-pointer"
+              <li key={file.id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-white/10 bg-white/[0.04] font-mono text-[10px] uppercase text-white/60">
+                  {meta.ext}
+                </span>
+                <button
+                  type="button"
                   onClick={() => setPreviewFile(file)}
+                  className="min-w-0 flex-1 text-left"
+                  aria-label={`Preview ${file.fileName}`}
                 >
-                  {/* File Icon Block */}
-                  <div
-                    className={`h-11 w-11 sm:h-12 sm:w-12 rounded-[2px] ${meta.theme.bg} ${meta.theme.border} border flex flex-col items-center justify-center flex-shrink-0 group-hover:scale-[1.03] transition-transform`}
-                  >
-                    <div className={meta.theme.iconColor}>
-                      <FileTypeIcon type={meta.iconType} className="w-5 h-5" />
-                    </div>
-                    <span className={`text-[0.5625rem] font-mono font-bold uppercase tracking-wider ${meta.theme.text} mt-0.5`}>
-                      {meta.ext}
-                    </span>
-                  </div>
-
-                  {/* File Information */}
-                  <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-                    {/* Title + Category */}
-                    <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-                      <span
-                        className="text-sm font-semibold font-sans text-white truncate max-w-sm sm:max-w-md lg:max-w-xl group-hover:text-sky-300 transition-colors"
-                        title={file.fileName}
-                      >
-                        {file.fileName}
-                      </span>
-                      <span
-                        className={`text-[0.625rem] font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded-[2px] border whitespace-nowrap flex-shrink-0 ${category.badgeClass}`}
-                      >
-                        {category.label}
-                      </span>
-                    </div>
-
-                    {/* Metadata Subtitle */}
-                    <div className="flex items-center gap-2 text-xs font-mono text-white/40">
-                      <span className="text-sky-300/80 font-mono">
-                        {meta.friendlyType}
-                      </span>
-                      <span>·</span>
-                      <span>
-                        Uploaded: {new Date(file.uploadedAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </span>
-                    </div>
-                  </div>
+                  <span className="block truncate text-[13px] text-white hover:underline hover:underline-offset-2" title={file.fileName}>
+                    {file.fileName}
+                  </span>
+                  <span className="block truncate text-[12px] text-white/45">
+                    {KIND[file.fileCategory] ?? meta.friendlyType} · {shortDate(file.uploadedAt)}
+                  </span>
+                </button>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <IconButton label={`Preview ${file.fileName}`} onClick={() => setPreviewFile(file)}>
+                    <Eye size={15} weight="fill" />
+                  </IconButton>
+                  <IconButton label={`Download ${file.fileName}`} onClick={() => download(file)} disabled={busyId === file.id}>
+                    <DownloadSimple size={15} weight="fill" className={busyId === file.id ? "animate-pulse" : ""} />
+                  </IconButton>
+                  {canDelete && onDeleteFile ? (
+                    <IconButton label={`Remove ${file.fileName}`} onClick={() => onDeleteFile(file)} danger>
+                      <Trash size={15} weight="fill" />
+                    </IconButton>
+                  ) : null}
                 </div>
-
-                {/* Right Action: Clean Icon-Only Action Group */}
-                <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0 self-end sm:self-center">
-                  {/* Built-in Preview Action */}
-                  <button
-                    type="button"
-                    onClick={() => setPreviewFile(file)}
-                    title={`Preview "${file.fileName}"`}
-                    aria-label={`Preview ${file.fileName}`}
-                    className="inline-flex items-center justify-center h-9 w-9 rounded-[2px] bg-white/[0.04] hover:bg-white/[0.09] active:scale-[0.95] text-sky-400 hover:text-white border border-white/15 hover:border-sky-400/50 transition-all cursor-pointer select-none shadow-sm"
-                  >
-                    <Eye size={17} weight="fill" />
-                  </button>
-
-                  {/* Download Action (Icon Only) */}
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(file)}
-                    disabled={isDownloading}
-                    title={isSuccess ? `Saved "${file.fileName}"` : `Download "${file.fileName}"`}
-                    aria-label={`Download ${file.fileName}`}
-                    className={`inline-flex items-center justify-center h-9 w-9 rounded-[2px] transition-all cursor-pointer select-none shadow-sm active:scale-[0.95] ${
-                      isSuccess
-                        ? "bg-emerald-600/20 text-emerald-300 border border-emerald-500/40"
-                        : "bg-[#CC6600]/15 hover:bg-[#CC6600]/30 active:bg-[#CC6600]/40 text-[#FFA040] hover:text-white border border-[#CC6600]/60 hover:border-[#FFA040]"
-                    }`}
-                  >
-                    {isDownloading ? (
-                      <CircleNotch size={16} className="animate-spin text-white" />
-                    ) : isSuccess ? (
-                      <Check size={17} weight="bold" className="text-emerald-400" />
-                    ) : (
-                      <DownloadSimple size={17} weight="bold" />
-                    )}
-                  </button>
-
-                  {/* Quiet Tactical Remove Trigger */}
-                  {canDelete && onDeleteFile && (
-                    <button
-                      type="button"
-                      onClick={() => onDeleteFile(file)}
-                      title={`Remove "${file.fileName}"`}
-                      aria-label={`Remove ${file.fileName}`}
-                      className="inline-flex items-center justify-center h-9 w-9 rounded-[2px] text-rose-400 bg-rose-500/10 hover:bg-rose-500/25 active:scale-[0.95] border border-rose-500/30 hover:border-rose-400 transition-all cursor-pointer select-none shadow-sm"
-                    >
-                      <Trash size={16} weight="fill" />
-                    </button>
-                  )}
-                </div>
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
 
-      {/* ── Google Docs Style Document & PDF Preview Lightbox ── */}
-      {previewFile && (
+      {previewFile ? (
         <DocumentViewerLightbox
           file={previewFile}
           files={files}
           onNavigateFile={(file) => setPreviewFile(file)}
           onClose={() => setPreviewFile(null)}
         />
-      )}
+      ) : null}
+      {toast ? <Toast message={toast.message} description={toast.description} variant={toast.variant} onClose={() => setToast(null)} /> : null}
+    </Panel>
+  );
+}
 
-      {toastMessage && (
-        <Toast
-          message={toastMessage.message}
-          description={toastMessage.description}
-          variant={toastMessage.variant}
-          onClose={() => setToastMessage(null)}
-        />
-      )}
-    </Card>
+function IconButton({
+  label,
+  onClick,
+  disabled,
+  danger,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={`rounded-[2px] p-2 transition-colors active:scale-95 disabled:opacity-50 ${
+        danger ? "text-white/40 hover:bg-red-500/10 hover:text-red-300" : "text-white/50 hover:bg-white/[0.06] hover:text-white"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

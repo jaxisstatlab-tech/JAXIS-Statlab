@@ -29,7 +29,7 @@ import {
   type SubmitRevisionRequestInput,
   type UploadDeliverableInput,
 } from "./schemas";
-import { Deliverable, RevisionRequest, RoleName, DeliverableCategory } from "@prisma/client";
+import { Deliverable, RevisionRequest, RoleName, DeliverableCategory, type ProjectStatus } from "@prisma/client";
 import { assertStudyAccess } from "@/lib/access-control";
 import { emailClient } from "@/lib/email/notify";
 import { clientFilesUnlocked } from "@/lib/delivery-rules";
@@ -199,6 +199,12 @@ export async function uploadDeliverable(rawInput: UploadDeliverableInput): Promi
   }
 
   const input = UploadDeliverableSchema.parse(rawInput);
+  // Only a file that was really uploaded for this study (the old form saved a made-up path, so the client's
+  // download failed with "file wasn't available").
+  const folder = `deliverables/${input.projectId.replace(/[^a-zA-Z0-9_-]/g, "_")}/`;
+  if (!input.filePath.startsWith(folder) || input.filePath.includes("..")) {
+    throw new Error("That file wasn't uploaded for this study. Please upload it again.");
+  }
 
   const access = await assertStudyAccess(input.projectId, session.user);
   if (!access.hasAccess || (!access.isManager && !access.isAssignedStatistician)) {
@@ -311,31 +317,37 @@ export async function releaseDeliverables(rawInput: ReleaseDeliverablesInput): P
     );
   }
 
-  const now = new Date();
-  const purgeDeadline = computePurgeDeadline(now, 90);
-  const revisionExpiry = await computeRevisionWindowExpiry(now, 3);
+  // The reviewer's approval delivers the study. Releasing here is only for files added after that: on a delivered
+  // study (dates kept) or after a client's change request (delivered again, new change window). It used to work
+  // at any stage, so a Start or Data Check study could be delivered without review, and every release reset the
+  // delivery date.
+  const current = await db.project.findUnique({
+    where: { id: input.projectId },
+    select: { masterStatus: true, qaApproved: true, deliveredAt: true, filesPurgeAt: true, revisionWindowExpiresAt: true },
+  });
+  if (!current) throw new Error("Study not found.");
+  if (!current.qaApproved || (current.masterStatus !== "DELIVERED" && current.masterStatus !== "REVISION_REQUESTED")) {
+    throw new Error("Files are released when the reviewer approves the work. This study hasn't been approved yet.");
+  }
+  const redeliver = current.masterStatus === "REVISION_REQUESTED";
 
-  await db.$transaction([
-    // 1. Mark all deliverables as released
-    db.deliverable.updateMany({
-      where: { projectId: input.projectId },
-      data: {
-        isFinalReleased: true,
-        releasedAt: now,
-        releasedBy: session.user.id,
-      },
-    }),
-    // 2. Advance project status to DELIVERED with required audit timestamps
-    db.project.update({
-      where: { id: input.projectId },
-      data: {
-        masterStatus: "DELIVERED",
-        deliveredAt: now,
-        filesPurgeAt: purgeDeadline,
-        revisionWindowExpiresAt: revisionExpiry,
-      },
-    }),
-  ]);
+  const now = new Date();
+  const purgeDeadline = redeliver || !current.filesPurgeAt ? computePurgeDeadline(now, 90) : current.filesPurgeAt;
+  const revisionExpiry = redeliver || !current.revisionWindowExpiresAt ? await computeRevisionWindowExpiry(now, 3) : current.revisionWindowExpiresAt;
+  const deliveredAt = redeliver || !current.deliveredAt ? now : current.deliveredAt;
+
+  await db.$transaction(async (tx) => {
+    // Only files not released yet (released ones keep their date and who released them).
+    await tx.deliverable.updateMany({
+      where: { projectId: input.projectId, isFinalReleased: false },
+      data: { isFinalReleased: true, releasedAt: now, releasedBy: session.user.id },
+    });
+    const moved = await tx.project.updateMany({
+      where: { id: input.projectId, masterStatus: current.masterStatus },
+      data: { masterStatus: "DELIVERED", deliveredAt, filesPurgeAt: purgeDeadline, revisionWindowExpiresAt: revisionExpiry },
+    });
+    if (moved.count === 0) throw new Error("The study changed while you were looking. Reload the page and try again.");
+  });
 
   revalidatePath(`/dashboard/admin/projects/${input.projectId}/deliverables`);
   revalidatePath(`/dashboard/client/projects/${input.projectId}/deliverables`);
@@ -353,19 +365,19 @@ export async function releaseDeliverables(rawInput: ReleaseDeliverablesInput): P
       eventType: "DELIVERABLE_UPDATE",
       projectId: input.projectId,
       intakeId: project?.intakeId || undefined,
-      title: "Deliverables Released",
-      message: `Final deliverables for study ${project?.intakeId || ""} ("${project?.researchTitle || "Research Study"}") have been officially released and are ready for download.`,
+      title: "Files released",
+      message: `The final files for ${project?.intakeId || "the study"} are ready to download.`,
       targetRoles: ["FINANCE_OFFICER", "ADMIN"],
       includeProjectParties: true,
       excludeUserId: session.user.id,
     });
 
-    await dispatchRealtimeNotification({
+    if (redeliver || !current.deliveredAt) await dispatchRealtimeNotification({
       eventType: "PAYMENT_UPDATE",
       projectId: input.projectId,
       intakeId: project?.intakeId || undefined,
-      title: "Escrow Release Gate Unlocked",
-      message: `Deliverables released for study ${project?.intakeId || ""}. Escrow vault funds are cleared for specialist payout.`,
+      title: "Study delivered",
+      message: `${project?.intakeId || "A study"} was delivered. Its study pay can go on the next payslip.`,
       targetRoles: ["FINANCE_OFFICER"],
       excludeUserId: session.user.id,
     });
@@ -377,7 +389,7 @@ export async function releaseDeliverables(rawInput: ReleaseDeliverablesInput): P
 
   return {
     success: true,
-    deliveredAt: now.toISOString(),
+    deliveredAt: deliveredAt.toISOString(),
     filesPurgeAt: purgeDeadline.toISOString(),
     revisionWindowExpiresAt: revisionExpiry.toISOString(),
   };
@@ -941,11 +953,15 @@ export async function classifyRevision(rawInput: ClassifyRevisionInput): Promise
   if (!existing) {
     throw new Error("Revision request not found.");
   }
+  // Once only, while the client's request is still waiting (it used to be re-classifiable at any time).
+  if (existing.status !== "PENDING_REVIEW" || existing.project.masterStatus !== "REVISION_REQUESTED") {
+    throw new Error("This change request was already handled. Reload the page.");
+  }
 
   const now = new Date();
 
   // Status mapping based on classification
-  let targetProjectStatus = existing.project.masterStatus;
+  let targetProjectStatus: ProjectStatus = existing.project.masterStatus;
   let revisionStatus: "INCLUDED" | "METHODOLOGY_CHANGE" | "NEW_PAID_WORK" = "INCLUDED";
 
   if (input.classification === "INCLUDED") {
@@ -994,10 +1010,10 @@ export async function classifyRevision(rawInput: ClassifyRevisionInput): Promise
       eventType: "REVISION_REQUEST",
       projectId: existing.projectId,
       intakeId: existing.project.intakeId,
-      title: isIncluded ? "Revision Approved" : "Supplemental Scope Required",
+      title: isIncluded ? "Change request accepted" : "Change request needs a new price",
       message: isIncluded
-        ? `Revision request for study ${existing.project.intakeId} was approved under warranty and is now in progress.`
-        : `Revision request for study ${existing.project.intakeId} classified as ${input.classification.replace(/_/g, " ")}. Further review or supplemental terms required.`,
+        ? `The client's change request on ${existing.project.intakeId} is covered by the original price.`
+        : `The client's change request on ${existing.project.intakeId} is extra work. It's on hold until it's priced.`,
       targetRoles: ["ADMIN"],
       includeProjectParties: true,
       excludeUserId: session.user.id,

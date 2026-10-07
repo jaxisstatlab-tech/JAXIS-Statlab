@@ -492,20 +492,30 @@ export async function approveSlaPause(
     }
 
     if (approved) {
+      // Only work in progress can pause (it used to force any stage, even "With reviewer" or "Delivered", to
+      // Paused, and resuming then put it back to In progress).
+      if (assignment.slaPausedAt) {
+        return { success: false, error: { code: "ALREADY_PAUSED", message: "The deadline is already paused." } };
+      }
       const now = new Date();
-      await db.$transaction([
-        db.assignment.update({
-          where: { id: assignment.id },
-          data: {
-            slaPausedAt: now,
-            slaApprovedBy: session.user.id,
-          },
-        }),
-        db.project.update({
-          where: { id: assignment.projectId },
+      const paused = await db.$transaction(async (tx) => {
+        const moved = await tx.project.updateMany({
+          where: { id: assignment.projectId, masterStatus: "IN_PROGRESS" },
           data: { masterStatus: "SLA_PAUSED" },
-        }),
-      ]);
+        });
+        if (moved.count === 0) return false;
+        await tx.assignment.update({
+          where: { id: assignment.id },
+          data: { slaPausedAt: now, slaApprovedBy: session.user.id },
+        });
+        return true;
+      });
+      if (!paused) {
+        return {
+          success: false,
+          error: { code: "CANNOT_PAUSE", message: "Only a study that's in progress can be paused. Reload the page to see where it is now." },
+        };
+      }
     } else {
       await db.assignment.update({
         where: { id: assignment.id },
@@ -579,6 +589,7 @@ export async function resumeSla(
   try {
     const assignment = await db.assignment.findFirst({
       where: {
+        isActive: true,
         OR: [{ projectId }, { project: { intakeId: projectId } }],
       },
     });
@@ -606,8 +617,9 @@ export async function resumeSla(
           slaApprovedBy: null,
         },
       }),
-      db.project.update({
-        where: { id: assignment.projectId },
+      // Back to work only from Paused, never from a later stage.
+      db.project.updateMany({
+        where: { id: assignment.projectId, masterStatus: "SLA_PAUSED" },
         data: { masterStatus: "IN_PROGRESS" },
       }),
     ]);

@@ -182,7 +182,7 @@ export default function FinanceProjectPaymentPage({ params }: PageProps) {
       <PaymentLedgerCard
         summary={summary}
         payments={payments}
-        canUpload={false}
+        onVerify={setSelectedVerificationPayment}
       />
 
       {/* ── Verification Modal ── */}

@@ -24,6 +24,7 @@ import {
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import type { ProjectStatus } from "@prisma/client";
 import { assertStudyAccess } from "@/lib/access-control";
+import { devProjectsEnabled } from "@/features/projects/dev-projects-store";
 
 const DEV_SOWS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-sows.json");
 const DEV_PROJECTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
@@ -68,6 +69,9 @@ function writePersistedDevSows(sows: SOWDetailItem[]): void {
  */
 // Not exported: in a "use server" file every export can be called from a browser, and this one has no access
 // check of its own. Only generateSOW (admin/CEO) calls it.
+/** A reason the agreement can't be made right now, shown to the admin as is. */
+class SowStepError extends Error {}
+
 async function createOrUpdateSOWInternal({
   projectId,
   quotationId,
@@ -95,7 +99,15 @@ async function createOrUpdateSOWInternal({
         });
 
         if (!project) {
-          throw new Error("Project record not found.");
+          throw new SowStepError("This study wasn't found.");
+        }
+        // Drafted after the client accepts the quote, and changeable until they sign.
+        if (project.masterStatus !== "CLIENT_APPROVED" && project.masterStatus !== "SOW_PENDING") {
+          throw new SowStepError(
+            project.masterStatus === "SOW_SIGNED" || project.masterStatus === "AWAITING_PAYMENT"
+              ? "The client already signed the agreement, so it can't be changed."
+              : "The agreement is drafted after the client accepts the quote."
+          );
         }
 
         // 2. Fetch quotation (by ID or latest accepted/sent quote for project)
@@ -111,7 +123,7 @@ async function createOrUpdateSOWInternal({
           quote = await tx.quotation.findFirst({
             where: {
               projectId,
-              status: { in: ["CLIENT_APPROVED", "QUOTE_SENT"] },
+              status: "CLIENT_APPROVED",
             },
             include: {
               lineItems: true,
@@ -120,8 +132,8 @@ async function createOrUpdateSOWInternal({
           });
         }
 
-        if (!quote || quote.projectId !== projectId) {
-          throw new Error("Quotation not found or does not belong to this project.");
+        if (!quote || quote.projectId !== projectId || quote.status !== "CLIENT_APPROVED") {
+          throw new SowStepError("There's no accepted quote for this study yet.");
         }
 
         // 3. Check for existing SOW
@@ -129,8 +141,8 @@ async function createOrUpdateSOWInternal({
           where: { projectId, sowType: "PRIMARY" },
         });
 
-        if (existingSow) {
-          assertSOWUnlocked(existingSow.isLocked);
+        if (existingSow?.isLocked) {
+          throw new SowStepError("The client already signed the agreement, so it can't be changed.");
         }
 
         // 4. Build immutable content snapshot
@@ -210,7 +222,7 @@ async function createOrUpdateSOWInternal({
         }
 
         // 6. Transition project status to SOW_PENDING if not already
-        if (project.masterStatus !== "SOW_PENDING" && project.masterStatus !== "SOW_SIGNED") {
+        if (project.masterStatus === "CLIENT_APPROVED") {
           assertValidStatusTransition(project.masterStatus, "SOW_PENDING");
           await tx.project.update({
             where: { id: projectId },
@@ -251,6 +263,14 @@ async function createOrUpdateSOWInternal({
 
     return { success: true, data: await withPreparer(result) };
   } catch (err: unknown) {
+    if (err instanceof SowStepError) {
+      return { success: false, error: { code: "NOT_READY", message: err.message } };
+    }
+    // The sample-file fallback is for offline mode only (it used to answer live errors with "Project not found").
+    if (!devProjectsEnabled()) {
+      console.error("[generateSOW] Error:", err);
+      return { success: false, error: { code: "SERVER_ERROR", message: "The agreement wasn't saved. Please try again." } };
+    }
     console.warn("Database SOW generation fallback to dev store:", (err as Error).message);
 
     // Development File Store Fallback

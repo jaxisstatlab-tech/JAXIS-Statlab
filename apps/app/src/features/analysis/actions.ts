@@ -771,9 +771,11 @@ export async function resolveScopeCreep(
       return { success: false, error: { code: "USER_NOT_FOUND", message: "User not found." } };
     }
 
-    await db.$transaction(async (tx) => {
-      await tx.scopeCreepLog.update({
-        where: { id: scopeCreepLogId },
+    // Only an open flag on this study, and only while the study is on hold for it (it used to resolve any flag
+    // and force any stage back to In progress).
+    const resumed = await db.$transaction(async (tx) => {
+      const log = await tx.scopeCreepLog.updateMany({
+        where: { id: scopeCreepLogId, projectId, resolvedAt: null },
         data: {
           resolvedAt: new Date(),
           resolvedBy: user.id,
@@ -781,12 +783,47 @@ export async function resolveScopeCreep(
           supplementalQuotationId: supplementalQuotationId || null,
         },
       });
-
-      await tx.project.update({
-        where: { id: projectId },
+      if (log.count === 0) throw new Error("FLAG_NOT_OPEN");
+      const moved = await tx.project.updateMany({
+        where: { id: projectId, masterStatus: "SCOPE_CREEP_HALTED" },
         data: { masterStatus: "IN_PROGRESS" },
       });
-    });
+      if (moved.count === 0) throw new Error("NOT_ON_HOLD");
+      await tx.auditLog.create({
+        data: {
+          projectId,
+          actorId: user.id,
+          actorRole: callerRole,
+          action: "EXTRA_WORK_RESOLVED",
+          oldValue: "SCOPE_CREEP_HALTED",
+          newValue: "IN_PROGRESS",
+          reason: resolutionNotes.trim(),
+        },
+      });
+      return true;
+    }).catch((e: Error) => e.message);
+    if (resumed === "FLAG_NOT_OPEN" || resumed === "NOT_ON_HOLD") {
+      return {
+        success: false,
+        error: { code: "CONFLICT", message: "This study isn't on hold for extra work any more. Reload the page." },
+      };
+    }
+    if (resumed !== true) throw new Error(String(resumed));
+
+    try {
+      const assignment = await db.assignment.findFirst({ where: { projectId, isActive: true }, select: { statisticianId: true } });
+      if (assignment) {
+        await dispatchRealtimeNotification({
+          eventType: "STATUS_UPDATE",
+          projectId,
+          title: "You can continue the work",
+          message: `The extra work you flagged is sorted out: ${resolutionNotes.trim()}`,
+          targetUserIds: [assignment.statisticianId],
+        });
+      }
+    } catch (notifyErr) {
+      console.warn("[resolveScopeCreep] Notification failed:", notifyErr);
+    }
 
     revalidatePath(`/dashboard/statistician/projects/${projectId}/workbench`);
     revalidatePath(`/dashboard/admin/projects/${projectId}`);
