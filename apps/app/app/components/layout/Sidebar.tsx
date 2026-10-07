@@ -175,6 +175,11 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.Terminal,
         },
         {
+          label: "Open Studies",
+          href: "/dashboard/statistician/open-studies",
+          icon: Icons.Studies,
+        },
+        {
           label: "Messages",
           href: "/dashboard/statistician/messages",
           icon: Icons.Feedback,
@@ -295,6 +300,11 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.Overview,
         },
         {
+          label: "Studies",
+          href: "/dashboard/admin/intake",
+          icon: Icons.Intake,
+        },
+        {
           label: "Pricing & Quotations",
           href: "/dashboard/admin/quotations",
           icon: Icons.Invoice,
@@ -379,7 +389,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.Terminal,
         },
         {
-          label: "New Study Requests",
+          label: "Studies",
           href: "/dashboard/admin/intake",
           icon: Icons.Intake,
         },

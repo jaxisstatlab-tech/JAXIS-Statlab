@@ -18,7 +18,7 @@ export interface HowToUseModalProps {
 const STEPS: Array<{ title: string; body: string; note?: string; tracker?: (typeof CLIENT_STEPS)[number] }> = [
   {
     title: "Send your study",
-    body: "Share your research questions, your Chapters 1–3 and your data file (Excel, CSV or SPSS). Add your questionnaire if you have one.",
+    body: "Share your research objectives, your Chapters 1–3 and your data file (Excel, CSV or SPSS). Add your questionnaire if you have one.",
     note: "Messy data is fine. Cleaning it is included.",
   },
   {
@@ -53,7 +53,7 @@ const STEPS: Array<{ title: string; body: string; note?: string; tracker?: (type
 const FAQS = [
   {
     q: "What do I need to send?",
-    a: "Your research questions, your Chapters 1–3 (PDF or Word) and your data file (Excel, CSV or SPSS). Using Google Sheets? Download it as Excel or CSV first. Your questionnaire is optional but helps.",
+    a: "Your research objectives, your Chapters 1–3 (PDF or Word) and your data file (Excel, CSV or SPSS). Using Google Sheets? Download it as Excel or CSV first. Your questionnaire is optional but helps.",
   },
   {
     q: "My data is messy or has missing answers. Is that okay?",

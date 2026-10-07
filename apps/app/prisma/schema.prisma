@@ -79,6 +79,7 @@ model User {
   reviewedBlockedMessages  BlockedMessageLog[]           @relation("ReviewedBlockedMessages")
   analysisFiles            AnalysisFile[]                @relation("StatisticianAnalysisFiles")
   flaggedScopeCreep        ScopeCreepLog[]               @relation("FlaggedScopeCreep")
+  studyVolunteers          StudyVolunteer[]              @relation("StudyVolunteers")
   resolvedScopeCreep       ScopeCreepLog[]               @relation("ResolvedScopeCreep")
   qaReviews                QAReview[]                    @relation("QAOfficerReviews")
   qaRejections             QARejectionCount[]            @relation("StatisticianQARejections")
@@ -291,6 +292,7 @@ model Project {
   messages           Message[]
   analysisFiles      AnalysisFile[]
   scopeCreepLogs     ScopeCreepLog[]
+  volunteers         StudyVolunteer[]
   qaReviews          QAReview[]
   qaRejectionCounts  QARejectionCount[]
   deliverables       Deliverable[]
@@ -814,6 +816,25 @@ model AnalysisFile {
   @@index([fileCategory])
   @@index([uploadedAt])
   @@map("analysis_files")
+}
+
+/// An analyst offering to take a study that has no team yet ("I'll take this study"). The admin may pick one
+/// (pickedAt); when the deposit clears the pick, or else the best-ranked volunteer, is assigned automatically.
+model StudyVolunteer {
+  id             String    @id @default(cuid())
+  projectId      String
+  statisticianId String
+  note           String?
+  createdAt      DateTime  @default(now())
+  pickedAt       DateTime?
+  pickedBy       String?
+
+  project      Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  statistician User    @relation("StudyVolunteers", fields: [statisticianId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, statisticianId])
+  @@index([statisticianId])
+  @@map("study_volunteers")
 }
 
 model ScopeCreepLog {

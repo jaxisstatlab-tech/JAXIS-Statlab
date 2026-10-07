@@ -48,7 +48,8 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${fileName}"`,
+        // ?inline=1 opens it in the browser ("View"); otherwise it downloads.
+        "Content-Disposition": `${searchParams.get("inline") === "1" ? "inline" : "attachment"}; filename="${fileName}"`,
         "Content-Length": pdfBytes.byteLength.toString(),
         "Cache-Control": "no-store, no-cache, must-revalidate",
       },

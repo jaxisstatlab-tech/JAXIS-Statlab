@@ -29,6 +29,8 @@ import {
   OFFICIAL_PAYMENT_CHANNELS,
 } from "@/lib/payment-rules";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
+import { autoAssignVolunteer } from "@/features/volunteers/auto-assign";
+import { devAutoAssign } from "@/features/volunteers/dev-volunteers";
 import type { PaymentStatus, ProjectStatus, RoleName } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { assertStudyAccess } from "@/lib/access-control";
@@ -615,6 +617,14 @@ export async function verifyPayment(
       console.warn("[verifyPayment] Realtime notification warning:", e);
     }
 
+    // Analysts who offered to take this study: the deposit clearing assigns the admin's pick, or else the
+    // best-ranked volunteer, with the least busy reviewer. Never blocks the payment; after the payment notice, so the new team doesn't get it.
+    try {
+      await autoAssignVolunteer(result.projectId, { id: session.user.id, role: session.user.role });
+    } catch (assignErr) {
+      console.warn("[verifyPayment] Auto-assign failed:", assignErr);
+    }
+
     return {
       success: true,
       data: {
@@ -677,6 +687,7 @@ export async function verifyPayment(
         if (p && (p.masterStatus === "AWAITING_PAYMENT" || p.masterStatus === "SOW_SIGNED")) {
           p.masterStatus = "ACTIVE";
           fs.writeFileSync(DEV_PROJECTS_FILE, JSON.stringify(devProjects, null, 2), "utf-8");
+          devAutoAssign(p.id);
         }
       }
     } catch {

@@ -4,12 +4,13 @@ import React, { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Modal, Toast } from "@repo/ui";
-import { DownloadSimple, Trash, UploadSimple, Warning } from "@phosphor-icons/react";
+import { DownloadSimple, Eye, SealCheck, Trash, UploadSimple, Warning } from "@phosphor-icons/react";
 import type { DeliverableCategory } from "@prisma/client";
-import type { AdminDeliverablesDeskDTO, DeliverableDTO } from "../schemas";
+import type { AdminDeliverablesDeskDTO, DeliverableDTO, QaCertificateDTO } from "../schemas";
 import { deleteDeliverable, getDeliverableDownloadUrl, releaseDeliverables, uploadDeliverable } from "../actions";
 import { uploadFileToR2 } from "@/lib/storage-client";
-import { STUDY_FILE_EXTENSIONS, hasAllowedExtension } from "@/lib/file-types";
+import { STUDY_FILE_EXTENSIONS, clientGetsFile, hasAllowedExtension } from "@/lib/file-types";
+import { DELIVERABLE_KIND } from "../labels";
 import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { StudySection } from "@/features/projects/components/StudySection";
 
@@ -17,13 +18,7 @@ import { StudySection } from "@/features/projects/components/StudySection";
 // admin can add more files (a real upload into this study's folder) and release them, and see the client's
 // change requests.
 
-const KIND: Record<string, { label: string; hint: string }> = {
-  STATISTICAL_OUTPUT: { label: "Results and output", hint: "Tables, output files, code" },
-  PDF_REPORT: { label: "Report", hint: "The written results (Chapter 4 or a report)" },
-  RAW_DATA_CLEANED: { label: "Cleaned data", hint: "The data file used for the analysis" },
-  APPENDIX: { label: "Appendix", hint: "Extra tables or figures" },
-  OTHER: { label: "Other", hint: "Anything else the client should get" },
-};
+const KIND = DELIVERABLE_KIND;
 const REQUEST: Record<string, string> = {
   PENDING_REVIEW: "Waiting for you",
   INCLUDED: "Covered by the price",
@@ -45,7 +40,7 @@ const money = (n: number) => n.toLocaleString("en-PH", { minimumFractionDigits: 
 
 type ToastState = { message: string; description?: string; variant: "success" | "danger" } | null;
 
-export function AdminDeliverablesDesk({ data }: { data: AdminDeliverablesDeskDTO }) {
+export function AdminDeliverablesDesk({ data, certificate = null }: { data: AdminDeliverablesDeskDTO; certificate?: QaCertificateDTO | null }) {
   const router = useRouter();
   const { project, gateEligibility: gate, deliverables, revisions } = data;
   const [toast, setToast] = useState<ToastState>(null);
@@ -173,8 +168,12 @@ export function AdminDeliverablesDesk({ data }: { data: AdminDeliverablesDeskDTO
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <Panel className="lg:col-span-8">
-          <PanelHeader title="Client's files" count={deliverables.length} subtitle="What the client downloads. Released files can't be removed." />
-          {deliverables.length === 0 ? (
+          <PanelHeader
+            title="Final files"
+            count={deliverables.length + (certificate ? 1 : 0)}
+            subtitle="The client gets only the write-up (PDF or Word) and the certificate; the rest stays with staff. Released files can't be removed."
+          />
+          {deliverables.length === 0 && !certificate ? (
             <PanelBody>
               <p className="text-[13px] text-white/45">
                 {approved ? "No files yet." : `None yet. The analyst's files are added when ${reviewer} approves the work.`}
@@ -196,10 +195,11 @@ export function AdminDeliverablesDesk({ data }: { data: AdminDeliverablesDeskDTO
                       >
                         {d.isFinalReleased ? "Released" : "Not released yet"}
                       </span>
+                      <span className="text-[11px] text-white/45">{clientGetsFile(d.fileName) ? "Client gets it" : "Staff only"}</span>
                     </div>
                     <p className="mt-0.5 text-[12px] text-white/45">
                       {KIND[d.category]?.label ?? d.categoryLabel} · {size(d.fileSize)} · {d.uploaderName} · {date(d.createdAt)}
-                      {d.isFinalReleased ? ` · downloaded ${d.downloadCount} ${d.downloadCount === 1 ? "time" : "times"}` : ""}
+                      {d.isFinalReleased && clientGetsFile(d.fileName) ? ` · downloaded ${d.downloadCount} ${d.downloadCount === 1 ? "time" : "times"}` : ""}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
@@ -221,6 +221,35 @@ export function AdminDeliverablesDesk({ data }: { data: AdminDeliverablesDeskDTO
                   </div>
                 </li>
               ))}
+              {certificate ? (
+                <li className="flex flex-col gap-2 px-5 py-3.5 sm:flex-row sm:items-center sm:gap-4 sm:px-6">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <SealCheck size={15} weight="fill" className="text-white/60" />
+                      <span className="text-sm text-white">Certificate of Statistical Audit</span>
+                      <span className="text-[11px] text-white/45">Client gets it</span>
+                    </div>
+                    <p className="mt-0.5 text-[12px] text-white/45">
+                      PDF · signed by {certificate.qaLeadName}
+                      {certificate.completionDate ? ` · checked ${certificate.completionDate}` : ""} · made from the reviewer&apos;s approval
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button asChild variant="ghost" size="sm" className="gap-1.5">
+                      <Link href={`/dashboard/admin/projects/${project.id}/deliverables/certificate`}>
+                        <Eye size={14} weight="fill" />
+                        View
+                      </Link>
+                    </Button>
+                    <Button asChild variant="ghost" size="sm" className="gap-1.5">
+                      <a href={`/api/deliverables/certificate?studyId=${encodeURIComponent(project.id)}`} download>
+                        <DownloadSimple size={14} weight="fill" />
+                        Download
+                      </a>
+                    </Button>
+                  </div>
+                </li>
+              ) : null}
             </ul>
           )}
         </Panel>
@@ -405,7 +434,7 @@ function AddFileDialog({ open, projectId, onClose, onAdded }: { open: boolean; p
       open
       onClose={() => (busy ? undefined : onClose())}
       title="Add a file for the client"
-      description="Up to 15 MB. It stays hidden from the client until it's released."
+      description="Up to 15 MB. Hidden from the client until it's released, and only a PDF or Word file ever reaches them."
       size="md"
       footer={
         <div className="flex w-full justify-end gap-2">

@@ -65,3 +65,13 @@ export function hasAllowedExtension(fileName: string, allowed: string[]): boolea
 export function allowedForCategory(category: string): string[] {
   return STUDY_FILE_EXTENSIONS[category as FileCategory] ?? DOCUMENT_EXTENSIONS;
 }
+
+/**
+ * Final files a client gets: the written results (PDF or Word). Code, data, output tables and other working
+ * files stay with staff; the client also gets the certificate, which is made separately.
+ */
+export const CLIENT_FILE_EXTENSIONS = [".pdf", ".docx", ".doc"];
+
+export function clientGetsFile(fileName: string): boolean {
+  return hasAllowedExtension(fileName, CLIENT_FILE_EXTENSIONS);
+}

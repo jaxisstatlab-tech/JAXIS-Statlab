@@ -292,7 +292,6 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
     setFieldErrors({});
     const errors: Record<string, string[]> = {};
     if (!researchTitle.trim() || researchTitle.trim().length < 3) errors.researchTitle = ["Add a title (at least 3 characters)."];
-    if (!researchQuestions.trim() || researchQuestions.trim().length < 5) errors.researchQuestions = ["Add your research questions."];
     if (!researchObjectives.trim() || researchObjectives.trim().length < 5) errors.researchObjectives = ["Add your research objectives."];
     if (analysisGoals.length === 0) errors.analysisGoals = ['Pick at least one, or choose "Not sure yet".'];
     if (!deadlineRequested) {
@@ -481,17 +480,6 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   error={fieldErrors.researchTitle?.[0]}
                 />
                 <FormTextarea
-                  label="Research questions"
-                  required
-                  autoComplete="off"
-                  data-lpignore="true"
-                  rows={4}
-                  placeholder={"1. What is the profile of the respondents?\n2. Is there a significant relationship between study habits and exam scores?"}
-                  value={researchQuestions}
-                  onChange={(e) => setResearchQuestions(e.target.value)}
-                  error={fieldErrors.researchQuestions?.[0]}
-                />
-                <FormTextarea
                   label="Research objectives"
                   required
                   autoComplete="off"
@@ -501,6 +489,16 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   value={researchObjectives}
                   onChange={(e) => setResearchObjectives(e.target.value)}
                   error={fieldErrors.researchObjectives?.[0]}
+                />
+                <FormTextarea
+                  label="Statement of the problem (optional)"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  rows={4}
+                  placeholder={"1. What is the profile of the respondents?\n2. Is there a significant relationship between study habits and exam scores?"}
+                  value={researchQuestions}
+                  onChange={(e) => setResearchQuestions(e.target.value)}
+                  error={fieldErrors.researchQuestions?.[0]}
                 />
                 <fieldset className="flex flex-col gap-2.5">
                   <legend className="contents">
@@ -625,11 +623,11 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   <Summary label="Needed by" onEdit={() => setCurrentStep(1)}>
                     {deadlineLabel}
                   </Summary>
-                  <Summary label="Research questions" onEdit={() => setCurrentStep(1)}>
-                    <span className="whitespace-pre-wrap">{researchQuestions}</span>
-                  </Summary>
                   <Summary label="Research objectives" onEdit={() => setCurrentStep(1)}>
                     <span className="whitespace-pre-wrap">{researchObjectives}</span>
+                  </Summary>
+                  <Summary label="Statement of the problem" onEdit={() => setCurrentStep(1)}>
+                    <span className="whitespace-pre-wrap">{researchQuestions.trim() || "Not given"}</span>
                   </Summary>
                   <Summary label="Analysis goals" onEdit={() => setCurrentStep(1)}>
                     {analysisGoalsFor(analysisGoals).map((g) => g.title).join(", ")}

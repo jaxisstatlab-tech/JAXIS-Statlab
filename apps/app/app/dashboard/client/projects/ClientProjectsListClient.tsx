@@ -570,7 +570,7 @@ function StudyQuickView({
 }) {
   const sections = [
     { label: "Research objectives", body: p.researchObjectives },
-    { label: "Research questions", body: p.researchQuestions },
+    { label: "Statement of the problem", body: p.researchQuestions },
     { label: "Hypotheses", body: p.hypotheses },
   ].filter((s) => s.body && s.body.trim());
 

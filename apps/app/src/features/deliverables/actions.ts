@@ -31,6 +31,7 @@ import {
 } from "./schemas";
 import { Deliverable, RevisionRequest, RoleName, DeliverableCategory, type ProjectStatus } from "@prisma/client";
 import { assertStudyAccess } from "@/lib/access-control";
+import { clientGetsFile } from "@/lib/file-types";
 import { emailClient } from "@/lib/email/notify";
 import { clientFilesUnlocked } from "@/lib/delivery-rules";
 import { clientPackageName } from "@/features/projects/client-packages";
@@ -402,7 +403,11 @@ export async function releaseDeliverables(rawInput: ReleaseDeliverablesInput): P
  */
 function forClient(data: ClientDeliverablesDTO): ClientDeliverablesDTO {
   if (!data.isReleased) return { ...data, deliverables: [], qaCertificate: null };
-  return { ...data, deliverables: data.deliverables.map((d) => ({ ...d, filePath: "" })) };
+  // Only the written results (PDF or Word); code, data and output files stay with staff.
+  return {
+    ...data,
+    deliverables: data.deliverables.filter((d) => clientGetsFile(d.fileName)).map((d) => ({ ...d, filePath: "" })),
+  };
 }
 
 /**
@@ -762,8 +767,13 @@ export async function getDeliverableDownloadUrl(
   if (!session?.user?.id) {
     throw new Error("Authentication required.");
   }
+  const isClient = session.user.role === "CLIENT";
   // Offline dev only: sample files have no real storage, so hand back a small placeholder.
-  if (devStudyDataEnabled()) return devDeliverableDownload(deliverableId, session.user);
+  if (devStudyDataEnabled()) {
+    const dev = devDeliverableDownload(deliverableId, session.user);
+    if (isClient && !clientGetsFile(dev.fileName)) throw new Error("This file isn't available to you.");
+    return dev;
+  }
 
   const deliverable = await db.deliverable.findUnique({
     where: { id: deliverableId },
@@ -781,9 +791,13 @@ export async function getDeliverableDownloadUrl(
     throw new Error(access.error?.message || "Unauthorized: You do not have access to this deliverable.");
   }
 
-  if (session.user.role === "CLIENT") {
+  if (isClient) {
     if (!deliverable.isFinalReleased) {
       throw new Error("This file isn't ready for you yet.");
+    }
+    // Code, data and output files stay with staff (see clientGetsFile).
+    if (!clientGetsFile(deliverable.fileName)) {
+      throw new Error("This file isn't available to you.");
     }
     // Checked here too, not only on the page: a released file still waits for the last payment.
     const { unlocked } = await clientFilesUnlocked(deliverable.projectId);

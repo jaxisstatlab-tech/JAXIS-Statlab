@@ -8,6 +8,8 @@ import { ArrowRight, Calculator, Copy, FileText, Question, SlidersHorizontal, Wa
 import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { StudySection } from "@/features/projects/components/StudySection";
 import { ProjectFilesCard } from "@/features/projects/components/ProjectFilesCard";
+import { FinalFilesCard } from "@/features/deliverables/components/FinalFilesCard";
+import type { DeliverableDTO, QaCertificateDTO } from "@/features/deliverables/schemas";
 import { AnalysisGoalsList } from "@/features/projects/components/AnalysisGoalsList";
 import { clientPackageName } from "@/features/projects/client-packages";
 import { markIntakeComplete, requestMissingInfo, updateProjectStatus } from "@/features/projects/actions";
@@ -46,9 +48,13 @@ export function AdminStudyOverview({
   sow = null,
   assignment = null,
   catalog,
+  finalFiles = [],
+  certificate = null,
   loadError,
 }: {
   project?: ProjectDetailItem;
+  finalFiles?: DeliverableDTO[];
+  certificate?: QaCertificateDTO | null;
   quotation?: QuotationDetailItem | null;
   sow?: SOWDetailItem | null;
   assignment?: AssignmentDetailItem | null;
@@ -282,10 +288,11 @@ export function AdminStudyOverview({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="flex flex-col gap-6 lg:col-span-8">
+          {finalFiles.length > 0 || certificate ? <FinalFilesCard projectId={project.id} files={finalFiles} certificate={certificate} /> : null}
           <Panel>
             <PanelHeader title="What the client asked" subtitle={`Sent ${dateTime(project.createdAt)}`} />
             <PanelBody className="flex flex-col gap-5">
-              <Block title="Research questions" text={project.researchQuestions} />
+              <Block title="Statement of the problem" text={project.researchQuestions} />
               <Block title="What the study wants to find out" text={project.researchObjectives} />
               {project.hypotheses?.trim() ? <Block title="Hypotheses" text={project.hypotheses} /> : null}
               <div>

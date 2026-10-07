@@ -11,6 +11,7 @@ import { resolveStoredFileUrl } from "@/lib/file-utils";
 import { isTier2Package } from "@/lib/qa-rules";
 import { clientPackageName } from "@/features/projects/client-packages";
 import { StudySection } from "@/features/projects/components/StudySection";
+import { clientGetsFile } from "@/lib/file-types";
 import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import type { QaInspectionDeskDTO } from "../schemas";
 import { QADecision, ErrorClassification } from "@prisma/client";
@@ -505,14 +506,19 @@ function DecisionPanel({ data, hasSignature, onDone }: { data: Data; hasSignatur
         <div className="flex flex-col gap-4 font-sans text-[13px]">
           <p className="leading-relaxed text-white/70">
             {decision === QADecision.QA_APPROVED
-              ? "The study is delivered right away and the client is told their files are ready. These files become the client's final files (they can download them once the study is paid in full):"
+              ? "The study is delivered right away and the client is told their files are ready. The client gets the write-up (PDF or Word) and your certificate once the study is paid in full; code and other files stay with staff:"
               : decision === QADecision.QA_REJECTED
                 ? `${data.assignment?.statisticianName ?? "The analyst"} gets your notes and 24 hours to fix it${level ? ` (${LEVEL_LABEL[level]})` : ""}.`
                 : "The study is locked right away (no file changes or client messages) and the CEO is alerted."}
           </p>
           {decision === QADecision.QA_APPROVED ? (
             <ul className="rounded-[2px] border border-white/[0.08] px-3.5 py-2.5 text-white/80">
-              {current.length === 0 ? <li className="text-white/45">No files</li> : current.map((f) => <li key={f.id} className="truncate">{f.fileName}</li>)}
+              {current.length === 0 ? <li className="text-white/45">No files</li> : current.map((f) => (
+                    <li key={f.id} className="flex items-center justify-between gap-3">
+                      <span className="truncate">{f.fileName}</span>
+                      <span className="shrink-0 text-[11px] text-white/45">{clientGetsFile(f.fileName) ? "Client gets it" : "Staff only"}</span>
+                    </li>
+                  ))}
             </ul>
           ) : null}
           <div>
@@ -538,7 +544,7 @@ function AskedPanel({ data }: { data: Data }) {
     <Panel>
       <PanelHeader title="What the client asked" subtitle={data.sow?.signedAt ? `From the agreement signed ${shortDate(data.sow.signedAt)}` : "From the study request"} />
       <PanelBody className="flex flex-col gap-4">
-        {block("Research questions", p.researchQuestions)}
+        {block("Statement of the problem", p.researchQuestions)}
         {block("Hypotheses", p.hypotheses)}
         {block("What the study wants to find out", p.researchObjectives)}
         {data.sow?.deliverables && data.sow.deliverables.length > 0 ? (

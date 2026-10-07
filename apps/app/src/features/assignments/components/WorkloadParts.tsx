@@ -115,7 +115,7 @@ export function StudyDetailsModal({
             </div>
           ))}
         </dl>
-        {section("Research questions", s.researchQuestions)}
+        {section("Statement of the problem", s.researchQuestions)}
         {section("Hypotheses", s.hypotheses)}
         {section("What the study wants to find out", s.researchObjectives)}
         <div>

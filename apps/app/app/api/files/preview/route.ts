@@ -7,6 +7,7 @@ import { db, withDbTimeout } from "@/lib/db";
 import { clientFilesUnlocked } from "@/lib/delivery-rules";
 import { readDevUpload } from "@/lib/dev-uploads";
 import { devCanOpenStudyFile, devStudyDataEnabled } from "@/features/projects/dev-study-store";
+import { OPEN_FOR_VOLUNTEERS } from "@/features/volunteers/schemas";
 
 /**
  * Resilient File Streaming & Preview Proxy
@@ -178,7 +179,14 @@ export async function GET(req: NextRequest) {
               projectFile.project.assignment?.qaLeadId === userId &&
               projectFile.project.assignment?.isActive !== false;
 
-            if (isOwner || isAssignedStat || isAssignedQa || isFinance) {
+            // Analysts deciding whether to offer to take a study read its request files while it has no team.
+            const openForAnalysts =
+              userRole === "STATISTICIAN" &&
+              OPEN_FOR_VOLUNTEERS.includes(projectFile.project.masterStatus) &&
+              !projectFile.project.assignment?.isActive &&
+              ["RESEARCH_DOCUMENT", "DATASET", "QUESTIONNAIRE"].includes(projectFile.fileCategory);
+
+            if (isOwner || isAssignedStat || isAssignedQa || isFinance || openForAnalysts) {
               isAuthorized = true;
             } else {
               return new NextResponse("Forbidden: Access denied to study project file.", {

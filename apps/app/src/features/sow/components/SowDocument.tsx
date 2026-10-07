@@ -175,7 +175,7 @@ export function SowDocument({ sow, className = "", showPrintAction = true }: Sow
             <span className="font-semibold text-[#111118]">{project.researchTitle}</span>
           </Field>
           <Field label="Objectives">{project.researchObjectives}</Field>
-          {project.researchQuestions ? <Field label="Research questions">{project.researchQuestions}</Field> : null}
+          {project.researchQuestions ? <Field label="Statement of the problem">{project.researchQuestions}</Field> : null}
           {project.hypotheses ? <Field label="Hypotheses">{project.hypotheses}</Field> : null}
         </DocSection>
 

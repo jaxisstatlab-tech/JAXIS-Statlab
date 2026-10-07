@@ -43,6 +43,10 @@ import { QuotationBuilderModal } from "@/features/quotations/components/Quotatio
 import { AnalysisGoalsList } from "@/features/projects/components/AnalysisGoalsList";
 import { analysisGoalsFor } from "@/features/projects/analysis-goals";
 import { getCommercialCatalog } from "@/features/quotations/actions";
+import { getStudyVolunteers } from "@/features/volunteers/actions";
+import { HandWaving, Star } from "@phosphor-icons/react";
+import { VolunteersCard } from "@/features/volunteers/components/VolunteersCard";
+import type { StudyVolunteerItem } from "@/features/volunteers/schemas";
 import {
   PACKAGES_CATALOG,
   ADDONS_CATALOG,
@@ -72,6 +76,11 @@ function dueHint(due: Date | string, now: number | null): string | null {
   if (days === 0) return "today";
   return days === -1 ? "1 day late" : `${-days} days late`;
 }
+
+// Studies with nothing left to do. They're listed (search finds them) but always after the open ones.
+const FINISHED = new Set(["DELIVERED", "CLOSED", "CANCELLED", "EXPIRED"]);
+const REQUESTS = new Set(["NEW_REQUEST", "AWAITING_INFORMATION", "UNDER_EVALUATION", "QUOTE_SENT"]);
+const isFinished = (p: { masterStatus: string }) => FINISHED.has(p.masterStatus);
 
 type RowAction = { label: string; icon: React.ReactNode } & (
   | { kind: "quick-look" }
@@ -108,7 +117,8 @@ function nextStepFor(p: ProjectDetailItem): RowAction {
 export function AdminIntakeClient({
   initialProjects = [],
   initialCatalog,
-}: AdminIntakeClientProps) {
+  offers = {},
+}: AdminIntakeClientProps & { offers?: Record<string, { count: number; picked: string | null }> }) {
   const [selectedStudyForQuote, setSelectedStudyForQuote] =
     useState<ProjectDetailItem | null>(null);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
@@ -216,6 +226,12 @@ export function AdminIntakeClient({
         if (p.masterStatus !== "NEW_REQUEST" && p.masterStatus !== "AWAITING_INFORMATION") {
           return false;
         }
+      } else if (selectedStatus === "IN_WORK") {
+        if (REQUESTS.has(p.masterStatus) || isFinished(p)) return false;
+      } else if (selectedStatus === "HAS_OFFERS") {
+        if (!offers[p.id]?.count) return false;
+      } else if (selectedStatus === "FINISHED") {
+        if (!isFinished(p)) return false;
       } else if (selectedStatus !== "ALL") {
         if (p.masterStatus !== selectedStatus) {
           return false;
@@ -235,11 +251,14 @@ export function AdminIntakeClient({
 
       return true;
     });
-  }, [projects, selectedStatus, searchQuery]);
+  }, [projects, selectedStatus, searchQuery, offers]);
 
   // Newest first by default, with oldest first and closest deadline
   const sortedFilteredProjects = useMemo(() => {
     return [...filteredProjects].sort((a, b) => {
+      // Open studies first, whatever the sort; finished ones after them.
+      const done = Number(isFinished(a)) - Number(isFinished(b));
+      if (done !== 0) return done;
       if (sortBy === "oldest") {
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       }
@@ -252,6 +271,12 @@ export function AdminIntakeClient({
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }, [filteredProjects, sortBy]);
+
+  const firstFinishedId = useMemo(() => {
+    // Only when open studies are listed too; a "Finished" list needs no heading.
+    const i = sortedFilteredProjects.findIndex(isFinished);
+    return i > 0 ? sortedFilteredProjects[i]!.id : null;
+  }, [sortedFilteredProjects]);
 
   const paginatedProjects = useMemo(() => {
     return sortedFilteredProjects.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -268,8 +293,19 @@ export function AdminIntakeClient({
       awaitingInfo,
       underEvaluation: count("UNDER_EVALUATION"),
       quoteSent: count("QUOTE_SENT"),
+      inWork: projects.filter((p) => !REQUESTS.has(p.masterStatus) && !isFinished(p)).length,
+      finished: projects.filter(isFinished).length,
     };
   }, [projects]);
+
+  // Who offered to take a study ("I'll take this study"): opened from the row's tag.
+  const [offersOpen, setOffersOpen] = useState<ProjectDetailItem | null>(null);
+  const [offerList, setOfferList] = useState<StudyVolunteerItem[] | null>(null);
+  const openOffers = (p: ProjectDetailItem) => {
+    setOffersOpen(p);
+    setOfferList(null);
+    void getStudyVolunteers(p.id).then((r) => setOfferList(r.success ? r.data : []));
+  };
 
   const filtersActive = selectedStatus !== "ALL" || sortBy !== "newest" || searchQuery.trim() !== "";
   const clearFilters = () => {
@@ -381,16 +417,17 @@ export function AdminIntakeClient({
   }
 
   const inspect = selectedStudyForInspect;
+  const offersFor = offersOpen;
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       <PageHeader
-        title="New study requests"
-        description="Read what each client sent, ask for anything missing, and price the study."
+        title="Studies"
+        description="Every study, from the client's request to delivery. Open studies come first; finished ones are at the bottom."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "Admin", href: "/dashboard/admin" },
-          { label: "New study requests" },
+          { label: "Studies" },
         ]}
         actions={
           <Button
@@ -459,6 +496,9 @@ export function AdminIntakeClient({
                 { value: "AWAITING_INFORMATION", label: `Waiting on client (${kpis.awaitingInfo})` },
                 { value: "UNDER_EVALUATION", label: `Ready to price (${kpis.underEvaluation})` },
                 { value: "QUOTE_SENT", label: `Quote sent (${kpis.quoteSent})` },
+                { value: "IN_WORK", label: `Signed and in the works (${kpis.inWork})` },
+                { value: "HAS_OFFERS", label: `Analysts offered (${Object.values(offers).filter((o) => o.count > 0).length})` },
+                { value: "FINISHED", label: `Finished (${kpis.finished})` },
               ],
             },
             {
@@ -498,7 +538,7 @@ export function AdminIntakeClient({
               {isLoading ? (
                 <tr>
                   <td colSpan={5} className="py-16 text-center">
-                    <LoadingState variant="table" label="Loading new study requests..." />
+                    <LoadingState variant="table" label="Loading studies..." />
                   </td>
                 </tr>
               ) : filteredProjects.length === 0 ? (
@@ -506,7 +546,7 @@ export function AdminIntakeClient({
                   <td colSpan={5} className="py-16 text-center">
                     <EmptyState
                       icon={Tray}
-                      title={projects.length === 0 ? "No study requests yet" : "No studies match"}
+                      title={projects.length === 0 ? "No studies yet" : "No studies match"}
                       description={
                         projects.length === 0
                           ? "New requests from clients will show up here."
@@ -526,12 +566,22 @@ export function AdminIntakeClient({
                 paginatedProjects.map((p) => {
                   const goals = analysisGoalsFor(p.analysisGoals);
                   const action = nextStepFor(p);
-                  const displayStatus = getProjectDisplayStatus(p);
-                  const hint = p.deadlineRequested ? dueHint(p.deadlineRequested, now) : null;
+                  const displayStatus = getProjectDisplayStatus(p, "ADMIN");
+                  const finished = isFinished(p);
+                  const hint = p.deadlineRequested && !finished ? dueHint(p.deadlineRequested, now) : null;
                   const late = hint?.endsWith("late");
+                  const firstFinished = finished && p.id === firstFinishedId;
 
                   return (
-                    <tr key={p.id} className="group align-top">
+                    <React.Fragment key={p.id}>
+                    {firstFinished ? (
+                      <tr aria-hidden="true">
+                        <td colSpan={5} className="!py-2.5 text-[12px] font-medium text-white/45">
+                          Finished
+                        </td>
+                      </tr>
+                    ) : null}
+                    <tr className={`group align-top ${finished ? "[&_td]:text-white/60" : ""}`}>
                       {/* Study */}
                       <td className="max-w-[520px] min-w-[280px]">
                         <div className="flex flex-col gap-1.5 min-w-0 py-0.5 pr-2">
@@ -585,6 +635,30 @@ export function AdminIntakeClient({
                               <span className="text-white/75">We asked:</span> {p.missingInfoReason}
                             </p>
                           ) : null}
+                          {offers[p.id]?.count && !finished ? (
+                            <button
+                              type="button"
+                              onClick={() => openOffers(p)}
+                              title="See who offered and pick one"
+                              className="group/offer inline-flex max-w-full w-fit items-center gap-2 whitespace-nowrap rounded-[2px] border border-white/10 bg-white/[0.03] py-1 pl-2 pr-2.5 text-[11px] transition-colors hover:border-white/25 hover:bg-white/[0.06]"
+                            >
+                              {offers[p.id]!.picked ? (
+                                <>
+                                  <Star size={12} weight="fill" className="shrink-0 text-[#CC6600]" />
+                                  <span className="truncate text-white">{offers[p.id]!.picked}</span>
+                                  <span className="shrink-0 text-white/40">picked of {offers[p.id]!.count}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <HandWaving size={12} weight="fill" className="shrink-0 text-[#CC6600]" />
+                                  <span className="text-white">
+                                    {offers[p.id]!.count} {offers[p.id]!.count === 1 ? "offer" : "offers"}
+                                  </span>
+                                  <span className="text-white/40">· choose</span>
+                                </>
+                              )}
+                            </button>
+                          ) : null}
                         </div>
                       </td>
 
@@ -606,7 +680,9 @@ export function AdminIntakeClient({
                         <div className="flex flex-col gap-0.5 whitespace-nowrap py-0.5">
                           {p.deadlineRequested ? (
                             <>
-                              <span className="text-[13px] text-white">{shortDate(p.deadlineRequested)}</span>
+                              <span className={`text-[13px] ${finished ? "text-white/60" : "text-white"}`}>
+                                {p.deliveredAt && finished ? `Delivered ${shortDate(p.deliveredAt)}` : shortDate(p.deadlineRequested)}
+                              </span>
                               {hint ? (
                                 <span className={`text-[11px] ${late ? "text-red-400" : "text-white/45"}`}>{hint}</span>
                               ) : null}
@@ -724,6 +800,7 @@ export function AdminIntakeClient({
                         </div>
                       </td>
                     </tr>
+                    </React.Fragment>
                   );
                 })
               )}
@@ -813,7 +890,7 @@ export function AdminIntakeClient({
                 <dt className="text-[11px] text-white/45">Status</dt>
                 <dd className="pt-0.5">
                   {(() => {
-                    const s = getProjectDisplayStatus(inspect);
+                    const s = getProjectDisplayStatus(inspect, "ADMIN");
                     return <StatusBadge status={s.status} label={s.label} pulse={s.pulse} />;
                   })()}
                 </dd>
@@ -843,12 +920,14 @@ export function AdminIntakeClient({
               </p>
             </section>
 
-            <section className="flex flex-col gap-2">
-              <h3 className="text-sm font-semibold text-white">Research questions</h3>
-              <p className="whitespace-pre-wrap rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4 text-[13px] leading-relaxed text-white/75">
-                {inspect.researchQuestions}
-              </p>
-            </section>
+            {inspect.researchQuestions?.trim() ? (
+              <section className="flex flex-col gap-2">
+                <h3 className="text-sm font-semibold text-white">Statement of the problem</h3>
+                <p className="whitespace-pre-wrap rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4 text-[13px] leading-relaxed text-white/75">
+                  {inspect.researchQuestions}
+                </p>
+              </section>
+            ) : null}
 
             {inspect.hypotheses ? (
               <section className="flex flex-col gap-2">
@@ -992,6 +1071,30 @@ export function AdminIntakeClient({
           }}
         />
       )}
+
+      {offersFor ? (
+        <Modal
+          open
+          onClose={() => setOffersOpen(null)}
+          title="Analysts who want this study"
+          description={`${offersFor.intakeId} · ${offersFor.researchTitle}`}
+          size="lg"
+        >
+          {offerList === null ? (
+            <LoadingState variant="inline" label="Loading offers" />
+          ) : (
+            <VolunteersCard
+              projectId={offersFor.id}
+              volunteers={offerList}
+              paid={offersFor.masterStatus === "ACTIVE"}
+              onChanged={() => {
+                void getStudyVolunteers(offersFor.id).then((r) => setOfferList(r.success ? r.data : []));
+                refreshQueueQuietly();
+              }}
+            />
+          )}
+        </Modal>
+      ) : null}
 
       {toastMessage && (
         <Toast

@@ -250,7 +250,7 @@ export const MISSING_INFO_TEMPLATES: MissingInfoTemplate[] = [
   },
   {
     id: "variables-hypotheses",
-    label: "Research Questions / Chapter 1–3 Needed",
+    label: "Statement of the Problem / Chapter 1–3 Needed",
     category: "Scope",
     text: "We need more details on your specific research questions, statement of the problem, or hypotheses. Please upload your Chapter 1–3 manuscript draft or list your exact research questions so we can match the right statistical tests.",
   },

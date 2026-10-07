@@ -660,7 +660,7 @@ function AskedPanel({ data }: { data: Data }) {
     <Panel>
       <PanelHeader title="What the client asked" subtitle={data.sow?.signedAt ? `From the agreement signed ${shortDate(data.sow.signedAt)}` : "From the study request"} />
       <PanelBody className="flex flex-col gap-4">
-        {block("Research questions", p.researchQuestions)}
+        {block("Statement of the problem", p.researchQuestions)}
         {block("Hypotheses", p.hypotheses)}
         {block("What the study wants to find out", p.researchObjectives)}
         {data.sow?.deliverables && data.sow.deliverables.length > 0 ? (

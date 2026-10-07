@@ -409,16 +409,16 @@ function ActionLink({ href, label, primary = false }: { href: string; label: str
 
 function QuestionsPanel({ project: p }: { project: ProjectDetailItem }) {
   const rows = [
-    { label: "Research questions", body: p.researchQuestions },
     { label: "Objectives", body: p.researchObjectives },
+    { label: "Statement of the problem", body: p.researchQuestions },
     { label: "Hypotheses", body: p.hypotheses },
   ].filter((r) => r.body && r.body.trim());
 
   return (
-    <Panel aria-label="Your research questions">
-      <PanelHeader title="Your research questions" subtitle="What you asked us to answer. Your statistical analyst works from this." />
+    <Panel aria-label="What you sent us">
+      <PanelHeader title="What you sent us" subtitle="What you asked us to answer. Your statistical analyst works from this." />
       {rows.length === 0 ? (
-        <p className="px-5 pb-6 pt-4 text-[13px] text-white/45 sm:px-6">You didn&apos;t add research questions yet.</p>
+        <p className="px-5 pb-6 pt-4 text-[13px] text-white/45 sm:px-6">You didn&apos;t add your objectives yet.</p>
       ) : (
         <dl className="mt-4 divide-y divide-white/[0.06] border-t border-white/[0.06]">
           {rows.map((r) => (

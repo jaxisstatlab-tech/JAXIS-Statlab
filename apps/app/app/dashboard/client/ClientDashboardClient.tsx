@@ -706,7 +706,7 @@ function FirstRun({
     {
       n: 2,
       title: "Send your first study",
-      body: "Your research questions, method, and data. We reply with a fixed written price within 24 hours.",
+      body: "Your research objectives, method, and data. We reply with a fixed written price within 24 hours.",
       done: false,
       cta: isProfileComplete ? (
         <Button asChild variant="primary" size="sm" className="gap-1.5 active:scale-[0.97]">

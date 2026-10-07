@@ -272,7 +272,7 @@ export function AdminDashboardClient({
             <Link href="/dashboard/admin/intake">
               <Button variant="primary" size="sm" className="gap-2 font-sans font-semibold">
                 <Plus size={15} weight="fill" />
-                <span>New Study Requests →</span>
+                <span>Studies</span>
               </Button>
             </Link>
           </div>

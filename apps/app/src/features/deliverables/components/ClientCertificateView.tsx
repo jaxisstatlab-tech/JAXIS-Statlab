@@ -10,7 +10,16 @@ import { StatisticalAuditCertificate } from "./StatisticalAuditCertificate";
 // The certificate on its own page: Print or Save as PDF (the sheet itself), or download the
 // ready-made PDF file from the server. Both show the same wording.
 
-export function ClientCertificateView({ projectId, certificate }: { projectId: string; certificate: QaCertificateDTO }) {
+export function ClientCertificateView({
+  projectId,
+  certificate,
+  backHref,
+}: {
+  projectId: string;
+  certificate: QaCertificateDTO;
+  /** Where "Back to Files" goes (the client's Files tab unless staff pass theirs). */
+  backHref?: string;
+}) {
   const [toast, setToast] = useState<string | null>(null);
   const fileBase = (certificate.certificateId || "JAXIS-CERTIFICATE").trim().replace(/[^\w.-]/g, "_");
 
@@ -35,14 +44,14 @@ export function ClientCertificateView({ projectId, certificate }: { projectId: s
     document.body.appendChild(link);
     link.click();
     setTimeout(() => link.remove(), 2000);
-    setToast("Downloading your certificate (PDF).");
+    setToast("Downloading the certificate (PDF).");
   };
 
   return (
     <div className="flex flex-col gap-4 pb-24 print:gap-0 print:pb-0">
       {toast ? <Toast message="Download started" description={toast} variant="info" onClose={() => setToast(null)} /> : null}
       <Link
-        href={`/dashboard/client/projects/${projectId}/deliverables`}
+        href={backHref ?? `/dashboard/client/projects/${projectId}/deliverables`}
         className="inline-flex items-center gap-1.5 self-start text-[13px] text-white/60 transition-colors hover:text-white print:hidden"
       >
         <ArrowLeft size={14} weight="bold" />

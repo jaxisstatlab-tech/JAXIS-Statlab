@@ -24,9 +24,8 @@ export const CreateProjectSchema = z.object({
     .string()
     .min(3, "Research title must be at least 3 characters")
     .max(300, "Research title cannot exceed 300 characters"),
-  researchQuestions: z
-    .string()
-    .min(5, "Please describe the key research questions"),
+  // "Statement of the problem" on the form: optional (stored empty when not given).
+  researchQuestions: z.string().trim().max(5000).optional().default(""),
   researchObjectives: z
     .string()
     .min(5, "Please describe the study's core objectives"),

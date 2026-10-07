@@ -26,17 +26,20 @@ import { getStaffCapacity } from "@/features/assignments/actions";
 import { AssignmentModal } from "@/features/assignments/components/AssignmentModal";
 import type { StaffCapacityItem } from "@/features/assignments/schemas";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
+import type { PickedStudy } from "@/features/volunteers/actions";
 
 export interface AssignmentsClientProps {
   initialProjects?: ProjectDetailItem[];
   initialStatisticians?: StaffCapacityItem[];
   initialQaLeads?: StaffCapacityItem[];
+  picks?: PickedStudy[];
 }
 
 export function AssignmentsClient({
   initialProjects,
   initialStatisticians,
   initialQaLeads,
+  picks = [],
 }: AssignmentsClientProps) {
   const [unassignedProjects, setUnassignedProjects] = useState<ProjectDetailItem[]>(initialProjects || []);
   const [statisticians, setStatisticians] = useState<StaffCapacityItem[]>(initialStatisticians || []);
@@ -265,6 +268,35 @@ export function AssignmentsClient({
           )}
         </Card>
 
+        {/* Analysts picked from "I'll take this study" offers: assigned automatically when the deposit clears. */}
+        {picks.length > 0 ? (
+          <section className="rounded-[2px] border border-white/[0.07] bg-[#0A0A18] font-sans">
+            <div className="px-5 pt-5 sm:px-6 sm:pt-6">
+              <h2 className="flex items-baseline gap-2 text-[15px] font-semibold text-white">
+                Picked, waiting for the deposit
+                <span className="font-mono text-xs font-normal text-white/40">{picks.length}</span>
+              </h2>
+              <p className="mt-1 text-[13px] text-white/50">These analysts are assigned automatically, with the least busy reviewer, once the client pays.</p>
+            </div>
+            <ul className="mt-4 divide-y divide-white/[0.05] border-t border-white/[0.06]">
+              {picks.map((p) => (
+                <li key={p.projectId} className="flex flex-col gap-2 px-5 py-3.5 sm:flex-row sm:items-center sm:gap-4 sm:px-6">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm text-white">{p.researchTitle}</p>
+                    <p className="mt-0.5 text-[12px] text-white/45">
+                      <span className="font-mono">{p.intakeId}</span> · {p.stageLabel}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-[13px] text-white">{p.fullName}</span>
+                  <Link href={`/dashboard/admin/projects/${p.projectId}`} className="shrink-0 text-[13px] text-white/70 hover:text-white hover:underline">
+                    Open
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
         {/* Section 2: Team Workload & Directory (Unified, Clean 2-Column Desk) */}
         <div className="flex flex-col gap-4">
           <div>
@@ -407,7 +439,14 @@ export function AssignmentsClient({
                             </div>
                           ))}
                         </div>
-                      ) : (
+                      ) : null}
+                      {picks.filter((p) => p.statisticianId === stat.id).map((p) => (
+                        <p key={p.projectId} className="pt-1 font-sans text-xs text-white/70">
+                          <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#CC6600] align-middle" aria-hidden="true" />
+                          Picked for <span className="font-mono">{p.intakeId}</span> · starts when the deposit clears
+                        </p>
+                      ))}
+                      {stat.assignedStudies.length > 0 || picks.some((p) => p.statisticianId === stat.id) ? null : (
                         <p className="text-xs text-white/40 font-sans italic pt-1">
                           {stat.isOnLeave
                             ? `On leave${stat.leaveUntil ? ` until ${new Date(stat.leaveUntil).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}` : ""}.`
