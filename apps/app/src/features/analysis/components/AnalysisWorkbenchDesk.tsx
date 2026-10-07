@@ -250,6 +250,23 @@ function StatusNotice({ data }: { data: Data }) {
       </Notice>
     );
   }
+  // Still fixing after the reviewer sent it back (the first upload moves it to In progress): keep their notes in view.
+  const latest = [...(data.qaReviews ?? [])].sort((x, y) => y.reviewedAt.localeCompare(x.reviewedAt))[0];
+  if ((status === "IN_PROGRESS" || status === "EXPERT_ASSIGNED") && latest?.decision === "QA_REJECTED") {
+    return (
+      <Notice title={`Fixing what ${latest.reviewerName} asked`}>
+        <p className="mt-0.5 text-[13px] text-white/55">
+          {dateTime(latest.reviewedAt)}.{latest.errorClassification ? ` ${LEVEL[latest.errorClassification] ?? latest.errorClassificationLabel}.` : ""}
+          {latest.qaRevisionDueAt ? ` Fix by ${dateTime(latest.qaRevisionDueAt)}.` : ""} Send it for review again when you&apos;re done.
+        </p>
+        {latest.comments ? (
+          <blockquote className="mt-3 whitespace-pre-wrap rounded-[2px] border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-[13px] leading-relaxed text-white/85">
+            {latest.comments}
+          </blockquote>
+        ) : null}
+      </Notice>
+    );
+  }
   if (status === "SCOPE_CREEP_HALTED") {
     const f = data.activeScopeCreep;
     return (

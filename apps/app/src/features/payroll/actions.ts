@@ -8,7 +8,6 @@ import { db, withDbTimeout } from "@/lib/db";
 import { requireRole, auth } from "@/lib/auth";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
-import { resolvePackagePayoutRule } from "@/lib/payout-rules";
 import { calculateProjectBalance } from "@/lib/payment-rules";
 import { getAppSetting, isOfflineDev, setAppSetting } from "@/lib/app-settings";
 import {
@@ -28,8 +27,14 @@ import {
   type PayslipStatus,
   type CompensationType,
   type TimeClockAccess,
+  type MyStudyEarningsDTO,
+  type StudyEarningItem,
   usesTimeClock,
+  paysPerStudy,
+  payModelSummary,
 } from "./schemas";
+import { studyPayFor } from "./study-pay";
+import { devEarningStudies } from "@/features/projects/dev-study-store";
 import { getDevUsers } from "@/lib/mock-data/users.data";
 
 /**
@@ -675,8 +680,9 @@ export async function generateBatchPayslips(
   let attendanceLogs: { userId: string; totalMinutes: number | null }[] = [];
   let payable: Assignment[] = [];
   let existing: StaffPayslipDTO[] = [];
+  let releasedPayouts: { projectId: string; recipientId: string }[] = [];
   try {
-    const [att, assigned, slips] = await Promise.all([
+    const [att, assigned, slips, released] = await Promise.all([
       isOfflineDev()
         ? Promise.resolve([])
         : withDbTimeout(
@@ -713,10 +719,15 @@ export async function generateBatchPayslips(
             8000
           ),
       listPayslips(),
+      // Study pay already released one study at a time (Finance → Payouts) isn't paid again on a payslip.
+      isOfflineDev()
+        ? Promise.resolve([])
+        : withDbTimeout(db.payout.findMany({ where: { payoutStatus: "DISBURSED" }, select: { projectId: true, recipientId: true } }), 5000),
     ]);
     attendanceLogs = att;
     payable = assigned.filter((a) => studyIsPayable(a.project));
     existing = slips;
+    releasedPayouts = released;
   } catch (err) {
     console.error("[generateBatchPayslips] Couldn't load hours, studies or payslips:", err);
     return { success: false, error: { message: "We couldn't load the hours and studies. Please try again." } };
@@ -760,40 +771,37 @@ export async function generateBatchPayslips(
     const overtimeHours = staffLogs.filter((l) => (l.totalMinutes || 0) > 510).length * 1.5;
 
     // 2. Studies: their own, payable, not already on another payslip of theirs
-    const alreadyPaid = new Set(
-      existing.filter((p) => p.userId === staff.id && p.id !== current?.id).flatMap((p) => p.itemizedStudies.map((s) => s.projectId))
-    );
+    const alreadyPaid = new Set([
+      ...existing.filter((p) => p.userId === staff.id && p.id !== current?.id).flatMap((p) => p.itemizedStudies.map((s) => s.projectId)),
+      ...releasedPayouts.filter((r) => r.recipientId === staff.id).map((r) => r.projectId),
+    ]);
     const isAnalyst = staff.role === "STATISTICIAN";
     const isReviewer = staff.role === "SENIOR_QA_LEAD";
-    const theirs = payable.filter(
-      (a) => !alreadyPaid.has(a.projectId) && ((isAnalyst && a.statisticianId === staff.id) || (isReviewer && a.qaLeadId === staff.id))
-    );
+    // Only pay models with study pay (Per Study, percentage per study, Salary + Per Study). Monthly Salary and Hourly
+    // Wage used to get study pay on top as well.
+    const theirs = paysPerStudy(config.compensationType)
+      ? payable.filter(
+          (a) => !alreadyPaid.has(a.projectId) && ((isAnalyst && a.statisticianId === staff.id) || (isReviewer && a.qaLeadId === staff.id))
+        )
+      : [];
 
     const itemizedStudies: PayslipItemizedStudy[] = [];
     for (const a of theirs) {
       const grossAmount = contractAmount(a.project);
-      const rule = await resolvePackagePayoutRule(a.project.packageName || "JX_03_CORE");
-      let commPct = 0;
-      let commEarned: number;
-      if (rule.mode === "FIXED") {
-        commEarned = (isAnalyst ? rule.fixedAmount : rule.fixedQaAmount) + (config.fixedPerStudyBonus || 0);
-      } else {
-        // Personal pay first, then a role "percentage per study", then the package rate.
-        const personal = staff.overrideConfig?.commissionPercentagePerStudy;
-        const role =
-          config.compensationType === "PERCENTAGE_PER_STUDY" && config.commissionPercentagePerStudy > 0
-            ? config.commissionPercentagePerStudy
-            : 0;
-        commPct = personal && personal > 0 ? personal : role > 0 ? role : isAnalyst ? rule.ratePercent : rule.qaRatePercent;
-        commEarned = (grossAmount * commPct) / 100 + (config.fixedPerStudyBonus || 0);
-      }
+      const pay = await studyPayFor({
+        isAnalyst,
+        grossAmount,
+        packageName: a.project.packageName,
+        config,
+        personalPercent: staff.overrideConfig?.commissionPercentagePerStudy,
+      });
       itemizedStudies.push({
         projectId: a.projectId,
         intakeId: a.project.intakeId,
         researchTitle: a.project.researchTitle,
         grossAmount,
-        commissionPercentage: commPct,
-        commissionEarned: Math.round(commEarned * 100) / 100,
+        commissionPercentage: pay.percent,
+        commissionEarned: pay.amount,
         status: a.project.masterStatus,
       });
     }
@@ -1116,4 +1124,156 @@ export async function getPayslipById(payslipIdOrNumber: string): Promise<StaffPa
     return null;
   }
   return (await withDisplayDetails([found]))[0] ?? null;
+}
+
+// ─── My Earnings (analysts and reviewers) ───────────────────────────────────────
+
+/** One assigned study, in the same shape from the database and from the offline sample files. */
+type EarningSource = {
+  projectId: string;
+  intakeId: string;
+  title: string;
+  packageName: string | null;
+  status: string;
+  deliveredAt: string | null;
+  gross: number | null;
+  fullyPaid: boolean;
+  onHold: boolean;
+};
+
+const DONE = ["DELIVERED", "CLOSED"];
+const STOPPED = ["CANCELLED", "EXPIRED", "HALTED", "ETHICAL_BREACH"];
+
+async function loadMyStudies(userId: string, email: string | null | undefined, asAnalyst: boolean): Promise<EarningSource[]> {
+  if (isOfflineDev()) return devEarningStudies({ id: userId, email }, asAnalyst ? "STATISTICIAN" : "SENIOR_QA_LEAD");
+  const rows = await withDbTimeout(
+    db.assignment.findMany({
+      where: asAnalyst ? { statisticianId: userId } : { qaLeadId: userId },
+      select: {
+        projectId: true,
+        project: {
+          select: {
+            intakeId: true,
+            researchTitle: true,
+            masterStatus: true,
+            packageName: true,
+            deliveredAt: true,
+            hasActiveDispute: true,
+            hasPendingRefund: true,
+            sows: { select: { totalAmount: true, isLocked: true }, orderBy: { generatedAt: "desc" } },
+            quotations: { select: { status: true, totalAmount: true, downpaymentRequired: true }, orderBy: { createdAt: "desc" } },
+            payments: { select: { amountSubmitted: true, paymentStatus: true } },
+          },
+        },
+      },
+    }),
+    8000
+  );
+  return rows.map((a) => {
+    const p = a.project;
+    const signed = p.sows.find((x) => x.isLocked) ?? p.sows[0];
+    const quote = p.quotations.find((q) => q.status === "CLIENT_APPROVED");
+    const gross = signed ? Number(signed.totalAmount) : quote ? Number(quote.totalAmount) : null;
+    const balance = quote ? calculateProjectBalance(p.payments, Number(quote.totalAmount), Number(quote.downpaymentRequired)) : null;
+    return {
+      projectId: a.projectId,
+      intakeId: p.intakeId,
+      title: p.researchTitle,
+      packageName: p.packageName,
+      status: p.masterStatus,
+      deliveredAt: p.deliveredAt?.toISOString() ?? null,
+      gross,
+      fullyPaid: Boolean(balance && balance.remainingBalance <= 0),
+      onHold: p.hasActiveDispute || p.hasPendingRefund,
+    };
+  });
+}
+
+/**
+ * The signed-in analyst's or reviewer's pay per study, worked out exactly like the payslip (studyPayFor with their
+ * pay settings): what's been paid, what's on a payslip, what goes on the next payslip, and what comes later.
+ */
+export async function getMyStudyEarnings(): Promise<{ success: true; data: MyStudyEarningsDTO } | { success: false; error: { message: string } }> {
+  const session = await auth();
+  const user = session?.user;
+  if (!user?.id || (user.role !== "STATISTICIAN" && user.role !== "SENIOR_QA_LEAD")) {
+    return { success: false, error: { message: "Only analysts and reviewers have study earnings." } };
+  }
+  try {
+    const role = user.role as RoleName;
+    const isAnalyst = role === "STATISTICIAN";
+    const storage = await cachedPayrollStorage();
+    const override = storage.staffOverrides[user.id];
+    const config = override || storage.roleConfigs[role] || DEFAULT_ROLE_CONFIGS[role]!;
+    const perStudy = paysPerStudy(config.compensationType);
+
+    const [sources, slips] = await Promise.all([loadMyStudies(user.id, user.email, isAnalyst), listPayslips({ userId: user.id })]);
+
+    // Which payslip (if any) each study is on. Newest payslip first.
+    const onSlip = new Map<string, { slip: StaffPayslipDTO; item: PayslipItemizedStudy }>();
+    for (const slip of slips) for (const item of slip.itemizedStudies ?? []) if (!onSlip.has(item.projectId)) onSlip.set(item.projectId, { slip, item });
+
+    const studies: StudyEarningItem[] = [];
+    for (const s of sources) {
+      const base = {
+        projectId: s.projectId,
+        intakeId: s.intakeId,
+        title: s.title,
+        packageName: s.packageName,
+        role: (isAnalyst ? "analyst" : "reviewer") as StudyEarningItem["role"],
+        deliveredAt: s.deliveredAt,
+      };
+      const found = onSlip.get(s.projectId);
+      if (found) {
+        studies.push({
+          ...base,
+          gross: found.item.grossAmount,
+          percent: found.item.commissionPercentage,
+          bonus: config.fixedPerStudyBonus || 0,
+          amount: found.item.commissionEarned,
+          state: found.slip.status === "DISBURSED" ? "paid" : "onPayslip",
+          payslip: { id: found.slip.id, number: found.slip.payslipNumber, status: found.slip.status, period: found.slip.payPeriodMonth },
+        });
+        continue;
+      }
+      const state: StudyEarningItem["state"] = STOPPED.includes(s.status)
+        ? "stopped"
+        : s.status === "DISPUTED" || (DONE.includes(s.status) && s.onHold)
+          ? "onHold"
+          : DONE.includes(s.status)
+            ? s.fullyPaid
+              ? "next"
+              : "waitingPayment"
+            : "notDelivered";
+      const pay =
+        perStudy && state !== "stopped" && s.gross !== null
+          ? await studyPayFor({ isAnalyst, grossAmount: s.gross, packageName: s.packageName, config, personalPercent: override?.commissionPercentagePerStudy })
+          : null;
+      studies.push({
+        ...base,
+        gross: s.gross,
+        percent: pay?.percent ?? 0,
+        bonus: pay?.bonus ?? 0,
+        amount: pay?.amount ?? null,
+        state,
+        payslip: null,
+      });
+    }
+
+    const sum = (states: StudyEarningItem["state"][]) =>
+      Math.round(studies.filter((x) => states.includes(x.state)).reduce((t, x) => t + (x.amount ?? 0), 0) * 100) / 100;
+    return {
+      success: true,
+      data: {
+        payModel: config.compensationType,
+        payText: payModelSummary(config),
+        paysPerStudy: perStudy,
+        studies,
+        totals: { paid: sum(["paid"]), onPayslip: sum(["onPayslip"]), next: sum(["next"]), later: sum(["waitingPayment", "notDelivered", "onHold"]) },
+      },
+    };
+  } catch (err) {
+    console.error("[getMyStudyEarnings] Error:", err);
+    return { success: false, error: { message: "Your earnings didn't load. Try again in a moment." } };
+  }
 }

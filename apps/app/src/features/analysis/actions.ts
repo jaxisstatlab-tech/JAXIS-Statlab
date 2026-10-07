@@ -501,10 +501,12 @@ export async function uploadAnalysisFile(
       await dispatchRealtimeNotification({
         eventType: "OUTPUT_UPDATE",
         projectId: result.projectId,
-        title: "Analysis Deliverable Uploaded",
-        message: `Statistical Analyst ${result.statistician.fullName} uploaded "${result.fileName}" (v${result.version}).`,
-        targetRoles: ["ADMIN", "SENIOR_QA_LEAD"],
+        title: "New analysis file",
+        message: `${result.statistician.fullName} uploaded "${result.fileName}" (version ${result.version}).`,
+        targetRoles: ["ADMIN"],
         includeProjectParties: true,
+        staffOnly: true,
+        excludeUserId: result.statisticianId,
       });
     } catch (e) {
       console.warn("[uploadAnalysisFile] Realtime notification warning:", e);
@@ -686,10 +688,11 @@ export async function flagScopeCreep(
       await dispatchRealtimeNotification({
         eventType: "STATUS_UPDATE",
         projectId: result.projectId,
-        title: "Scope Creep Flagged",
-        message: `Study halted due to scope creep flagged by ${result.flagger.fullName}: "${result.flagReason}"`,
+        title: "Extra work flagged",
+        message: `${result.flagger.fullName} put the study on hold for extra work: "${result.flagReason}"`,
         targetRoles: ["ADMIN", "CEO"],
         includeProjectParties: true,
+        staffOnly: true,
       });
     } catch (e) {
       console.warn("[flagScopeCreep] Realtime notification warning:", e);
@@ -883,10 +886,12 @@ export async function submitForQA(
         eventType: "QA_DECISION",
         projectId: project.id,
         intakeId: project.intakeId,
-        title: "Study Submitted for QA Inspection",
-        message: `Study ${project.intakeId} has been submitted for QA verification by the statistical analyst.`,
-        targetRoles: ["ADMIN", "SENIOR_QA_LEAD"],
+        title: `Ready to check: ${project.intakeId}`,
+        message: `The analyst sent ${project.intakeId} for review.`,
+        targetRoles: ["ADMIN"],
         includeProjectParties: true,
+        staffOnly: true,
+        excludeUserId: user.id,
       });
     } catch (e) {
       console.warn("[submitForQA] Realtime notification warning:", e);
@@ -964,6 +969,18 @@ export async function getAnalysisFileDownloadUrl(
       return {
         success: false,
         error: { code: "FORBIDDEN", message: "You are not authorized to download this file." },
+      };
+    }
+
+    // Files "uploaded" before 2026-10-07 under analysis/... were never actually stored (the workbench saved only a
+    // made-up path), so a download link would open storage's raw "NoSuchKey" page. Say what to do instead.
+    if (file.filePath.startsWith("analysis/")) {
+      return {
+        success: false,
+        error: {
+          code: "FILE_NEVER_STORED",
+          message: "This file didn't save when it was uploaded. Send the study back so the analyst can upload it again.",
+        },
       };
     }
 

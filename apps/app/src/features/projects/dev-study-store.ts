@@ -51,7 +51,9 @@ type DevProject = {
     slaPauseReason?: string | null;
     slaPausedBy?: string | null;
   } | null;
-  financialSummary?: { totalAmount?: number } | null;
+  financialSummary?: { totalAmount?: number; isFullyPaid?: boolean } | null;
+  hasActiveDispute?: boolean;
+  hasPendingRefund?: boolean;
   /** Offline "Flag Extra Work": the open flag, if any. */
   scopeCreep?: { flagReason: string; flaggedAt: string; flaggedBy: string; flaggerName: string } | null;
   files?: Array<{ id: string; fileName: string; filePath: string; fileType?: string; fileCategory?: string; uploadedAt?: string }>;
@@ -934,4 +936,25 @@ export function devSubmitQaReview(
   }
   saveProjects(projects);
   return { success: true, data: reviewDTO(review) };
+}
+
+/** Offline "My Earnings": the sample studies this analyst or reviewer is on, in the payroll's shape. */
+export function devEarningStudies(user: User, as: "STATISTICIAN" | "SENIOR_QA_LEAD") {
+  return readJson<DevProject>(FILES.projects)
+    .filter((p) => {
+      if (!p.assignment) return false;
+      const w = who(user, p);
+      return as === "STATISTICIAN" ? w.isStatistician : w.isQaLead;
+    })
+    .map((p) => ({
+      projectId: p.id,
+      intakeId: p.intakeId,
+      title: p.researchTitle,
+      packageName: p.packageName ?? null,
+      status: p.masterStatus,
+      deliveredAt: p.deliveredAt ?? null,
+      gross: typeof p.financialSummary?.totalAmount === "number" ? p.financialSummary.totalAmount : null,
+      fullyPaid: Boolean(p.financialSummary?.isFullyPaid),
+      onHold: Boolean(p.hasActiveDispute || p.hasPendingRefund),
+    }));
 }

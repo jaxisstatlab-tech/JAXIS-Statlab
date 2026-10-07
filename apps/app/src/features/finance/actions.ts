@@ -321,6 +321,23 @@ export async function disbursePayoutAction(
       return { success: false, error: { code: "PAYOUT_VOIDED", message: "Cannot disburse a voided payout." } };
     }
 
+    // Study pay normally goes on the payslip (Payroll Settings). Never release it a second time here.
+    const slips = await withDbTimeout<{ payslipNumber: string; status: string; data: unknown }[]>(
+      (client as any).payslip.findMany({ where: { userId: payout.recipientId }, select: { payslipNumber: true, status: true, data: true } })
+    );
+    const onSlip = (slips || []).find((sl) =>
+      ((sl.data as { itemizedStudies?: { projectId: string }[] })?.itemizedStudies ?? []).some((it) => it.projectId === payout.projectId)
+    );
+    if (onSlip) {
+      return {
+        success: false,
+        error: {
+          code: "ALREADY_ON_PAYSLIP",
+          message: `This study's pay is already on payslip ${onSlip.payslipNumber}, so it can't be released here too.`,
+        },
+      };
+    }
+
     // Strict Enforcement of RULE_PAY_01
     const eligibility = await assertPayoutEligible(payout.projectId);
     if (!eligibility.eligible) {

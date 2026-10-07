@@ -34,6 +34,9 @@ export interface DispatchRealtimeNotificationOptions {
   targetRoles?: RoleName[];
   targetUserIds?: string[];
   includeProjectParties?: boolean; // automatically resolves client, assigned specialist, and QA lead
+  /** With includeProjectParties: only the analyst and reviewer, never the client. For internal review steps
+   * (uploads, sent for review, sent back, extra work), which clients must not see. */
+  staffOnly?: boolean;
   excludeUserId?: string; // exclude actor from receiving self-notifications
 }
 
@@ -204,6 +207,12 @@ function getRoleSpecificLink(
     }
   }
 
+  // Review steps open the page where the work happens.
+  if ((eventType === "QA_DECISION" || eventType === "OUTPUT_UPDATE") && projectId) {
+    if (role === "STATISTICIAN") return `/dashboard/statistician/projects/${projectId}/workbench`;
+    if (role === "SENIOR_QA_LEAD") return `/dashboard/qa/projects/${projectId}/review`;
+  }
+
   switch (role) {
     case "CLIENT":
       return `/dashboard/client/projects/${projectId}`;
@@ -240,6 +249,7 @@ export async function dispatchRealtimeNotification(
       targetRoles = [],
       targetUserIds = [],
       includeProjectParties = false,
+      staffOnly = false,
       excludeUserId,
     } = options;
 
@@ -306,8 +316,8 @@ export async function dispatchRealtimeNotification(
           projectDisplayIntakeId = project.intakeId;
 
           if (includeProjectParties) {
-            // Client
-            if (project.client && project.client.id !== excludeUserId) {
+            // Client (never for internal review steps)
+            if (!staffOnly && project.client && project.client.id !== excludeUserId) {
               recipientsMap.set(project.client.id, {
                 userId: project.client.id,
                 role: "CLIENT",

@@ -597,6 +597,7 @@ export async function submitQaReview(
           ? `Study ${project.intakeId} rejected: ${comments.slice(0, 120)}`
           : `Study ${project.intakeId} halted for ethical breach: ${comments.slice(0, 120)}`;
 
+      // Admins (and the CEO for a report): the decision in staff words.
       await dispatchRealtimeNotification({
         eventType: "QA_DECISION",
         projectId: project.id,
@@ -604,8 +605,48 @@ export async function submitQaReview(
         title: decisionTitle,
         message: decisionMsg,
         targetRoles: decision === "ESCALATED_TO_CEO" ? ["ADMIN", "CEO"] : ["ADMIN"],
-        includeProjectParties: true,
+        excludeUserId: user.id,
       });
+
+      // The analyst: what the reviewer decided, with their notes and the fix-by time, linked to the workbench.
+      if (project.assignment?.statisticianId && project.assignment.statisticianId !== user.id) {
+        const fixBy = qaRevisionDueAt
+          ? qaRevisionDueAt.toLocaleString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+          : null;
+        const notes = comments.trim().length > 180 ? `${comments.trim().slice(0, 177)}...` : comments.trim();
+        await dispatchRealtimeNotification({
+          eventType: "QA_DECISION",
+          projectId: project.id,
+          intakeId: project.intakeId,
+          title:
+            decision === "QA_APPROVED"
+              ? `Approved: ${project.intakeId}`
+              : decision === "QA_REJECTED"
+                ? `Changes asked on ${project.intakeId}`
+                : `Reported to the CEO: ${project.intakeId}`,
+          message:
+            decision === "QA_APPROVED"
+              ? `${user.fullName} approved your work. The study is delivered to the client.`
+              : decision === "QA_REJECTED"
+                ? `${user.fullName} asked for changes${fixBy ? ` (fix by ${fixBy})` : ""}: "${notes}"`
+                : `${user.fullName} reported this study to the CEO. It is locked while the CEO looks at it.`,
+          targetUserIds: [project.assignment.statisticianId],
+          linkUrl: `/dashboard/statistician/projects/${project.id}/workbench`,
+        });
+      }
+
+      // The client: only when it's delivered. Sending back and reports are internal and never shown to clients
+      // (the client used to get "Study rejected: <the reviewer's notes>").
+      if (decision === "QA_APPROVED" && project.clientId) {
+        await dispatchRealtimeNotification({
+          eventType: "DELIVERABLE_UPDATE",
+          projectId: project.id,
+          intakeId: project.intakeId,
+          title: "Your results are ready",
+          message: `The results for ${project.intakeId} have been checked and are ready on your study page.`,
+          targetUserIds: [project.clientId],
+        });
+      }
     } catch (notifyErr) {
       console.warn("[submitQaReview] Realtime notification warning:", notifyErr);
     }

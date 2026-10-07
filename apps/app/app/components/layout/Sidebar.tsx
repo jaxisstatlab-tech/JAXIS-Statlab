@@ -185,7 +185,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
       groupTitle: "MY WORKSPACE",
       items: [
         {
-          label: "Milestone Payouts",
+          label: "My Earnings",
           href: "/dashboard/statistician/payouts",
           icon: Icons.Award,
         },
@@ -213,7 +213,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
       groupTitle: "MY WORKSPACE",
       items: [
         {
-          label: "QA Audit Earnings",
+          label: "My Earnings",
           href: "/dashboard/qa/payouts",
           icon: Icons.Award,
         },

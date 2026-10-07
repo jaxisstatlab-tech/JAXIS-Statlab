@@ -20,6 +20,52 @@ export function usesTimeClock(payModel?: CompensationType | null): boolean {
   return payModel === "HOURLY_DUTY";
 }
 
+/**
+ * Whether a pay model includes pay for each delivered study (Per Study, a percentage per study, or Salary + Per
+ * Study). Monthly Salary and Hourly Wage don't: studies never add to that pay.
+ */
+export function paysPerStudy(payModel?: CompensationType | null): boolean {
+  return payModel === "TIER_DELIVERABLE" || payModel === "PERCENTAGE_PER_STUDY" || payModel === "HYBRID";
+}
+
+/** Where one study's pay stands for the analyst or reviewer on it ("My Earnings"). */
+export type StudyEarningState =
+  | "paid" // on a payslip that was paid
+  | "onPayslip" // on a payslip that isn't paid yet
+  | "next" // delivered and fully paid by the client: goes on the next payslip
+  | "waitingPayment" // delivered, but the client still owes part of the price
+  | "onHold" // a claim or refund is open
+  | "notDelivered" // still being worked on (the amount is an estimate)
+  | "stopped"; // cancelled or stopped: no pay
+
+export interface StudyEarningItem {
+  projectId: string;
+  intakeId: string;
+  title: string;
+  packageName: string | null;
+  role: "analyst" | "reviewer";
+  /** The price the client agreed to (null when there isn't one yet). */
+  gross: number | null;
+  /** Share of the price (0 for a flat amount). */
+  percent: number;
+  /** The extra amount per study from pay settings. */
+  bonus: number;
+  /** What this study pays (from the payslip when it's on one, otherwise worked out with today's settings). */
+  amount: number | null;
+  state: StudyEarningState;
+  payslip: { id: string; number: string; status: string; period: string } | null;
+  deliveredAt: string | null;
+}
+
+export interface MyStudyEarningsDTO {
+  payModel: CompensationType;
+  /** One plain sentence of how this person is paid (from Payroll Settings). */
+  payText: string;
+  paysPerStudy: boolean;
+  studies: StudyEarningItem[];
+  totals: { paid: number; onPayslip: number; next: number; later: number };
+}
+
 /** The pay models the CEO picks from, in plain words, with whether each one uses the time clock. */
 export const PAY_MODEL_OPTIONS: Array<{ id: CompensationType; title: string; subtitle: string }> = [
   { id: "TIER_DELIVERABLE", title: "Per Study", subtitle: "A share of each delivered study. No clock-in." },
