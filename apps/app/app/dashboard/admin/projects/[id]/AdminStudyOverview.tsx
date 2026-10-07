@@ -4,11 +4,12 @@ import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, DropdownMenu, Modal, Peso, Toast } from "@repo/ui";
-import { ArrowRight, Calculator, Copy, FileText, Question, SlidersHorizontal, Warning, FacebookLogo, InstagramLogo } from "@phosphor-icons/react";
+import { ArrowRight, Calculator, Copy, FileText, Question, SlidersHorizontal, Warning, FacebookLogo, InstagramLogo, Trash } from "@phosphor-icons/react";
 import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { StudySection } from "@/features/projects/components/StudySection";
 import { ProjectFilesCard } from "@/features/projects/components/ProjectFilesCard";
 import { FinalFilesCard } from "@/features/deliverables/components/FinalFilesCard";
+import { DeleteStudyDialog } from "@/features/projects/components/DeleteStudyDialog";
 import { PersonPhoto } from "@/components/dashboard/PersonPhoto";
 import { socialLabel } from "@/lib/person-rules";
 import type { DeliverableDTO, QaCertificateDTO } from "@/features/deliverables/schemas";
@@ -71,6 +72,7 @@ export function AdminStudyOverview({
   const [assignOpen, setAssignOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [busy, start] = useTransition();
 
   if (!project) {
@@ -202,6 +204,15 @@ export function AdminStudyOverview({
       onClick: () => {
         void navigator.clipboard?.writeText(project.intakeId).then(() => setToast({ message: "Study ID copied", description: project.intakeId, variant: "success" }));
       },
+    },
+    // Admins and the CEO (the server checks). It used to be only on the Admin Overview table.
+    {
+      label: "Delete study",
+      subtitle: "Removes it for good, with a reason",
+      dividerBefore: true,
+      variant: "danger" as const,
+      icon: <Trash size={16} weight="fill" />,
+      onClick: () => setDeleteOpen(true),
     },
   ];
 
@@ -481,6 +492,12 @@ export function AdminStudyOverview({
           setToast({ message: "Status changed", description: `Now: ${PROJECT_STATUS_LABELS[to] ?? to}.`, variant: "success" });
           router.refresh();
         }}
+      />
+      <DeleteStudyDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        study={{ id: project.id, rawId: project.id, title: project.researchTitle, client: project.client.fullName, intakeId: project.intakeId }}
+        onDeleted={() => router.push("/dashboard/admin/intake")}
       />
       <QuotationBuilderModal
         isOpen={quoteOpen}

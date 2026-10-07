@@ -27,12 +27,12 @@ export interface DeleteStudyDialogProps {
 }
 
 const COMMON_REASONS = [
-  "Client requested cancellation & data erasure",
-  "Duplicate submission or submission error",
-  "Data retention policy expired",
-  "Testing / Sandbox project cleanup",
-  "Incorrect client or study filing parameters",
-  "Other operational reason",
+  "The client asked us to cancel and delete it",
+  "Sent twice, or sent by mistake",
+  "Past the time we keep files",
+  "A test study",
+  "Filed under the wrong client or details",
+  "Something else",
 ];
 
 export function DeleteStudyDialog({
@@ -63,7 +63,7 @@ export function DeleteStudyDialog({
     setIsDeleting(true);
     try {
       const fullReason =
-        selectedReason === "Other operational reason" && customExplanation.trim()
+        selectedReason === "Something else" && customExplanation.trim()
           ? customExplanation.trim()
           : customExplanation.trim()
           ? `${selectedReason}: ${customExplanation.trim()}`
@@ -79,10 +79,10 @@ export function DeleteStudyDialog({
         const errorMsg =
           typeof res.error === "string"
             ? res.error
-            : res.error?.message || "Failed to delete the study. Please try again.";
+            : res.error?.message || "The study wasn't deleted. Please try again.";
         setToastMessage({
           variant: "danger",
-          message: "Deletion Failed",
+          message: "Not deleted",
           description: errorMsg,
         });
         setIsDeleting(false);
@@ -91,8 +91,8 @@ export function DeleteStudyDialog({
 
       setToastMessage({
         variant: "success",
-        message: "Study Permanently Deleted",
-        description: `Study ${studyCode} and its linked records have been removed. An immutable snapshot was archived for CEO review.`,
+        message: "Study deleted",
+        description: `${studyCode} and everything linked to it were deleted. A copy is kept for the CEO in Deleted Studies.`,
       });
 
       setTimeout(() => {
@@ -101,10 +101,10 @@ export function DeleteStudyDialog({
         onClose();
       }, 1000);
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : "An unexpected error occurred.";
+      const errorMsg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setToastMessage({
         variant: "danger",
-        message: "Deletion Error",
+        message: "Not deleted",
         description: errorMsg,
       });
       setIsDeleting(false);
@@ -120,10 +120,10 @@ export function DeleteStudyDialog({
         title={
           <div className="flex items-center gap-2.5 text-red-400">
             <Trash size={20} weight="fill" className="text-red-400 shrink-0" />
-            <span className="font-sans font-bold text-base text-white">Delete Study Permanently</span>
+            <span className="font-sans font-bold text-base text-white">Delete this study?</span>
           </div>
         }
-        description={`Target: ${studyCode} — ${study.title}`}
+        description={`${studyCode} · ${study.title}`}
         footer={
           <div className="flex items-center justify-between gap-3 w-full">
             <Button
@@ -145,12 +145,12 @@ export function DeleteStudyDialog({
               {isDeleting ? (
                 <>
                   <CircleNotch size={14} className="animate-spin text-white" />
-                  <span>Deleting Study...</span>
+                  <span>Deleting...</span>
                 </>
               ) : (
                 <>
                   <Trash size={14} weight="fill" />
-                  <span>Delete Permanently</span>
+                  <span>Delete Study</span>
                 </>
               )}
             </Button>
@@ -162,9 +162,9 @@ export function DeleteStudyDialog({
           <div className="rounded-[2px] bg-red-500/10 border border-red-500/20 p-3.5 flex items-start gap-3">
             <Warning size={20} weight="fill" className="text-red-400 shrink-0 mt-0.5" />
             <div className="flex flex-col gap-1 text-xs text-white/80">
-              <span className="font-semibold text-white">This action cannot be undone</span>
+              <span className="font-semibold text-white">This can't be undone</span>
               <p className="leading-relaxed text-white/70">
-                All associated records (SOW, deliverables, QA evaluations, messages, and ledger entries) will be permanently purged from the active system. An immutable backup snapshot is archived in the CEO Audit Ledger.
+                The agreement, payments, files, reviews and messages for this study are deleted for everyone. A copy is kept for the CEO in Deleted Studies.
               </p>
             </div>
           </div>
@@ -172,28 +172,28 @@ export function DeleteStudyDialog({
           {/* Study Summary pill */}
           <div className="rounded-[2px] bg-[#0A0A18] border border-white/10 p-3 flex flex-col gap-1.5 text-xs">
             <div className="flex items-center justify-between text-white/50">
-              <span>Study Identifier</span>
+              <span>Study</span>
               <span className="font-mono text-white font-semibold">{studyCode}</span>
             </div>
             {study.client && (
               <div className="flex items-center justify-between text-white/50">
-                <span>Lead Researcher</span>
+                <span>Client</span>
                 <span className="text-white font-medium">{study.client}</span>
               </div>
             )}
             <div className="flex items-center justify-between text-white/50">
-              <span>Audit Protection</span>
-              <span className="text-emerald-400 flex items-center gap-1">
+              <span>Copy kept</span>
+              <span className="text-white/80 flex items-center gap-1">
                 <ShieldCheck size={13} weight="fill" />
-                Snapshot preserved in CEO Ledger
+                In Deleted Studies (CEO)
               </span>
             </div>
           </div>
 
           {/* Reason Selection */}
           <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
-              Reason for Deletion
+            <Label className="text-xs font-medium text-white/70">
+              Why are you deleting it?
             </Label>
             <select
               value={selectedReason}
@@ -217,7 +217,7 @@ export function DeleteStudyDialog({
             <Textarea
               value={customExplanation}
               onChange={(e) => setCustomExplanation(e.target.value)}
-              placeholder="Provide background context or compliance reference (optional)..."
+              placeholder="Anything else to note (optional)"
               disabled={isDeleting}
               rows={2}
               className="bg-[#0A0A18] border-white/15 text-white text-xs rounded-[2px] resize-none"
