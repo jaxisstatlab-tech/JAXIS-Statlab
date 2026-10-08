@@ -110,6 +110,8 @@ export interface PaymentItem {
   paymentStatus: PaymentStatus;
   rejectionReason: string | null;
   verifiedBy: string | null;
+  /** Name of whoever checked it (finance queue only). */
+  verifiedByName?: string | null;
   verifiedAt: string | null;
   createdAt: string;
   updatedAt: string;

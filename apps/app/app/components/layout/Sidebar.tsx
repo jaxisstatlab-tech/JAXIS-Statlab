@@ -237,7 +237,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.FinanceVault,
         },
         {
-          label: "Deposit Queue",
+          label: "Payments to Check",
           href: "/dashboard/finance/payments",
           icon: Icons.CheckQueue,
         },

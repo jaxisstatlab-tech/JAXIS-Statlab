@@ -77,6 +77,15 @@ function writePersistedPaymentChannels(channels: PaymentChannelDetails[]): void 
 }
 
 class PaymentAmountError extends Error {}
+/** What everyone on the study is told when a payment is confirmed, in plain words (it used to say "ready for
+ * specialist assignment" even for the final payment). */
+function confirmedNotice(amount: number, type: PaymentItem["paymentType"], fullyPaid: boolean) {
+  const peso = `₱${amount.toLocaleString()}`;
+  if (fullyPaid) return { title: "Paid in full", message: `${peso} confirmed. The study is fully paid, so the final files open as soon as they're ready.` };
+  if (type === "DOWNPAYMENT") return { title: "Deposit confirmed", message: `${peso} deposit confirmed. Work on the study can start.` };
+  return { title: "Payment confirmed", message: `${peso} payment confirmed.` };
+}
+
 /** A payment that was already checked (or vanished) by the time finance acted on it. */
 class PaymentStateError extends Error {}
 
@@ -324,8 +333,8 @@ export async function submitPaymentProof(
       await dispatchRealtimeNotification({
         eventType: "PAYMENT_UPDATE",
         projectId: result.projectId,
-        title: "Payment Proof Submitted",
-        message: `Client submitted payment proof of ₱${Number(result.amountSubmitted).toLocaleString()} (Ref: ${result.referenceNumber}). Verification required.`,
+        title: "Payment to check",
+        message: `A client sent ₱${Number(result.amountSubmitted).toLocaleString()} (reference ${result.referenceNumber}). Find it in the JAXIS account, then confirm it in Payments to Check.`,
         targetRoles: ["FINANCE_OFFICER", "ADMIN"],
         includeProjectParties: true,
       });
@@ -445,8 +454,8 @@ export async function submitPaymentProof(
       await dispatchRealtimeNotification({
         eventType: "PAYMENT_UPDATE",
         projectId: newPayment.projectId,
-        title: "Payment Proof Submitted",
-        message: `Client submitted payment proof of ₱${Number(newPayment.amountSubmitted).toLocaleString()} (Ref: ${newPayment.referenceNumber}). Verification required.`,
+        title: "Payment to check",
+        message: `A client sent ₱${Number(newPayment.amountSubmitted).toLocaleString()} (reference ${newPayment.referenceNumber}). Find it in the JAXIS account, then confirm it in Payments to Check.`,
         targetRoles: ["FINANCE_OFFICER", "ADMIN"],
         includeProjectParties: true,
       });
@@ -617,12 +626,10 @@ export async function verifyPayment(
     invalidateCacheTags(CACHE_TAGS.PAYMENTS, CACHE_TAGS.PROJECTS);
 
     try {
-      const isFullyPaid = result.paymentStatus === "FULLY_PAID";
       await dispatchRealtimeNotification({
         eventType: "PAYMENT_UPDATE",
         projectId: result.projectId,
-        title: isFullyPaid ? "Payment Completed" : "Payment Verified & Cleared",
-        message: `Payment of ₱${Number(result.amountSubmitted).toLocaleString()} has been verified. Study is active and ready for specialist assignment.`,
+        ...confirmedNotice(Number(result.amountSubmitted), result.paymentType, result.paymentStatus === "FULLY_PAID"),
         targetRoles: ["CLIENT", "ADMIN", "FINANCE_OFFICER"],
         includeProjectParties: true,
       });
@@ -719,8 +726,7 @@ export async function verifyPayment(
       await dispatchRealtimeNotification({
         eventType: "PAYMENT_UPDATE",
         projectId: current.projectId,
-        title: "Payment Verified & Cleared",
-        message: `Payment of ₱${Number(current.amountSubmitted).toLocaleString()} has been verified. Study is active and ready for specialist assignment.`,
+        ...confirmedNotice(Number(current.amountSubmitted), current.paymentType, false),
         targetRoles: ["CLIENT", "ADMIN", "FINANCE_OFFICER"],
         includeProjectParties: true,
       });
@@ -831,8 +837,8 @@ export async function rejectPayment(
       await dispatchRealtimeNotification({
         eventType: "PAYMENT_UPDATE",
         projectId: updated.projectId,
-        title: "Payment Proof Declined",
-        message: `Payment proof of ₱${Number(updated.amountSubmitted).toLocaleString()} was declined: "${rejectionReason}". Please review and upload a valid receipt.`,
+        title: "Payment not confirmed",
+        message: `We couldn't confirm your ₱${Number(updated.amountSubmitted).toLocaleString()} payment: ${rejectionReason} You can send the payment details again on the study's Payment page.`,
         targetRoles: ["CLIENT", "ADMIN"],
         includeProjectParties: true,
       });
@@ -902,8 +908,8 @@ export async function rejectPayment(
       await dispatchRealtimeNotification({
         eventType: "PAYMENT_UPDATE",
         projectId: current.projectId,
-        title: "Payment Proof Declined",
-        message: `Payment proof of ₱${Number(current.amountSubmitted).toLocaleString()} was declined: "${rejectionReason}". Please review and upload a valid receipt.`,
+        title: "Payment not confirmed",
+        message: `We couldn't confirm your ₱${Number(current.amountSubmitted).toLocaleString()} payment: ${rejectionReason} You can send the payment details again on the study's Payment page.`,
         targetRoles: ["CLIENT", "ADMIN"],
         includeProjectParties: true,
       });
@@ -1095,34 +1101,64 @@ export async function getPaymentsByProject(
 
 // ─── 5. Get Pending Payments Queue (Finance Desk) ────────────────────────────
 
+// Only what the queue shows (a whole user row broke the live queue when the users table gained columns).
+const QUEUE_SELECT = {
+  id: true,
+  projectId: true,
+  quotationId: true,
+  paymentType: true,
+  paymentMethod: true,
+  amountSubmitted: true,
+  balancePaidTotal: true,
+  referenceNumber: true,
+  paymentStatus: true,
+  rejectionReason: true,
+  verifiedBy: true,
+  verifiedAt: true,
+  createdAt: true,
+  updatedAt: true,
+  proofs: { select: { id: true, paymentId: true, filePath: true, fileName: true, fileSize: true, uploadedAt: true } },
+  project: {
+    select: {
+      id: true,
+      intakeId: true,
+      researchTitle: true,
+      masterStatus: true,
+      client: { select: { fullName: true, email: true, clientProfile: { select: { institutionSchool: true } } } },
+    },
+  },
+  quotation: { select: { id: true, packageName: true, totalAmount: true, downpaymentRequired: true } },
+} satisfies Prisma.PaymentSelect;
+
+/** Checked payments kept in the list; every payment still waiting to be checked is always included. */
+const QUEUE_HISTORY = 300;
+
 const fetchCachedFinancePaymentsQueueRaw = unstable_cache(
   async (status: string) => {
-    const whereClause: { paymentStatus?: PaymentStatus | { in: PaymentStatus[] } } = {};
-    if (status === "PENDING") {
-      whereClause.paymentStatus = "PROOF_SUBMITTED";
-    } else if (status === "VERIFIED") {
-      whereClause.paymentStatus = { in: ["VERIFIED", "FULLY_PAID"] };
-    } else if (status === "REJECTED") {
-      whereClause.paymentStatus = "REJECTED";
-    }
-
-    return withDbTimeout(
+    const waiting = () =>
+      db.payment.findMany({ where: { paymentStatus: "PROOF_SUBMITTED" }, select: QUEUE_SELECT, orderBy: { createdAt: "asc" } });
+    const checked = (statuses: PaymentStatus[]) =>
       db.payment.findMany({
-        where: whereClause,
-        include: {
-          proofs: true,
-          project: {
-            include: {
-              client: {
-                include: { clientProfile: true },
-              },
-            },
-          },
-          quotation: true,
-        },
-        orderBy: status === "PENDING" ? { createdAt: "asc" } : { updatedAt: "desc" },
-      })
-    );
+        where: { paymentStatus: { in: statuses } },
+        select: QUEUE_SELECT,
+        orderBy: { updatedAt: "desc" },
+        take: QUEUE_HISTORY,
+      });
+
+    const rows =
+      status === "PENDING"
+        ? await withDbTimeout(waiting())
+        : status === "VERIFIED"
+          ? await withDbTimeout(checked(["VERIFIED", "FULLY_PAID"]))
+          : status === "REJECTED"
+            ? await withDbTimeout(checked(["REJECTED"]))
+            : (await withDbTimeout(Promise.all([waiting(), checked(["VERIFIED", "FULLY_PAID", "REJECTED"])]))).flat();
+
+    // Who checked each payment, in one lookup.
+    const ids = [...new Set(rows.map((r) => r.verifiedBy).filter((x): x is string => !!x))];
+    const people = ids.length ? await withDbTimeout(db.user.findMany({ where: { id: { in: ids } }, select: { id: true, fullName: true } })) : [];
+    const names = Object.fromEntries(people.map((u) => [u.id, u.fullName]));
+    return rows.map((r) => ({ ...r, verifiedByName: r.verifiedBy ? (names[r.verifiedBy] ?? null) : null }));
   },
   ["cached-finance-payments-queue"],
   { revalidate: 30, tags: [CACHE_TAGS.PAYMENTS] }
@@ -1165,6 +1201,7 @@ export async function getFinancePaymentsQueue(
       paymentStatus: p.paymentStatus,
       rejectionReason: p.rejectionReason,
       verifiedBy: p.verifiedBy,
+      verifiedByName: p.verifiedByName,
       verifiedAt: cachedIso(p.verifiedAt),
       createdAt: cachedIso(p.createdAt),
       updatedAt: cachedIso(p.updatedAt),

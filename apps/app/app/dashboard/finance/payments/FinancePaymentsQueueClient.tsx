@@ -1,525 +1,431 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import {
-  PageHeader,
-  Card,
-  Button,
-  MoneyDisplay,
-  LoadingState,
-  EmptyState,
-  Toast,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  StatusBadge,
-  Pagination,
-} from "@repo/ui";
-import {
-  IconChecklist,
-  IconReceipt,
-  IconShieldCheck,
-  IconBuildingBank,
-  IconDeviceMobile,
-  IconFileText,
-  IconRefresh,
-  IconExternalLink,
-  IconAlertCircle,
-} from "@tabler/icons-react";
+import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { getFinancePaymentsQueue } from "@/features/payments/actions";
-import type { PaymentItem } from "@/features/payments/schemas";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { Button, CopyButton, KpiCard, PageHeader, Pagination, Peso, Toast } from "@repo/ui";
+import { ArrowClockwise, CheckCircle, Clock, HourglassMedium, MagnifyingGlass, XCircle } from "@phosphor-icons/react";
+import { PanelBody } from "@/components/dashboard/Panel";
+import { paymentKind, paymentMethod } from "@/features/payments/labels";
+import type { PaymentItem } from "@/features/payments/schemas";
+
+// Payments to Check: every payment a client says they sent (deposit, the rest, or in full), oldest first, with
+// the ones already confirmed or sent back below. Finance opens one, finds it in the JAXIS GCash or bank history,
+// and confirms it (which unlocks the next step for the client) or sends it back with a reason.
 
 const PaymentVerificationModal = dynamic(
-  () =>
-    import("@/features/payments/components/PaymentVerificationModal").then(
-      (m) => m.PaymentVerificationModal
-    ),
+  () => import("@/features/payments/components/PaymentVerificationModal").then((m) => m.PaymentVerificationModal),
   { ssr: false }
 );
 
-interface FinancePaymentsQueueClientProps {
-  initialPayments?: PaymentItem[];
-}
+const HOUR = 3_600_000;
+const FIELD =
+  "h-9 rounded-[2px] border border-white/10 bg-[#050513] px-3 font-sans text-[13px] text-white outline-none placeholder:text-white/30 focus:border-[#CC6600]/60";
 
-export function FinancePaymentsQueueClient({
-  initialPayments = [],
-}: FinancePaymentsQueueClientProps) {
-  const [payments, setPayments] = useState<PaymentItem[]>(initialPayments);
-  const [isLoading, setIsLoading] = useState(initialPayments.length === 0);
-  const [activeTab, setActiveTab] = useState<"PENDING" | "VERIFIED" | "REJECTED">("PENDING");
-  const [filterMethod, setFilterMethod] = useState<"ALL" | "GCASH" | "BANK_TRANSFER">("ALL");
-  const [selectedPayment, setSelectedPayment] = useState<PaymentItem | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+type Show = "WAITING" | "CONFIRMED" | "SENT_BACK" | "ALL";
+type Method = "ALL" | "GCASH" | "BANK_TRANSFER";
 
-  const [toastMessage, setToastMessage] = useState<{
-    message: string;
-    description?: string;
-    variant: "info" | "success" | "warning" | "danger";
-  } | null>(null);
+const money = (n: number) => n.toLocaleString("en-PH", { maximumFractionDigits: 2 });
+const monthOf = (d: string | number) => new Date(d).toLocaleDateString("en-CA", { timeZone: "Asia/Manila" }).slice(0, 7);
+const date = (d: string) => new Date(d).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric" });
+const dateTime = (d: string) =>
+  new Date(d).toLocaleString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const waited = (ms: number) => {
+  const h = Math.floor(ms / HOUR);
+  if (h < 1) return `${Math.max(1, Math.round(ms / 60_000))} min`;
+  if (h < 24) return `${h}h`;
+  const days = Math.floor(h / 24);
+  return `${days} ${days === 1 ? "day" : "days"}`;
+};
+const isConfirmed = (p: PaymentItem) => p.paymentStatus === "VERIFIED" || p.paymentStatus === "FULLY_PAID";
+const normRef = (s: string) => s.replace(/[\s-]/g, "").toUpperCase();
 
-  const isMountedRef = React.useRef(true);
+export function FinancePaymentsQueueClient({ payments, failed = false }: { payments: PaymentItem[]; failed?: boolean }) {
+  const router = useRouter();
+  const [refreshing, startRefresh] = useTransition();
+  const [show, setShow] = useState<Show>("WAITING");
+  const [method, setMethod] = useState<Method>("ALL");
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [open, setOpen] = useState<PaymentItem | null>(null);
+  const [now, setNow] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ message: string; description?: string; variant: "success" | "info" | "danger" } | null>(null);
+  const search = useRef<HTMLInputElement>(null);
+  const lastRefresh = useRef(0);
 
-  const loadQueue = async () => {
-    setIsLoading(true);
-    try {
-      const res = await getFinancePaymentsQueue({ status: "ALL" });
-      if (!isMountedRef.current) return;
-      if (res.success) {
-        setPayments(res.data);
-      } else {
-        setToastMessage({
-          message: "Failed to Load Verification Queue",
-          description: res.error.message,
-          variant: "danger",
-        });
-      }
-    } catch {
-      if (isMountedRef.current) {
-        setToastMessage({
-          message: "Network Error",
-          description: "Could not retrieve pending deposits. Please try again.",
-          variant: "danger",
-        });
-      }
-    } finally {
-      if (isMountedRef.current) {
-        setIsLoading(false);
-      }
-    }
+  const refresh = () => {
+    lastRefresh.current = Date.now();
+    startRefresh(() => router.refresh());
   };
 
   useEffect(() => {
-    isMountedRef.current = true;
-    if (initialPayments.length === 0) {
-      loadQueue();
-    }
-    return () => {
-      isMountedRef.current = false;
+    setNow(Date.now());
+    lastRefresh.current = Date.now();
+    const tick = setInterval(() => setNow(Date.now()), 60_000);
+    // New payments arrive while the tab sits in the background: check again on return (at most once a minute).
+    const onFocus = () => {
+      if (document.visibilityState === "visible" && Date.now() - lastRefresh.current > 60_000) refresh();
     };
-  }, [initialPayments.length]);
+    document.addEventListener("visibilitychange", onFocus);
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLElement && ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName);
+      if (e.key === "/" && !typing) {
+        e.preventDefault();
+        search.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      clearInterval(tick);
+      document.removeEventListener("visibilitychange", onFocus);
+      window.removeEventListener("keydown", onKey);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleVerificationSuccess = () => {
-    setToastMessage({
-      message: "Payment Cleared & Verified",
-      description: "Project balance updated. Eligible studies have been transitioned to active assignment.",
-      variant: "success",
-    });
-    loadQueue();
+  const waiting = useMemo(
+    () => payments.filter((p) => p.paymentStatus === "PROOF_SUBMITTED").sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt)),
+    [payments]
+  );
+
+  const stats = useMemo(() => {
+    const thisMonth = now ? monthOf(now) : null;
+    const checkedThisMonth = (p: PaymentItem) => !!thisMonth && !!p.verifiedAt && monthOf(p.verifiedAt) === thisMonth;
+    const confirmedMonth = payments.filter((p) => isConfirmed(p) && checkedThisMonth(p));
+    // How long payments waited before someone checked them, over the last 30 days (middle value).
+    const waits = now
+      ? payments
+          .filter((p) => p.paymentStatus !== "PROOF_SUBMITTED" && p.verifiedAt && now - +new Date(p.verifiedAt) < 30 * 24 * HOUR)
+          .map((p) => +new Date(p.verifiedAt!) - +new Date(p.createdAt))
+          .filter((ms) => ms >= 0)
+          .sort((a, b) => a - b)
+      : [];
+    return {
+      waitingTotal: waiting.reduce((s, p) => s + p.amountSubmitted, 0),
+      overADay: now ? waiting.filter((p) => now - +new Date(p.createdAt) > 24 * HOUR).length : 0,
+      confirmedMonthTotal: confirmedMonth.reduce((s, p) => s + p.amountSubmitted, 0),
+      confirmedMonthCount: confirmedMonth.length,
+      sentBackMonth: payments.filter((p) => p.paymentStatus === "REJECTED" && checkedThisMonth(p)).length,
+      usualWait: waits.length ? waits[Math.floor(waits.length / 2)]! : null,
+      checkedRecently: waits.length,
+    };
+  }, [payments, waiting, now]);
+
+  const counts = {
+    WAITING: waiting.length,
+    CONFIRMED: payments.filter(isConfirmed).length,
+    SENT_BACK: payments.filter((p) => p.paymentStatus === "REJECTED").length,
+    ALL: payments.length,
   };
 
-  // Filter by Tab
-  const pendingPayments = payments.filter((p) => p.paymentStatus === "PROOF_SUBMITTED");
-  const verifiedPayments = payments.filter(
-    (p) => p.paymentStatus === "VERIFIED" || p.paymentStatus === "FULLY_PAID"
-  );
-  const rejectedPayments = payments.filter((p) => p.paymentStatus === "REJECTED");
+  const rows = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    const termRef = normRef(q.trim());
+    const base =
+      show === "WAITING"
+        ? waiting
+        : payments
+            .filter((p) => (show === "CONFIRMED" ? isConfirmed(p) : show === "SENT_BACK" ? p.paymentStatus === "REJECTED" : true))
+            .sort((a, b) =>
+              // Waiting first (oldest first), then the most recently checked.
+              a.paymentStatus === "PROOF_SUBMITTED" || b.paymentStatus === "PROOF_SUBMITTED"
+                ? (a.paymentStatus === "PROOF_SUBMITTED" ? -1 : 1) - (b.paymentStatus === "PROOF_SUBMITTED" ? -1 : 1) ||
+                  +new Date(a.createdAt) - +new Date(b.createdAt)
+                : +new Date(b.verifiedAt ?? b.updatedAt) - +new Date(a.verifiedAt ?? a.updatedAt)
+            );
+    return base
+      .filter((p) => method === "ALL" || p.paymentMethod === method)
+      .filter((p) => {
+        if (!term) return true;
+        const text = [p.project?.intakeId, p.project?.researchTitle, p.project?.client.fullName, p.project?.client.email, p.project?.client.clientProfile?.institutionSchool]
+          .join(" ")
+          .toLowerCase();
+        return text.includes(term) || (!!termRef && !!p.referenceNumber && normRef(p.referenceNumber).includes(termRef));
+      });
+  }, [payments, waiting, show, method, q]);
 
-  const currentTabPayments =
-    activeTab === "PENDING"
-      ? pendingPayments
-      : activeTab === "VERIFIED"
-        ? verifiedPayments
-        : rejectedPayments;
+  useEffect(() => setPage(1), [show, method, q]);
+  const pageRows = rows.slice((page - 1) * pageSize, page * pageSize);
+  const filtered = q.trim() !== "" || method !== "ALL";
 
-  // Filter by Payment Method
-  const filteredPayments = currentTabPayments.filter((p) => {
-    if (filterMethod === "ALL") return true;
-    return p.paymentMethod === filterMethod;
-  });
+  const oldest = waiting[0];
+  const description = failed
+    ? "The payments didn't load. Refresh to try again."
+    : waiting.length === 0
+      ? "Nothing to check. New payments show up here as soon as a client sends them."
+      : `${waiting.length} ${waiting.length === 1 ? "payment" : "payments"} to check${
+          oldest && now ? `. The oldest was sent ${waited(now - +new Date(oldest.createdAt))} ago` : ""
+        }. Clients are told it's confirmed within one working day.`;
 
-  const paginatedPayments = filteredPayments.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
-
-  const totalPendingAmount = pendingPayments.reduce((sum, p) => sum + p.amountSubmitted, 0);
-  const totalVerifiedAmount = verifiedPayments.reduce((sum, p) => sum + p.amountSubmitted, 0);
-  const gcashCount = currentTabPayments.filter((p) => p.paymentMethod === "GCASH").length;
-  const bankCount = currentTabPayments.filter((p) => p.paymentMethod === "BANK_TRANSFER").length;
-
-  if (isLoading && payments.length === 0) {
-    return (
-      <div className="flex-1 w-full min-h-full flex items-center justify-center animate-content-fade my-auto font-sans">
-        <LoadingState
-          variant="page"
-          label="Loading Payment Verification Queue..."
-          description="Scanning deposit records and receipts."
-        />
-      </div>
-    );
-  }
+  const tabs: Array<[Show, string]> = [
+    ["WAITING", "To check"],
+    ["CONFIRMED", "Confirmed"],
+    ["SENT_BACK", "Sent back"],
+    ["ALL", "All"],
+  ];
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
-      {/* ── Header ── */}
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-24 font-sans animate-content-fade">
       <PageHeader
-        title="Deposit Verification Queue & Historical Ledger"
-        description="Inspect client GCash and bank transfer receipts, reconcile transaction reference numbers, and review historical cleared payments."
+        title="Payments to Check"
+        description={description}
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
-          { label: "Finance & HR", href: "/dashboard/finance" },
-          { label: "Deposit Verification & Ledger" },
+          { label: "Finance", href: "/dashboard/finance" },
+          { label: "Payments to Check" },
         ]}
         actions={
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
-            <Link href="/dashboard/finance" className="w-full sm:w-auto">
-              <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center">
-                ← Finance Overview
-              </Button>
-            </Link>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={loadQueue}
-              className="w-full sm:w-auto justify-center gap-1.5"
-            >
-              <IconRefresh size={14} stroke={2} />
-              <span>Refresh Queue</span>
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={refresh} loading={refreshing} className="gap-1.5">
+            {!refreshing ? <ArrowClockwise size={14} weight="bold" /> : null}
+            Refresh
+          </Button>
         }
       />
 
-      {/* ── KPI Metric Counters ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-5 border-white/10 bg-[#0A0A18]/80 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="font-sans text-xs font-semibold text-white/50 uppercase tracking-wider">
-              Pending Clearances
-            </span>
-            <IconChecklist size={16} stroke={1.5} className="text-[#FFA040]" />
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-sans font-bold text-white tracking-tight">
-              {pendingPayments.length}
-            </div>
-            <p className="font-sans text-xs text-white/50 mt-0.5">
-              {pendingPayments.length === 1 ? "Receipt awaiting review" : "Receipts awaiting review"}
-            </p>
-          </div>
-        </Card>
-
-        <Card className="p-5 border-white/10 bg-[#0A0A18]/80 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="font-sans text-xs font-semibold text-white/50 uppercase tracking-wider">
-              Verified Vault Volume
-            </span>
-            <IconShieldCheck size={16} stroke={1.5} className="text-emerald-400" />
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-sans font-bold text-emerald-400 tracking-tight">
-              <MoneyDisplay amount={totalVerifiedAmount} />
-            </div>
-            <p className="font-sans text-xs text-white/50 mt-0.5">
-              {verifiedPayments.length} verified deposits in vault
-            </p>
-          </div>
-        </Card>
-
-        <Card className="p-5 border-white/10 bg-[#0A0A18]/80 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="font-sans text-xs font-semibold text-white/50 uppercase tracking-wider">
-              Pending Volume
-            </span>
-            <IconReceipt size={16} stroke={1.5} className="text-[#FFA040]" />
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-sans font-bold text-amber-400 tracking-tight">
-              <MoneyDisplay amount={totalPendingAmount} />
-            </div>
-            <p className="font-sans text-xs text-white/50 mt-0.5">
-              Awaiting officer verification
-            </p>
-          </div>
-        </Card>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          label="To check"
+          description={stats.waitingTotal ? `₱${money(stats.waitingTotal)} sent by clients` : "Nothing waiting"}
+          icon={<HourglassMedium size={18} weight="fill" />}
+          value={waiting.length}
+          badge={stats.overADay ? `${stats.overADay} waiting over a day` : undefined}
+        />
+        <KpiCard
+          label="Confirmed this month"
+          description={`${stats.confirmedMonthCount} ${stats.confirmedMonthCount === 1 ? "payment" : "payments"}`}
+          icon={<CheckCircle size={18} weight="fill" />}
+          value={
+            <>
+              <Peso />
+              {money(stats.confirmedMonthTotal)}
+            </>
+          }
+        />
+        <KpiCard
+          label="Sent back this month"
+          description="Not found or didn't match"
+          icon={<XCircle size={18} weight="fill" />}
+          value={stats.sentBackMonth}
+        />
+        <KpiCard
+          label="Usual wait"
+          description={stats.checkedRecently ? `From sent to checked, last 30 days (${stats.checkedRecently})` : "No payments checked in 30 days"}
+          icon={<Clock size={18} weight="fill" />}
+          value={stats.usualWait === null ? "—" : waited(stats.usualWait)}
+        />
       </div>
 
-      {/* ── Main Queue & History Tabs ── */}
-      <Tabs
-        value={activeTab}
-        onValueChange={(val) => {
-          setActiveTab(val as "PENDING" | "VERIFIED" | "REJECTED");
-          setFilterMethod("ALL");
-          setCurrentPage(1);
-        }}
-        className="w-full"
-      >
-        <TabsList className="bg-[#0A0A18] border border-white/10 p-1 rounded-[2px]">
-          <TabsTrigger value="PENDING" className="gap-2 font-sans font-semibold text-xs cursor-pointer">
-            <IconChecklist size={14} stroke={2} />
-            <span>Pending Review ({pendingPayments.length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="VERIFIED" className="gap-2 font-sans font-semibold text-xs cursor-pointer">
-            <IconShieldCheck size={14} stroke={2} />
-            <span>Cleared &amp; Verified History ({verifiedPayments.length})</span>
-          </TabsTrigger>
-          {rejectedPayments.length > 0 && (
-            <TabsTrigger value="REJECTED" className="gap-2 font-sans font-semibold text-xs cursor-pointer">
-              <IconAlertCircle size={14} stroke={2} />
-              <span>Rejected ({rejectedPayments.length})</span>
-            </TabsTrigger>
-          )}
-        </TabsList>
-
-        <Card className="p-0 border-white/10 overflow-hidden bg-[#0A0A18]/90 mt-4">
-          {/* Method Filter Toolbar */}
-          <div className="p-5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+      <div className="overflow-hidden rounded-[2px] border border-white/[0.07] bg-[#0A0A18]">
+        <div className="flex flex-col gap-3 border-b border-white/[0.07] px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap gap-1" role="tablist" aria-label="Show">
+            {tabs.map(([key, label]) => (
               <button
+                key={key}
                 type="button"
-                onClick={() => { setFilterMethod("ALL"); setCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-[2px] font-sans text-xs font-semibold transition-all cursor-pointer ${
-                  filterMethod === "ALL"
-                    ? "bg-[#CC6600] text-white shadow-sm"
-                    : "text-white/60 hover:text-white hover:bg-white/[0.04]"
+                role="tab"
+                aria-selected={show === key}
+                onClick={() => setShow(key)}
+                className={`rounded-[2px] px-2.5 py-1.5 text-[13px] transition-colors ${
+                  show === key ? "bg-white/[0.08] text-white" : "text-white/55 hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
-                All Channels ({currentTabPayments.length})
+                {label} <span className="font-mono text-[11px] text-white/40">{counts[key]}</span>
               </button>
-              <button
-                type="button"
-                onClick={() => { setFilterMethod("GCASH"); setCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-[2px] font-sans text-xs font-semibold transition-all cursor-pointer ${
-                  filterMethod === "GCASH"
-                    ? "bg-[#CC6600] text-white shadow-sm"
-                    : "text-white/60 hover:text-white hover:bg-white/[0.04]"
-                }`}
-              >
-                GCash ({gcashCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => { setFilterMethod("BANK_TRANSFER"); setCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-[2px] font-sans text-xs font-semibold transition-all cursor-pointer ${
-                  filterMethod === "BANK_TRANSFER"
-                    ? "bg-[#CC6600] text-white shadow-sm"
-                    : "text-white/60 hover:text-white hover:bg-white/[0.04]"
-                }`}
-              >
-                Bank Transfers ({bankCount})
-              </button>
-            </div>
-
-            <span className="font-sans text-xs text-white/50">
-              Showing {filteredPayments.length} of {currentTabPayments.length} records
-            </span>
+            ))}
           </div>
-
-          {isLoading ? (
-            <div className="py-16">
-              <LoadingState
-                variant="table"
-                label="Scanning financial records and payment receipts..."
-                description="Please wait while data synchronizes."
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <select value={method} onChange={(e) => setMethod(e.target.value as Method)} aria-label="Account" className={`${FIELD} cursor-pointer [&>option]:bg-[#0A0A18]`}>
+              <option value="ALL">GCash and bank</option>
+              <option value="GCASH">GCash only</option>
+              <option value="BANK_TRANSFER">Bank only</option>
+            </select>
+            <label className="relative sm:w-[300px]">
+              <MagnifyingGlass size={15} weight="bold" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+              <input
+                ref={search}
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setQ("");
+                    e.currentTarget.blur();
+                  }
+                }}
+                placeholder="Search study, client or reference"
+                aria-label="Search payments"
+                className={`${FIELD} w-full pl-9 pr-9`}
               />
-            </div>
-          ) : filteredPayments.length === 0 ? (
-            <div className="p-12">
-              <EmptyState
-                icon={activeTab === "PENDING" ? IconShieldCheck : IconReceipt}
-                title={
-                  activeTab === "PENDING"
-                    ? "Deposit Verification Queue Cleared"
-                    : activeTab === "VERIFIED"
-                      ? "No Verified Payments Recorded"
-                      : "No Rejected Proofs Recorded"
-                }
-                description={
-                  activeTab === "PENDING"
-                    ? "There are currently no unverified payment receipts awaiting review. All submitted deposits have been reconciled."
-                    : activeTab === "VERIFIED"
-                      ? "No verified payment deposits have been completed yet."
-                      : "No transaction receipts have been rejected."
-                }
-              />
-            </div>
-          ) : (
-            <div className="w-full overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left border-collapse font-sans text-xs">
-                <thead>
-                  <tr className="border-b border-white/10 bg-white/[0.02] text-white/50 font-mono uppercase tracking-wider">
-                    <th className="py-3.5 px-5">Study &amp; Title</th>
-                    <th className="py-3.5 px-5">Lead Researcher</th>
-                    <th className="py-3.5 px-5">Channel &amp; Ref</th>
-                    <th className="py-3.5 px-5">
-                      {activeTab === "VERIFIED" ? "Cleared Amount" : "Claimed Amount"}
-                    </th>
-                    <th className="py-3.5 px-5">
-                      {activeTab === "VERIFIED" ? "Verified Date" : "Submitted"}
-                    </th>
-                    <th className="py-3.5 px-5">Status</th>
-                    <th className="py-3.5 px-5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.06] text-white/80">
-                  {paginatedPayments.map((payment) => {
-                    const projectId = payment.project?.id || payment.projectId;
-                    return (
-                      <tr key={payment.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-4 px-5 whitespace-nowrap">
-                          <div className="font-mono text-xs font-bold text-[#FFA040]">
-                            {payment.project?.intakeId || payment.projectId}
-                          </div>
-                          <div className="font-sans text-xs text-white/80 line-clamp-1 max-w-[200px]">
-                            {payment.project?.researchTitle || "Research Study"}
-                          </div>
-                        </td>
+              <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded-[2px] border border-white/15 px-1.5 font-mono text-[10px] text-white/45">/</kbd>
+            </label>
+          </div>
+        </div>
 
-                        <td className="py-4 px-5 whitespace-nowrap">
-                          <div className="font-sans text-xs text-white font-medium">
-                            {payment.project?.client.fullName || "Client"}
-                          </div>
-                          <div className="font-sans text-[0.688rem] text-white/40">
-                            {payment.project?.client.clientProfile?.institutionSchool ||
-                              payment.project?.client.email}
-                          </div>
-                        </td>
+        {failed ? (
+          <PanelBody className="flex items-center justify-between gap-4">
+            <p className="text-[13px] text-white/60">The payments didn&apos;t load.</p>
+            <Button variant="outline" size="sm" onClick={refresh} loading={refreshing}>
+              Try Again
+            </Button>
+          </PanelBody>
+        ) : rows.length === 0 ? (
+          <div className="flex flex-col items-center px-6 py-14 text-center">
+            <p className="text-sm font-medium text-white">{show === "WAITING" && !filtered ? "Nothing to check" : "No payments match"}</p>
+            <p className="mt-1 text-[13px] text-white/50">
+              {show === "WAITING" && !filtered
+                ? "New payments show up here as soon as a client sends them."
+                : filtered
+                  ? "Try another search or account."
+                  : "None here yet."}
+            </p>
+            {filtered ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => {
+                  setQ("");
+                  setMethod("ALL");
+                }}
+              >
+                Clear Filters
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <ul className="divide-y divide-white/[0.05]">
+            {pageRows.map((p) => {
+              const isWaiting = p.paymentStatus === "PROOF_SUBMITTED";
+              const age = now ? now - +new Date(p.createdAt) : 0;
+              const late = isWaiting && age > 24 * HOUR;
+              const first = isWaiting && p.id === waiting[0]?.id;
+              const total = p.quotation?.totalAmount;
+              return (
+                <li
+                  key={p.id}
+                  className="grid grid-cols-1 gap-3 px-5 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_110px_130px_150px_240px] lg:items-center lg:gap-5"
+                >
+                  <div className="min-w-0">
+                    <Link
+                      href={`/dashboard/finance/projects/${p.project?.id ?? p.projectId}/payment`}
+                      className="block truncate text-[13px] font-medium text-white hover:underline hover:underline-offset-2"
+                      title={p.project?.researchTitle}
+                    >
+                      {p.project?.researchTitle || "Untitled study"}
+                    </Link>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-white/45">
+                      {p.project?.intakeId ? (
+                        <CopyButton
+                          variant="badge"
+                          value={p.project.intakeId}
+                          label={p.project.intakeId}
+                          onCopy={(id) => setToast({ message: "Study ID copied", description: id, variant: "info" })}
+                        />
+                      ) : null}
+                      <span className="truncate">
+                        {p.project?.client.fullName}
+                        {p.project?.client.clientProfile?.institutionSchool ? ` · ${p.project.client.clientProfile.institutionSchool}` : ""}
+                      </span>
+                    </div>
+                  </div>
 
-                        <td className="py-4 px-5 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 font-sans font-medium text-white">
-                            {payment.paymentMethod === "GCASH" ? (
-                              <IconDeviceMobile size={14} stroke={1.5} className="text-[#CC6600]" />
-                            ) : (
-                              <IconBuildingBank size={14} stroke={1.5} className="text-sky-400" />
-                            )}
-                            <span>{payment.paymentMethod === "GCASH" ? "GCash" : "Bank Transfer"}</span>
-                          </div>
-                          <div className="font-mono text-[0.688rem] text-white/60 mt-0.5">
-                            Ref: {payment.referenceNumber || "N/A"}
-                          </div>
-                        </td>
+                  <div className="text-[13px]">
+                    <p className="text-white/85">{paymentKind(p.paymentType)}</p>
+                    <p className="text-[12px] text-white/45">{paymentMethod(p.paymentMethod)}</p>
+                  </div>
 
-                        <td className="py-4 px-5 whitespace-nowrap">
-                          <span className="font-sans text-sm font-bold text-emerald-400">
-                            <MoneyDisplay amount={payment.amountSubmitted} />
-                          </span>
-                          <div className="font-mono text-[0.688rem] text-white/40">
-                            {payment.paymentType === "DOWNPAYMENT" ? "Downpayment" : payment.paymentType === "FULL" ? "Full Payment" : payment.paymentType === "BALANCE" ? "Balance Payment" : payment.paymentType === "INSTALLMENT" ? "Installment" : payment.paymentType}
-                          </div>
-                        </td>
+                  <div className="text-[13px]">
+                    <p className="font-semibold text-white">
+                      <Peso />
+                      {money(p.amountSubmitted)}
+                    </p>
+                    <p className="text-[12px] text-white/45">{total ? `of ₱${money(total)} total` : " "}</p>
+                  </div>
 
-                        <td className="py-4 px-5 whitespace-nowrap">
-                          <div className="font-sans text-white/80">
-                            {new Date(
-                              activeTab === "VERIFIED"
-                                ? payment.verifiedAt || payment.updatedAt
-                                : payment.createdAt
-                            ).toLocaleDateString("en-PH", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                          </div>
-                          <div className="font-mono text-[0.688rem] text-white/40">
-                            {new Date(
-                              activeTab === "VERIFIED"
-                                ? payment.verifiedAt || payment.updatedAt
-                                : payment.createdAt
-                            ).toLocaleTimeString("en-PH", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </div>
-                        </td>
+                  <div className="min-w-0 text-[13px]">
+                    {p.referenceNumber ? (
+                      <CopyButton
+                        variant="badge"
+                        value={p.referenceNumber}
+                        label={p.referenceNumber}
+                        onCopy={() => setToast({ message: "Reference number copied", description: "Paste it in the GCash or bank search.", variant: "info" })}
+                      />
+                    ) : (
+                      <span className="text-white/45">No reference</span>
+                    )}
+                    <p className="mt-1 text-[12px] text-white/45">{p.proofs.length ? "Screenshot sent" : "No screenshot"}</p>
+                  </div>
 
-                        <td className="py-4 px-5 whitespace-nowrap">
-                          <StatusBadge
-                            status={payment.paymentStatus}
-                            label={
-                              payment.paymentType === "DOWNPAYMENT" && (payment.paymentStatus === "FULLY_PAID" || payment.paymentStatus === "VERIFIED")
-                                ? "Downpayment Cleared"
-                                : payment.paymentType === "BALANCE" && (payment.paymentStatus === "FULLY_PAID" || payment.paymentStatus === "VERIFIED")
-                                  ? "Fully Paid"
-                                  : payment.paymentType === "FULL" && (payment.paymentStatus === "FULLY_PAID" || payment.paymentStatus === "VERIFIED")
-                                    ? "Fully Paid"
-                                    : payment.paymentType === "INSTALLMENT" && (payment.paymentStatus === "FULLY_PAID" || payment.paymentStatus === "VERIFIED")
-                                      ? "Installment Cleared"
-                                      : undefined
-                            }
-                          />
-                        </td>
+                  <div className="flex items-center justify-between gap-3 lg:justify-end">
+                    <div className="min-w-0 text-[13px] lg:text-right">
+                      {isWaiting ? (
+                        <>
+                          <p className="text-white">
+                            {late ? <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#CC6600] align-middle" aria-hidden="true" /> : null}
+                            {now ? `Waiting ${waited(age)}` : "Waiting"}
+                          </p>
+                          <p className="text-[12px] text-white/45">Sent {dateTime(p.createdAt)}</p>
+                        </>
+                      ) : isConfirmed(p) ? (
+                        <>
+                          <p className="text-white/85">Confirmed {p.verifiedAt ? date(p.verifiedAt) : ""}</p>
+                          <p className="truncate text-[12px] text-white/45">{p.verifiedByName ? `by ${p.verifiedByName}` : `Sent ${date(p.createdAt)}`}</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-white/55">Sent back {p.verifiedAt ? date(p.verifiedAt) : ""}</p>
+                          <p className="truncate text-[12px] text-white/45" title={p.rejectionReason ?? undefined}>
+                            {p.rejectionReason ? `“${p.rejectionReason.split(".")[0]}”` : ""}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    <Button variant={first ? "primary" : isWaiting ? "outline" : "ghost"} size="sm" onClick={() => setOpen(p)} className="shrink-0">
+                      {isWaiting ? "Check" : "View"}
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
 
-                        <td className="py-4 px-5 whitespace-nowrap text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            {activeTab === "PENDING" ? (
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                onClick={() => setSelectedPayment(payment)}
-                                className="font-sans text-xs whitespace-nowrap"
-                              >
-                                Inspect &amp; Verify →
-                              </Button>
-                            ) : (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setSelectedPayment(payment)}
-                                  className="font-sans text-xs whitespace-nowrap py-1 px-2.5 gap-1.5"
-                                >
-                                  <IconFileText size={14} stroke={1.5} />
-                                  <span>Inspect Receipt</span>
-                                </Button>
+        {!failed && rows.length > pageSize ? (
+          <Pagination
+            currentPage={page}
+            totalItems={rows.length}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            itemLabel="payments"
+          />
+        ) : null}
+      </div>
 
-                                <Link href={`/dashboard/finance/projects/${projectId}/payment`}>
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    className="font-sans text-xs whitespace-nowrap py-1 px-2.5 gap-1"
-                                    title="Open Project Ledger"
-                                  >
-                                    <span>Ledger</span>
-                                    <IconExternalLink size={13} stroke={1.5} />
-                                  </Button>
-                                </Link>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+      <p className="text-[13px] leading-relaxed text-white/50">
+        Confirming a payment updates what the client has paid right away: a deposit starts the study and a final payment unlocks their files.
+        Only confirm what you can see in the JAXIS GCash or bank history.
+      </p>
 
-          {!isLoading && filteredPayments.length > 0 && (
-            <Pagination
-              currentPage={currentPage}
-              totalItems={filteredPayments.length}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
-              itemLabel="records"
-            />
-          )}
-        </Card>
-      </Tabs>
-
-      {/* ── Inspection / Verification Modal ── */}
-      {selectedPayment && (
+      {open ? (
         <PaymentVerificationModal
-          open={!!selectedPayment}
-          onClose={() => setSelectedPayment(null)}
-          payment={selectedPayment}
-          onSuccess={handleVerificationSuccess}
+          open
+          onClose={() => setOpen(null)}
+          payment={open}
+          onSuccess={(outcome) => {
+            const what = `${open.project?.intakeId ?? "Payment"} · ₱${money(open.amountSubmitted)}`;
+            setToast(
+              outcome === "rejected"
+                ? { message: "Sent back to the client", description: `${what}. They can send it again.`, variant: "info" }
+                : { message: "Payment confirmed", description: `${what}. The client is told.`, variant: "success" }
+            );
+            refresh();
+          }}
         />
-      )}
+      ) : null}
 
-      {/* ── Toast Notifications ── */}
-      {toastMessage && (
-        <Toast
-          message={toastMessage.message}
-          description={toastMessage.description}
-          variant={toastMessage.variant}
-          onClose={() => setToastMessage(null)}
-        />
-      )}
+      {toast ? <Toast message={toast.message} description={toast.description} variant={toast.variant} onClose={() => setToast(null)} /> : null}
     </div>
   );
 }
