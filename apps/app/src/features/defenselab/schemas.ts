@@ -30,7 +30,7 @@ export type RescheduleDefenseLabSessionInput = z.infer<typeof RescheduleDefenseL
 
 export const CompleteDefenseLabSessionSchema = z.object({
   sessionId: z.string().min(1, "Session ID is required."),
-  recordingUrl: z.string().url("Please provide a valid URL to the session recording.").optional().or(z.literal("")),
+  recordingUrl: z.string().trim().url("Paste the full link to the recording.").regex(/^https:\/\//i, "Use a link that starts with https://").optional().or(z.literal("")),
   notes: z.string().max(1000).optional(),
 });
 
@@ -38,21 +38,21 @@ export type CompleteDefenseLabSessionInput = z.infer<typeof CompleteDefenseLabSe
 
 export const UploadDefenseLabRecordingSchema = z.object({
   sessionId: z.string().min(1, "Session ID is required."),
-  recordingUrl: z.string().url("Please enter a valid URL (Google Drive, Dropbox, or cloud storage)."),
+  recordingUrl: z.string().trim().url("Paste the full link to the recording (Google Drive, Dropbox…).").regex(/^https:\/\//i, "Use a link that starts with https://"),
 });
 
 export type UploadDefenseLabRecordingInput = z.infer<typeof UploadDefenseLabRecordingSchema>;
 
 export const UpdateDefenseLabMeetingLinkSchema = z.object({
   sessionId: z.string().min(1, "Session ID is required."),
-  meetingUrl: z.string().url("Please enter a valid Google Meet, Zoom, or Teams link."),
+  meetingUrl: z.string().trim().url("Paste the full Google Meet, Zoom or Teams link.").regex(/^https:\/\//i, "Use a link that starts with https://"),
 });
 
 export type UpdateDefenseLabMeetingLinkInput = z.infer<typeof UpdateDefenseLabMeetingLinkSchema>;
 
 export const ApplyDefenseLabPenaltySchema = z.object({
   sessionId: z.string().min(1, "Session ID is required."),
-  penaltyReason: z.string().min(5, "Please describe the reason for penalty determination.").max(500),
+  penaltyReason: z.string().trim().min(5, "Say why (at least 5 characters).").max(500),
   penaltyAmount: z.coerce.number().min(0).max(50000).optional(),
 });
 

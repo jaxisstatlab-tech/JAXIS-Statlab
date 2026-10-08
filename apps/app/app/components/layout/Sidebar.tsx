@@ -306,7 +306,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.Intake,
         },
         {
-          label: "Pricing & Quotations",
+          label: "Quotes",
           href: "/dashboard/admin/quotations",
           icon: Icons.Invoice,
         },
@@ -395,7 +395,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.Intake,
         },
         {
-          label: "Pricing & Quotations",
+          label: "Quotes",
           href: "/dashboard/admin/quotations",
           icon: Icons.Invoice,
         },

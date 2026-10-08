@@ -1,28 +1,26 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
-import {
-  X,
-  CaretLeft,
-  CaretRight,
-  DownloadSimple,
-  FilePdf,
-  FileDoc,
-  FileCsv,
-  FileXls,
-  FileText,
-  Check,
-  Printer,
-} from "@phosphor-icons/react";
-import {
-  getFileMeta,
-  formatFileCategory,
-  resolveStoredFileUrl,
-  triggerFileDownload,
-} from "@/lib/file-utils";
+import { CaretLeft, CaretRight, Check, DownloadSimple, X } from "@phosphor-icons/react";
+import { getFileMeta, resolveStoredFileUrl, triggerFileDownload } from "@/lib/file-utils";
 import type { ProjectFileItem } from "@/features/projects/schemas";
 import { FileContentPreview } from "./FileContentPreview";
+
+// Full-screen viewer for a study's files: the file in the middle, previous / next on the sides (or arrow keys),
+// the other files in a strip at the bottom, Download and Close at the top. Esc closes.
+
+const KIND: Record<string, string> = {
+  RESEARCH_DOCUMENT: "Paper or manuscript",
+  DATASET: "Data",
+  QUESTIONNAIRE: "Questionnaire",
+  PAYMENT_PROOF: "Payment proof",
+  ANALYSIS_OUTPUT: "Analysis output",
+  DELIVERABLE: "Final file",
+  DISPUTE_EVIDENCE: "Claim evidence",
+};
+
+const ext = (name: string) => (name.split(".").pop() ?? "").slice(0, 4).toUpperCase();
 
 export interface DocumentViewerLightboxProps {
   file: ProjectFileItem | null;
@@ -31,220 +29,151 @@ export interface DocumentViewerLightboxProps {
   onClose: () => void;
 }
 
-export function DocumentViewerLightbox({
-  file,
-  files,
-  onNavigateFile,
-  onClose,
-}: DocumentViewerLightboxProps) {
+export function DocumentViewerLightbox({ file, files, onNavigateFile, onClose }: DocumentViewerLightboxProps) {
   const [mounted, setMounted] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadSuccess, setDownloadSuccess] = useState(false);
-  const scrollContainerRef = useRef<HTMLElement | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  const currentFileIndex = useMemo(() => {
-    if (!file || !files || files.length === 0) return -1;
-    return files.findIndex((f) => f.id === file.id);
-  }, [file, files]);
+  const index = useMemo(() => (file && files?.length ? files.findIndex((f) => f.id === file.id) : -1), [file, files]);
+  const many = Boolean(files && files.length > 1 && index !== -1 && onNavigateFile);
 
-  const hasMultipleFiles = Boolean(files && files.length > 1 && currentFileIndex !== -1);
+  const prev = useCallback(() => {
+    if (!many) return;
+    onNavigateFile!(files![index > 0 ? index - 1 : files!.length - 1]!);
+  }, [many, files, index, onNavigateFile]);
+  const next = useCallback(() => {
+    if (!many) return;
+    onNavigateFile!(files![index < files!.length - 1 ? index + 1 : 0]!);
+  }, [many, files, index, onNavigateFile]);
 
-  const handlePrevDocument = useCallback(() => {
-    if (!hasMultipleFiles || !files || !onNavigateFile) return;
-    const prevIndex = currentFileIndex > 0 ? currentFileIndex - 1 : files.length - 1;
-    onNavigateFile(files[prevIndex]!);
-  }, [hasMultipleFiles, files, onNavigateFile, currentFileIndex]);
+  useEffect(() => setMounted(true), []);
+  useEffect(() => setSaved(false), [file?.id]);
 
-  const handleNextDocument = useCallback(() => {
-    if (!hasMultipleFiles || !files || !onNavigateFile) return;
-    const nextIndex = currentFileIndex < files.length - 1 ? currentFileIndex + 1 : 0;
-    onNavigateFile(files[nextIndex]!);
-  }, [hasMultipleFiles, files, onNavigateFile, currentFileIndex]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Esc closes; the arrow keys or [ and ] move between this study's documents.
-  const handleKeyDown = useCallback(
+  // Esc closes; the arrow keys or [ and ] move between the files.
+  const onKey = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
         onClose();
-      } else if (hasMultipleFiles && (e.key === "[" || e.key === "ArrowLeft")) {
+      } else if (many && (e.key === "[" || e.key === "ArrowLeft")) {
         e.preventDefault();
-        handlePrevDocument();
-      } else if (hasMultipleFiles && (e.key === "]" || e.key === "ArrowRight")) {
+        prev();
+      } else if (many && (e.key === "]" || e.key === "ArrowRight")) {
         e.preventDefault();
-        handleNextDocument();
+        next();
       }
     },
-    [onClose, hasMultipleFiles, handlePrevDocument, handleNextDocument]
+    [onClose, many, prev, next]
   );
 
   useEffect(() => {
-    if (file) {
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleKeyDown);
-      return () => {
-        document.body.style.overflow = "";
-        window.removeEventListener("keydown", handleKeyDown);
-      };
-    }
-  }, [file, handleKeyDown]);
+    if (!file) return;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [file, onKey]);
 
   if (!mounted || !file) return null;
 
   const meta = getFileMeta(file.fileName, file.fileType);
-  const category = formatFileCategory(file.fileCategory);
   // Loaded through the signed-in preview route, never the storage bucket's public link.
-  const realFileUrl = resolveStoredFileUrl(file.filePath);
+  const url = resolveStoredFileUrl(file.filePath);
 
-  const handleDownload = async () => {
-    setIsDownloading(true);
+  const download = async () => {
+    setBusy(true);
     try {
       await triggerFileDownload(file.filePath, file.fileName);
-      setIsDownloading(false);
-      setDownloadSuccess(true);
-      setTimeout(() => setDownloadSuccess(false), 2000);
-    } catch {
-      setIsDownloading(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setBusy(false);
     }
   };
 
+  const arrow = "absolute top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-[2px] border border-white/10 bg-[#0A0A18]/90 text-white/70 transition-colors hover:border-white/25 hover:text-white active:scale-95 md:flex";
+
   const content = (
-    <div className="fixed inset-0 z-50 bg-[#000814]/96 backdrop-blur-md flex flex-col select-none text-white animate-in fade-in duration-200">
-      {/* ── Top Precision Document Toolbar ── */}
-      <header
-        className="h-16 flex-shrink-0 bg-[#050513] border-b border-white/10 flex items-center justify-between gap-4 z-40 px-6 sm:px-8"
-        style={{ paddingLeft: "1.5rem", paddingRight: "1.5rem" }}
-      >
-        {/* Left: Document Icon + Title */}
-        <div className="flex items-center gap-3.5 min-w-0 max-w-[45%]">
-          <div className="h-9 w-9 rounded-[2px] bg-[#0F0F1D] border border-white/15 flex items-center justify-center flex-shrink-0">
-            {meta.iconType === "pdf" ? (
-              <FilePdf size={20} weight="fill" className="text-rose-400" />
-            ) : meta.iconType === "doc" ? (
-              <FileDoc size={20} weight="fill" className="text-sky-400" />
-            ) : meta.iconType === "data" ? (
-              <FileCsv size={20} weight="fill" className="text-emerald-400" />
-            ) : meta.iconType === "sheet" ? (
-              <FileXls size={20} weight="fill" className="text-emerald-400" />
-            ) : (
-              <FileText size={20} weight="fill" className="text-white/70" />
-            )}
-          </div>
-          <div className="flex flex-col min-w-0 gap-0.5">
-            <span className="font-sans font-semibold text-sm text-white truncate" title={file.fileName}>
-              {file.fileName}
-            </span>
-            <div className="flex items-center gap-2 text-xs font-mono text-white/50">
-              <span className="text-sky-300 font-semibold">{category.label}</span>
-              {hasMultipleFiles && (
-                <>
-                  <span>·</span>
-                  <span className="text-[#FFA040] font-semibold">
-                    Doc {currentFileIndex + 1} of {files!.length}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Document Stepper Buttons */}
-          {hasMultipleFiles && (
-            <div className="hidden sm:flex items-center gap-1 bg-[#0A0A18] border border-white/15 p-0.5 rounded-[2px] ml-1 shrink-0">
-              <button
-                type="button"
-                onClick={handlePrevDocument}
-                className="p-1 rounded-[2px] text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer active:scale-[0.97]"
-                title="Previous Document (← or [)"
-                aria-label="Previous Document"
-              >
-                <CaretLeft size={15} weight="bold" />
-              </button>
-              <span className="text-[10px] font-mono text-white/40 px-1">
-                {currentFileIndex + 1}/{files!.length}
-              </span>
-              <button
-                type="button"
-                onClick={handleNextDocument}
-                className="p-1 rounded-[2px] text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer active:scale-[0.97]"
-                title="Next Document (→ or ])"
-                aria-label="Next Document"
-              >
-                <CaretRight size={15} weight="bold" />
-              </button>
-            </div>
-          )}
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Preview of ${file.fileName}`}
+      className="fixed inset-0 z-[10000] flex flex-col bg-[#010114] font-sans text-white animate-in fade-in duration-150"
+    >
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-white/[0.08] bg-[#0A0A18] px-4 sm:h-16 sm:px-6">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-white/10 bg-white/[0.04] font-mono text-[10px] text-white/70">
+          {ext(file.fileName) || meta.ext}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-white" title={file.fileName}>
+            {file.fileName}
+          </p>
+          <p className="truncate text-[12px] text-white/45">
+            {KIND[file.fileCategory] ?? meta.friendlyType}
+            {many ? ` · ${index + 1} of ${files!.length}` : ""}
+          </p>
         </div>
-
-        {/* Right: Download & Close Actions */}
-        <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-[2px] text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/15 hover:border-white/30 transition-colors cursor-pointer"
-            title="Print Document"
-          >
-            <Printer size={16} weight="fill" />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleDownload}
-            disabled={isDownloading}
-            className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-[2px] font-sans text-xs font-semibold transition-all duration-150 cursor-pointer min-h-[36px] select-none ${
-              downloadSuccess
-                ? "bg-emerald-600/25 text-emerald-300 border border-emerald-500 shadow-sm"
-                : "bg-[#CC6600] hover:bg-[#E67300] active:bg-[#B35900] text-white border border-[#E67300]/40 shadow-sm"
-            }`}
-          >
-            {downloadSuccess ? (
-              <>
-                <Check size={15} weight="bold" className="text-emerald-400" />
-                <span>Saved</span>
-              </>
-            ) : isDownloading ? (
-              <>
-                <svg className="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                <span>Downloading...</span>
-              </>
-            ) : (
-              <>
-                <DownloadSimple size={15} weight="bold" />
-                <span>Download</span>
-              </>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-9 w-9 inline-flex items-center justify-center rounded-[2px] text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/15 hover:border-white/30 transition-colors cursor-pointer select-none"
-            title="Close Preview (Esc)"
-          >
-            <X size={18} weight="bold" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={download}
+          disabled={busy}
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[2px] bg-[#CC6600] px-3 text-[13px] font-medium text-white transition-colors hover:bg-[#E67300] active:scale-[0.97] disabled:opacity-70 sm:px-4"
+        >
+          {saved ? <Check size={14} weight="bold" /> : <DownloadSimple size={14} weight="bold" />}
+          <span className="hidden sm:inline">{saved ? "Downloading" : busy ? "Starting…" : "Download"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close preview"
+          title="Close (Esc)"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border border-white/10 text-white/70 transition-colors hover:border-white/25 hover:text-white"
+        >
+          <X size={17} weight="bold" />
+        </button>
       </header>
 
-      {/* ── Main Viewport Stage ── */}
-      <main
-        ref={scrollContainerRef}
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-auto relative bg-[#000814] px-4 sm:px-8 py-8 sm:py-12 flex flex-col items-center"
-      >
-        <div className="my-auto flex w-full flex-col items-center">
-          <FileContentPreview key={file.id} fileName={file.fileName} url={realFileUrl} onDownload={handleDownload} />
+      <main className="relative flex min-h-0 flex-1">
+        {many ? (
+          <button type="button" onClick={prev} aria-label="Previous file" title="Previous (←)" className={`${arrow} left-4`}>
+            <CaretLeft size={18} weight="bold" />
+          </button>
+        ) : null}
+        <div className="flex min-h-0 flex-1 overflow-auto px-4 py-6 sm:px-16 sm:py-8">
+          <div className="m-auto flex w-full flex-col items-center">
+            <FileContentPreview key={file.id} fileName={file.fileName} url={url} onDownload={download} />
+          </div>
         </div>
+        {many ? (
+          <button type="button" onClick={next} aria-label="Next file" title="Next (→)" className={`${arrow} right-4`}>
+            <CaretRight size={18} weight="bold" />
+          </button>
+        ) : null}
       </main>
+
+      {many ? (
+        <footer className="shrink-0 border-t border-white/[0.08] bg-[#0A0A18]">
+          <div className="flex items-center gap-2 overflow-x-auto px-4 py-2.5 sm:px-6">
+            {files!.map((f, i) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => onNavigateFile!(f)}
+                aria-current={i === index ? "true" : undefined}
+                className={`flex max-w-[220px] shrink-0 items-center gap-2 rounded-[2px] border px-2.5 py-1.5 text-left text-[12px] transition-colors ${
+                  i === index ? "border-[#CC6600]/60 bg-white/[0.06] text-white" : "border-white/10 text-white/60 hover:border-white/25 hover:text-white"
+                }`}
+              >
+                <span className="font-mono text-[10px] text-white/45">{ext(f.fileName)}</span>
+                <span className="truncate">{f.fileName}</span>
+              </button>
+            ))}
+            <span className="ml-auto hidden shrink-0 pl-4 text-[11px] text-white/35 lg:inline">← → to move · Esc to close</span>
+          </div>
+        </footer>
+      ) : null}
     </div>
   );
 

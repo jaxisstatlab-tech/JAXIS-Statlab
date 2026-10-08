@@ -66,22 +66,22 @@ function Notice({
   onDownload: () => void;
 }) {
   return (
-    <div className="flex w-full max-w-lg flex-col items-center gap-5 rounded-[2px] border border-white/15 bg-[#0A0A18] px-8 py-10 text-center shadow-2xl">
-      <div className="flex h-14 w-14 items-center justify-center rounded-[2px] border border-white/15 bg-white/[0.05]">
+    <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-[2px] border border-white/[0.08] bg-[#0A0A18] px-8 py-10 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-[2px] border border-white/10 bg-white/[0.04]">
         {tone === "error" ? (
-          <WarningCircle size={28} weight="fill" className="text-[#FFA040]" />
+          <WarningCircle size={24} weight="fill" className="text-white/70" />
         ) : (
-          <FileText size={28} weight="fill" className="text-white/70" />
+          <FileText size={24} weight="fill" className="text-white/60" />
         )}
       </div>
-      <div className="flex flex-col gap-2">
-        <h3 className="font-sans text-base font-semibold text-white">{title}</h3>
-        <p className="font-sans text-sm leading-relaxed text-white/60">{body}</p>
+      <div className="flex flex-col gap-1.5">
+        <h3 className="font-sans text-[15px] font-semibold text-white">{title}</h3>
+        <p className="font-sans text-[13px] leading-relaxed text-white/55">{body}</p>
       </div>
       <button
         type="button"
         onClick={onDownload}
-        className="inline-flex items-center gap-2 rounded-[2px] bg-[#CC6600] px-5 py-2.5 font-sans text-sm font-medium text-white transition-colors hover:bg-[#E67300]"
+        className="inline-flex items-center gap-2 rounded-[2px] border border-white/15 px-4 py-2 font-sans text-[13px] font-medium text-white transition-colors hover:border-white/30 hover:bg-white/[0.04]"
       >
         <DownloadSimple size={15} weight="bold" />
         Download
@@ -230,7 +230,7 @@ function DataTable({ rows }: { rows: Cell[][] }) {
 }
 
 function SheetFrame({ children }: { children: React.ReactNode }) {
-  return <div className="w-full max-w-6xl rounded-[2px] border border-white/15 bg-[#0A0A18] p-4 shadow-2xl sm:p-5">{children}</div>;
+  return <div className="w-full max-w-6xl rounded-[2px] border border-white/[0.08] bg-[#0A0A18] p-4 sm:p-5">{children}</div>;
 }
 
 function XlsxView({ blob, onDownload }: { blob: Blob; onDownload: () => void }) {
@@ -276,7 +276,7 @@ function XlsxView({ blob, onDownload }: { blob: Blob; onDownload: () => void }) 
               type="button"
               onClick={() => setActive(i)}
               className={`rounded-[2px] border px-3 py-1.5 font-sans text-xs transition-colors ${
-                i === active ? "border-[#CC6600] bg-[#CC6600]/15 text-white" : "border-white/15 text-white/60 hover:text-white"
+                i === active ? "border-white/25 bg-white/[0.08] text-white" : "border-white/10 text-white/60 hover:text-white"
               }`}
             >
               {s.sheet}
@@ -390,7 +390,17 @@ export function FileContentPreview({
 }) {
   const kind = previewKindOf(fileName);
 
-  if (!url || kind === "none") {
+  if (!url) {
+    return (
+      <Notice
+        title="There's nothing to preview"
+        body="This file has no stored copy to show here (for example a sample file in offline mode). Try downloading it."
+        onDownload={onDownload}
+      />
+    );
+  }
+
+  if (kind === "none") {
     const ext = fileName.toLowerCase().split(".").pop() ?? "";
     return (
       <Notice
@@ -403,7 +413,7 @@ export function FileContentPreview({
 
   if (kind === "pdf") {
     return (
-      <div className="h-[85vh] w-full max-w-5xl overflow-hidden rounded-[2px] border border-white/20 bg-[#0A0A18] shadow-2xl">
+      <div className="h-[85vh] w-full max-w-5xl overflow-hidden rounded-[2px] border border-white/[0.08] bg-[#0A0A18]">
         <iframe src={url} className="h-full w-full border-none bg-white" title={fileName} />
       </div>
     );
@@ -411,7 +421,7 @@ export function FileContentPreview({
 
   if (kind === "image") {
     return (
-      <div className="flex items-center justify-center rounded-[2px] border border-white/15 bg-[#0A0A18] p-4 shadow-2xl">
+      <div className="flex items-center justify-center rounded-[2px] border border-white/[0.08] bg-[#0A0A18] p-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={url} alt={fileName} className="max-h-[85vh] max-w-full rounded-[2px] object-contain" />
       </div>

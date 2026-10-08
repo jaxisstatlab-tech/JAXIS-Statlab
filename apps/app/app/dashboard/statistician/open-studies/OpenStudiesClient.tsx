@@ -211,7 +211,12 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
                       {s.researchTitle}
                     </button>
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-white/50">
-                      <CopyButton variant="badge" value={s.intakeId} label={s.intakeId} />
+                      <CopyButton
+                        variant="badge"
+                        value={s.intakeId}
+                        label={s.intakeId}
+                        onCopy={(id) => setToast({ message: "Study ID copied", description: `${id} is on your clipboard.`, variant: "success" })}
+                      />
                       {where ? <span className="truncate">{where}</span> : null}
                     </div>
                     {s.analysisGoals.length ? (
@@ -263,7 +268,8 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
         )}
       </div>
 
-      {details ? (
+      {/* Hidden while a file is previewed (the preview would open behind it); it comes back when the preview closes. */}
+      {details && !preview ? (
         <Modal
           open
           onClose={() => setDetails(null)}

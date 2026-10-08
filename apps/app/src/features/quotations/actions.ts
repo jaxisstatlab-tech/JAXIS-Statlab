@@ -168,17 +168,13 @@ export async function saveCommercialCatalog(
   if (!session?.user?.id) {
     return {
       success: false,
-      error: { code: "UNAUTHORIZED", message: "You must be logged in as Admin or CEO." },
+      error: { code: "UNAUTHORIZED", message: "You must be logged in." },
     };
   }
 
-  try {
-    assertCanManageQuotation(session.user.role || "CLIENT");
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: { code: "FORBIDDEN", message: (err as Error).message },
-    };
+  // Packages, add-ons and prices are the CEO's to set (Money & Pay Rates); admins only use them in quotes.
+  if (session.user.role !== "CEO") {
+    return { success: false, error: { code: "FORBIDDEN", message: "Only the CEO can change packages and prices." } };
   }
 
   try {
@@ -295,13 +291,9 @@ export async function resetCommercialCatalog(): Promise<ActionResponse<Commercia
     };
   }
 
-  try {
-    assertCanManageQuotation(session.user.role || "CLIENT");
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: { code: "FORBIDDEN", message: (err as Error).message },
-    };
+  // Packages, add-ons and prices are the CEO's to set (Money & Pay Rates); admins only use them in quotes.
+  if (session.user.role !== "CEO") {
+    return { success: false, error: { code: "FORBIDDEN", message: "Only the CEO can change packages and prices." } };
   }
 
   try {
@@ -473,6 +465,22 @@ export async function createQuotation(
 
   const { projectId, packageName, basePrice, addOns, customDownpayment, notes, expiresInDays } =
     parsed.data;
+
+  // Quotes are made while the study is being priced (a draft on a signed or delivered study used to be accepted).
+  try {
+    const stage = await withDbTimeout(db.project.findUnique({ where: { id: projectId }, select: { masterStatus: true } }));
+    if (stage && !["NEW_REQUEST", "AWAITING_INFORMATION", "UNDER_EVALUATION"].includes(stage.masterStatus)) {
+      return {
+        success: false,
+        error: {
+          code: "NOT_PRICING",
+          message: "This study isn't being priced. To change a sent quote, move the study back to pricing first (Change status).",
+        },
+      };
+    }
+  } catch {
+    // Offline mode: the sample store below has no stages to check.
+  }
 
   // Fetch commercial catalog with DB overlays
   const catalog = await getCommercialCatalog();
@@ -1707,6 +1715,8 @@ export async function getQuotationsRoster(): Promise<QuotationDetailItem[]> {
       })),
     }));
   } catch (err: unknown) {
+    // Offline mode reads the sample file; on the live site an error throws, so the page says it didn't load.
+    if (process.env.NODE_ENV === "production" || process.env.JAXIS_OFFLINE !== "1") throw err;
     console.warn("[Quotation] getQuotationsRoster db error, using dev store fallback:", err);
     return readPersistedDevQuotations();
   }

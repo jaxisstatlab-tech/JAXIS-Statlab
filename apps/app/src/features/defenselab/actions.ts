@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { auth, requireRole } from "@/lib/auth";
 import { db, getDb, withDbTimeout } from "@/lib/db";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
+import { devAdminSessions, devComplete, devDefenseLabEnabled, devFee, devRecording, devSetLink } from "./dev-sessions";
 import {
   BookDefenseLabSessionSchema,
   RescheduleDefenseLabSessionSchema,
@@ -335,6 +336,8 @@ export async function getAdminDefenseLabData(): Promise<
       data: { sessions, stats },
     };
   } catch (err: any) {
+    // Offline mode: the sample sessions in .dev-defenselab.json.
+    if (devDefenseLabEnabled()) return { success: true, data: devAdminSessions() };
     console.error("[GetAdminDefenseLabData] Error:", err);
     return {
       success: false,
@@ -760,323 +763,222 @@ export async function rescheduleDefenseLabSession(
   }
 }
 
+const OPEN_STATUSES = ["SCHEDULED", "RESCHEDULED"] as const;
+type Fail = { success: false; error: { code: string; message: string } };
+const fail = (code: string, message: string): Fail => ({ success: false, error: { code, message } });
+
+async function findSession(sessionId: string) {
+  return withDbTimeout(
+    db.defenseLabSession.findUnique({
+      where: { id: sessionId },
+      select: { id: true, projectId: true, clientId: true, expertId: true, status: true, scheduledAt: true, penaltyApplied: true },
+    })
+  );
+}
+
 /**
- * 5. Update Meeting URL (Google Meet / Zoom)
+ * 5. Set or change the meeting link (admins and the CEO), only for a session that hasn't happened yet. The client
+ * and the expert are told.
  */
 export async function updateDefenseLabMeetingLink(
   input: unknown
 ): Promise<DefenseLabActionResult<{ meetingUrl: string }>> {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: { code: "UNAUTHORIZED", message: "Please log in." } };
-  }
-
-  // Meeting links are set from the admin DefenseLab desk. Any signed-in user could change any session's link
-  // before (and the app then sent that link to the client and the expert).
+  if (!session?.user?.id) return fail("UNAUTHORIZED", "Please log in.");
+  // Any signed-in user could change any session's link before (and the app then sent it to the client and expert).
   if (session.user.role !== "ADMIN" && session.user.role !== "CEO") {
-    return { success: false, error: { code: "FORBIDDEN", message: "Only administrators can change meeting links." } };
+    return fail("FORBIDDEN", "Only administrators can change meeting links.");
   }
-
   const parsed = UpdateDefenseLabMeetingLinkSchema.safeParse(input);
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: { code: "VALIDATION_ERROR", message: "Please provide a valid video meeting URL." },
-    };
-  }
-
+  if (!parsed.success) return fail("VALIDATION_ERROR", parsed.error.issues[0]?.message || "Paste the full meeting link.");
   const { sessionId, meetingUrl } = parsed.data;
 
   try {
-    const client = getDb();
-    const defenseDelegate = (client as any).defenseLabSession || (db as any).defenseLabSession;
-
-    let sessionData: { projectId?: string; clientId?: string; expertId?: string } | null = null;
-    if (defenseDelegate) {
-      sessionData = await withDbTimeout(
-        defenseDelegate.update({
-          where: { id: sessionId },
-          data: { meetingUrl: meetingUrl.trim() },
-        })
-      );
-    } else {
-      await withDbTimeout(
-        client.$executeRawUnsafe(
-          `UPDATE "defense_lab_sessions" SET "meetingUrl" = $1, "updatedAt" = NOW() WHERE "id" = $2`,
-          meetingUrl.trim(),
-          sessionId
-        )
-      );
-      const rows: any[] = await client.$queryRawUnsafe(
-        `SELECT * FROM "defense_lab_sessions" WHERE "id" = $1 LIMIT 1`,
-        sessionId
-      );
-      sessionData = rows?.[0];
-    }
+    const row = await findSession(sessionId);
+    if (!row) return fail("NOT_FOUND", "Session not found.");
+    const moved = await db.defenseLabSession.updateMany({
+      where: { id: sessionId, status: { in: [...OPEN_STATUSES] } },
+      data: { meetingUrl },
+    });
+    if (moved.count === 0) return fail("CLOSED", "This session already happened or was cancelled, so its link can't change.");
 
     revalidatePath("/dashboard/client/defenselab");
     revalidatePath("/dashboard/admin/defenselab");
-
     try {
-      if (sessionData) {
-        const recipients = [sessionData.clientId, sessionData.expertId].filter((id): id is string => Boolean(id));
-        if (recipients.length > 0) {
-          dispatchRealtimeNotification({
-            eventType: "DEFENSELAB_UPDATE",
-            projectId: sessionData.projectId,
-            title: "DefenseLab Meeting Link Ready",
-            message: "Your DefenseLab video meeting link has been updated. Check your rehearsal desk.",
-            targetUserIds: recipients,
-            excludeUserId: session.user.id,
-          });
-        }
-      }
+      await dispatchRealtimeNotification({
+        eventType: "DEFENSELAB_UPDATE",
+        projectId: row.projectId,
+        title: "DefenseLab meeting link ready",
+        message: `The video link for your practice defense on ${row.scheduledAt.toLocaleString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} is ready.`,
+        targetUserIds: [row.clientId, row.expertId],
+        excludeUserId: session.user.id,
+      });
     } catch (notifyErr) {
-      console.warn("[updateDefenseLabMeetingLink] Realtime notification warning:", notifyErr);
+      console.warn("[updateDefenseLabMeetingLink] Notification warning:", notifyErr);
     }
-
-    return {
-      success: true,
-      data: { meetingUrl: meetingUrl.trim() },
-    };
-  } catch (err: any) {
-    return {
-      success: false,
-      error: { code: "UPDATE_FAILED", message: userFacingMessage(err, "Failed to update meeting link.") },
-    };
+    return { success: true, data: { meetingUrl } };
+  } catch (err: unknown) {
+    if (devDefenseLabEnabled()) {
+      const r = devSetLink(sessionId, meetingUrl);
+      revalidatePath("/dashboard/admin/defenselab");
+      return r.success ? { success: true, data: { meetingUrl } } : r;
+    }
+    return fail("UPDATE_FAILED", userFacingMessage(err, "The link wasn't saved. Please try again."));
   }
 }
 
 /**
- * 6. Mark Session Completed & Optionally Attach Recording / Notes
+ * 6. Mark a session done (admins, the CEO, or its own expert), with an optional recording link and notes. Only a
+ * scheduled session whose start time has passed (it used to work on cancelled or already-finished sessions, and
+ * before the session had happened).
  */
 export async function completeDefenseLabSession(
   input: unknown
 ): Promise<DefenseLabActionResult<{ id: string; status: string }>> {
   const session = await requireRole("ADMIN", "CEO", "STATISTICIAN");
-
   const parsed = CompleteDefenseLabSessionSchema.safeParse(input);
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: { code: "VALIDATION_ERROR", message: "Invalid session completion details." },
-    };
-  }
-
+  if (!parsed.success) return fail("VALIDATION_ERROR", parsed.error.issues[0]?.message || "Check the details.");
   const { sessionId, recordingUrl, notes } = parsed.data;
 
   try {
-    const client = getDb();
-    const defenseDelegate = (client as any).defenseLabSession || (db as any).defenseLabSession;
-
-    if (session.user.role === "STATISTICIAN") {
-      let existingSession: any = null;
-      if (defenseDelegate) {
-        existingSession = await withDbTimeout(
-          defenseDelegate.findUnique({
-            where: { id: sessionId },
-            select: { expertId: true },
-          })
-        );
-      } else {
-        const rows: any[] = await client.$queryRawUnsafe(
-          `SELECT "expertId" FROM "defense_lab_sessions" WHERE "id" = $1 LIMIT 1`,
-          sessionId
-        );
-        existingSession = rows?.[0];
-      }
-      if (!existingSession || existingSession.expertId !== session.user.id) {
-        return {
-          success: false,
-          error: { code: "FORBIDDEN", message: "You are not the assigned expert for this session." },
-        };
-      }
+    const row = await findSession(sessionId);
+    if (!row) return fail("NOT_FOUND", "Session not found.");
+    if (session.user.role === "STATISTICIAN" && row.expertId !== session.user.id) {
+      return fail("FORBIDDEN", "You are not the expert for this session.");
     }
-
-    let sessionData: { projectId?: string; clientId?: string } | null = null;
-    if (defenseDelegate) {
-      sessionData = await withDbTimeout(
-        defenseDelegate.update({
-          where: { id: sessionId },
-          data: {
-            status: "COMPLETED",
-            completedAt: new Date(),
-            completedBy: session.user.id,
-            recordingUrl: recordingUrl?.trim() || undefined,
-            notes: notes?.trim() || undefined,
-          },
-        })
-      );
-    } else {
-      await withDbTimeout(
-        client.$executeRawUnsafe(
-          `UPDATE "defense_lab_sessions"
-           SET "status" = 'COMPLETED'::"DefenseLabStatus", "completedAt" = NOW(), "completedBy" = $1,
-               "recordingUrl" = COALESCE($2, "recordingUrl"), "notes" = COALESCE($3, "notes"), "updatedAt" = NOW()
-           WHERE "id" = $4`,
-          session.user.id,
-          recordingUrl?.trim() || null,
-          notes?.trim() || null,
-          sessionId
-        )
-      );
-      const rows: any[] = await client.$queryRawUnsafe(
-        `SELECT * FROM "defense_lab_sessions" WHERE "id" = $1 LIMIT 1`,
-        sessionId
-      );
-      sessionData = rows?.[0];
-    }
+    if (row.scheduledAt.getTime() > Date.now()) return fail("TOO_EARLY", "This session hasn't started yet.");
+    const moved = await db.defenseLabSession.updateMany({
+      where: { id: sessionId, status: { in: [...OPEN_STATUSES] } },
+      data: {
+        status: "COMPLETED",
+        completedAt: new Date(),
+        completedBy: session.user.id,
+        ...(recordingUrl ? { recordingUrl } : {}),
+        ...(notes?.trim() ? { notes: notes.trim() } : {}),
+      },
+    });
+    if (moved.count === 0) return fail("CLOSED", "This session is already done, missed or cancelled.");
 
     revalidatePath("/dashboard/client/defenselab");
     revalidatePath("/dashboard/admin/defenselab");
-
     try {
-      if (sessionData?.clientId) {
-        dispatchRealtimeNotification({
-          eventType: "DEFENSELAB_UPDATE",
-          projectId: sessionData.projectId,
-          title: "DefenseLab Rehearsal Completed",
-          message: "Your DefenseLab mock defense rehearsal has been completed.",
-          targetUserIds: [sessionData.clientId],
-          excludeUserId: session.user.id,
-        });
-      }
+      await dispatchRealtimeNotification({
+        eventType: "DEFENSELAB_UPDATE",
+        projectId: row.projectId,
+        title: "DefenseLab practice done",
+        message: recordingUrl ? "Your practice defense is done. The recording is on your DefenseLab page." : "Your practice defense is done.",
+        targetUserIds: [row.clientId],
+        excludeUserId: session.user.id,
+      });
     } catch (notifyErr) {
-      console.warn("[completeDefenseLabSession] Realtime notification warning:", notifyErr);
+      console.warn("[completeDefenseLabSession] Notification warning:", notifyErr);
     }
-
-    return {
-      success: true,
-      data: { id: sessionId, status: "COMPLETED" },
-    };
-  } catch (err: any) {
-    return {
-      success: false,
-      error: { code: "COMPLETE_FAILED", message: userFacingMessage(err, "Failed to complete DefenseLab session.") },
-    };
+    return { success: true, data: { id: sessionId, status: "COMPLETED" } };
+  } catch (err: unknown) {
+    if (devDefenseLabEnabled()) {
+      const r = devComplete(sessionId, recordingUrl || undefined, notes);
+      revalidatePath("/dashboard/admin/defenselab");
+      return r.success ? { success: true, data: { id: sessionId, status: "COMPLETED" } } : r;
+    }
+    return fail("COMPLETE_FAILED", userFacingMessage(err, "The session wasn't marked done. Please try again."));
   }
 }
 
 /**
- * 7. Upload / Update Recording URL (Admin / Specialist)
+ * 7. Add or change the recording link of a finished session (admins, the CEO, or its own expert). It used to mark
+ * any session done (even missed ones) and let any analyst change any session's recording.
  */
 export async function uploadDefenseLabRecording(
   input: unknown
 ): Promise<DefenseLabActionResult<{ recordingUrl: string }>> {
   const session = await requireRole("ADMIN", "CEO", "STATISTICIAN");
-
   const parsed = UploadDefenseLabRecordingSchema.safeParse(input);
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: { code: "VALIDATION_ERROR", message: "Please provide a valid cloud storage URL." },
-    };
-  }
-
+  if (!parsed.success) return fail("VALIDATION_ERROR", parsed.error.issues[0]?.message || "Paste the full recording link.");
   const { sessionId, recordingUrl } = parsed.data;
 
   try {
-    const client = getDb();
-    const defenseDelegate = (client as any).defenseLabSession || (db as any).defenseLabSession;
-
-    if (defenseDelegate) {
-      await withDbTimeout(
-        defenseDelegate.update({
-          where: { id: sessionId },
-          data: {
-            recordingUrl: recordingUrl.trim(),
-            status: "COMPLETED",
-            completedAt: new Date(),
-            completedBy: session.user.id,
-          },
-        })
-      );
-    } else {
-      await withDbTimeout(
-        client.$executeRawUnsafe(
-          `UPDATE "defense_lab_sessions"
-           SET "recordingUrl" = $1, "status" = 'COMPLETED'::"DefenseLabStatus", "completedAt" = NOW(), "completedBy" = $2, "updatedAt" = NOW()
-           WHERE "id" = $3`,
-          recordingUrl.trim(),
-          session.user.id,
-          sessionId
-        )
-      );
+    const row = await findSession(sessionId);
+    if (!row) return fail("NOT_FOUND", "Session not found.");
+    if (session.user.role === "STATISTICIAN" && row.expertId !== session.user.id) {
+      return fail("FORBIDDEN", "You are not the expert for this session.");
     }
+    const moved = await db.defenseLabSession.updateMany({ where: { id: sessionId, status: "COMPLETED" }, data: { recordingUrl } });
+    if (moved.count === 0) return fail("NOT_DONE", "Mark the session done first.");
 
     revalidatePath("/dashboard/client/defenselab");
     revalidatePath("/dashboard/admin/defenselab");
-
-    return {
-      success: true,
-      data: { recordingUrl: recordingUrl.trim() },
-    };
-  } catch (err: any) {
-    return {
-      success: false,
-      error: { code: "UPLOAD_FAILED", message: userFacingMessage(err, "Failed to attach recording.") },
-    };
+    try {
+      await dispatchRealtimeNotification({
+        eventType: "DEFENSELAB_UPDATE",
+        projectId: row.projectId,
+        title: "Your DefenseLab recording is ready",
+        message: "Watch your practice defense again from your DefenseLab page.",
+        targetUserIds: [row.clientId],
+        excludeUserId: session.user.id,
+      });
+    } catch (notifyErr) {
+      console.warn("[uploadDefenseLabRecording] Notification warning:", notifyErr);
+    }
+    return { success: true, data: { recordingUrl } };
+  } catch (err: unknown) {
+    if (devDefenseLabEnabled()) {
+      const r = devRecording(sessionId, recordingUrl);
+      revalidatePath("/dashboard/admin/defenselab");
+      return r.success ? { success: true, data: { recordingUrl } } : r;
+    }
+    return fail("UPLOAD_FAILED", userFacingMessage(err, "The recording link wasn't saved. Please try again."));
   }
 }
 
 /**
- * 8. Apply Administrative Penalty Determination
+ * 8. Charge a late-change or no-show fee (admins and the CEO), once per session, never on a finished or cancelled
+ * one. Recorded in the activity log.
  */
 export async function applyDefenseLabPenalty(
   input: unknown
 ): Promise<DefenseLabActionResult<{ penaltyApplied: boolean }>> {
   const session = await requireRole("ADMIN", "CEO");
-
   const parsed = ApplyDefenseLabPenaltySchema.safeParse(input);
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: { code: "VALIDATION_ERROR", message: "Invalid penalty determination input." },
-    };
-  }
-
+  if (!parsed.success) return fail("VALIDATION_ERROR", parsed.error.issues[0]?.message || "Check the details.");
   const { sessionId, penaltyReason, penaltyAmount } = parsed.data;
 
   try {
-    const client = getDb();
-    const defenseDelegate = (client as any).defenseLabSession || (db as any).defenseLabSession;
+    const row = await findSession(sessionId);
+    if (!row) return fail("NOT_FOUND", "Session not found.");
+    const moved = await db.defenseLabSession.updateMany({
+      where: { id: sessionId, penaltyApplied: false, status: { in: ["SCHEDULED", "RESCHEDULED", "NO_SHOW_CLIENT"] } },
+      data: {
+        penaltyApplied: true,
+        penaltyReason,
+        penaltyDeterminedBy: session.user.id,
+        penaltyAmount: penaltyAmount ?? null,
+        status: "PENALTY_APPLIED",
+      },
+    });
+    if (moved.count === 0) return fail("CLOSED", "A fee can't be added: the session is done, cancelled, or already has one.");
+    await db.auditLog
+      .create({
+        data: {
+          projectId: row.projectId,
+          actorId: session.user.id,
+          actorRole: session.user.role as "ADMIN" | "CEO",
+          action: "DEFENSELAB_FEE",
+          oldValue: row.status,
+          newValue: "PENALTY_APPLIED",
+          reason: `${penaltyReason}${penaltyAmount ? ` (₱${penaltyAmount})` : ""}`,
+        },
+      })
+      .catch(() => null);
 
-    if (defenseDelegate) {
-      await withDbTimeout(
-        defenseDelegate.update({
-          where: { id: sessionId },
-          data: {
-            penaltyApplied: true,
-            penaltyReason: penaltyReason.trim(),
-            penaltyDeterminedBy: session.user.id,
-            penaltyAmount: penaltyAmount !== undefined ? penaltyAmount : undefined,
-            status: "PENALTY_APPLIED",
-          },
-        })
-      );
-    } else {
-      await withDbTimeout(
-        client.$executeRawUnsafe(
-          `UPDATE "defense_lab_sessions"
-           SET "penaltyApplied" = TRUE, "penaltyReason" = $1, "penaltyDeterminedBy" = $2, "penaltyAmount" = $3, "status" = 'PENALTY_APPLIED'::"DefenseLabStatus", "updatedAt" = NOW()
-           WHERE "id" = $4`,
-          penaltyReason.trim(),
-          session.user.id,
-          penaltyAmount !== undefined ? penaltyAmount : null,
-          sessionId
-        )
-      );
-    }
-
+    revalidatePath("/dashboard/client/defenselab");
     revalidatePath("/dashboard/admin/defenselab");
-    return {
-      success: true,
-      data: { penaltyApplied: true },
-    };
-  } catch (err: any) {
-    return {
-      success: false,
-      error: { code: "PENALTY_FAILED", message: userFacingMessage(err, "Failed to apply penalty.") },
-    };
+    return { success: true, data: { penaltyApplied: true } };
+  } catch (err: unknown) {
+    if (devDefenseLabEnabled()) {
+      const r = devFee(sessionId, penaltyReason, penaltyAmount, session.user.id);
+      revalidatePath("/dashboard/admin/defenselab");
+      return r.success ? { success: true, data: { penaltyApplied: true } } : r;
+    }
+    return fail("PENALTY_FAILED", userFacingMessage(err, "The fee wasn't saved. Please try again."));
   }
 }

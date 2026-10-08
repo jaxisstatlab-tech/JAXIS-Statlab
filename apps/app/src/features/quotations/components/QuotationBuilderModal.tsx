@@ -1,19 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Modal, ModalFooter, Button, Toast, Peso } from "@repo/ui";
-import {
-  IconSend,
-  IconAlertTriangle,
-  IconSchool,
-  IconBolt,
-  IconFlame,
-  IconSparkles,
-  IconCheck,
-  IconDeviceFloppy,
-  IconReceipt,
-  IconX,
-} from "@tabler/icons-react";
+import { Modal, Button, Toast, Peso } from "@repo/ui";
+import { Check, PaperPlaneTilt, Warning } from "@phosphor-icons/react";
 import {
   PACKAGES_CATALOG,
   ADDONS_CATALOG,
@@ -24,14 +13,14 @@ import {
   type AddOnDefinition,
   type CommercialCatalogData,
 } from "@/lib/pricing-rules";
-import {
-  createQuotation,
-  updateQuotation,
-  issueQuotation,
-} from "@/features/quotations/actions";
+import { createQuotation, updateQuotation, issueQuotation } from "@/features/quotations/actions";
 import type { QuotationDetailItem } from "@/features/quotations/schemas";
 import { AnalysisGoalsList } from "@/features/projects/components/AnalysisGoalsList";
 import type { PackageName, AddOnName } from "@prisma/client";
+
+// The quote window: pick the package and its price, add-ons, a note and how long the quote is valid, with the
+// total, deposit and balance worked out on the right; save a draft or send it to the client. Quotes already sent,
+// accepted or replaced open read-only (a sent quote changes by moving the study back to pricing).
 
 interface QuotationBuilderModalProps {
   isOpen: boolean;
@@ -47,6 +36,42 @@ interface QuotationBuilderModalProps {
   onSuccess?: () => void;
 }
 
+const money = (n?: number) => (n ?? 0).toLocaleString("en-PH", { maximumFractionDigits: 2 });
+const plainName = (name: string) => name.replace(/^[A-Z]{2}-\d+\s*/, "");
+const FIELD =
+  "w-full rounded-[2px] border border-white/10 bg-[#050513] px-3 font-sans text-[13px] text-white outline-none placeholder:text-white/30 focus:border-[#CC6600]/60";
+const STATUS_WORD: Record<string, string> = {
+  QUOTE_SENT: "Sent to the client",
+  CLIENT_APPROVED: "Accepted by the client",
+  QUOTE_DECLINED: "Declined by the client",
+  QUOTE_EXPIRED: "Expired",
+  SUPERSEDED: "Replaced by a newer quote",
+};
+
+function range(pkg: PackageDefinition) {
+  if (pkg.maxPrice === null)
+    return (
+      <>
+        From <Peso />
+        {money(pkg.minPrice)}
+      </>
+    );
+  if (pkg.minPrice === pkg.maxPrice)
+    return (
+      <>
+        <Peso />
+        {money(pkg.minPrice)}
+      </>
+    );
+  return (
+    <>
+      <Peso />
+      {money(pkg.minPrice)} to <Peso />
+      {money(pkg.maxPrice)}
+    </>
+  );
+}
+
 export function QuotationBuilderModal({
   isOpen,
   onClose,
@@ -59,65 +84,37 @@ export function QuotationBuilderModal({
   customCatalog,
   onSuccess,
 }: QuotationBuilderModalProps) {
-  const packagesCatalog: Record<string, PackageDefinition> =
-    customCatalog?.packages || PACKAGES_CATALOG;
-  const addOnsCatalog: Record<string, AddOnDefinition> =
-    customCatalog?.addOns || ADDONS_CATALOG;
+  const packagesCatalog: Record<string, PackageDefinition> = customCatalog?.packages || PACKAGES_CATALOG;
+  const addOnsCatalog: Record<string, AddOnDefinition> = customCatalog?.addOns || ADDONS_CATALOG;
+  const readOnly = !!existingQuotation && existingQuotation.status !== "DRAFT";
 
   const [selectedPackage, setSelectedPackage] = useState<PackageName>("JX_03_CORE");
   const [basePrice, setBasePrice] = useState<number>(2500);
-  const [selectedAddOns, setSelectedAddOns] = useState<Record<string, { selected: boolean; amount: number }>>(() => {
-    const initial: Record<string, { selected: boolean; amount: number }> = {};
-    Object.keys(addOnsCatalog).forEach((k) => {
-      const item = addOnsCatalog[k];
-      if (item) {
-        initial[k] = { selected: false, amount: item.defaultPrice };
-      }
-    });
-    return initial;
-  });
+  const [selectedAddOns, setSelectedAddOns] = useState<Record<string, { selected: boolean; amount: number }>>({});
   const [customDownpayment, setCustomDownpayment] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [expiresInDays, setExpiresInDays] = useState<number>(3);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isIssuingDirect, setIsIssuingDirect] = useState(false);
-  const [confirmIssueModalOpen, setConfirmIssueModalOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<{
-    message: string;
-    description?: string;
-    variant: "info" | "success" | "warning" | "danger";
-  } | null>(null);
+  const [isIssuing, setIsIssuing] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [toast, setToast] = useState<{ message: string; description?: string; variant: "success" | "danger" | "warning" } | null>(null);
 
-  // Initialize or reset form based on existing quotation and catalog
+  // Start from the existing quote, or the default package.
   useEffect(() => {
     const initialAddOns: Record<string, { selected: boolean; amount: number }> = {};
     Object.keys(addOnsCatalog).forEach((k) => {
       const item = addOnsCatalog[k];
-      if (item) {
-        initialAddOns[k] = { selected: false, amount: item.defaultPrice };
-      }
+      if (item) initialAddOns[k] = { selected: false, amount: item.defaultPrice };
     });
-
     if (existingQuotation) {
       setSelectedPackage(existingQuotation.packageName);
       setBasePrice(existingQuotation.basePrice);
       setNotes(existingQuotation.notes || "");
-
       existingQuotation.lineItems.forEach((li) => {
-        if (li.itemType === "ADDON" && li.itemName in initialAddOns) {
-          initialAddOns[li.itemName] = {
-            selected: true,
-            amount: li.amount,
-          };
-        }
+        if (li.itemType === "ADDON") initialAddOns[li.itemName] = { selected: true, amount: li.amount };
       });
-
       setSelectedAddOns(initialAddOns);
-      if (!existingQuotation.isUpfrontEnforced && existingQuotation.downpaymentRequired) {
-        setCustomDownpayment(String(existingQuotation.downpaymentRequired));
-      } else {
-        setCustomDownpayment("");
-      }
+      setCustomDownpayment(!existingQuotation.isUpfrontEnforced && existingQuotation.downpaymentRequired ? String(existingQuotation.downpaymentRequired) : "");
     } else {
       const defaultPkg = packagesCatalog.JX_03_CORE || Object.values(packagesCatalog)[0];
       setSelectedPackage((defaultPkg?.code as PackageName) || "JX_03_CORE");
@@ -127,695 +124,422 @@ export function QuotationBuilderModal({
       setCustomDownpayment("");
       setExpiresInDays(3);
     }
-  }, [existingQuotation, isOpen, customCatalog, addOnsCatalog, packagesCatalog]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingQuotation, isOpen, customCatalog]);
 
-  // Handle package change
-  const handleSelectPackage = (pkg: PackageName) => {
+  const choosePackage = (pkg: PackageName) => {
+    if (readOnly) return;
     setSelectedPackage(pkg);
     const def = packagesCatalog[pkg];
-    if (def) {
-      setBasePrice(def.defaultPrice);
-    }
-    const isUpfront = def?.isUpfront ?? UPFRONT_PACKAGES.includes(pkg);
-    if (isUpfront) {
-      setCustomDownpayment("");
-    }
+    if (def) setBasePrice(def.defaultPrice);
+    if (def?.isUpfront ?? UPFRONT_PACKAGES.includes(pkg)) setCustomDownpayment("");
   };
 
-  // Toggle add-on
   const toggleAddOn = (name: string) => {
-    setSelectedAddOns((prev) => {
-      const current = prev[name];
-      if (!current) return prev;
-      return {
-        ...prev,
-        [name]: {
-          ...current,
-          selected: !current.selected,
-        },
-      };
-    });
+    if (readOnly) return;
+    setSelectedAddOns((prev) => (prev[name] ? { ...prev, [name]: { ...prev[name]!, selected: !prev[name]!.selected } } : prev));
   };
 
-  // Active add-ons list for computation
-  const activeAddOnsList = useMemo(() => {
-    return Object.keys(selectedAddOns)
-      .filter((k) => selectedAddOns[k]?.selected)
-      .map((k) => ({
-        name: k as AddOnName,
-        amount: selectedAddOns[k]?.amount || 0,
-      }));
-  }, [selectedAddOns]);
+  const activeAddOns = useMemo(
+    () =>
+      Object.keys(selectedAddOns)
+        .filter((k) => selectedAddOns[k]?.selected)
+        .map((k) => ({ name: k as AddOnName, amount: selectedAddOns[k]?.amount || 0 })),
+    [selectedAddOns],
+  );
 
-  // Live calculation breakdown
   const breakdown = useMemo(() => {
-    const customDp = customDownpayment ? Number(customDownpayment) : undefined;
     try {
       return calculateQuotationTotals(
-        {
-          packageName: selectedPackage,
-          basePrice,
-          addOns: activeAddOnsList,
-          customDownpayment: customDp,
-        },
-        customCatalog
+        { packageName: selectedPackage, basePrice, addOns: activeAddOns, customDownpayment: customDownpayment ? Number(customDownpayment) : undefined },
+        customCatalog,
       );
     } catch {
       return null;
     }
-  }, [selectedPackage, basePrice, activeAddOnsList, customDownpayment, customCatalog]);
+  }, [selectedPackage, basePrice, activeAddOns, customDownpayment, customCatalog]);
 
-  // Validation
-  const priceValidation = useMemo(() => {
-    return validatePackageBasePrice(selectedPackage, basePrice, packagesCatalog);
-  }, [selectedPackage, basePrice, packagesCatalog]);
+  const priceCheck = useMemo(() => validatePackageBasePrice(selectedPackage, basePrice, packagesCatalog), [selectedPackage, basePrice, packagesCatalog]);
+  const pkg: PackageDefinition = packagesCatalog[selectedPackage] || PACKAGES_CATALOG.JX_03_CORE;
+  // Said plainly here (the pricing rules' own message uses the package code).
+  const priceProblem = priceCheck.valid
+    ? ""
+    : !Number.isFinite(basePrice) || basePrice <= 0
+      ? "Enter a price."
+      : basePrice < pkg.minPrice
+        ? `The lowest price for ${plainName(pkg.name)} is ₱${money(pkg.minPrice)}.`
+        : pkg.maxPrice !== null && basePrice > pkg.maxPrice
+          ? `The highest price for ${plainName(pkg.name)} is ₱${money(pkg.maxPrice)}. For more, pick a bigger package.`
+          : priceCheck.error || "Check the price.";
+  const upfront = !!breakdown?.isUpfrontEnforced;
+  const validUntil = new Date(Date.now() + expiresInDays * 86_400_000).toLocaleDateString("en-PH", { month: "short", day: "numeric" });
 
-  const currentPkgDef: PackageDefinition =
-    packagesCatalog[selectedPackage] || PACKAGES_CATALOG.JX_03_CORE;
+  const payload = () => ({
+    packageName: selectedPackage,
+    basePrice,
+    addOns: activeAddOns,
+    customDownpayment: customDownpayment ? Number(customDownpayment) : undefined,
+    notes,
+    expiresInDays,
+  });
 
-  // Save Draft action
-  const handleSaveDraft = async () => {
-    if (!priceValidation.valid) {
-      setToastMessage({
-        message: "Invalid Price",
-        description: priceValidation.error || "Please adjust base price.",
-        variant: "warning",
-      });
-      return;
-    }
-
+  const saveDraft = async () => {
+    if (!priceCheck.valid) return setToast({ message: "Check the price", description: priceProblem, variant: "warning" });
     setIsSubmitting(true);
     try {
-      let res;
-      if (existingQuotation && existingQuotation.status === "DRAFT") {
-        res = await updateQuotation({
-          quotationId: existingQuotation.id,
-          packageName: selectedPackage,
-          basePrice,
-          addOns: activeAddOnsList,
-          customDownpayment: customDownpayment ? Number(customDownpayment) : undefined,
-          notes,
-          expiresInDays,
-        });
-      } else {
-        res = await createQuotation({
-          projectId,
-          packageName: selectedPackage,
-          basePrice,
-          addOns: activeAddOnsList,
-          customDownpayment: customDownpayment ? Number(customDownpayment) : undefined,
-          notes,
-          expiresInDays,
-        });
-      }
-
-      if (res.success) {
-        setToastMessage({
-          message: "Quote Draft Saved",
-          description: `Quote draft for ${projectIntakeId || "Study"} saved successfully.`,
-          variant: "success",
-        });
-        onSuccess?.();
-        setTimeout(() => onClose(), 500);
-      } else {
-        setToastMessage({
-          message: "Save Failed",
-          description: res.error?.message || "Failed to save quotation.",
-          variant: "danger",
-        });
-      }
+      const res =
+        existingQuotation?.status === "DRAFT"
+          ? await updateQuotation({ quotationId: existingQuotation.id, ...payload() })
+          : await createQuotation({ projectId, ...payload() });
+      if (!res.success) return setToast({ message: "Not saved", description: res.error?.message, variant: "danger" });
+      setToast({ message: "Draft saved", description: "It's not sent yet. Find it under Quotes → Drafts.", variant: "success" });
+      onSuccess?.();
+      setTimeout(onClose, 500);
     } catch {
-      setToastMessage({
-        message: "System Error",
-        description: "An unexpected error occurred.",
-        variant: "danger",
-      });
+      setToast({ message: "Not saved", description: "Something went wrong. Please try again.", variant: "danger" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Issue directly to client
-  const handleConfirmIssue = async () => {
-    if (!priceValidation.valid) {
-      setToastMessage({
-        message: "Invalid Price",
-        description: priceValidation.error || "Please adjust base price.",
-        variant: "warning",
-      });
-      return;
-    }
-
-    setIsIssuingDirect(true);
+  const send = async () => {
+    if (!priceCheck.valid) return setToast({ message: "Check the price", description: priceProblem, variant: "warning" });
+    setIsIssuing(true);
     try {
-      let targetQuoteId = existingQuotation?.id;
-
-      if (!targetQuoteId || existingQuotation?.status !== "DRAFT") {
-        const createRes = await createQuotation({
-          projectId,
-          packageName: selectedPackage,
-          basePrice,
-          addOns: activeAddOnsList,
-          customDownpayment: customDownpayment ? Number(customDownpayment) : undefined,
-          notes,
-          expiresInDays,
-        });
-
-        if (!createRes.success || !createRes.data) {
-          throw new Error(createRes.error?.message || "Failed to initialize quote draft.");
-        }
-        targetQuoteId = createRes.data.id;
+      let id = existingQuotation?.status === "DRAFT" ? existingQuotation.id : undefined;
+      if (!id) {
+        const created = await createQuotation({ projectId, ...payload() });
+        if (!created.success || !created.data) throw new Error(created.error?.message || "The quote wasn't saved.");
+        id = created.data.id;
       } else {
-        const updateRes = await updateQuotation({
-          quotationId: targetQuoteId,
-          packageName: selectedPackage,
-          basePrice,
-          addOns: activeAddOnsList,
-          customDownpayment: customDownpayment ? Number(customDownpayment) : undefined,
-          notes,
-          expiresInDays,
-        });
-
-        if (!updateRes.success) {
-          throw new Error(updateRes.error?.message || "Failed to update quotation.");
-        }
+        const updated = await updateQuotation({ quotationId: id, ...payload() });
+        if (!updated.success) throw new Error(updated.error?.message || "The quote wasn't saved.");
       }
-
-      const issueRes = await issueQuotation({
-        quotationId: targetQuoteId,
-        expiresInDays,
-        notes,
-      });
-
-      if (issueRes.success) {
-        setToastMessage({
-          message: "Proposal Issued to Client",
-          description: `Quote issued to ${clientName || "Lead Researcher"}.`,
-          variant: "success",
-        });
-        setConfirmIssueModalOpen(false);
-        onSuccess?.();
-        setTimeout(() => onClose(), 600);
-      } else {
-        setToastMessage({
-          message: "Issuance Failed",
-          description: issueRes.error?.message || "Failed to issue quote.",
-          variant: "danger",
-        });
-      }
-    } catch (err: unknown) {
-      setToastMessage({
-        message: "Issuance Error",
-        description: (err as Error).message || "Failed to issue quotation.",
-        variant: "danger",
-      });
+      const issued = await issueQuotation({ quotationId: id, expiresInDays, notes });
+      if (!issued.success) throw new Error(issued.error?.message || "The quote wasn't sent.");
+      setConfirmOpen(false);
+      setToast({ message: "Quote sent", description: `${clientName || "The client"} can now accept it.`, variant: "success" });
+      onSuccess?.();
+      setTimeout(onClose, 600);
+    } catch (err) {
+      setToast({ message: "Not sent", description: err instanceof Error ? err.message : "Please try again.", variant: "danger" });
     } finally {
-      setIsIssuingDirect(false);
+      setIsIssuing(false);
     }
   };
 
-  const getAddOnIcon = (name: string) => {
-    switch (name) {
-      case "DEFENSELAB":
-        return <IconSchool size={18} stroke={1.5} className="text-sky-400 flex-shrink-0" />;
-      case "RUSH":
-        return <IconBolt size={18} stroke={1.5} className="text-amber-400 flex-shrink-0" />;
-      case "EXPRESS":
-        return <IconFlame size={18} stroke={1.5} className="text-orange-400 flex-shrink-0" />;
-      case "EMERGENCY":
-        return <IconAlertTriangle size={18} stroke={1.5} className="text-rose-400 flex-shrink-0" />;
-      default:
-        return <IconSparkles size={18} stroke={1.5} className="text-amber-400 flex-shrink-0" />;
-    }
-  };
+  const busy = isSubmitting || isIssuing;
 
   return (
     <>
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={`Commercial Proposal Builder · ${projectIntakeId || "Research Study"}`}
+        title={`Quote for ${projectIntakeId || "this study"}`}
+        description={[existingQuotation?.status === "DRAFT" ? "Draft" : null, projectTitle, clientName].filter(Boolean).join(" · ")}
         size="5xl"
-        className="min-h-[min(820px,calc(100dvh-2.5rem))]"
-      >
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch py-8 px-8 sm:px-10 flex-1">
-          {/* ── Left Column: Configuration Controls (7 cols) ── */}
-          <div className="lg:col-span-7 flex flex-col justify-between space-y-7">
-            {/* What the client asked the analysis to do: the basis for the tier and price */}
-            <div className="rounded-[2px] border border-white/[0.08] bg-[#0A0A18]/80 p-4">
-              <p className="mb-3 text-xs font-semibold text-white/80">What the client wants the analysis to do</p>
-              <AnalysisGoalsList codes={analysisGoals} compact />
+        footer={
+          <div className="flex w-full flex-wrap items-center justify-between gap-3 font-sans">
+            <p className="hidden text-[12px] text-white/45 sm:block">
+              {readOnly ? (STATUS_WORD[existingQuotation!.status] ?? existingQuotation!.status) : "Prices come from the CEO's price list (Money & Pay Rates)."}
+            </p>
+            <div className="ml-auto flex gap-2 whitespace-nowrap">
+              <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>
+                {readOnly ? "Close" : "Cancel"}
+              </Button>
+              {!readOnly ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={saveDraft} loading={isSubmitting} disabled={busy || !priceCheck.valid}>
+                    Save Draft
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setConfirmOpen(true)}
+                    disabled={busy || !priceCheck.valid}
+                    className="gap-1.5 active:scale-[0.97]"
+                  >
+                    <PaperPlaneTilt size={14} weight="fill" />
+                    Send to Client
+                  </Button>
+                </>
+              ) : null}
             </div>
+          </div>
+        }
+      >
+        <div className="grid grid-cols-1 gap-6 font-sans lg:grid-cols-12">
+          <div className="flex flex-col gap-6 lg:col-span-7">
+            {readOnly ? (
+              <p className="rounded-[2px] border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-[13px] text-white/65">
+                This quote was already sent, so it can&apos;t be edited. To change it, move the study back to pricing (Change status on the study page) and
+                build a new quote.
+              </p>
+            ) : null}
 
-            {/* 1. Analytical Package Tier Selection */}
-            <div className="space-y-3.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-mono font-bold uppercase tracking-wider text-white/90">
-                  1. Select Analytical Tier
-                </label>
-                <span className="text-xs font-mono text-[#FFA040] font-bold">
-                  Active: {currentPkgDef.id}
-                </span>
+            <section>
+              <h3 className="text-[13px] font-medium text-white">What the client wants the analysis to do</h3>
+              <div className="mt-2 rounded-[2px] border border-white/[0.08] px-3.5 py-3">
+                <AnalysisGoalsList codes={analysisGoals} compact />
               </div>
+            </section>
 
-              <div className="grid grid-cols-2 gap-4">
+            <section>
+              <h3 className="text-[13px] font-medium text-white">Package</h3>
+              <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Package">
                 {(Object.keys(packagesCatalog) as PackageName[])
-                  .filter((pkgKey) => packagesCatalog[pkgKey]?.isActive !== false)
-                  .map((pkgKey) => {
-                    const pkg = packagesCatalog[pkgKey];
-                    if (!pkg) return null;
-                    const isSelected = selectedPackage === pkgKey;
-
+                  .filter((k) => (readOnly ? k === selectedPackage : packagesCatalog[k]?.isActive !== false))
+                  .map((k) => {
+                    const p = packagesCatalog[k]!;
+                    const on = selectedPackage === k;
                     return (
                       <button
-                        key={pkgKey}
+                        key={k}
                         type="button"
-                        onClick={() => handleSelectPackage(pkgKey)}
-                        className={`w-full p-4.5 sm:p-5 rounded-[2px] text-left transition-all border flex flex-col justify-between cursor-pointer group relative min-h-[145px] ${
-                          isSelected
-                            ? "bg-[#151523] border-[#FFA040] shadow-md shadow-[#CC6600]/15"
-                            : "bg-[#0A0A18]/80 border-white/[0.08] hover:border-white/20 hover:bg-[#0F0F1D]"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => choosePackage(k)}
+                        disabled={readOnly}
+                        className={`flex flex-col gap-1.5 rounded-[2px] border px-3.5 py-3 text-left transition-colors ${
+                          on ? "border-[#CC6600]/70 bg-white/[0.04] disabled:cursor-default" : "border-white/[0.08] hover:border-white/20"
                         }`}
                       >
-                        {/* Top: Tier ID + Category Badge */}
-                        <div className="w-full space-y-1.5">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className={`text-xs font-mono font-bold tracking-wider ${isSelected ? "text-[#FFA040]" : "text-sky-400"}`}>
-                              {pkg.id}
-                            </span>
-                            <span className="text-[0.625rem] font-mono uppercase font-semibold text-white/50 bg-white/[0.04] px-2 py-0.5 rounded-[2px] border border-white/[0.06]">
-                              {pkg.badge}
-                            </span>
-                          </div>
-
-                          <div className="text-sm font-bold text-white leading-snug">
-                            {pkg.name.replace(/^[A-Z0-9-]+\s*/, "")}
-                          </div>
-
-                          <p className="text-xs text-white/55 line-clamp-2 leading-relaxed font-sans pt-0.5">
-                            {pkg.tagline}
-                          </p>
-                        </div>
-
-                        {/* Bottom: Price Range & Payment Model */}
-                        <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between gap-2 w-full">
-                          <span className="font-mono text-xs font-bold text-white whitespace-nowrap">
-                            {pkg.maxPrice === null ? (
-                              <>
-                                <Peso />
-                                {pkg.minPrice.toLocaleString()}+
-                              </>
-                            ) : pkg.minPrice === pkg.maxPrice ? (
-                              <>
-                                <Peso />
-                                {pkg.minPrice.toLocaleString()}
-                              </>
-                            ) : (
-                              <>
-                                <Peso />
-                                {pkg.minPrice.toLocaleString()} – <Peso />
-                                {pkg.maxPrice.toLocaleString()}
-                              </>
-                            )}
-                          </span>
-                          <span className={`text-[0.625rem] font-mono uppercase px-2 py-0.5 rounded-[2px] border font-semibold ${
-                            pkg.isUpfront
-                              ? "bg-amber-500/10 text-amber-300 border-amber-500/30"
-                              : "bg-sky-500/10 text-sky-300 border-sky-500/30"
-                          }`}>
-                            {pkg.isUpfront ? "100% Upfront" : "50% Milestone"}
-                          </span>
-                        </div>
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="text-[13px] font-semibold text-white">{plainName(p.name)}</span>
+                          {on ? <Check size={14} weight="bold" className="shrink-0 text-[#CC6600]" /> : null}
+                        </span>
+                        <span className="line-clamp-2 text-[12px] leading-relaxed text-white/55">{p.tagline}</span>
+                        <span className="mt-auto flex items-center justify-between gap-2 pt-1 text-[12px]">
+                          <span className="text-white/85">{range(p)}</span>
+                          <span className="text-white/45">{p.isUpfront ? "Paid in full first" : "50% deposit"}</span>
+                        </span>
                       </button>
                     );
                   })}
               </div>
-
-              {/* Integrated Base Package Fee Input */}
-              <div className="p-4 sm:p-4.5 rounded-[2px] bg-[#0A0A18] border border-white/[0.12] flex items-center justify-between gap-4 mt-3 shadow-sm">
-                <div className="space-y-1">
-                  <div className="text-xs font-mono font-bold uppercase tracking-wider text-white">
-                    Base Package Fee
-                  </div>
-                  <div className="text-xs font-mono text-white/50">
-                    Allowed: <Peso />{currentPkgDef.minPrice.toLocaleString()}
-                    {currentPkgDef.maxPrice !== null ? <> – <Peso />{currentPkgDef.maxPrice.toLocaleString()}</> : "+"}
-                  </div>
-                </div>
-
-                <div className="flex items-center rounded-[2px] border border-white/[0.16] bg-[#050513] focus-within:border-[#FFA040] focus-within:ring-1 focus-within:ring-[#FFA040]/30 transition-all overflow-hidden h-11 w-60 sm:w-64">
-                  <div className="h-full px-3.5 flex items-center bg-white/[0.05] border-r border-white/[0.12] text-[#FFA040] font-mono text-xs font-bold select-none whitespace-nowrap">
-                    PHP (<Peso />)
-                  </div>
+              <div className="mt-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                <label htmlFor="quote-price" className="text-[13px] text-white/70">
+                  Price for this study
+                  <span className="ml-2 text-[12px] text-white/40">Allowed: {range(pkg)}</span>
+                </label>
+                <div className="flex h-10 items-center overflow-hidden rounded-[2px] border border-white/10 bg-[#050513] focus-within:border-[#CC6600]/60 sm:w-44">
+                  <span className="px-3 text-[13px] text-white/50">
+                    <Peso />
+                  </span>
                   <input
+                    id="quote-price"
                     type="number"
-                    min={currentPkgDef.minPrice}
-                    max={currentPkgDef.maxPrice || undefined}
+                    min={pkg.minPrice}
+                    max={pkg.maxPrice || undefined}
                     step="50"
                     value={basePrice}
+                    disabled={readOnly}
                     onChange={(e) => setBasePrice(Number(e.target.value))}
-                    className="flex-1 h-full px-4 bg-transparent text-base font-mono font-bold text-white focus:outline-none placeholder:text-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-full flex-1 bg-transparent pr-3 font-mono text-[14px] text-white outline-none [appearance:textfield] disabled:opacity-60 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                 </div>
               </div>
+              {!priceCheck.valid && !readOnly ? (
+                <p className="mt-1.5 flex items-start gap-1.5 text-[12px] text-red-300">
+                  <Warning size={13} weight="fill" className="mt-0.5 shrink-0" />
+                  {priceProblem}
+                </p>
+              ) : null}
+            </section>
 
-              {!priceValidation.valid && (
-                <div className="text-xs font-sans text-rose-400 flex items-center gap-1.5 pt-0.5">
-                  <IconAlertTriangle size={14} stroke={1.5} />
-                  <span>{priceValidation.error}</span>
-                </div>
-              )}
-            </div>
-
-            {/* 2. Optional Priority Add-Ons (Streamlined Checklist) */}
-            <div className="space-y-3 pt-1">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-mono font-bold uppercase tracking-wider text-white/90">
-                  2. Optional Priority Add-Ons
-                </label>
-                <span className="text-xs font-mono text-[#FFA040] font-bold">
-                  {activeAddOnsList.length > 0 ? `${activeAddOnsList.length} Selected` : "None"}
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {Object.keys(addOnsCatalog)
-                  .filter((addonKey) => addOnsCatalog[addonKey]?.isActive !== false)
-                  .map((addonKey) => {
-                    const addon = addOnsCatalog[addonKey];
-                    if (!addon) return null;
-                    const isChecked = selectedAddOns[addonKey]?.selected;
-
-                    return (
-                      <button
-                        key={addonKey}
-                        type="button"
-                        onClick={() => toggleAddOn(addonKey)}
-                        className={`w-full p-3.5 sm:p-4 rounded-[2px] text-left transition-all border flex items-center justify-between cursor-pointer group ${
-                          isChecked
-                            ? "bg-[#151523] border-[#FFA040] shadow-sm"
-                            : "bg-[#0A0A18]/80 border-white/[0.08] hover:border-white/20 hover:bg-[#0F0F1D]"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0 flex-1 pr-3">
-                          {/* Custom Checkbox */}
-                          <div
-                            className={`w-4 h-4 rounded-[2px] flex items-center justify-center border transition-all flex-shrink-0 ${
-                              isChecked
-                                ? "bg-[#CC6600] border-[#CC6600] text-white"
-                                : "border-white/20 bg-white/[0.02] group-hover:border-white/40"
-                            }`}
-                          >
-                            {isChecked && <IconCheck size={12} stroke={3} />}
-                          </div>
-
-                          <div className={isChecked ? "text-amber-400" : "text-white/40"}>
-                            {getAddOnIcon(addonKey)}
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-white truncate">
-                                {addon.name}
-                              </span>
-                              <span className="text-[0.625rem] font-mono text-white/40 uppercase tracking-wider hidden sm:inline-block">
-                                · {addon.badge}
-                              </span>
-                            </div>
-                            <p className="text-xs text-white/55 line-clamp-1 leading-relaxed font-sans pt-0.5">
-                              {addon.tagline}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex-shrink-0">
-                          <span className={`text-xs font-mono font-bold px-3 py-1 rounded-[2px] border ${
-                            isChecked
-                              ? "bg-amber-500/10 text-amber-300 border-amber-500/30"
-                              : "bg-white/[0.04] text-white/60 border-white/[0.08]"
-                          }`}>
-                            +<Peso />{addon.defaultPrice.toLocaleString()}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-              </div>
-            </div>
-
-            {/* 3. Scope Clarifications & Validity Window */}
-            <div className="pt-2">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="sm:col-span-2 flex flex-col gap-2.5">
-                  <label className="block text-xs font-mono font-bold uppercase tracking-wider text-white/90">
-                    3. Scope Clarifications
-                  </label>
-                  <input
-                    type="text"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="e.g. Include full Chapter 4 write-up and SPSS scripts..."
-                    className="w-full h-11.5 px-4 bg-[#050513] border border-white/[0.12] focus:border-[#CC6600] rounded-[2px] text-xs text-white placeholder:text-white/30 focus:outline-none transition-colors font-sans"
-                    style={{ paddingLeft: "1rem", paddingRight: "1rem", boxSizing: "border-box" }}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2.5">
-                  <label className="block text-xs font-mono font-bold uppercase tracking-wider text-white/90">
-                    Validity Window
-                  </label>
-                  <select
-                    value={expiresInDays}
-                    onChange={(e) => setExpiresInDays(Number(e.target.value))}
-                    className="w-full h-11.5 px-4 bg-[#050513] border border-white/[0.12] focus:border-[#CC6600] rounded-[2px] text-xs font-mono text-white focus:outline-none transition-colors cursor-pointer"
-                    style={{ paddingLeft: "1rem", paddingRight: "1rem", boxSizing: "border-box" }}
-                  >
-                    <option value={3}>3 Days (Standard)</option>
-                    <option value={5}>5 Days</option>
-                    <option value={7}>7 Days</option>
-                    <option value={14}>14 Days</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Right Column: Clean Commercial Summary Card (5 cols) ── */}
-          <div className="lg:col-span-5 p-6 sm:p-7 rounded-[2px] bg-[#0A0A18] border border-white/[0.12] flex flex-col justify-between shadow-2xl space-y-6 h-full min-h-[660px]">
-            <div className="space-y-5">
-              {/* Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
-                <span className="text-xs font-semibold uppercase tracking-wider text-white flex items-center gap-2 font-mono">
-                  <IconReceipt size={16} stroke={1.5} className="text-sky-400" />
-                  <span>Quotation Overview</span>
-                </span>
-                <span className="text-[0.6875rem] font-mono font-semibold px-2.5 py-0.5 rounded-[2px] bg-white/[0.06] text-white/70 border border-white/[0.08]">
-                  {breakdown?.isUpfrontEnforced ? "100% Upfront" : "50% Milestone"}
-                </span>
-              </div>
-
-              {/* Study Telemetry Header */}
-              <div className="p-4 rounded-[2px] bg-[#050513]/90 border border-white/[0.06] space-y-1.5">
-                <div className="text-[0.6875rem] font-mono text-[#FFA040] font-bold tracking-wider uppercase">
-                  {projectIntakeId || "JAXIS-STUDY"}
-                </div>
-                <div className="text-xs font-semibold text-white leading-snug line-clamp-2" title={projectTitle}>
-                  {projectTitle || "Research Study"}
-                </div>
-                {clientName && (
-                  <div className="text-[0.6875rem] text-white/45 font-mono pt-0.5">
-                    Lead Researcher: <span className="text-white/75">{clientName}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Itemized Line Items */}
-              <div className="p-4 rounded-[2px] bg-[#050513]/90 border border-white/[0.06] space-y-3 text-xs">
-                {/* Main Analytical Package */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-white">
-                    <span className="font-bold text-xs">{currentPkgDef.name}</span>
-                    <span className="font-mono font-bold text-white flex-shrink-0">
-                      <Peso />{breakdown?.basePrice.toLocaleString()}
-                    </span>
-                  </div>
-                  {currentPkgDef.deliverables && currentPkgDef.deliverables.length > 0 && (
-                    <ul className="space-y-2 pt-1">
-                      {currentPkgDef.deliverables.map((item, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-[0.6875rem] text-white/65 leading-relaxed font-sans pr-1">
-                          <span className="text-sky-400 font-bold select-none">•</span>
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                {/* Selected Priority Add-Ons */}
-                {activeAddOnsList.length > 0 && (
-                  <div className="pt-3 border-t border-white/[0.06] space-y-2">
-                    <div className="text-[0.625rem] font-mono uppercase text-amber-300 font-semibold tracking-wider">
-                      Selected Add-Ons:
-                    </div>
-                    {activeAddOnsList.map((addon) => {
-                      const addonDef = addOnsCatalog[addon.name] || ADDONS_CATALOG[addon.name];
+            {readOnly && activeAddOns.length === 0 ? null : (
+              <section>
+                <h3 className="text-[13px] font-medium text-white">
+                  Add-ons <span className="font-normal text-white/40">(optional)</span>
+                </h3>
+                <ul className="mt-2 divide-y divide-white/[0.05] rounded-[2px] border border-white/[0.08]">
+                  {Object.keys(addOnsCatalog)
+                    .filter((k) => (readOnly ? selectedAddOns[k]?.selected : addOnsCatalog[k]?.isActive !== false || selectedAddOns[k]?.selected))
+                    .map((k) => {
+                      const a = addOnsCatalog[k]!;
+                      const on = !!selectedAddOns[k]?.selected;
                       return (
-                        <div key={addon.name} className="flex justify-between items-center text-amber-300 text-xs">
-                          <span className="text-[0.75rem] truncate pr-2">+ {addonDef?.name || addon.name}</span>
-                          <span className="font-mono font-bold text-amber-400 flex-shrink-0 text-[0.75rem]">
-                            <Peso />{addon.amount.toLocaleString()}
-                          </span>
-                        </div>
+                        <li key={k}>
+                          <button
+                            type="button"
+                            role="checkbox"
+                            aria-checked={on}
+                            onClick={() => toggleAddOn(k)}
+                            disabled={readOnly}
+                            className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-white/[0.02] disabled:cursor-default disabled:hover:bg-transparent"
+                          >
+                            <span
+                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border ${
+                                on ? "border-[#CC6600] bg-[#CC6600] text-white" : "border-white/25"
+                              }`}
+                            >
+                              {on ? <Check size={11} weight="bold" /> : null}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-[13px] text-white">{a.name}</span>
+                              <span className="block truncate text-[12px] text-white/50">{a.tagline}</span>
+                            </span>
+                            <span className="shrink-0 text-[13px] text-white/80">
+                              +<Peso />
+                              {money(selectedAddOns[k]?.amount ?? a.defaultPrice)}
+                            </span>
+                          </button>
+                        </li>
                       );
                     })}
-                  </div>
-                )}
-              </div>
-            </div>
+                </ul>
+              </section>
+            )}
 
-            {/* Bottom Group: Totals & Action Controls */}
-            <div className="space-y-5">
-              {/* Totals Telemetry */}
-              <div className="p-4.5 rounded-[2px] bg-white/[0.02] border border-white/[0.06] space-y-3">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-xs text-white/60 font-sans">Total Contract Sum</span>
-                  <span className="text-xl font-mono font-bold text-[#38BDF8]">
-                    <Peso />{breakdown?.totalAmount.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-baseline">
-                  <span className="text-xs text-white/60 font-sans">
-                    {breakdown?.isUpfrontEnforced ? "Full Payment Due" : "Initial Escrow Deposit (50%)"}
-                  </span>
-                  <span className="text-sm font-mono font-bold text-emerald-400">
-                    <Peso />{breakdown?.downpaymentRequired.toLocaleString()}
-                  </span>
-                </div>
-
-                {!breakdown?.isUpfrontEnforced && (
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-xs text-white/50 font-sans">Final Balance on Completion (50%)</span>
-                    <span className="text-xs font-mono font-bold text-white/70">
-                      <Peso />{((breakdown?.totalAmount || 0) - (breakdown?.downpaymentRequired || 0)).toLocaleString()}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center text-[0.6875rem] text-white/40 pt-2.5 border-t border-white/[0.06] font-mono">
-                  <span>Quote Validity Window</span>
-                  <span className="text-white/80 font-bold">{expiresInDays} Days</span>
-                </div>
-              </div>
-
-              {/* Actions Block */}
-              <div className="space-y-3 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setConfirmIssueModalOpen(true)}
-                  disabled={isSubmitting || isIssuingDirect || !priceValidation.valid}
-                  className="w-full h-12 rounded-[2px] bg-gradient-to-b from-[#E67300] to-[#CC6600] text-white border border-[#CC6600] border-t-[#FFA040]/70 border-b-[#994D00] font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md shadow-[#CC6600]/20 hover:shadow-[0_2px_12px_rgba(204,102,0,0.4)] hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0"
+            <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <label className="flex flex-col gap-1.5 text-[13px] text-white/70 sm:col-span-2">
+                Note for the client (optional)
+                <input
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  disabled={readOnly}
+                  placeholder="For example: includes the full Chapter 4 write-up and your SPSS files."
+                  className={`${FIELD} h-10 disabled:opacity-60`}
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-[13px] text-white/70">
+                Valid for
+                <select
+                  value={expiresInDays}
+                  onChange={(e) => setExpiresInDays(Number(e.target.value))}
+                  disabled={readOnly}
+                  className={`${FIELD} h-10 cursor-pointer disabled:opacity-60 [&>option]:bg-[#0A0A18]`}
                 >
-                  <IconSend size={15} stroke={2} />
-                  <span>Issue Quote to Client →</span>
-                </button>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={handleSaveDraft}
-                    disabled={isSubmitting || isIssuingDirect || !priceValidation.valid}
-                    className="w-full h-10 rounded-[2px] bg-white/[0.05] hover:bg-white/[0.09] active:bg-white/[0.12] border border-white/15 hover:border-sky-400/40 text-white/90 hover:text-white font-mono font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
-                  >
-                    <IconDeviceFloppy size={14} stroke={1.5} className="text-sky-400" />
-                    <span>{isSubmitting ? "Saving..." : "Save Draft"}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    disabled={isSubmitting || isIssuingDirect}
-                    className="w-full h-10 rounded-[2px] bg-white/[0.02] hover:bg-white/[0.06] active:bg-white/[0.09] border border-white/10 hover:border-white/20 text-white/60 hover:text-white font-mono font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <IconX size={14} stroke={1.5} />
-                    <span>Cancel</span>
-                  </button>
-                </div>
-              </div>
-            </div>
+                  <option value={3}>3 days</option>
+                  <option value={5}>5 days</option>
+                  <option value={7}>7 days</option>
+                  <option value={14}>14 days</option>
+                </select>
+              </label>
+            </section>
           </div>
+
+          <aside className="lg:col-span-5">
+            <div className="flex flex-col gap-4 rounded-[2px] border border-white/[0.08] bg-[#0A0A18] p-5 lg:sticky lg:top-0">
+              <h3 className="text-[13px] font-medium text-white">Summary</h3>
+              <dl className="flex flex-col gap-2 text-[13px]">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-white/80">{plainName(pkg.name)}</dt>
+                  <dd className="shrink-0 text-white">
+                    <Peso />
+                    {money(breakdown?.basePrice)}
+                  </dd>
+                </div>
+                {activeAddOns.map((a) => (
+                  <div key={a.name} className="flex justify-between gap-3">
+                    <dt className="truncate text-white/60">+ {addOnsCatalog[a.name]?.name || a.name}</dt>
+                    <dd className="shrink-0 text-white/80">
+                      <Peso />
+                      {money(a.amount)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <dl className="flex flex-col gap-2 border-t border-white/[0.08] pt-3 text-[13px]">
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="text-white/70">Total</dt>
+                  <dd className="text-xl font-semibold text-white">
+                    <Peso />
+                    {money(breakdown?.totalAmount)}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-white/55">
+                    {upfront ? "Paid in full before work starts" : `Deposit to start (${breakdown?.downpaymentPercentage ?? 50}%)`}
+                  </dt>
+                  <dd className="text-white">
+                    <Peso />
+                    {money(breakdown?.downpaymentRequired)}
+                  </dd>
+                </div>
+                {!upfront ? (
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-white/55">Balance before the final files</dt>
+                    <dd className="text-white/80">
+                      <Peso />
+                      {money((breakdown?.totalAmount ?? 0) - (breakdown?.downpaymentRequired ?? 0))}
+                    </dd>
+                  </div>
+                ) : null}
+                <div className="flex justify-between gap-3 text-[12px]">
+                  <dt className="text-white/45">Valid until</dt>
+                  <dd className="text-white/70">
+                    {readOnly && existingQuotation
+                      ? new Date(existingQuotation.expiresAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })
+                      : validUntil}
+                  </dd>
+                </div>
+              </dl>
+              {pkg.deliverables?.length ? (
+                <div className="border-t border-white/[0.08] pt-3">
+                  <p className="text-[12px] font-medium text-white/50">What the client gets</p>
+                  <ul className="mt-1.5 flex flex-col gap-1">
+                    {pkg.deliverables.map((d) => (
+                      <li key={d} className="flex gap-2 text-[12px] leading-relaxed text-white/65">
+                        <span aria-hidden="true" className="text-white/30">
+                          –
+                        </span>
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          </aside>
         </div>
       </Modal>
 
-      {/* Confirmation Modal */}
       <Modal
-        isOpen={confirmIssueModalOpen}
-        onClose={() => setConfirmIssueModalOpen(false)}
-        title="Confirm Quotation Issuance"
+        isOpen={confirmOpen}
+        onClose={() => (isIssuing ? undefined : setConfirmOpen(false))}
+        title="Send this quote?"
+        description={`${clientName || "The client"} is told and can accept it until ${validUntil}.`}
         size="md"
-      >
-        <div className="space-y-4 text-xs font-sans text-white/80">
-          <p className="leading-relaxed">
-            You are about to issue a formal commercial quote of{" "}
-            <strong className="text-[#38BDF8] font-mono font-bold">
-              <Peso />{breakdown?.totalAmount.toLocaleString()}
-            </strong>{" "}
-            for study <span className="font-mono text-white">{projectIntakeId}</span>.
-          </p>
-
-          <div className="p-4 rounded-[4px] bg-[#050513] border border-white/[0.08] space-y-2.5 font-mono text-xs">
-            <div className="flex justify-between">
-              <span className="text-white/50 font-sans">Package:</span>
-              <span className="text-white font-bold">{currentPkgDef.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white/50 font-sans">Total Sum:</span>
-              <span className="text-[#38BDF8] font-bold"><Peso />{breakdown?.totalAmount.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white/50 font-sans">Required Downpayment:</span>
-              <span className="text-emerald-400 font-bold">
-                <Peso />{breakdown?.downpaymentRequired.toLocaleString()} ({breakdown?.downpaymentPercentage}%)
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-white/50 font-sans">Validity Window:</span>
-              <span className="text-amber-300 font-bold">{expiresInDays} Days</span>
-            </div>
-          </div>
-
-          <ModalFooter>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setConfirmIssueModalOpen(false)}
-              disabled={isIssuingDirect}
-            >
+        footer={
+          <div className="flex w-full justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setConfirmOpen(false)} disabled={isIssuing}>
               Back
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleConfirmIssue}
-              disabled={isIssuingDirect}
-              className="gap-1.5 bg-[#CC6600] text-white hover:bg-[#E67300]"
-            >
-              <IconSend size={14} stroke={1.5} />
-              <span>{isIssuingDirect ? "Issuing..." : "Confirm & Send Quote"}</span>
+            <Button variant="primary" size="sm" onClick={send} loading={isIssuing} className="gap-1.5">
+              <PaperPlaneTilt size={14} weight="fill" />
+              Send Quote
             </Button>
-          </ModalFooter>
-        </div>
+          </div>
+        }
+      >
+        <dl className="flex flex-col gap-2 font-sans text-[13px]">
+          <div className="flex justify-between">
+            <dt className="text-white/55">Package</dt>
+            <dd className="text-white">{plainName(pkg.name)}</dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-white/55">Total</dt>
+            <dd className="font-semibold text-white">
+              <Peso />
+              {money(breakdown?.totalAmount)}
+            </dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-white/55">{upfront ? "Paid in full first" : "Deposit to start"}</dt>
+            <dd className="text-white">
+              <Peso />
+              {money(breakdown?.downpaymentRequired)}
+            </dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-white/55">Valid for</dt>
+            <dd className="text-white">{expiresInDays} days</dd>
+          </div>
+        </dl>
       </Modal>
 
-      {/* Global Toast */}
-      {toastMessage && (
-        <Toast
-          message={toastMessage.message}
-          description={toastMessage.description}
-          variant={toastMessage.variant}
-          onClose={() => setToastMessage(null)}
-        />
-      )}
+      {toast ? <Toast message={toast.message} description={toast.description} variant={toast.variant} onClose={() => setToast(null)} /> : null}
     </>
   );
 }

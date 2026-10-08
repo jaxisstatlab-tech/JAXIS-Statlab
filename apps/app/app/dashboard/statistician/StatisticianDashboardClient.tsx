@@ -692,7 +692,7 @@ function StudiesPanel({
             {pageRows.map((s) => (
               <li key={s.id} className="flex flex-col gap-2 px-5 py-4">
                 <div className="flex items-center justify-between gap-2">
-                  <CopyButton value={s.projectIntakeId} label={s.projectIntakeId} copiedLabel="Copied" variant="badge" />
+                  <CopyButton value={s.projectIntakeId} label={s.projectIntakeId} copiedLabel="Copied" variant="badge" onCopy={onCopied} />
                   <span className="text-[12px] text-white/55">{stageText(s)}</span>
                 </div>
                 <p className="text-sm text-white">{s.projectTitle}</p>
@@ -728,7 +728,7 @@ function StudiesPanel({
                   >
                     <td className="max-w-[380px] px-5 py-3.5 sm:px-6">
                       <div className="flex items-center gap-2">
-                        <CopyButton value={s.projectIntakeId} label={s.projectIntakeId} copiedLabel="Copied" variant="badge" />
+                        <CopyButton value={s.projectIntakeId} label={s.projectIntakeId} copiedLabel="Copied" variant="badge" onCopy={onCopied} />
                         {clientPackageName(s.packageName) ? (
                           <span className="truncate text-[12px] text-white/40">{clientPackageName(s.packageName)}</span>
                         ) : null}
