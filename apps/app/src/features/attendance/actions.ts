@@ -4,7 +4,7 @@ import { revalidatePath, unstable_cache } from "next/cache";
 import { headers } from "next/headers";
 import { db, withDbTimeout } from "@/lib/db";
 import { requireRole, auth } from "@/lib/auth";
-import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
+import { CACHE_TAGS, cachedIso, invalidateCacheTags } from "@/lib/cache-tags";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import {
   ClockInSchema,
@@ -980,9 +980,9 @@ export async function getAttendanceReviewDeskData(): Promise<{
           staffEmail: c.user.email,
           staffRole: requesterRole,
           correctionType: c.correctionType,
-          targetDate: c.targetDate.toISOString().split("T")[0]!,
-          claimedClockIn: c.claimedClockIn.toISOString(),
-          claimedClockOut: c.claimedClockOut.toISOString(),
+          targetDate: cachedIso(c.targetDate).split("T")[0]!,
+          claimedClockIn: cachedIso(c.claimedClockIn),
+          claimedClockOut: cachedIso(c.claimedClockOut),
           claimedBreakMins: c.claimedBreakMins,
           claimedNetHours: Number(c.claimedNetHours),
           reason: c.reason,
@@ -990,9 +990,9 @@ export async function getAttendanceReviewDeskData(): Promise<{
           status: c.status,
           reviewedBy: c.reviewedBy,
           reviewerName: c.reviewedBy ? reviewerMap.get(c.reviewedBy) || "Authorized Reviewer" : null,
-          reviewedAt: c.reviewedAt ? c.reviewedAt.toISOString() : null,
+          reviewedAt: cachedIso(c.reviewedAt),
           reviewNotes: c.reviewNotes,
-          createdAt: c.createdAt.toISOString(),
+          createdAt: cachedIso(c.createdAt),
           canApprove: c.status === "PENDING" && canApprove,
           sodReason,
         };

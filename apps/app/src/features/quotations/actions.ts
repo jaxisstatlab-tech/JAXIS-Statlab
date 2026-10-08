@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import { auth } from "@/lib/auth";
 import { db, withDbTimeout } from "@/lib/db";
-import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
+import { CACHE_TAGS, cachedIso, invalidateCacheTags } from "@/lib/cache-tags";
 import {
   assertCanManageQuotation,
   calculateQuotationTotals,
@@ -1696,15 +1696,15 @@ export async function getQuotationsRoster(): Promise<QuotationDetailItem[]> {
         (Number(quote.downpaymentRequired) / Number(quote.totalAmount)) * 100
       ),
       isUpfrontEnforced: UPFRONT_PACKAGES.includes(quote.packageName),
-      expiresAt: quote.expiresAt.toISOString(),
+      expiresAt: cachedIso(quote.expiresAt),
       isExpired: isQuotationExpired(quote.expiresAt),
       status: quote.status,
       notes: quote.notes,
       createdBy: quote.createdBy,
-      respondedAt: quote.respondedAt ? quote.respondedAt.toISOString() : null,
+      respondedAt: cachedIso(quote.respondedAt),
       declineReason: quote.declineReason,
-      createdAt: quote.createdAt.toISOString(),
-      updatedAt: quote.updatedAt.toISOString(),
+      createdAt: cachedIso(quote.createdAt),
+      updatedAt: cachedIso(quote.updatedAt),
       lineItems: quote.lineItems.map((li) => ({
         id: li.id,
         quotationId: li.quotationId,

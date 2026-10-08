@@ -31,3 +31,13 @@ export function invalidateCacheTags(...tags: string[]): void {
     }
   }
 }
+
+/**
+ * Dates from an `unstable_cache` read: the first read hands back Date objects, but a cached copy comes back as
+ * text (the cache stores JSON), so `.toISOString()` on it crashes. Use this for every date from a cached read.
+ */
+export function cachedIso(value: Date | string): string;
+export function cachedIso(value: Date | string | null | undefined): string | null;
+export function cachedIso(value: Date | string | null | undefined): string | null {
+  return value == null ? null : new Date(value).toISOString();
+}

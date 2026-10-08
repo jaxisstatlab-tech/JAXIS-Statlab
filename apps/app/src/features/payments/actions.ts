@@ -7,7 +7,7 @@ import { emailClient } from "@/lib/email/notify";
 import { getAppSetting, isOfflineDev, setAppSetting, SETTING_KEYS } from "@/lib/app-settings";
 import { checkUploadedFilePaths } from "@/lib/upload-claims";
 import { revalidatePath, unstable_cache } from "next/cache";
-import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
+import { CACHE_TAGS, cachedIso, invalidateCacheTags } from "@/lib/cache-tags";
 import { bucketByMonth, monthWindow } from "@/lib/month-buckets";
 import {
   SubmitPaymentProofSchema,
@@ -77,6 +77,8 @@ function writePersistedPaymentChannels(channels: PaymentChannelDetails[]): void 
 }
 
 class PaymentAmountError extends Error {}
+/** A payment that was already checked (or vanished) by the time finance acted on it. */
+class PaymentStateError extends Error {}
 
 type Tx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
 
@@ -509,7 +511,15 @@ export async function verifyPayment(
         });
 
         if (!payment) {
-          throw new Error("Payment record not found.");
+          throw new PaymentStateError("This payment wasn't found. Refresh the list.");
+        }
+        // Only a payment waiting to be checked (it used to confirm rejected or already confirmed payments again).
+        if (payment.paymentStatus !== "PROOF_SUBMITTED") {
+          throw new PaymentStateError(
+            payment.paymentStatus === "REJECTED"
+              ? "This payment was already rejected. The client needs to send it again."
+              : "This payment was already confirmed."
+          );
         }
 
         // Sum previous verified payments for this project
@@ -542,9 +552,9 @@ export async function verifyPayment(
 
         const updatedPaymentStatus: PaymentStatus = isFullyPaid ? "FULLY_PAID" : "VERIFIED";
 
-        // Update Payment record
-        const updatedPayment = await tx.payment.update({
-          where: { id: paymentId },
+        // Update Payment record (only if no one else checked it a moment ago)
+        const claimed = await tx.payment.updateMany({
+          where: { id: paymentId, paymentStatus: "PROOF_SUBMITTED" },
           data: {
             paymentStatus: updatedPaymentStatus,
             balancePaidTotal: newBalancePaidTotal,
@@ -552,8 +562,11 @@ export async function verifyPayment(
             verifiedAt: new Date(),
             rejectionReason: null,
           },
-          include: { proofs: true },
         });
+        if (claimed.count === 0) {
+          throw new PaymentStateError("Someone else just checked this payment. Refresh the list.");
+        }
+        const updatedPayment = await tx.payment.findUniqueOrThrow({ where: { id: paymentId }, include: { proofs: true } });
 
         // Activate project if downpayment cleared and current status is AWAITING_PAYMENT
         if (
@@ -653,7 +666,15 @@ export async function verifyPayment(
       },
     };
   } catch (err) {
-    // Dev fallback
+    if (err instanceof PaymentStateError) {
+      return { success: false, error: { code: "INVALID_STATE", message: err.message } };
+    }
+    // Only offline development falls back to the sample file; on the live site a failure says so (it used to
+    // answer "Payment record not found in persistence store.").
+    if (!isOfflineDev()) {
+      console.error("[verifyPayment] Error:", err);
+      return { success: false, error: { code: "SERVER_ERROR", message: "The payment wasn't confirmed. Please try again in a moment." } };
+    }
     console.warn("Using dev fallback for verifyPayment:", err);
     const devPayments = readPersistedDevPayments();
     const idx = devPayments.findIndex((p) => p.id === paymentId);
@@ -749,18 +770,30 @@ export async function rejectPayment(
   const { paymentId, rejectionReason } = parsed.data;
 
   try {
-    const updated = await withDbTimeout(
-      db.payment.update({
-        where: { id: paymentId },
+    // Only a payment waiting to be checked: rejecting a confirmed payment used to undo it without moving the
+    // study back.
+    const claimed = await withDbTimeout(
+      db.payment.updateMany({
+        where: { id: paymentId, paymentStatus: "PROOF_SUBMITTED" },
         data: {
           paymentStatus: "REJECTED",
           rejectionReason,
           verifiedBy: session.user.id,
           verifiedAt: new Date(),
         },
-        include: { proofs: true },
       })
     );
+    if (claimed.count === 0) {
+      const current = await withDbTimeout(db.payment.findUnique({ where: { id: paymentId }, select: { paymentStatus: true } }));
+      throw new PaymentStateError(
+        !current
+          ? "This payment wasn't found. Refresh the list."
+          : current.paymentStatus === "REJECTED"
+            ? "This payment was already rejected."
+            : "This payment was already confirmed, so it can't be rejected."
+      );
+    }
+    const updated = await withDbTimeout(db.payment.findUniqueOrThrow({ where: { id: paymentId }, include: { proofs: true } }));
 
     // Sync dev payments cache
     try {
@@ -837,7 +870,13 @@ export async function rejectPayment(
       },
     };
   } catch (err) {
-    // Dev fallback
+    if (err instanceof PaymentStateError) {
+      return { success: false, error: { code: "INVALID_STATE", message: err.message } };
+    }
+    if (!isOfflineDev()) {
+      console.error("[rejectPayment] Error:", err);
+      return { success: false, error: { code: "SERVER_ERROR", message: "The payment wasn't rejected. Please try again in a moment." } };
+    }
     console.warn("Using dev fallback for rejectPayment:", err);
     const devPayments = readPersistedDevPayments();
     const idx = devPayments.findIndex((p) => p.id === paymentId);
@@ -1126,16 +1165,16 @@ export async function getFinancePaymentsQueue(
       paymentStatus: p.paymentStatus,
       rejectionReason: p.rejectionReason,
       verifiedBy: p.verifiedBy,
-      verifiedAt: p.verifiedAt?.toISOString() || null,
-      createdAt: p.createdAt.toISOString(),
-      updatedAt: p.updatedAt.toISOString(),
+      verifiedAt: cachedIso(p.verifiedAt),
+      createdAt: cachedIso(p.createdAt),
+      updatedAt: cachedIso(p.updatedAt),
       proofs: p.proofs.map((proof) => ({
         id: proof.id,
         paymentId: proof.paymentId,
         filePath: proof.filePath,
         fileName: proof.fileName,
         fileSize: proof.fileSize,
-        uploadedAt: proof.uploadedAt.toISOString(),
+        uploadedAt: cachedIso(proof.uploadedAt),
       })),
       project: p.project
         ? {
@@ -1162,7 +1201,7 @@ export async function getFinancePaymentsQueue(
         : undefined,
     }));
 
-    const devPayments = readPersistedDevPayments().filter((p) => {
+    const devPayments = (isOfflineDev() ? readPersistedDevPayments() : []).filter((p) => {
       if (status === "PENDING") return p.paymentStatus === "PROOF_SUBMITTED";
       if (status === "VERIFIED") return p.paymentStatus === "VERIFIED" || p.paymentStatus === "FULLY_PAID";
       if (status === "REJECTED") return p.paymentStatus === "REJECTED";
@@ -1182,7 +1221,12 @@ export async function getFinancePaymentsQueue(
 
     return { success: true, data: combined };
   } catch (err) {
-    // Dev fallback
+    // On the live site a failed read says so (it used to show the offline sample list, which is empty there,
+    // so new payments looked like they never arrived).
+    if (!isOfflineDev()) {
+      console.error("[getFinancePaymentsQueue] Error:", err);
+      return { success: false, error: { code: "FETCH_ERROR", message: "We couldn't load the payments. Please try again in a moment." } };
+    }
     console.warn("Using dev fallback for getFinancePaymentsQueue:", err);
     const devPayments = readPersistedDevPayments().filter((p) => {
       if (status === "PENDING") return p.paymentStatus === "PROOF_SUBMITTED";
