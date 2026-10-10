@@ -17,12 +17,12 @@ export default function BentoCard({
   children: ReactNode;
   className?: string;
   align?: "center" | "end";
-  /** In a phone swipe carousel: a full-width slide that snaps into place. */
+  /** In a phone swipe row: a slide that snaps into place, a little narrower than the row so the next one peeks in. */
   slide?: boolean;
 }) {
   return (
     <article
-      className={`bento-tile relative flex flex-col overflow-hidden bg-[#0A0A18] ${slide ? "max-sm:w-full max-sm:shrink-0 max-sm:snap-start" : ""} ${className}`}
+      className={`bento-tile relative flex flex-col overflow-hidden bg-[#0A0A18] ${slide ? "max-sm:w-[86%] max-sm:shrink-0 max-sm:snap-start" : ""} ${className}`}
     >
       <div className="flex flex-1 flex-col">
         <div className="flex items-start justify-between gap-4 px-7 pt-7 sm:px-8 sm:pt-8">

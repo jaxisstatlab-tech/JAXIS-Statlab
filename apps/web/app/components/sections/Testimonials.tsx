@@ -1,6 +1,7 @@
 import { Quotes, SealCheck } from "@phosphor-icons/react/ssr";
 import { TESTIMONIALS, type Testimonial } from "../../content/site";
 import Reveal from "../ui/Reveal";
+import SwipeDots from "../ui/SwipeDots";
 import { container, heading, kicker, subtitle } from "../ui/styles";
 
 function Attribution({ t }: { t: Testimonial }) {
@@ -82,8 +83,8 @@ export default function Testimonials() {
         ) : null}
 
         {rest.length ? (
-          <div data-h-pin className="sm:hidden">
-            <div data-h-scroll className="no-scrollbar -mx-6 mt-4 flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto overscroll-x-contain px-6">
+          <div className="sm:hidden">
+            <div id="stories-row" data-h-scroll className="no-scrollbar -mx-6 mt-4 flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto overscroll-x-contain px-6">
               {rest.map((t) => (
                 <figure key={t.quote} className={`${card} w-[85%] shrink-0 snap-start`}>
                   <blockquote className="flex-1 text-pretty font-sans text-[15px] leading-relaxed text-white/80">{t.quote}</blockquote>
@@ -92,7 +93,7 @@ export default function Testimonials() {
                 </figure>
               ))}
             </div>
-            <p className="mt-3 font-mono text-[11px] text-white/45">Keep scrolling for {rest.length} more</p>
+            <SwipeDots target="stories-row" />
           </div>
         ) : null}
 

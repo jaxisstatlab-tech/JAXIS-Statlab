@@ -42,7 +42,8 @@ const COLUMNS = [
   },
 ];
 
-const linkClass = "font-sans text-[13px] text-white/60 transition-colors hover:text-white";
+// 40px tall on phones (easy to tap), with the list gap removed there to keep the footer compact.
+const linkClass = "inline-flex min-h-10 items-center font-sans text-[13px] text-white/60 transition-colors hover:text-white sm:min-h-0";
 
 export default function Footer() {
   return (
@@ -59,24 +60,24 @@ export default function Footer() {
             <p className="mt-4 max-w-xs font-sans text-sm leading-relaxed text-white/60">
               Statistical consulting for students and researchers. Checked twice, explained simply.
             </p>
-            <div className="mt-6 flex flex-col gap-2 font-mono text-xs text-white/55">
-              <a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex items-center gap-2 transition-colors hover:text-white">
+            <div className="mt-4 flex flex-col font-mono text-xs text-white/55 sm:mt-6 sm:gap-2">
+              <a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex min-h-10 items-center gap-2 transition-colors hover:text-white sm:min-h-0">
                 <Envelope size={14} weight="fill" className="text-white/50" />
                 {CONTACT_EMAIL}
               </a>
               {MESSENGER_URL ? (
-                <a href={MESSENGER_URL} data-cta="footer-messenger" className="inline-flex items-center gap-2 transition-colors hover:text-white">
+                <a href={MESSENGER_URL} data-cta="footer-messenger" className="inline-flex min-h-10 items-center gap-2 transition-colors hover:text-white sm:min-h-0">
                   <ChatCircleDots size={14} weight="fill" className="text-white/50" />
                   Message us on Messenger
                 </a>
               ) : null}
               {FACEBOOK_URL ? (
-                <a href={FACEBOOK_URL} className="inline-flex items-center gap-2 transition-colors hover:text-white">
+                <a href={FACEBOOK_URL} className="inline-flex min-h-10 items-center gap-2 transition-colors hover:text-white sm:min-h-0">
                   <FacebookLogo size={14} weight="fill" className="text-white/50" />
                   Facebook page
                 </a>
               ) : null}
-              <span className="inline-flex items-center gap-2">
+              <span className="inline-flex min-h-10 items-center gap-2 sm:min-h-0">
                 <MapPin size={14} weight="fill" className="text-white/50" />
                 Maramag, Bukidnon, Philippines
               </span>
@@ -86,7 +87,7 @@ export default function Footer() {
           {COLUMNS.map((c) => (
             <div key={c.title} className="md:col-span-2 lg:col-span-2">
               <div className="font-mono text-[11px] uppercase tracking-wider text-white/55">{c.title}</div>
-              <ul className="mt-4 flex flex-col gap-2.5">
+              <ul className="mt-2 flex flex-col sm:mt-4 sm:gap-2.5">
                 {c.links.map((l) => (
                   <li key={l.label}>
                     {/* Pages on this site navigate in place; account links go to the app. */}
@@ -112,7 +113,7 @@ export default function Footer() {
               © 2026 JAXIS StatLab. All rights reserved.
               {BUSINESS_REGISTRATION ? <span className="sm:ml-3">{BUSINESS_REGISTRATION}</span> : null}
             </span>
-            <CookieSettingsButton className="underline decoration-white/20 underline-offset-4 transition-colors hover:text-white" />
+            <CookieSettingsButton className="inline-flex min-h-10 items-center underline decoration-white/20 underline-offset-4 transition-colors hover:text-white sm:min-h-0" />
           </span>
           <span>Every study is checked by two statistical analysts.</span>
         </div>

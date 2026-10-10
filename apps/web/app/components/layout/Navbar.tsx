@@ -39,10 +39,14 @@ export default function Navbar() {
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Lock page scroll only while the menu is open. Touching body.style when closed made the browser rewrite the
+  // body's style attribute before React finished loading the page, which React reported as a hydration mismatch.
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
+    if (!open) return;
+    const before = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = before;
     };
   }, [open]);
 

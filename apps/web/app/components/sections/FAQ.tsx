@@ -122,7 +122,7 @@ export default function FAQ({
   const emailLink = (
     <a
       href={`mailto:${CONTACT_EMAIL}`}
-      className="inline-flex shrink-0 items-center gap-1.5 font-mono text-xs text-[#FFA040] transition-colors hover:text-white sm:text-sm"
+      className="inline-flex min-h-10 shrink-0 items-center gap-1.5 font-mono text-xs text-[#FFA040] transition-colors hover:text-white sm:min-h-0 sm:text-sm"
     >
       Can&apos;t find an answer? Email us
       <ArrowUpRight size={13} weight="bold" />
@@ -148,7 +148,7 @@ export default function FAQ({
               {moreHref ? (
                 <Link
                   href={moreHref}
-                  className="inline-flex items-center gap-1.5 font-mono text-xs text-white/70 transition-colors hover:text-white sm:text-sm"
+                  className="inline-flex min-h-10 items-center gap-1.5 font-mono text-xs text-white/70 transition-colors hover:text-white sm:min-h-0 sm:text-sm"
                 >
                   See all questions
                   <ArrowUpRight size={13} weight="bold" />

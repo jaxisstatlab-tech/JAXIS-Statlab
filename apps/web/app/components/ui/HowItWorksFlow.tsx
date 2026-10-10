@@ -9,10 +9,11 @@ export type { Step };
 const ease = "ease-[cubic-bezier(0.23,1,0.32,1)]";
 const num = (i: number) => String(i + 1).padStart(2, "0");
 
-// How it works as tabs: a hairline list of the five steps beside one showcase panel. ScrollFx pins the block and
-// scrolling moves through the steps, forwards and backwards (it sends "step-scroll" with the step index and sets
-// --step-p, the progress through that step). Picking a step sends "step-jump" so the page scrolls to it. Without the
-// pin (reduced motion), steps just open on tap.
+// How it works. Wide screens: a hairline list of the five steps beside one showcase panel; ScrollFx pins the block
+// and scrolling moves through the steps, forwards and backwards (it sends "step-scroll" with the step index and sets
+// --step-p, the progress through that step). Picking a step sends "step-jump" so the page scrolls to it; without the
+// pin (reduced motion) steps open on tap. Phones and tablets: the steps are stacked and scroll normally, each scene
+// playing once it comes into view (pinning there held the screen and made scrolling feel stuck).
 export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
@@ -49,36 +50,6 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
       data-tab-pin={steps.length}
       className="group/tabs mt-10 grid grid-cols-1 content-start gap-5 bg-[#010114] lg:mt-12 lg:grid-cols-12 lg:gap-12"
     >
-      {/* Phones: a slim progress bar that fills as you scroll through the steps */}
-      <div className="lg:hidden">
-        <div className="flex items-center gap-4">
-          <div className="flex flex-1 gap-1">
-            {steps.map((s, i) => (
-              <button
-                key={s.tag}
-                type="button"
-                onClick={() => choose(i)}
-                aria-label={`Step ${i + 1}: ${s.title}`}
-                aria-current={i === active ? "step" : undefined}
-                className="h-6 flex-1 py-2.5"
-              >
-                <span className="block h-[3px] overflow-hidden rounded-full bg-white/[0.12]">
-                  <span
-                    className="block h-full w-full origin-left bg-[#FF8A1F] transition-transform duration-300"
-                    style={{ transform: i < active ? "scaleX(1)" : i === active ? "scaleX(max(var(--step-p, 1), 0.08))" : "scaleX(0)" }}
-                  />
-                </span>
-              </button>
-            ))}
-          </div>
-          <span className="shrink-0 font-mono text-[11px] uppercase tracking-wider text-white/45">
-            <span className="text-white">{num(active)}</span> / {num(last)}
-            <span className="text-white/25"> · </span>
-            <span className="text-[#FFA040]">{steps[active]?.tag}</span>
-          </span>
-        </div>
-      </div>
-
       <ol className="hidden border-t border-white/10 lg:col-span-5 lg:block">
         {steps.map((s, i) => {
           const on = i === active;
@@ -158,40 +129,54 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
         </div>
       </div>
 
-      {/* Phones: the open step's title and sentence, then its scene large and edge to edge */}
-      <div className="lg:hidden">
-        <div className="grid">
-          {steps.map((s, i) => (
-            <div
-              key={s.tag}
-              aria-hidden={i !== active}
-              className={`col-start-1 row-start-1 transition-[opacity,translate] duration-500 ${ease} ${
-                i === active ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
-              }`}
-            >
-              <h3 className="font-sans text-2xl font-medium tracking-[-0.03em] text-white">{s.title}</h3>
-              <p className="mt-2 font-sans text-[15px] leading-relaxed text-white/65">{s.body}</p>
-            </div>
-          ))}
-        </div>
-        <div className="relative -mx-6 mt-4 grid">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-3/4 bg-[radial-gradient(ellipse_at_50%_100%,rgba(204,102,0,0.14),transparent_70%)]"
-          />
-          {steps.map((s, i) => (
-            <div
-              key={s.tag}
-              aria-hidden={i !== active}
-              className={`col-start-1 row-start-1 transition-[opacity,translate] duration-500 ${ease} ${
-                i === active ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
-              }`}
-            >
-              <StageArt index={i} on={i === active && artOn} label={`${s.title}: ${s.body}`} zoom={1.45} />
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Phones and tablets: every step stacked, scrolling normally */}
+      <ol className="flex flex-col gap-12 lg:hidden">
+        {steps.map((s, i) => (
+          <StackedStep key={s.tag} step={s} index={i} last={last} />
+        ))}
+      </ol>
     </div>
+  );
+}
+
+/** One step on phones and tablets; its scene plays the first time it scrolls into view. */
+function StackedStep({ step: s, index: i, last }: { step: Step; index: number; last: number }) {
+  const ref = useRef<HTMLLIElement>(null);
+  const [on, setOn] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setOn(true);
+        io.disconnect();
+      },
+      { rootMargin: "0px 0px -30% 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <li ref={ref}>
+      <div className="flex items-baseline gap-3 font-mono text-[11px] uppercase tracking-wider">
+        <span className="text-white/45">
+          <span className="text-white">{num(i)}</span> / {num(last)}
+        </span>
+        <span className="text-[#FFA040]">{s.tag}</span>
+        <span className="ml-auto normal-case tracking-normal text-white/45">{s.time}</span>
+      </div>
+      <h3 className="mt-2 font-sans text-xl font-medium tracking-[-0.03em] text-white sm:text-2xl">{s.title}</h3>
+      <p className="mt-2 max-w-xl font-sans text-[15px] leading-relaxed text-white/65">{s.body}</p>
+      <div className="relative -mx-6 mt-3 sm:mx-0">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-3/4 bg-[radial-gradient(ellipse_at_50%_100%,rgba(204,102,0,0.14),transparent_70%)]"
+        />
+        <StageArt index={i} on={on} label={`${s.title}: ${s.body}`} zoom={1.45} />
+      </div>
+    </li>
   );
 }

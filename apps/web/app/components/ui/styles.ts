@@ -4,8 +4,9 @@ const btnBase =
 export const btnPrimary = `${btnBase} bg-[#CC6600] text-white hover:bg-[#E67300]`;
 export const btnGhost = `${btnBase} border border-white/15 text-white hover:border-white/35 hover:bg-white/[0.04]`;
 export const btnInk = `${btnBase} bg-[#010114] text-white hover:bg-[#0B0B24]`;
+// Text links are 40px tall on phones so they're easy to tap.
 export const linkArrow =
-  "inline-flex items-center gap-1.5 font-mono text-xs sm:text-sm text-white/70 transition-colors hover:text-white";
+  "inline-flex min-h-10 items-center gap-1.5 font-mono text-xs sm:min-h-0 sm:text-sm text-white/70 transition-colors hover:text-white";
 
 export const container = "w-full max-w-[90rem] mx-auto px-6 lg:px-8";
 export const kicker = "font-mono text-xs uppercase tracking-[0.15em] font-medium text-white/55 mb-3";

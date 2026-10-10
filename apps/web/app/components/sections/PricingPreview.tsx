@@ -179,7 +179,7 @@ export default function PricingPreview() {
             </ul>
             <Link
               href="/pricing#add-ons"
-              className="inline-flex items-center gap-1.5 font-mono text-xs text-white/70 transition-colors hover:text-white lg:justify-self-end"
+              className="inline-flex min-h-10 items-center gap-1.5 font-mono text-xs text-white/70 transition-colors hover:text-white sm:min-h-0 lg:justify-self-end"
             >
               Details
               <ArrowUpRight size={12} weight="bold" />

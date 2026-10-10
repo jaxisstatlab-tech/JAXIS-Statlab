@@ -137,7 +137,9 @@ export default function RootLayout({
           <style>{`.reveal,.status-badge{opacity:1!important;transform:none!important}.mark-draw{clip-path:none!important}.count{--num:var(--to)!important}`}</style>
         </noscript>
       </head>
-      <body className="font-sans antialiased" style={{ backgroundColor: "#010114" }}>
+      {/* The dark background comes from <html> (inline, so there's no flash) and globals.css; an inline style here
+          was rewritten by the browser whenever a script touched body.style, which broke hydration. */}
+      <body className="font-sans antialiased">
         <Intro />
         <ExitCurtain />
         {children}

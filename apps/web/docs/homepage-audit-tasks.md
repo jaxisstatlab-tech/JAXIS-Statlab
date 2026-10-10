@@ -229,8 +229,15 @@ all react to the cursor, each differently.
 ### 21. Three different scroll feels
 Native wheel steps everywhere, an eased canvas in How it works, and GSAP scrub for the single parallax element (the
 tracker card, `data-parallax="0.2"`).
-- [ ] One scroll clock: add Lenis site-wide and drive `ScrollTrigger` from it (GSAP is already a dependency), so
-      parallax, pinning, and the canvas share the same smoothed scroll. Turn it off for reduced motion.
+- [x] One scroll clock: Lenis drives `ScrollTrigger` (`ScrollFx.tsx`), off for reduced motion. **Mouse and trackpad
+      only (2026-10-10):** on touch screens it used to take over the fling (`syncTouch`), which made phone scrolling feel
+      heavy; phones now keep native scrolling.
+- [x] **Phones scroll freely (2026-10-10):** no pinned sections on phones. The Services and Testimonials rows are
+      plain swipe rows (CSS snap, next card peeking in) with a dot indicator (`SwipeDots`: "2 / 7 · Swipe for more",
+      tap a dot to jump); "How it works" stacks its five steps below 1024px, each scene playing as it scrolls into view
+      (the pin is desktop only). The home page went from about 16,900px to 13,000px tall on a 390px phone. Links that
+      were 16–17px tall (footer, "See all questions", "Email us", "Ask us a question", "Details", "Cookie settings")
+      are 40px tall on phones.
 - [x] Either give parallax a system (all hero-grade visuals drift at the same depth) or remove the lone parallax.
       *(Removed from the tracker card.)*
 - [ ] `<Reveal>` fires at `rootMargin: -8%`, so on a fast scroll cards show up blank (seen in the Services bottom

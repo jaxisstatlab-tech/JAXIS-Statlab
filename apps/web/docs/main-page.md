@@ -491,11 +491,14 @@ From [globals.css](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/web
 
 ## 11. Cross-Cutting Systems (Scroll, Config, SEO)
 
-### 11.1 Smooth Scrolling Synchronization (`SmoothScroll.tsx`)
-- **File**: [apps/web/app/components/layout/SmoothScroll.tsx](file:///c:/Users/ROG%20STRIX/Desktop/JAXIS%20StatLab/apps/web/app/components/layout/SmoothScroll.tsx)
-- Instantiates `Lenis` with `lerp: 0.08`, `duration: 1.2`, exponential easing (`1.001 - Math.pow(2, -10 * t)`).
-- Hooks into GSAP via `lenis.on("scroll", ScrollTrigger.update)` and `gsap.ticker.add((time) => lenis.raf(time * 1000))`.
-- Sets `gsap.ticker.lagSmoothing(0)` to prevent frame stuttering with ScrollTrigger pins.
+### 11.1 Smooth Scrolling Synchronization (`ScrollFx.tsx`)
+- **File**: `apps/web/app/components/layout/ScrollFx.tsx` (all scroll effects, wired by data attributes).
+- `Lenis` (`lerp: 0.1`) runs **only for mouse and trackpad** (`(hover: hover) and (pointer: fine)`) and not with reduced
+  motion; touch screens keep native scrolling and momentum (since 2026-10-10).
+- Hooks into GSAP via `lenis.on("scroll", ScrollTrigger.update)` and `gsap.ticker.add((time) => lenis.raf(time * 1000))`,
+  with `gsap.ticker.lagSmoothing(0)` while Lenis runs.
+- Pinning (`[data-tab-pin]`, How it works) is wide screens only (1024px and up); phones and tablets get stacked steps.
+  Swipe rows (`[data-h-scroll]`) are plain CSS snap rows with `SwipeDots` under them.
 - Suppresses external browser extension errors (e.g. MetaMask injection crashes) from triggering Next.js dev overlay.
 
 ### 11.2 Environment & Routing Config (`config.ts`)

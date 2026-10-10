@@ -2,6 +2,7 @@ import { SEND_STUDY_URL } from "@/lib/config";
 import BentoCard from "../ui/BentoCard";
 import Reveal from "../ui/Reveal";
 import SpotlightGrid from "../ui/SpotlightGrid";
+import SwipeDots from "../ui/SwipeDots";
 import { CheckArt, CleaningArt, DefenseArt, FindingsArt, ModelsArt, ProfilesArt, TestingArt } from "../ui/ServiceArt";
 import { btnPrimary, container, heading, kicker, subtitle } from "../ui/styles";
 
@@ -21,7 +22,7 @@ export default function Services() {
         </Reveal>
 
         <SpotlightGrid className="mt-10">
-            <div data-h-scroll data-h-snap className="no-scrollbar flex snap-x snap-mandatory gap-px overflow-x-auto overscroll-x-contain rounded-[1px] sm:grid sm:grid-cols-2 sm:overflow-hidden lg:grid-cols-4">
+            <div id="services-row" data-h-scroll className="no-scrollbar flex snap-x snap-mandatory gap-px overflow-x-auto overscroll-x-contain rounded-[1px] sm:grid sm:grid-cols-2 sm:overflow-hidden lg:grid-cols-4">
             <BentoCard
               slide
               index="01"
@@ -87,10 +88,8 @@ export default function Services() {
             </BentoCard>
           </div>
         </SpotlightGrid>
-        <div className="mt-4 flex items-center justify-between gap-4 font-mono text-[11px] text-white/45 sm:justify-end">
-          <span className="sm:hidden">Keep scrolling to see all 7</span>
-          <span>Numbers shown are examples.</span>
-        </div>
+        <SwipeDots target="services-row" />
+        <p className="mt-2 font-mono text-[11px] text-white/45 sm:mt-4 sm:text-right">Numbers shown are examples.</p>
       </div>
     </section>
   );
