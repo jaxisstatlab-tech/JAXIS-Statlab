@@ -19,6 +19,7 @@ type DevProject = {
   researchTitle: string;
   researchQuestions?: string | null;
   researchObjectives?: string | null;
+  clientNotes?: string | null;
   hypotheses?: string | null;
   masterStatus: string;
   packageName?: string | null;
@@ -74,6 +75,7 @@ export function devOpenStudies(user: User): OpenStudyItem[] {
         program: p.client?.clientProfile?.academicProgram ?? null,
         researchQuestions: p.researchQuestions ?? "",
         researchObjectives: p.researchObjectives ?? "",
+        clientNotes: p.clientNotes ?? null,
         hypotheses: p.hypotheses ?? null,
         files: (p.files ?? [])
           .filter((f) => ["RESEARCH_DOCUMENT", "DATASET", "QUESTIONNAIRE"].includes(f.fileCategory ?? "RESEARCH_DOCUMENT"))

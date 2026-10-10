@@ -484,6 +484,7 @@ export function devClientDeliverables(projectId: string, user: User): ClientDeli
       isReleased || qaApproved || p.masterStatus === "DELIVERED"
         ? {
             certificateId: `JAXIS-AUDIT-2026-${p.intakeId.replace(/^JAXIS-?/i, "")}`,
+            studyId: p.intakeId,
             researchTitle: p.researchTitle,
             clientName: p.client?.fullName ?? "Client",
             clientEmail: p.client?.email ?? "",
@@ -499,7 +500,7 @@ export function devClientDeliverables(projectId: string, user: User): ClientDeli
             statisticianTitle: "Statistical Analyst",
             statisticianSignatureUrl: staffSignature(p.assignment?.statisticianId),
             qaLeadName: approved?.reviewerName ?? p.assignment?.qaLead?.fullName ?? "JAXIS StatLab review team",
-            qaLeadTitle: "Reviewing Statistical Analyst",
+            qaLeadTitle: "Statistical Review Editor",
             // The approver's own signature from their profile (saved in .dev-users.json offline).
             qaSignatureUrl: staffSignature(approved?.reviewerId ?? p.assignment?.qaLeadId),
           }

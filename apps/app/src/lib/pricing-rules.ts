@@ -18,6 +18,8 @@ export interface PackageDefinition {
   tagline: string;
   deliverables: string[];
   recommendedFor: string;
+  /** Working days this package usually takes (set by the CEO; see src/lib/delivery-speed.ts). */
+  usualWorkingDays?: number;
   isActive?: boolean;
 }
 
@@ -27,6 +29,8 @@ export interface AddOnDefinition {
   defaultPrice: number;
   tagline: string;
   badge: string;
+  /** For faster delivery add-ons: days it takes after the deposit is confirmed. Empty for other add-ons. */
+  readyInDays?: number | null;
   isActive?: boolean;
 }
 
@@ -55,6 +59,7 @@ export const PACKAGES_CATALOG: Record<PackageName, PackageDefinition> = {
       "Variable codebook & audit log",
     ],
     recommendedFor: "Undergraduate / Master's students with raw, unformatted survey or experimental data.",
+    usualWorkingDays: 7,
   },
   JX_02_START: {
     code: "JX_02_START",
@@ -72,6 +77,7 @@ export const PACKAGES_CATALOG: Record<PackageName, PackageDefinition> = {
       "Narrative statistical write-up for Chapter 4",
     ],
     recommendedFor: "Descriptive research designs, institutional baseline assessments, and pilot feasibility studies.",
+    usualWorkingDays: 7,
   },
   JX_03_CORE: {
     code: "JX_03_CORE",
@@ -89,6 +95,7 @@ export const PACKAGES_CATALOG: Record<PackageName, PackageDefinition> = {
       "Independent dual-analyst verification and quality audit",
     ],
     recommendedFor: "Undergraduate Theses, Master's Theses, and Correlational/Comparative Research.",
+    usualWorkingDays: 7,
   },
   JX_04_ADVANCED: {
     code: "JX_04_ADVANCED",
@@ -106,6 +113,7 @@ export const PACKAGES_CATALOG: Record<PackageName, PackageDefinition> = {
       "Comprehensive model diagnostics and structural validity logs",
     ],
     recommendedFor: "Doctoral Dissertations, Scopus/WOS Journal Submissions, and Complex Multi-Tier Research.",
+    usualWorkingDays: 15,
   },
 };
 
@@ -126,6 +134,7 @@ export const ADDONS_CATALOG: Record<AddOnName, AddOnDefinition> = {
     defaultPrice: 300,
     tagline: "Priority queue delivery within 72 hours of escrow deposit.",
     badge: "72-HR PRIORITY",
+    readyInDays: 3,
   },
   EXPRESS: {
     code: "EXPRESS",
@@ -133,6 +142,7 @@ export const ADDONS_CATALOG: Record<AddOnName, AddOnDefinition> = {
     defaultPrice: 600,
     tagline: "Dedicated fast-track delivery within 48 hours of escrow deposit.",
     badge: "48-HR PRIORITY",
+    readyInDays: 2,
   },
   EMERGENCY: {
     code: "EMERGENCY",
@@ -140,6 +150,7 @@ export const ADDONS_CATALOG: Record<AddOnName, AddOnDefinition> = {
     defaultPrice: 1000,
     tagline: "Urgent priority delivery within 24 hours with dedicated Senior QA review.",
     badge: "24-HR EMERGENCY",
+    readyInDays: 1,
   },
 };
 

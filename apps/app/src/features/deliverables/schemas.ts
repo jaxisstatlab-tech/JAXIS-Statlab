@@ -150,6 +150,8 @@ export interface AdminDeliverablesDeskDTO {
 
 export interface QaCertificateDTO {
   certificateId: string;
+  /** The study's ID, e.g. JAXIS-202610-5125 (printed at the bottom as the client's ID number). */
+  studyId?: string;
   researchTitle: string;
   clientName: string;
   clientEmail: string;

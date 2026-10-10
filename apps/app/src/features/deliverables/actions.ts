@@ -680,7 +680,7 @@ async function loadClientDeliverables(projectId: string): Promise<ClientDelivera
     const approvedReview = project.qaReviews?.[0];
     const qaUser = approvedReview?.reviewer || project.assignment?.qaLead;
     const qaLeadName = qaUser?.fullName || "JAXIS StatLab review team";
-    const qaLeadTitle = "Reviewing Statistical Analyst";
+    const qaLeadTitle = "Statistical Review Editor";
     const qaSignatureUrl = qaUser?.staffProfile?.signatureUrl || null;
 
     const cleanIntakeNum = project.intakeId.replace(/^JAXIS-?/i, "");
@@ -694,6 +694,7 @@ async function loadClientDeliverables(projectId: string): Promise<ClientDelivera
 
     const qaCertificate: QaCertificateDTO = {
       certificateId,
+      studyId: project.intakeId,
       researchTitle: project.researchTitle,
       clientName: project.client?.fullName || "",
       clientEmail: project.client?.email || "",

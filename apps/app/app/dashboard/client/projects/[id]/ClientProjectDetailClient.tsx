@@ -28,6 +28,7 @@ import type { ProjectDetailItem, ProjectFileItem } from "@/features/projects/sch
 import { CODE_EXTENSIONS, DATA_EXTENSIONS, REPORT_AND_FIGURE_EXTENSIONS, STUDY_FILE_EXTENSIONS } from "@/lib/file-types";
 import type { FileCategory } from "@prisma/client";
 import { Meter, Panel, PanelHeader } from "@/components/dashboard/Panel";
+import { preferredAddOnsLabel, preferredPackageLabel } from "@/features/projects/intake-preferences";
 
 // The study's Overview tab, written for students: what's happening and the one thing to do next,
 // then what they sent us (questions and files), with dates, payment and help on the side.
@@ -409,16 +410,19 @@ function ActionLink({ href, label, primary = false }: { href: string; label: str
 
 function QuestionsPanel({ project: p }: { project: ProjectDetailItem }) {
   const rows = [
-    { label: "Objectives", body: p.researchObjectives },
-    { label: "Statement of the problem", body: p.researchQuestions },
+    { label: "Statement of the problem", body: p.researchObjectives },
+    { label: "Research objectives", body: p.researchQuestions },
     { label: "Hypotheses", body: p.hypotheses },
+    { label: "Preferred package", body: preferredPackageLabel(p.preferredPackage) },
+    { label: "Add-ons you asked for", body: preferredAddOnsLabel(p.preferredAddOns) },
+    { label: "Additional notes", body: p.clientNotes },
   ].filter((r) => r.body && r.body.trim());
 
   return (
     <Panel aria-label="What you sent us">
       <PanelHeader title="What you sent us" subtitle="What you asked us to answer. Your statistical analyst works from this." />
       {rows.length === 0 ? (
-        <p className="px-5 pb-6 pt-4 text-[13px] text-white/45 sm:px-6">You didn&apos;t add your objectives yet.</p>
+        <p className="px-5 pb-6 pt-4 text-[13px] text-white/45 sm:px-6">You didn&apos;t add your research objectives yet.</p>
       ) : (
         <dl className="mt-4 divide-y divide-white/[0.06] border-t border-white/[0.06]">
           {rows.map((r) => (

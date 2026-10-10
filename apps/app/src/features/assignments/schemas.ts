@@ -126,6 +126,7 @@ export interface AssignmentDetailItem {
   reassignReason?: string | null;
   researchObjectives?: string | null;
   researchQuestions?: string | null;
+  clientNotes?: string | null;
   hypotheses?: string | null;
   files?: {
     id: string;

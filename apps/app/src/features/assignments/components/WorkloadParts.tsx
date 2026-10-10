@@ -115,9 +115,10 @@ export function StudyDetailsModal({
             </div>
           ))}
         </dl>
-        {section("Statement of the problem", s.researchQuestions)}
+        {section("Statement of the problem", s.researchObjectives)}
+        {section("Research objectives", s.researchQuestions)}
         {section("Hypotheses", s.hypotheses)}
-        {section("What the study wants to find out", s.researchObjectives)}
+        {section("Additional notes from the client", s.clientNotes)}
         <div>
           <p className="text-[12px] font-medium text-white/45">Files from the client</p>
           {s.files && s.files.length > 0 ? (

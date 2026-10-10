@@ -18,6 +18,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: `${res.data.intakeId} – ${res.data.researchTitle} | JAXIS StatLab`,
       description:
         res.data.researchObjectives ||
+        res.data.researchQuestions ||
         "Where your study stands, what you sent, and what to do next.",
     };
   }

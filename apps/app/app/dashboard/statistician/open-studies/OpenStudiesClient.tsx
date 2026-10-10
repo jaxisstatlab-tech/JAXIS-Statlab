@@ -319,9 +319,10 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
               <Fact label="Program" value={details.program ?? "—"} />
             </dl>
 
-            <Block title="Research objectives" text={details.researchObjectives} />
-            {details.researchQuestions?.trim() ? <Block title="Statement of the problem" text={details.researchQuestions} /> : null}
+            {details.researchObjectives?.trim() ? <Block title="Statement of the problem" text={details.researchObjectives} /> : null}
+            <Block title="Research objectives" text={details.researchQuestions} />
             {details.hypotheses?.trim() ? <Block title="Hypotheses" text={details.hypotheses} /> : null}
+            {details.clientNotes?.trim() ? <Block title="Additional notes from the client" text={details.clientNotes} /> : null}
 
             <section>
               <p className="text-[12px] font-medium text-white/45">What the analysis should do</p>

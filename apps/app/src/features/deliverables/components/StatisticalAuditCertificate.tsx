@@ -35,12 +35,12 @@ export const StatisticalAuditCertificate: React.FC<StatisticalAuditCertificatePr
 
           {/* The study */}
           <section className="print-avoid-break mt-7">
-            <h2 className="border-b border-[#1c1c28]/70 pb-1 text-[12px] font-bold uppercase tracking-wider text-[#111118]">The study</h2>
+            <h2 className="border-b border-[#1c1c28]/70 pb-1 text-[12px] font-bold uppercase tracking-wider text-[#111118]">{CERTIFICATE_TEXT.studyHeading}</h2>
             <dl className="mt-2.5 flex flex-col gap-1.5">
               {rows.map((r) => (
                 <div key={r.label} className="grid grid-cols-1 gap-x-4 sm:grid-cols-[10rem_1fr] print:grid-cols-[10rem_1fr]">
                   <dt className="font-semibold text-[#111118]">{r.label}</dt>
-                  <dd className={`text-[#33334a] ${r.label === "Study title" ? "italic" : ""}`}>{r.value}</dd>
+                  <dd className={`text-[#33334a] ${r.label === CERTIFICATE_TEXT.titleLabel ? "italic" : ""}`}>{r.value}</dd>
                 </div>
               ))}
             </dl>
@@ -48,7 +48,8 @@ export const StatisticalAuditCertificate: React.FC<StatisticalAuditCertificatePr
 
           {/* What was checked */}
           <section className="print-avoid-break mt-6">
-            <h2 className="border-b border-[#1c1c28]/70 pb-1 text-[12px] font-bold uppercase tracking-wider text-[#111118]">What was checked</h2>
+            <h2 className="border-b border-[#1c1c28]/70 pb-1 text-[12px] font-bold uppercase tracking-wider text-[#111118]">{CERTIFICATE_TEXT.checksHeading}</h2>
+            <p className="mt-2.5 text-[#33334a]">{CERTIFICATE_TEXT.scope}</p>
             <ul className="mt-2.5 flex flex-col gap-1">
               {CERTIFICATE_TEXT.checks.map((c) => (
                 <li key={c} className="flex gap-2 text-[#33334a]">
@@ -59,16 +60,16 @@ export const StatisticalAuditCertificate: React.FC<StatisticalAuditCertificatePr
             </ul>
           </section>
 
-          {/* Approval */}
+          {/* Attestation */}
           <section className="print-avoid-break mt-6">
-            <h2 className="border-b border-[#1c1c28]/70 pb-1 text-[12px] font-bold uppercase tracking-wider text-[#111118]">Approval</h2>
-            <p className="mt-2.5 text-[#33334a]">{CERTIFICATE_TEXT.approval(data)}</p>
+            <h2 className="border-b border-[#1c1c28]/70 pb-1 text-[12px] font-bold uppercase tracking-wider text-[#111118]">{CERTIFICATE_TEXT.attestationHeading}</h2>
+            <p className="mt-2.5 text-[#33334a]">{CERTIFICATE_TEXT.attestation}</p>
           </section>
 
           {/* Signatures */}
           <div className="print-avoid-break mt-auto grid grid-cols-1 gap-8 border-t border-[#1c1c28]/15 pt-8 sm:grid-cols-2 print:grid-cols-2">
             <div className="flex flex-col items-center text-center">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#111118]">Reviewed &amp; approved by</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#111118]">{CERTIFICATE_TEXT.signedByLabel}</p>
               <div className="flex h-14 w-full items-end justify-center">
                 {data.qaSignatureUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -83,14 +84,14 @@ export const StatisticalAuditCertificate: React.FC<StatisticalAuditCertificatePr
               <p className="text-[11px] font-bold text-[#0a1f3d]">JAXIS STATLAB</p>
             </div>
             <div className="flex flex-col items-center text-center">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#111118]">Issued by</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#111118]">Issued by:</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/jaxis-seal.png" alt="JAXIS StatLab seal" className="mt-2 w-48 object-contain" />
             </div>
           </div>
 
           <p className="mt-6 text-center text-[10.5px] text-[#6b6b80]">
-            Certificate no. {data.certificateId} · Questions: {CERTIFICATE_TEXT.contact}
+            {CERTIFICATE_TEXT.footerId(data)} · Questions: {CERTIFICATE_TEXT.contact}
           </p>
         </div>
       </div>

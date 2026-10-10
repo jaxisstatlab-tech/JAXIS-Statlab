@@ -25,6 +25,9 @@ export function devCreateProject(
     chapters13: string | null;
     questionnaire: string | null;
     analysisGoals?: string[];
+    preferredPackage?: string | null;
+    preferredAddOns?: string[];
+    clientNotes?: string | null;
     files: Array<{ fileName: string; filePath: string; fileType: string; fileCategory: string }>;
   }
 ) {
@@ -43,6 +46,9 @@ export function devCreateProject(
     chapters13: input.chapters13,
     questionnaire: input.questionnaire,
     analysisGoals: input.analysisGoals ?? [],
+    preferredPackage: input.preferredPackage ?? null,
+    preferredAddOns: input.preferredAddOns ?? [],
+    clientNotes: input.clientNotes ?? null,
     deadlineRequested: input.deadlineRequested.toISOString(),
     masterStatus: "NEW_REQUEST",
     packageName: null,

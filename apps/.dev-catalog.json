@@ -1,0 +1,103 @@
+{
+  "packages": {
+    "JX_01_DATACHECK": {
+      "code": "JX_01_DATACHECK",
+      "id": "JX-01",
+      "name": "JX-01 DataCheck & Clean",
+      "badge": "DATA AUDIT",
+      "minPrice": 1000,
+      "maxPrice": 1000,
+      "defaultPrice": 1000,
+      "isUpfront": true,
+      "tagline": "Dataset integrity audit, missing value screening, reverse coding, and variable structure cleaning.",
+      "deliverables": [
+        "Cleaned dataset (.xlsx / .sav) with data dictionary",
+        "Data screening & normality verification report",
+        "Variable codebook & audit log"
+      ],
+      "recommendedFor": "Undergraduate / Master's students with raw, unformatted survey or experimental data."
+    },
+    "JX_02_START": {
+      "code": "JX_02_START",
+      "id": "JX-02",
+      "name": "JX-02 Start (Descriptive)",
+      "badge": "FOUNDATIONAL",
+      "minPrice": 1500,
+      "maxPrice": 1800,
+      "defaultPrice": 1500,
+      "isUpfront": true,
+      "tagline": "Univariate descriptive analytics, frequency distributions, mean/SD metrics, and profile tables.",
+      "deliverables": [
+        "APA 7th formatted demographic tables",
+        "Mean, Standard Deviation, Skewness/Kurtosis indicators",
+        "Narrative statistical write-up for Chapter 4"
+      ],
+      "recommendedFor": "Descriptive research designs, institutional baseline assessments, and pilot feasibility studies."
+    },
+    "JX_03_CORE": {
+      "code": "JX_03_CORE",
+      "id": "JX-03",
+      "name": "JX-03 Core (Inferential)",
+      "badge": "STANDARD RESEARCH",
+      "minPrice": 1800,
+      "maxPrice": 3000,
+      "defaultPrice": 2500,
+      "isUpfront": false,
+      "tagline": "Parametric & non-parametric hypothesis testing (t-Tests, ANOVA, Pearson r, Multiple Linear Regression).",
+      "deliverables": [
+        "Complete Chapter 4 findings with APA 7th publication tables",
+        "Hypothesis testing decision matrices (p-values, effect sizes, Cohen's d)",
+        "Reproducible statistical script (.R / SPSS syntax)"
+      ],
+      "recommendedFor": "Undergraduate Theses, Master's Theses, and Correlational/Comparative Research.",
+      "usualWorkingDays": 3
+    },
+    "JX_04_ADVANCED": {
+      "code": "JX_04_ADVANCED",
+      "id": "JX-04",
+      "name": "JX-04 Advanced (Multivariate)",
+      "badge": "ADVANCED & DOCTORAL",
+      "minPrice": 3000,
+      "maxPrice": null,
+      "defaultPrice": 3500,
+      "isUpfront": false,
+      "tagline": "Structural Equation Modeling (SEM/PLS), MANOVA, Factor Analysis (EFA/CFA), Machine Learning & Time Series.",
+      "deliverables": [
+        "Path model diagrams and structural validity matrices",
+        "Comprehensive APA 7th Chapter 4 & Methodology defense deck",
+        "Peer-reviewed grade statistical code and raw computational logs"
+      ],
+      "recommendedFor": "Doctoral Dissertations, Scopus/WOS Journal Submissions, and Complex Multi-Tier Research."
+    }
+  },
+  "addOns": {
+    "DEFENSELAB": {
+      "code": "DEFENSELAB",
+      "name": "DefenseLab 1-on-1 Defense Prep",
+      "defaultPrice": 250,
+      "tagline": "1-hour simulated oral defense coaching with a PhD/Master's statistician.",
+      "badge": "ORAL COACHING"
+    },
+    "RUSH": {
+      "code": "RUSH",
+      "name": "Rush 3-Day Turnaround",
+      "defaultPrice": 300,
+      "tagline": "Accelerates analysis queue for delivery within 72 hours of escrow deposit.",
+      "badge": "72-HR PRIORITY"
+    },
+    "EXPRESS": {
+      "code": "EXPRESS",
+      "name": "Express 48-Hour Turnaround",
+      "defaultPrice": 600,
+      "tagline": "Guarantees dedicated sprint turnaround within 48 hours.",
+      "badge": "48-HR SPRINT"
+    },
+    "EMERGENCY": {
+      "code": "EMERGENCY",
+      "name": "Emergency 24-Hour Turnaround",
+      "defaultPrice": 1000,
+      "tagline": "Critical emergency SLA — 24-hour turnaround with prioritized Senior QA gate.",
+      "badge": "24-HR EMERGENCY"
+    }
+  }
+}

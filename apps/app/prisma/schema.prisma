@@ -276,6 +276,12 @@ model Project {
   // What the client wants the analysis to do (intake form), used by staff to choose tests and price the study:
   // DESCRIBE, COMPARE, RELATIONSHIP, PREDICT, VALIDATE, UNSURE.
   analysisGoals           String[]      @default([])
+  // What the client would like (intake form), a starting point for the quote; JAXIS may change it after review.
+  // preferredPackage: a PackageName or UNSURE. preferredAddOns: AddOnName values, or [NONE] / [UNSURE].
+  preferredPackage        String?
+  preferredAddOns         String[]      @default([])
+  /// Anything else the client wants the admin and analyst to know (intake form, optional).
+  clientNotes             String?
   deadlineRequested       DateTime
   masterStatus            ProjectStatus @default(NEW_REQUEST)
   packageName             String?

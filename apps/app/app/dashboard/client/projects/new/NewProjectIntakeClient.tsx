@@ -1,12 +1,25 @@
 "use client";
 
-import React, { useState, useTransition, useEffect } from "react";
+import React, { useState, useTransition, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PageHeader, FormInput, FormTextarea, Button, Toast, LoadingState, Label } from "@repo/ui";
-import { ArrowLeft, ArrowRight, Check, CloudArrowUp, Code, Database, FileText, GraduationCap, ListChecks, Warning } from "@phosphor-icons/react";
+import { PageHeader, FormInput, FormTextarea, Button, Toast, LoadingState, Label, Peso } from "@repo/ui";
+import { ArrowLeft, ArrowRight, CalendarCheck, Check, CloudArrowUp, Code, Database, FileText, GraduationCap, ListChecks, Warning } from "@phosphor-icons/react";
 import { createProject } from "@/features/projects/actions";
 import { ANALYSIS_GOALS, analysisGoalsFor, type AnalysisGoalCode } from "@/features/projects/analysis-goals";
+import { CLIENT_PACKAGES } from "@/features/projects/client-packages";
+import { pickSpeed, type DeliveryConfig } from "@/lib/delivery-speed";
+import {
+  CLIENT_ADDONS,
+  CLIENT_NOTES_MAX,
+  PREFERENCE_NOTE,
+  SPEED_ADDONS,
+  addOnsProblem,
+  preferredAddOnsLabel,
+  preferredPackageLabel,
+  type PreferredAddOn,
+  type PreferredPackage,
+} from "@/features/projects/intake-preferences";
 import { getClientProfile } from "@/features/client-profile/actions";
 import { QuickProfileModal } from "@/features/client-profile/components/QuickProfileModal";
 import { uploadFileToR2 } from "@/lib/storage-client";
@@ -49,13 +62,33 @@ export interface InitialProfileData {
 
 interface NewProjectIntakeClientProps {
   initialProfile?: InitialProfileData | null;
+  /** Delivery times and switched-on packages / add-ons from the CEO's price list (no prices). */
+  delivery?: DeliveryConfig;
 }
 
-type Step = 1 | 2 | 3;
-const STEPS: Array<{ n: Step; label: string }> = [
-  { n: 1, label: "About your study" },
-  { n: 2, label: "Your files" },
-  { n: 3, label: "Check and send" },
+const dayWord = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
+const peso = (n: number) => n.toLocaleString("en-PH", { maximumFractionDigits: 0 });
+
+/** "₱1,000", "₱1,800 to ₱3,000" or "From ₱3,000" (the CEO's price list, same as the website). */
+function PriceRange({ min, max }: { min: number; max: number | null }) {
+  if (max === null) return <>From <Peso />{peso(min)}</>;
+  if (max === min) return <><Peso />{peso(min)}</>;
+  return (
+    <>
+      <Peso />
+      {peso(min)} to <Peso />
+      {peso(max)}
+    </>
+  );
+}
+
+type Step = 1 | 2 | 3 | 4;
+// `short` is shown on phones, where four full labels don't fit side by side.
+const STEPS: Array<{ n: Step; label: string; short: string }> = [
+  { n: 1, label: "About your study", short: "Study" },
+  { n: 2, label: "Package and add-ons", short: "Package" },
+  { n: 3, label: "Your files", short: "Files" },
+  { n: 4, label: "Check and send", short: "Send" },
 ];
 
 // The three file slots. Chapters 1–3 and the data file are required; the questionnaire is optional.
@@ -114,7 +147,7 @@ const SLOTS: Array<{
 ];
 const MAX_BYTES = 15 * 1024 * 1024;
 
-export function NewProjectIntakeClient({ initialProfile = null }: NewProjectIntakeClientProps) {
+export function NewProjectIntakeClient({ initialProfile = null, delivery }: NewProjectIntakeClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [currentStep, setCurrentStep] = useState<Step>(1);
@@ -143,6 +176,9 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
   const [researchObjectives, setResearchObjectives] = useState("");
   const [hypotheses, setHypotheses] = useState("");
   const [analysisGoals, setAnalysisGoals] = useState<AnalysisGoalCode[]>([]);
+  const [preferredPackage, setPreferredPackage] = useState<PreferredPackage | "">("");
+  const [preferredAddOns, setPreferredAddOns] = useState<PreferredAddOn[]>([]);
+  const [clientNotes, setClientNotes] = useState("");
   const [deadlineRequested, setDeadlineRequested] = useState("");
 
   const [filesList, setFilesList] = useState<UploadedFileItem[]>([]);
@@ -287,12 +323,72 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
     });
   };
 
+  // The date decides the delivery speed: when it's sooner than the package's usual time (CEO's price list), the
+  // slowest speed that still makes it is picked for the client. Re-applied only when the date or package
+  // changes, so a client's own change sticks; a speed picked here is removed again if the date no longer needs it.
+  const speedPick = useMemo(
+    () => (delivery && deadlineRequested ? pickSpeed(deadlineRequested, preferredPackage || "UNSURE", delivery) : null),
+    [delivery, deadlineRequested, preferredPackage]
+  );
+  const pickedKey = useRef("");
+  const autoSpeed = useRef<string | null>(null);
+  useEffect(() => {
+    if (!speedPick) return;
+    const key = `${deadlineRequested}|${preferredPackage || "UNSURE"}`;
+    if (key === pickedKey.current) return;
+    pickedKey.current = key;
+    const speed = speedPick.speed as PreferredAddOn | null;
+    const previousAuto = autoSpeed.current; // read now: the update below runs after this ref changes
+    setPreferredAddOns((prev) => {
+      if (speed) {
+        const rest = prev.filter((c) => !SPEED_ADDONS.includes(c) && c !== "NONE" && c !== "UNSURE");
+        return [...rest, speed];
+      }
+      return previousAuto ? prev.filter((c) => c !== previousAuto) : prev;
+    });
+    autoSpeed.current = speed;
+  }, [speedPick, deadlineRequested, preferredPackage]);
+
+  const packageChoices = (Object.keys(CLIENT_PACKAGES) as PreferredPackage[]).filter((c) => !delivery || c in delivery.packages);
+  const addOnChoices = (["DEFENSELAB", "RUSH", "EXPRESS", "EMERGENCY"] as PreferredAddOn[]).filter(
+    (c) => !delivery || delivery.activeAddOns.includes(c)
+  );
+  const speedDays = (code: string) => delivery?.speeds.find((x) => x.code === code)?.readyInDays ?? null;
+  const speedNote = (() => {
+    if (!speedPick) return null;
+    const pkgName = preferredPackage && preferredPackage !== "UNSURE" ? CLIENT_PACKAGES[preferredPackage].name : "a typical study";
+    const left = `${speedPick.workingDaysLeft} working ${speedPick.workingDaysLeft === 1 ? "day" : "days"}`;
+    const usual = `up to ${speedPick.usualDays} working days`;
+    if (!speedPick.speed) {
+      return speedPick.tooTight
+        ? `Your date is ${left} away and ${pkgName} usually takes ${usual}. We'll tell you in your quote if we can make it.`
+        : `Your date leaves enough time for ${pkgName} (usually ${usual}), so you don't need faster delivery.`;
+    }
+    const name = CLIENT_ADDONS[speedPick.speed as keyof typeof CLIENT_ADDONS]?.name ?? speedPick.speed;
+    const d = speedDays(speedPick.speed);
+    const ready = d ? ` (ready in ${dayWord(d)} after your deposit is confirmed)` : "";
+    return speedPick.tooTight
+      ? `Your date is very close. We picked ${name}, our fastest option${ready}, but it may still be tight. We'll confirm in your quote.`
+      : `Your date is ${left} away and ${pkgName} usually takes ${usual}, so we picked ${name}${ready}. You can change it.`;
+  })();
+
+  // "No add-ons" and "Not sure" stand alone; delivery speeds replace each other (one per study).
+  const toggleAddOn = (code: PreferredAddOn) => {
+    setPreferredAddOns((prev) => {
+      if (prev.includes(code)) return prev.filter((c) => c !== code);
+      if (code === "NONE" || code === "UNSURE") return [code];
+      const kept = prev.filter((c) => c !== "NONE" && c !== "UNSURE" && !(SPEED_ADDONS.includes(code) && SPEED_ADDONS.includes(c)));
+      return [...kept, code];
+    });
+    setFieldErrors((prev) => (prev.preferredAddOns ? { ...prev, preferredAddOns: [] } : prev));
+  };
+
   const handleProceedToStep2 = (e?: React.FormEvent) => {
     e?.preventDefault();
     setFieldErrors({});
     const errors: Record<string, string[]> = {};
     if (!researchTitle.trim() || researchTitle.trim().length < 3) errors.researchTitle = ["Add a title (at least 3 characters)."];
-    if (!researchObjectives.trim() || researchObjectives.trim().length < 5) errors.researchObjectives = ["Add your research objectives."];
+    if (researchQuestions.trim().length < 5) errors.researchQuestions = ["Add your research objectives."];
     if (analysisGoals.length === 0) errors.analysisGoals = ['Pick at least one, or choose "Not sure yet".'];
     if (!deadlineRequested) {
       errors.deadlineRequested = ["Pick the date you need it by."];
@@ -310,7 +406,21 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
     goTo(2);
   };
 
-  const handleProceedToStep3 = () => {
+  const handlePackageNext = () => {
+    const errors: Record<string, string[]> = {};
+    if (!preferredPackage) errors.preferredPackage = ['Pick a package, or "Not sure, let JAXIS pick".'];
+    const addOnIssue = addOnsProblem(preferredAddOns);
+    if (addOnIssue) errors.preferredAddOns = [addOnIssue];
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setToast({ variant: "danger", message: "Pick a package and add-ons", description: 'Or choose "Not sure, let JAXIS pick".' });
+      return;
+    }
+    setFieldErrors({});
+    goTo(3);
+  };
+
+  const handleFilesNext = () => {
     const missing = SLOTS.filter((s) => s.required && !filesList.some((f) => f.slotId === s.id));
     if (missing.length > 0) {
       setToast({
@@ -320,7 +430,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
       });
       return;
     }
-    goTo(3);
+    goTo(4);
   };
 
   const handleFinalSubmit = () => {
@@ -339,6 +449,9 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
         chapters13: filesList.find((f) => f.slotId === "chapters")?.storageUrl || null,
         questionnaire: filesList.find((f) => f.slotId === "questionnaire")?.storageUrl || null,
         analysisGoals,
+        preferredPackage: preferredPackage || null,
+        preferredAddOns,
+        clientNotes: clientNotes.trim(),
         files: filesList.map((f) => ({
           fileName: f.name,
           filePath: f.storageUrl || `intake-uploads/${f.name}`,
@@ -430,7 +543,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <div className="flex min-w-0 flex-col gap-6">
           {/* Step bar: go back freely; forward only through the Next buttons */}
-          <ol className="grid grid-cols-3 gap-2" aria-label="Steps">
+          <ol className="grid grid-cols-4 gap-2" aria-label="Steps">
             {STEPS.map((s) => {
               const current = s.n === currentStep;
               const done = s.n < currentStep || (s.n <= maxStep && s.n !== currentStep);
@@ -451,7 +564,8 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                       }`}
                     >
                       {done ? <Check size={12} weight="bold" className="hidden shrink-0 sm:block" /> : null}
-                      <span className="truncate">{s.label}</span>
+                      <span className="truncate sm:hidden">{s.short}</span>
+                      <span className="hidden truncate sm:inline">{s.label}</span>
                     </span>
                   </button>
                 </li>
@@ -480,22 +594,22 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   error={fieldErrors.researchTitle?.[0]}
                 />
                 <FormTextarea
-                  label="Research objectives"
-                  required
+                  label="Statement of the problem (optional)"
                   autoComplete="off"
                   data-lpignore="true"
                   rows={3}
-                  placeholder="What do you want to find out?"
+                  placeholder="In a few sentences, the problem your study looks at and why it matters."
                   value={researchObjectives}
                   onChange={(e) => setResearchObjectives(e.target.value)}
                   error={fieldErrors.researchObjectives?.[0]}
                 />
                 <FormTextarea
-                  label="Statement of the problem (optional)"
+                  label="Research objectives"
+                  required
                   autoComplete="off"
                   data-lpignore="true"
                   rows={4}
-                  placeholder={"1. What is the profile of the respondents?\n2. Is there a significant relationship between study habits and exam scores?"}
+                  placeholder={"1. To describe the profile of the respondents.\n2. To find out if study habits are related to exam scores."}
                   value={researchQuestions}
                   onChange={(e) => setResearchQuestions(e.target.value)}
                   error={fieldErrors.researchQuestions?.[0]}
@@ -525,7 +639,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                             onChange={() => toggleAnalysisGoal(goal.code)}
                             className="mt-0.5 h-4 w-4 shrink-0 accent-[#CC6600]"
                           />
-                          <span className="flex flex-col gap-1">
+                          <span className="flex min-w-0 flex-1 flex-col gap-1">
                             <span className="text-[13px] font-medium text-white">{goal.title}</span>
                             <span className="text-xs leading-relaxed text-white/60">{goal.description}</span>
                             <span className="text-xs text-white/40">e.g. {goal.example}</span>
@@ -568,7 +682,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 </div>
                 <div className="flex justify-end border-t border-white/[0.07] pt-5">
                   <Button type="submit" variant="primary" size="sm" className="w-full gap-1.5 sm:w-auto">
-                    Next: Your Files <ArrowRight size={14} weight="fill" />
+                    Next: Package and Add-ons <ArrowRight size={14} weight="fill" />
                   </Button>
                 </div>
               </form>
@@ -577,6 +691,155 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
 
           {/* Step 2 */}
           {currentStep === 2 ? (
+            <Panel as="div">
+              <div className="flex flex-col gap-6 px-5 py-6 sm:px-6">
+                <div>
+                  <h2 className="text-base font-semibold text-white">Package and add-ons</h2>
+                  <p className="mt-1 text-[13px] text-white/55">What you&apos;d like. Not sure? Let us pick after reading your study. Prices are our usual ranges; your quote has the exact price.</p>
+                </div>
+                <fieldset className="flex flex-col gap-2.5">
+                  <legend className="contents">
+                    <Label required className="px-0.5">Preferred package</Label>
+                  </legend>
+                  <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
+                    {([...packageChoices, "UNSURE"] as PreferredPackage[]).map((code) => {
+                      const pkg = code === "UNSURE" ? null : CLIENT_PACKAGES[code];
+                      const checked = preferredPackage === code;
+                      return (
+                        <label
+                          key={code}
+                          className={`flex cursor-pointer gap-3 rounded-[2px] border p-4 transition-colors ${
+                            checked ? "border-[#CC6600]/50 bg-[#CC6600]/[0.06]" : "border-white/12 hover:border-white/25"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="preferredPackage"
+                            value={code}
+                            checked={checked}
+                            onChange={() => {
+                              setPreferredPackage(code);
+                              setFieldErrors((prev) => (prev.preferredPackage ? { ...prev, preferredPackage: [] } : prev));
+                            }}
+                            className="mt-0.5 h-4 w-4 shrink-0 accent-[#CC6600]"
+                          />
+                          <span className="flex min-w-0 flex-1 flex-col gap-1">
+                            <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-[13px] font-medium text-white">
+                              <span>{pkg ? pkg.name : "Not sure, let JAXIS pick"}</span>
+                              {pkg && delivery?.packagePrices[code] ? (
+                                <span className="text-[12px] font-normal text-white/80">
+                                  <PriceRange {...delivery.packagePrices[code]!} />
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="text-xs leading-relaxed text-white/60">
+                              {pkg ? `Best for: ${pkg.bestFor.charAt(0).toLowerCase()}${pkg.bestFor.slice(1)}` : "We'll pick the package that fits after reading your study."}
+                            </span>
+                            {pkg ? (
+                              <span className="text-xs text-white/40">
+                                {delivery?.packages[code] ? `Usually up to ${delivery.packages[code]} working days` : `Usually ${pkg.standard}`}
+                              </span>
+                            ) : null}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {fieldErrors.preferredPackage?.[0] ? (
+                    <div className="mt-0.5 flex items-center gap-2 px-0.5">
+                      <Warning size={14} weight="fill" className="shrink-0 text-[#EF4444]" />
+                      <span className="text-xs font-medium text-[#EF4444]">{fieldErrors.preferredPackage[0]}</span>
+                    </div>
+                  ) : null}
+                </fieldset>
+                <fieldset className="flex flex-col gap-2.5">
+                  <legend className="contents">
+                    <Label required className="px-0.5">Add-ons</Label>
+                  </legend>
+                  <p className="-mt-1 px-0.5 text-xs text-white/50">Pick the ones you want (one delivery speed at most), or one of the last two.</p>
+                  {speedNote ? (
+                    <p className="flex items-start gap-2 rounded-[2px] border border-white/[0.08] px-3.5 py-2.5 text-xs leading-relaxed text-white/75">
+                      <CalendarCheck size={15} weight="fill" className="mt-px shrink-0 text-[#CC6600]" />
+                      <span>{speedNote}</span>
+                    </p>
+                  ) : null}
+                  <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
+                    {([...addOnChoices, "NONE", "UNSURE"] as PreferredAddOn[]).map((code) => {
+                      const a = code === "NONE" || code === "UNSURE" ? null : CLIENT_ADDONS[code];
+                      const checked = preferredAddOns.includes(code);
+                      return (
+                        <label
+                          key={code}
+                          className={`flex cursor-pointer gap-3 rounded-[2px] border p-4 transition-colors ${
+                            checked ? "border-[#CC6600]/50 bg-[#CC6600]/[0.06]" : "border-white/12 hover:border-white/25"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            name="preferredAddOns"
+                            value={code}
+                            checked={checked}
+                            onChange={() => toggleAddOn(code)}
+                            className="mt-0.5 h-4 w-4 shrink-0 accent-[#CC6600]"
+                          />
+                          <span className="flex min-w-0 flex-1 flex-col gap-1">
+                            <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-[13px] font-medium text-white">
+                              <span>{a ? a.name : code === "NONE" ? "No add-ons" : "Not sure, let JAXIS pick"}</span>
+                              {a && delivery?.addOnPrices[code] ? (
+                                <span className="text-[12px] font-normal text-white/80">
+                                  +<Peso />
+                                  {peso(delivery.addOnPrices[code]!)}
+                                  {code === "DEFENSELAB" ? " per hour" : ""}
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="text-xs leading-relaxed text-white/60">
+                              {a
+                                ? speedDays(code)
+                                  ? `Ready in ${dayWord(speedDays(code)!)} after your deposit is confirmed.${code === "EMERGENCY" ? " A senior reviewer checks your study." : ""}`
+                                  : a.detail
+                                : code === "NONE"
+                                  ? "Just the package."
+                                  : "We'll suggest add-ons if your study or date needs them."}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {fieldErrors.preferredAddOns?.[0] ? (
+                    <div className="mt-0.5 flex items-center gap-2 px-0.5">
+                      <Warning size={14} weight="fill" className="shrink-0 text-[#EF4444]" />
+                      <span className="text-xs font-medium text-[#EF4444]">{fieldErrors.preferredAddOns[0]}</span>
+                    </div>
+                  ) : null}
+                  <p className="rounded-[2px] border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5 text-xs leading-relaxed text-white/60">{PREFERENCE_NOTE}</p>
+                </fieldset>
+                <FormTextarea
+                  label="Additional notes (optional)"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  rows={3}
+                  maxLength={CLIENT_NOTES_MAX}
+                  placeholder="Anything else our admin and analyst should know, e.g. your adviser wants a specific test or software."
+                  value={clientNotes}
+                  onChange={(e) => setClientNotes(e.target.value)}
+                  error={fieldErrors.clientNotes?.[0]}
+                />
+                <div className="flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-5 sm:flex-row sm:justify-between">
+                  <Button variant="outline" size="sm" onClick={() => setCurrentStep(1)} className="w-full gap-1.5 sm:w-auto">
+                    <ArrowLeft size={14} weight="fill" /> Back
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handlePackageNext} className="w-full gap-1.5 sm:w-auto">
+                    Next: Your Files <ArrowRight size={14} weight="fill" />
+                  </Button>
+                </div>
+              </div>
+            </Panel>
+          ) : null}
+
+          {/* Step 3 */}
+          {currentStep === 3 ? (
             <Panel as="div">
               <div className="flex flex-col gap-5 px-5 py-6 sm:px-6">
                 <div>
@@ -596,10 +859,10 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   />
                 ))}
                 <div className="flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-5 sm:flex-row sm:justify-between">
-                  <Button variant="outline" size="sm" onClick={() => setCurrentStep(1)} className="w-full gap-1.5 sm:w-auto">
+                  <Button variant="outline" size="sm" onClick={() => setCurrentStep(2)} className="w-full gap-1.5 sm:w-auto">
                     <ArrowLeft size={14} weight="fill" /> Back
                   </Button>
-                  <Button variant="primary" size="sm" onClick={handleProceedToStep3} className="w-full gap-1.5 sm:w-auto">
+                  <Button variant="primary" size="sm" onClick={handleFilesNext} className="w-full gap-1.5 sm:w-auto">
                     Next: Check and Send <ArrowRight size={14} weight="fill" />
                   </Button>
                 </div>
@@ -607,8 +870,8 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
             </Panel>
           ) : null}
 
-          {/* Step 3 */}
-          {currentStep === 3 ? (
+          {/* Step 4 */}
+          {currentStep === 4 ? (
             <Panel as="div">
               <div className="flex flex-col gap-5 px-5 py-6 sm:px-6">
                 <div>
@@ -623,11 +886,11 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                   <Summary label="Needed by" onEdit={() => setCurrentStep(1)}>
                     {deadlineLabel}
                   </Summary>
-                  <Summary label="Research objectives" onEdit={() => setCurrentStep(1)}>
-                    <span className="whitespace-pre-wrap">{researchObjectives}</span>
-                  </Summary>
                   <Summary label="Statement of the problem" onEdit={() => setCurrentStep(1)}>
-                    <span className="whitespace-pre-wrap">{researchQuestions.trim() || "Not given"}</span>
+                    <span className="whitespace-pre-wrap">{researchObjectives.trim() || "Not given"}</span>
+                  </Summary>
+                  <Summary label="Research objectives" onEdit={() => setCurrentStep(1)}>
+                    <span className="whitespace-pre-wrap">{researchQuestions}</span>
                   </Summary>
                   <Summary label="Analysis goals" onEdit={() => setCurrentStep(1)}>
                     {analysisGoalsFor(analysisGoals).map((g) => g.title).join(", ")}
@@ -637,7 +900,16 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                       <span className="whitespace-pre-wrap">{hypotheses}</span>
                     </Summary>
                   ) : null}
-                  <Summary label="Files" onEdit={() => setCurrentStep(2)}>
+                  <Summary label="Preferred package" onEdit={() => setCurrentStep(2)}>
+                    {preferredPackageLabel(preferredPackage)}
+                  </Summary>
+                  <Summary label="Add-ons" onEdit={() => setCurrentStep(2)}>
+                    {preferredAddOnsLabel(preferredAddOns)}
+                  </Summary>
+                  <Summary label="Additional notes" onEdit={() => setCurrentStep(2)}>
+                    <span className="whitespace-pre-wrap">{clientNotes.trim() || "None"}</span>
+                  </Summary>
+                  <Summary label="Files" onEdit={() => setCurrentStep(3)}>
                     <ul className="flex flex-col gap-1">
                       {SLOTS.map((s) => {
                         const f = filesList.find((x) => x.slotId === s.id);
@@ -671,7 +943,7 @@ export function NewProjectIntakeClient({ initialProfile = null }: NewProjectInta
                 </label>
 
                 <div className="flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-5 sm:flex-row sm:justify-between">
-                  <Button variant="outline" size="sm" onClick={() => setCurrentStep(2)} disabled={isPending} className="w-full gap-1.5 sm:w-auto">
+                  <Button variant="outline" size="sm" onClick={() => setCurrentStep(3)} disabled={isPending} className="w-full gap-1.5 sm:w-auto">
                     <ArrowLeft size={14} weight="fill" /> Back
                   </Button>
                   <Button

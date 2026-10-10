@@ -931,6 +931,7 @@ const WORKLOAD_SELECT = {
       deliveredAt: true,
       researchObjectives: true,
       researchQuestions: true,
+      clientNotes: true,
       hypotheses: true,
       client: { select: { clientProfile: { select: { academicProgram: true } } } },
       files: { select: { id: true, fileName: true, fileType: true, fileCategory: true } },
@@ -965,6 +966,7 @@ function toWorkloadItem(a: WorkloadRow): AssignmentDetailItem {
     masterStatus: status,
     deliveredAt: a.project.deliveredAt?.toISOString() ?? null,
     researchObjectives: a.project.researchObjectives,
+    clientNotes: a.project.clientNotes ?? null,
     researchQuestions: a.project.researchQuestions,
     hypotheses: a.project.hypotheses,
     files: a.project.files.map((f) => ({

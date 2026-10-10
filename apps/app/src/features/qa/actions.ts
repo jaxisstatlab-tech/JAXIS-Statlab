@@ -304,6 +304,7 @@ export async function getQaInspectionDesk(
           researchTitle: project.researchTitle,
           researchQuestions: project.researchQuestions,
           researchObjectives: project.researchObjectives,
+          clientNotes: project.clientNotes ?? null,
           hypotheses: project.hypotheses,
           chapters13: project.chapters13,
           questionnaire: project.questionnaire,

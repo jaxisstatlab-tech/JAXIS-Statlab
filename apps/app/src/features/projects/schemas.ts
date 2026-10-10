@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ProjectStatus, FileCategory } from "@prisma/client";
 import { ANALYSIS_GOAL_CODES } from "./analysis-goals";
+import { CLIENT_NOTES_MAX, PREFERRED_ADDON_OPTIONS, PREFERRED_PACKAGE_OPTIONS, addOnsProblem } from "./intake-preferences";
 
 export const FileCategoryEnum = z.enum([
   "RESEARCH_DOCUMENT",
@@ -24,18 +25,30 @@ export const CreateProjectSchema = z.object({
     .string()
     .min(3, "Research title must be at least 3 characters")
     .max(300, "Research title cannot exceed 300 characters"),
-  // "Statement of the problem" on the form: optional (stored empty when not given).
+  // On the form (since 2026-10-10): researchQuestions is "Research objectives" (a numbered list, required) and
+  // researchObjectives is "Statement of the problem" (a paragraph, optional). The column names are older than
+  // the labels. One of the two is enough on the server, so a tab still showing the older form can submit.
   researchQuestions: z.string().trim().max(5000).optional().default(""),
-  researchObjectives: z
-    .string()
-    .min(5, "Please describe the study's core objectives"),
+  researchObjectives: z.string().trim().max(5000).optional().default(""),
   hypotheses: z.string().optional().nullable(),
   deadlineRequested: z.string().or(z.date()),
   chapters13: z.string().optional().nullable(),
   questionnaire: z.string().optional().nullable(),
   // Optional on the server so a tab still showing the older form can submit; the form itself requires one.
   analysisGoals: z.array(z.enum(ANALYSIS_GOAL_CODES)).max(ANALYSIS_GOAL_CODES.length).optional().default([]),
+  // Preferences (the form requires both; optional here for older tabs).
+  preferredPackage: z.enum(PREFERRED_PACKAGE_OPTIONS).optional().nullable(),
+  preferredAddOns: z
+    .array(z.enum(PREFERRED_ADDON_OPTIONS))
+    .max(PREFERRED_ADDON_OPTIONS.length)
+    .optional()
+    .default([])
+    .refine((v) => v.length === 0 || addOnsProblem(v) === null, { message: "Check the add-ons you picked." }),
+  clientNotes: z.string().trim().max(CLIENT_NOTES_MAX, `Keep your notes under ${CLIENT_NOTES_MAX} characters.`).optional().default(""),
   files: z.array(ProjectFileSchema).optional().default([]),
+}).refine((v) => v.researchQuestions.length >= 5 || v.researchObjectives.length >= 5, {
+  message: "Add your research objectives.",
+  path: ["researchQuestions"],
 });
 
 export type CreateProjectInput = z.infer<typeof CreateProjectSchema>;
@@ -87,6 +100,10 @@ export interface ProjectDetailItem {
   hypotheses: string | null;
   /** Analysis goal codes chosen on the intake form (see analysis-goals.ts). */
   analysisGoals?: string[];
+  /** The client's wishes from the intake form (see intake-preferences.ts); null / [] on older studies. */
+  preferredPackage?: string | null;
+  preferredAddOns?: string[];
+  clientNotes?: string | null;
   chapters13: string | null;
   questionnaire: string | null;
   deadlineRequested: Date | string;

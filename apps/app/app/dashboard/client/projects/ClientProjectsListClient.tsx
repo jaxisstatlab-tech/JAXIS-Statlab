@@ -569,9 +569,10 @@ function StudyQuickView({
   onDownload: (fileName: string) => void;
 }) {
   const sections = [
-    { label: "Research objectives", body: p.researchObjectives },
-    { label: "Statement of the problem", body: p.researchQuestions },
+    { label: "Statement of the problem", body: p.researchObjectives },
+    { label: "Research objectives", body: p.researchQuestions },
     { label: "Hypotheses", body: p.hypotheses },
+    { label: "Additional notes", body: p.clientNotes },
   ].filter((s) => s.body && s.body.trim());
 
   return (

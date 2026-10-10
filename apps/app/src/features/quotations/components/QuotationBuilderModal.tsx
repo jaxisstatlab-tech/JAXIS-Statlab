@@ -16,6 +16,8 @@ import {
 import { createQuotation, updateQuotation, issueQuotation } from "@/features/quotations/actions";
 import type { QuotationDetailItem } from "@/features/quotations/schemas";
 import { AnalysisGoalsList } from "@/features/projects/components/AnalysisGoalsList";
+import { ClientPreferences } from "@/features/projects/components/ClientPreferences";
+import { preferredAddOnCodes } from "@/features/projects/intake-preferences";
 import type { PackageName, AddOnName } from "@prisma/client";
 
 // The quote window: pick the package and its price, add-ons, a note and how long the quote is valid, with the
@@ -33,6 +35,8 @@ interface QuotationBuilderModalProps {
   analysisGoals?: string[] | null;
   existingQuotation?: QuotationDetailItem | null;
   customCatalog?: CommercialCatalogData;
+  /** What the client would like (intake form). A new quote starts from it; JAXIS may change it. */
+  clientPreference?: { preferredPackage?: string | null; preferredAddOns?: string[] | null; clientNotes?: string | null };
   onSuccess?: () => void;
 }
 
@@ -82,6 +86,7 @@ export function QuotationBuilderModal({
   analysisGoals,
   existingQuotation,
   customCatalog,
+  clientPreference,
   onSuccess,
 }: QuotationBuilderModalProps) {
   const packagesCatalog: Record<string, PackageDefinition> = customCatalog?.packages || PACKAGES_CATALOG;
@@ -116,9 +121,15 @@ export function QuotationBuilderModal({
       setSelectedAddOns(initialAddOns);
       setCustomDownpayment(!existingQuotation.isUpfrontEnforced && existingQuotation.downpaymentRequired ? String(existingQuotation.downpaymentRequired) : "");
     } else {
-      const defaultPkg = packagesCatalog.JX_03_CORE || Object.values(packagesCatalog)[0];
+      // Start from the client's preferred package and add-ons when they picked some (else Core).
+      const wanted = clientPreference?.preferredPackage;
+      const preferred = wanted && wanted !== "UNSURE" && packagesCatalog[wanted]?.isActive !== false ? packagesCatalog[wanted] : undefined;
+      const defaultPkg = preferred || packagesCatalog.JX_03_CORE || Object.values(packagesCatalog)[0];
       setSelectedPackage((defaultPkg?.code as PackageName) || "JX_03_CORE");
       setBasePrice(defaultPkg?.defaultPrice || 2500);
+      for (const code of preferredAddOnCodes(clientPreference?.preferredAddOns)) {
+        if (initialAddOns[code] && addOnsCatalog[code]?.isActive !== false) initialAddOns[code] = { ...initialAddOns[code]!, selected: true };
+      }
       setSelectedAddOns(initialAddOns);
       setNotes("");
       setCustomDownpayment("");
@@ -283,6 +294,18 @@ export function QuotationBuilderModal({
                 <AnalysisGoalsList codes={analysisGoals} compact />
               </div>
             </section>
+
+            {clientPreference ? (
+              <section>
+                <h3 className="text-[13px] font-medium text-white">What the client would like</h3>
+                <div className="mt-2 rounded-[2px] border border-white/[0.08] px-3.5 py-3">
+                  <ClientPreferences {...clientPreference} />
+                </div>
+                {!readOnly && !existingQuotation ? (
+                  <p className="mt-1.5 text-[12px] text-white/45">The quote starts from these. Change them if the study needs something else.</p>
+                ) : null}
+              </section>
+            ) : null}
 
             <section>
               <h3 className="text-[13px] font-medium text-white">Package</h3>

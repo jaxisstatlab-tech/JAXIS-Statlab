@@ -14,6 +14,7 @@ import { PersonPhoto } from "@/components/dashboard/PersonPhoto";
 import { socialLabel } from "@/lib/person-rules";
 import type { DeliverableDTO, QaCertificateDTO } from "@/features/deliverables/schemas";
 import { AnalysisGoalsList } from "@/features/projects/components/AnalysisGoalsList";
+import { ClientPreferences } from "@/features/projects/components/ClientPreferences";
 import { clientPackageName } from "@/features/projects/client-packages";
 import { markIntakeComplete, requestMissingInfo, updateProjectStatus } from "@/features/projects/actions";
 import { QuotationBuilderModal } from "@/features/quotations/components/QuotationBuilderModal";
@@ -307,14 +308,17 @@ export function AdminStudyOverview({
           <Panel>
             <PanelHeader title="What the client asked" subtitle={`Sent ${dateTime(project.createdAt)}`} />
             <PanelBody className="flex flex-col gap-5">
-              <Block title="Statement of the problem" text={project.researchQuestions} />
-              <Block title="What the study wants to find out" text={project.researchObjectives} />
+              {project.researchObjectives?.trim() ? <Block title="Statement of the problem" text={project.researchObjectives} /> : null}
+              <Block title="Research objectives" text={project.researchQuestions} />
               {project.hypotheses?.trim() ? <Block title="Hypotheses" text={project.hypotheses} /> : null}
               <div>
                 <p className="text-[12px] font-medium text-white/45">What they want the analysis to do</p>
                 <div className="mt-1.5">
                   <AnalysisGoalsList codes={project.analysisGoals} />
                 </div>
+              </div>
+              <div className="border-t border-white/[0.06] pt-5">
+                <ClientPreferences preferredPackage={project.preferredPackage} preferredAddOns={project.preferredAddOns} clientNotes={project.clientNotes} />
               </div>
             </PanelBody>
           </Panel>
@@ -507,6 +511,11 @@ export function AdminStudyOverview({
         projectTitle={project.researchTitle}
         clientName={project.client.fullName}
         analysisGoals={project.analysisGoals}
+        clientPreference={{
+          preferredPackage: project.preferredPackage,
+          preferredAddOns: project.preferredAddOns,
+          clientNotes: project.clientNotes,
+        }}
         existingQuotation={quotation}
         customCatalog={catalog}
         onSuccess={() => router.refresh()}

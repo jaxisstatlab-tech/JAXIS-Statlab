@@ -53,6 +53,7 @@ import {
   type CommercialCatalogData,
 } from "@/lib/pricing-rules";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
+import { ClientPreferences } from "@/features/projects/components/ClientPreferences";
 
 interface AdminIntakeClientProps {
   initialProjects?: ProjectDetailItem[];
@@ -913,21 +914,28 @@ export function AdminIntakeClient({
               </div>
             </section>
 
-            <section className="flex flex-col gap-2">
-              <h3 className="text-sm font-semibold text-white">Research objectives</h3>
-              <p className="whitespace-pre-wrap rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4 text-[13px] leading-relaxed text-white/75">
-                {inspect.researchObjectives}
-              </p>
-            </section>
-
-            {inspect.researchQuestions?.trim() ? (
+            {inspect.researchObjectives?.trim() ? (
               <section className="flex flex-col gap-2">
                 <h3 className="text-sm font-semibold text-white">Statement of the problem</h3>
                 <p className="whitespace-pre-wrap rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4 text-[13px] leading-relaxed text-white/75">
-                  {inspect.researchQuestions}
+                  {inspect.researchObjectives}
                 </p>
               </section>
             ) : null}
+
+            <section className="flex flex-col gap-2">
+              <h3 className="text-sm font-semibold text-white">Research objectives</h3>
+              <p className="whitespace-pre-wrap rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4 text-[13px] leading-relaxed text-white/75">
+                {inspect.researchQuestions?.trim() || "Not given"}
+              </p>
+            </section>
+
+            <section className="flex flex-col gap-2">
+              <h3 className="text-sm font-semibold text-white">What the client would like</h3>
+              <div className="rounded-[2px] border border-white/[0.08] bg-white/[0.02] p-4">
+                <ClientPreferences preferredPackage={inspect.preferredPackage} preferredAddOns={inspect.preferredAddOns} clientNotes={inspect.clientNotes} />
+              </div>
+            </section>
 
             {inspect.hypotheses ? (
               <section className="flex flex-col gap-2">
@@ -1065,6 +1073,11 @@ export function AdminIntakeClient({
           projectTitle={selectedStudyForQuote.researchTitle}
           clientName={selectedStudyForQuote.client.fullName}
           analysisGoals={selectedStudyForQuote.analysisGoals}
+          clientPreference={{
+            preferredPackage: selectedStudyForQuote.preferredPackage,
+            preferredAddOns: selectedStudyForQuote.preferredAddOns,
+            clientNotes: selectedStudyForQuote.clientNotes,
+          }}
           customCatalog={catalog}
           onSuccess={() => {
             loadData();

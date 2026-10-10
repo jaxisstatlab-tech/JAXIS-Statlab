@@ -472,7 +472,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   // ══════════════════════════════════════════════════════════════════════
   // 4. SECTION 1: PROJECT & CLIENT METADATA (Exact text outline, sans-serif)
   // ══════════════════════════════════════════════════════════════════════
-  page.drawText("THE STUDY", {
+  page.drawText(CERTIFICATE_TEXT.studyHeading.toUpperCase(), {
     x: contentLeft,
     y: currentY,
     size: 10.5,
@@ -488,7 +488,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   });
   currentY -= 18;
 
-  const metadataRows = certificateRows(data).map((r) => ({ label: r.label, value: r.value, italic: r.label === "Study title" }));
+  const metadataRows = certificateRows(data).map((r) => ({ label: r.label, value: r.value, italic: r.label === CERTIFICATE_TEXT.titleLabel }));
 
   const labelColWidth = 150;
   const valueColX = contentLeft + labelColWidth;
@@ -524,7 +524,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   // ══════════════════════════════════════════════════════════════════════
   // 5. SECTION 2: METHODOLOGICAL AUDIT FRAMEWORK (Exact text outline)
   // ══════════════════════════════════════════════════════════════════════
-  page.drawText("WHAT WAS CHECKED", {
+  page.drawText(CERTIFICATE_TEXT.checksHeading.toUpperCase(), {
     x: contentLeft,
     y: currentY,
     size: 10.5,
@@ -539,6 +539,12 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
     color: dividerLine,
   });
   currentY -= 18;
+
+  for (const line of wrapText(CERTIFICATE_TEXT.scope, contentWidth, 9.5, fontSans)) {
+    page.drawText(line, { x: contentLeft, y: currentY, size: 9.5, font: fontSans, color: charcoal });
+    currentY -= 15;
+  }
+  currentY -= 6;
 
   for (const item of CERTIFICATE_TEXT.checks) {
     const itemLines = wrapText(item, contentWidth - 14, 9.5, fontSans);
@@ -556,7 +562,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   // ══════════════════════════════════════════════════════════════════════
   // 6. SECTION 3: AUDIT ATTESTATION & SIGNATURES (Exact text outline)
   // ══════════════════════════════════════════════════════════════════════
-  page.drawText("APPROVAL", {
+  page.drawText(CERTIFICATE_TEXT.attestationHeading.toUpperCase(), {
     x: contentLeft,
     y: currentY,
     size: 10.5,
@@ -572,7 +578,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   });
   currentY -= 18;
 
-  const attestationText = CERTIFICATE_TEXT.approval(data);
+  const attestationText = CERTIFICATE_TEXT.attestation;
   const attestationLines = wrapText(attestationText, contentWidth, 9.5, fontSans);
   for (const line of attestationLines) {
     page.drawText(line, {
@@ -602,7 +608,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
   const rightColCenter = contentRight - colWidth / 2;
 
   // LEFT COLUMN: REVIEWED & APPROVED BY (the reviewing statistical analyst)
-  const auditedLabel = "REVIEWED & APPROVED BY:";
+  const auditedLabel = CERTIFICATE_TEXT.signedByLabel.toUpperCase();
   const auditedW = fontSansBold.widthOfTextAtSize(auditedLabel, 8.5);
   page.drawText(auditedLabel, {
     x: leftColCenter - auditedW / 2,
@@ -730,7 +736,7 @@ export async function generateCertificatePdfBytes(data: QaCertificateDTO): Promi
 
 
   // Footer: how to check it and who to ask
-  const footerText = `Certificate no. ${data.certificateId}  ·  Questions: ${CERTIFICATE_TEXT.contact}`;
+  const footerText = `${CERTIFICATE_TEXT.footerId(data)}  ·  Questions: ${CERTIFICATE_TEXT.contact}`;
   drawCenteredText(footerText, 44, 7.5, fontSans, mutedGray);
 
   // ══════════════════════════════════════════════════════════════════════

@@ -111,6 +111,9 @@ const PROJECT_DETAIL_SELECT = {
   researchQuestions: true,
   researchObjectives: true,
   analysisGoals: true,
+  preferredPackage: true,
+  preferredAddOns: true,
+  clientNotes: true,
   hypotheses: true,
   deadlineRequested: true,
   chapters13: true,
@@ -239,6 +242,9 @@ export async function createProject(
     chapters13,
     questionnaire,
     analysisGoals,
+    preferredPackage,
+    preferredAddOns,
+    clientNotes,
     files,
   } = parsed.data;
 
@@ -292,6 +298,9 @@ export async function createProject(
           chapters13: chapters13?.trim() || null,
           questionnaire: questionnaire?.trim() || null,
           analysisGoals: Array.from(new Set(analysisGoals)),
+          preferredPackage: preferredPackage ?? null,
+          preferredAddOns: Array.from(new Set(preferredAddOns)),
+          clientNotes: clientNotes || null,
           masterStatus: "NEW_REQUEST",
           files: files?.length
             ? {
@@ -324,6 +333,9 @@ export async function createProject(
         chapters13: chapters13?.trim() || null,
         questionnaire: questionnaire?.trim() || null,
         analysisGoals: Array.from(new Set(analysisGoals)),
+        preferredPackage: preferredPackage ?? null,
+        preferredAddOns: Array.from(new Set(preferredAddOns)),
+        clientNotes: clientNotes || null,
         files: files ?? [],
       });
       return { success: true, data: row as unknown as ProjectDetailItem };
@@ -423,6 +435,9 @@ const fetchCachedProjectsDb = unstable_cache(
           researchQuestions: true,
           researchObjectives: true,
           analysisGoals: true,
+          preferredPackage: true,
+          preferredAddOns: true,
+          clientNotes: true,
           hypotheses: true,
           deadlineRequested: true,
           chapters13: true,
@@ -508,6 +523,9 @@ const fetchCachedProjectDetailDb = unstable_cache(
           researchQuestions: true,
           researchObjectives: true,
           analysisGoals: true,
+          preferredPackage: true,
+          preferredAddOns: true,
+          clientNotes: true,
           hypotheses: true,
           deadlineRequested: true,
           chapters13: true,

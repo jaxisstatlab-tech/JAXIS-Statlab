@@ -1,5 +1,6 @@
 "use client";
 
+import { readyInDaysOf, usualWorkingDaysOf } from "@/lib/delivery-speed";
 import React, { useState, useEffect } from "react";
 import { Modal, Button, Peso } from "@repo/ui";
 import {
@@ -85,6 +86,23 @@ export function ServiceCatalogModal({
           },
         },
       };
+    });
+  };
+
+  // Delivery times (src/lib/delivery-speed.ts): the intake form uses them to pre-pick a faster delivery.
+  const handleUpdatePackageDays = (key: string, days: number | null) => {
+    setCatalog((prev) => {
+      const current = prev.packages[key];
+      if (!current) return prev;
+      return { ...prev, packages: { ...prev.packages, [key]: { ...current, usualWorkingDays: days ?? undefined } } };
+    });
+  };
+
+  const handleUpdateAddonDays = (key: string, days: number | null) => {
+    setCatalog((prev) => {
+      const current = prev.addOns[key];
+      if (!current) return prev;
+      return { ...prev, addOns: { ...prev.addOns, [key]: { ...current, readyInDays: days } } };
     });
   };
 
@@ -673,6 +691,17 @@ export function ServiceCatalogModal({
                           </div>
                         </div>
                       </div>
+                      <label className="flex items-center justify-between gap-3 pt-1.5 font-sans text-[11px] text-white/50">
+                        <span>Usual time (working days)</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={usualWorkingDaysOf(key, pkg)}
+                          onChange={(e) => handleUpdatePackageDays(key, e.target.value ? Math.max(1, Number(e.target.value)) : null)}
+                          className="w-20 rounded-[4px] border border-white/15 bg-[#050513] px-2.5 py-1.5 text-right font-mono text-xs text-white focus:border-[#CC6600] focus:outline-none [appearance:textfield]"
+                          title="Used on the client's form: a date sooner than this pre-picks a faster delivery"
+                        />
+                      </label>
                     </div>
                   </div>
                 );
@@ -852,6 +881,20 @@ export function ServiceCatalogModal({
                         />
                       </div>
                     </div>
+                    <label className="mt-2.5 flex items-center justify-between gap-4 font-sans text-xs text-white/60">
+                      <span>
+                        Ready in (days)
+                        <span className="block text-[11px] text-white/35">Only for faster delivery. Leave empty for other add-ons.</span>
+                      </span>
+                      <input
+                        type="number"
+                        min={1}
+                        placeholder="—"
+                        value={readyInDaysOf(key, addon) ?? ""}
+                        onChange={(e) => handleUpdateAddonDays(key, e.target.value ? Math.max(1, Number(e.target.value)) : null)}
+                        className="w-24 rounded-[4px] border border-white/15 bg-[#050513] px-3 py-1.5 text-right font-mono text-xs text-white placeholder:text-white/30 focus:border-[#CC6600] focus:outline-none [appearance:textfield]"
+                      />
+                    </label>
                   </div>
                 );
               })}

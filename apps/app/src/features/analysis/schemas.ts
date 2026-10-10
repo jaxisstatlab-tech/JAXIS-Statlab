@@ -92,6 +92,8 @@ export interface WorkbenchDataDTO {
     researchTitle: string;
     researchQuestions: string;
     researchObjectives: string;
+    /** Anything else the client wrote on the intake form. */
+    clientNotes?: string | null;
     hypotheses: string | null;
     chapters13: string | null;
     questionnaire: string | null;

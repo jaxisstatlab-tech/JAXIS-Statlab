@@ -56,6 +56,7 @@ export async function getOpenStudies(): Promise<VolunteerResult<OpenStudyItem[]>
         packageName: true,
         researchQuestions: true,
         researchObjectives: true,
+        clientNotes: true,
         hypotheses: true,
         // School and program only: no client name or contact details.
         client: { select: { clientProfile: { select: { institutionSchool: true, academicProgram: true } } } },
@@ -86,6 +87,7 @@ export async function getOpenStudies(): Promise<VolunteerResult<OpenStudyItem[]>
           program: p.client.clientProfile?.academicProgram ?? null,
           researchQuestions: p.researchQuestions,
           researchObjectives: p.researchObjectives,
+          clientNotes: p.clientNotes ?? null,
           hypotheses: p.hypotheses,
           files: p.files.map((f) => ({ ...f, fileCategory: f.fileCategory as string, uploadedAt: f.uploadedAt.toISOString() })),
           volunteerCount: p.volunteers.length,

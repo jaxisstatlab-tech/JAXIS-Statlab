@@ -55,6 +55,7 @@ export interface OpenStudyItem {
   program: string | null;
   researchQuestions: string;
   researchObjectives: string;
+  clientNotes: string | null;
   hypotheses: string | null;
   files: Array<{ id: string; projectId: string; fileName: string; filePath: string; fileType: string; fileCategory: string; uploadedAt: string }>;
   volunteerCount: number;
