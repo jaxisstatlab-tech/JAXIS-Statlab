@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CORE_TEAM } from "@/app/content/about";
 import { PLANS } from "@/app/content/pricing";
 import type { Faq } from "@/app/content/site";
-import { CONTACT_EMAIL, FACEBOOK_URL } from "@/lib/config";
+import { CONTACT_EMAIL, FACEBOOK_URL, INSTAGRAM_URL } from "@/lib/config";
 
 // One source for how the site describes itself to search engines, link previews, and AI assistants.
 export const SITE_URL = "https://jaxis-statlab.com";
@@ -11,7 +11,6 @@ export const SITE_TAGLINE = "Thesis and research statistics, checked by two anal
 export const SITE_DESCRIPTION =
   "Statistical consulting for students and researchers in the Philippines. We run the analysis for your thesis, survey, or dissertation, a second analyst audits every number, and you get APA tables and plain-English explanations you can defend. Fixed written price within 24 hours.";
 
-const FACEBOOK = FACEBOOK_URL || "https://www.facebook.com/jaxisstatlab";
 
 /**
  * Metadata for one page: title, description, canonical URL, and a link preview (Open Graph + X) that matches the
@@ -124,7 +123,7 @@ export function siteJsonLd() {
             },
           })),
         },
-        sameAs: [FACEBOOK],
+        sameAs: [FACEBOOK_URL, INSTAGRAM_URL],
       },
       {
         "@type": "WebSite",

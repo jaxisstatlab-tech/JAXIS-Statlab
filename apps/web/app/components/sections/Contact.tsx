@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ArrowUpRight, CaretDown, Check, CheckCircle, CircleNotch, Copy, WarningCircle } from "@phosphor-icons/react";
-import { CONTACT_EMAIL, LOGIN_URL, MESSENGER_URL } from "@/lib/config";
+import { ArrowUpRight, CaretDown, Check, CheckCircle, CircleNotch, Copy, FacebookLogo, InstagramLogo, WarningCircle } from "@phosphor-icons/react";
+import { CONTACT_EMAIL, FACEBOOK_URL, INSTAGRAM_URL, LOGIN_URL, MESSENGER_URL, SOCIAL_HANDLE } from "@/lib/config";
 import MindanaoMap from "../ui/MindanaoMap";
 import Reveal from "../ui/Reveal";
 import { btnGhost, btnPrimary, container, kicker } from "../ui/styles";
@@ -314,6 +314,28 @@ export default function Contact() {
                 note="Questions about studies, pricing, and DefenseLab"
                 action={<CopyEmail />}
               />
+            </Reveal>
+
+            <Reveal delay={90} className="grid grid-cols-2 gap-3">
+              {[
+                { name: "Facebook", href: FACEBOOK_URL, Icon: FacebookLogo, cta: "contact-facebook" },
+                { name: "Instagram", href: INSTAGRAM_URL, Icon: InstagramLogo, cta: "contact-instagram" },
+              ].map(({ name, href, Icon, cta }) => (
+                <a
+                  key={name}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-cta={cta}
+                  className="group flex min-h-12 items-center gap-2.5 rounded-[2px] border border-white/10 bg-[#0A0A18] px-4 py-3 transition-colors hover:border-white/25"
+                >
+                  <Icon size={18} weight="fill" className="shrink-0 text-white/60 transition-colors group-hover:text-white" />
+                  <span className="min-w-0">
+                    <span className="block font-sans text-sm font-medium text-white">{name}</span>
+                    <span className="block truncate font-mono text-[11px] text-white/50">@{SOCIAL_HANDLE}</span>
+                  </span>
+                </a>
+              ))}
             </Reveal>
 
             <Reveal delay={120} className={`${card} flex flex-1 flex-col overflow-hidden`}>
