@@ -6,7 +6,7 @@ import { container } from "../ui/styles";
 import CookieSettingsButton from "./CookieSettingsButton";
 
 // Site footer: the brand with its social buttons and contact details, three link columns, and a bottom bar with
-// the legal links. A large, very faint wordmark closes the page.
+// the legal links.
 
 const COLUMNS = [
   {
@@ -51,7 +51,7 @@ const legalClass =
 
 export default function Footer() {
   return (
-    <footer className="relative overflow-hidden bg-[#010114] pt-14 sm:pt-16">
+    <footer className="relative bg-[#010114] pb-10 pt-14 sm:pt-16">
       <div className={container}>
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-8">
           {/* Brand, socials, contact */}
@@ -141,15 +141,6 @@ export default function Footer() {
             <SealCheck size={14} weight="fill" className="text-[#CC6600]" />
             Every study is checked by two statistical analysts.
           </span>
-        </div>
-      </div>
-
-      {/* Closing wordmark: decorative, very faint, cut off by the page edge */}
-      <div aria-hidden="true" className="pointer-events-none mt-8 select-none overflow-hidden sm:mt-10">
-        <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
-          <div className="translate-y-[22%] whitespace-nowrap font-sans text-[18vw] font-semibold leading-[0.8] tracking-[-0.06em] text-white/[0.035] lg:text-[13.5rem]">
-            JAXIS StatLab
-          </div>
         </div>
       </div>
     </footer>
