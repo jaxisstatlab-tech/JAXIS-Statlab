@@ -7,7 +7,8 @@ function rand(i: number) {
   return s - Math.floor(s);
 }
 
-const CELLS = Array.from({ length: COLS * ROWS }, (_, i) => {
+/** The grid's cells (shared with HeroGrid, the GPU version). */
+export const PIXEL_CELLS = Array.from({ length: COLS * ROWS }, (_, i) => {
   const col = i % COLS;
   const row = Math.floor(i / COLS);
   const behindText = col > 9 && col < 26 && row > 5 && row < 17;
@@ -23,7 +24,7 @@ const CELLS = Array.from({ length: COLS * ROWS }, (_, i) => {
 export default function PixelField({ className }: { className?: string }) {
   return (
     <svg aria-hidden="true" className={className} viewBox={`0 0 ${COLS * CELL} ${ROWS * CELL}`} preserveAspectRatio="xMidYMid slice">
-      {CELLS.map((c, i) =>
+      {PIXEL_CELLS.map((c, i) =>
         c.lit ? (
           <rect
             key={i}

@@ -11,7 +11,7 @@ export default function HeroPixels({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const wrap = ref.current;
-    const section = wrap?.parentElement;
+    const section = wrap?.closest("section");
     const svg = wrap?.querySelector("svg");
     if (!wrap || !section || !svg) return;
     if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;

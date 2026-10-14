@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, ClipboardText, CreditCard, ShieldCheck } from "@phosphor-icons/react/ssr";
 import { SEND_STUDY_URL } from "@/lib/config";
-import HeroPixels from "../ui/HeroPixels";
-import PixelField from "../ui/PixelField";
+import HeroGrid from "../ui/HeroGrid";
 import { btnGhost, btnPrimary, container } from "../ui/styles";
 
 const PROOF = [
@@ -14,9 +13,7 @@ const PROOF = [
 export default function Hero() {
   return (
     <section data-hero className="relative overflow-hidden">
-      <HeroPixels>
-        <PixelField className="pixel-field absolute inset-0 h-full w-full" />
-      </HeroPixels>
+      <HeroGrid />
       {/* Soft wash behind the copy so the grid stays texture, not noise */}
       <div
         aria-hidden="true"
