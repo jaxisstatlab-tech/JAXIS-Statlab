@@ -123,7 +123,6 @@ export const RespondQuotationSchema = z.object({
     errorMap: () => ({ message: "Decision must be ACCEPT or DECLINE." }),
   }),
   declineReason: z.string().max(1000).optional(),
-  selectedAddOnCodes: z.array(z.string()).optional(),
 });
 
 export type RespondQuotationInput = z.infer<typeof RespondQuotationSchema>;

@@ -236,7 +236,7 @@ export function FinancePayoutsClient({
           { label: "FINANCE", href: "/dashboard/finance" },
           { label: "MILESTONE PAYMENTS" },
         ]}
-        title="Milestone Payouts & Escrow Releases"
+        title="Study Pay"
         description="Check study completion, verify escrow release conditions, and record milestone payments to specialists."
         actions={
           <div className="flex items-center gap-2">

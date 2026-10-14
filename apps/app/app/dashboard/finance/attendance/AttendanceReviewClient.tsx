@@ -176,7 +176,7 @@ export function AttendanceReviewClient({ initialData }: AttendanceReviewClientPr
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {/* Page Header */}
       <PageHeader
-        title="Staff Attendance & Missed-Punch Review Desk"
+        title="Staff Timesheets"
         description="Audit missed punch filings, verify computational deliverables, and credit approved hours under Segregation of Duties."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },

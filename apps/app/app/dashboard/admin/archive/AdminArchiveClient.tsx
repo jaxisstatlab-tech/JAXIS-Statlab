@@ -150,7 +150,7 @@ export function AdminArchiveClient({
           { label: "OPERATIONS", href: "/dashboard/admin" },
           { label: "PROJECT ARCHIVE" },
         ]}
-        title="Project Archive & Retention Vault"
+        title="Archived Studies"
         description={`Search immutable snapshots of completed studies and govern ${retentionDays}-day storage data retention policies.`}
         actions={
           <Button

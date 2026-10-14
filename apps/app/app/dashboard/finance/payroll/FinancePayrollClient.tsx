@@ -235,7 +235,7 @@ export function FinancePayrollClient({
 
       {/* Standardized PageHeader */}
       <PageHeader
-        title="Staff Payroll &amp; Payslips"
+        title="Payroll &amp; Payslips"
         description="Generate staff payroll, verify hours worked and completed studies, and record payments via GCash or bank transfer."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },

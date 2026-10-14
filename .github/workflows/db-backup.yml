@@ -1,0 +1,101 @@
+# Nightly database backup (Supabase free tier has no restorable backups).
+# Every night: copy the whole `public` schema with pg_dump, prove the copy restores into a throwaway Postgres,
+# encrypt it, upload it to a private Cloudflare R2 bucket, and delete copies older than 30 days.
+# Setup and restore steps: apps/app/docs/info/backup-and-restore.md
+# The repo is public, so this job's log is public too: it prints file names and sizes only, never data.
+
+name: Database backup
+
+on:
+  schedule:
+    - cron: "0 18 * * *" # 02:00 Philippine time
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      verify:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: verify
+          POSTGRES_DB: verify
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+      PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      ACCOUNT_ID: ${{ secrets.R2_BACKUP_ACCOUNT_ID }}
+      BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+      KEEP_DAYS: "30"
+    steps:
+      - name: Check the secrets are set
+        run: |
+          missing=0
+          for v in DATABASE_URL PASSPHRASE AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY ACCOUNT_ID BUCKET; do
+            if [ -z "${!v}" ]; then echo "::error::Missing GitHub secret for $v (see backup-and-restore.md)"; missing=1; fi
+          done
+          exit $missing
+
+      - name: Install the PostgreSQL 17 tools
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17 > /dev/null
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Copy the database
+        run: |
+          NAME="jaxis-db-$(date -u +%Y-%m-%dT%H%MZ).dump"
+          echo "NAME=$NAME" >> "$GITHUB_ENV"
+          pg_dump "$DATABASE_URL" --schema=public --no-owner --no-privileges --format=custom --file=backup.dump
+          size=$(stat -c %s backup.dump)
+          echo "Copied: $NAME ($((size / 1024)) KB)"
+          if [ "$size" -lt 2048 ]; then echo "::error::The copy is suspiciously small"; exit 1; fi
+
+      - name: Prove the copy restores
+        env:
+          VERIFY_URL: postgresql://postgres:verify@localhost:5432/verify
+        run: |
+          # Leave out the "public" schema entry itself (it already exists), restore everything else.
+          pg_restore --list backup.dump | grep -v "SCHEMA - public" > restore.list
+          pg_restore --use-list=restore.list --no-owner --no-privileges --exit-on-error --dbname="$VERIFY_URL" backup.dump
+          tables=$(psql "$VERIFY_URL" -tAc "select count(*) from information_schema.tables where table_schema = 'public'")
+          echo "Restored $tables tables into a throwaway database."
+          if [ "$tables" -lt 5 ]; then echo "::error::Too few tables restored"; exit 1; fi
+
+      - name: Encrypt
+        run: |
+          gpg --batch --yes --quiet --pinentry-mode loopback --passphrase "$PASSPHRASE" \
+            --symmetric --cipher-algo AES256 --output "$NAME.gpg" backup.dump
+          rm -f backup.dump
+
+      - name: Upload to R2
+        run: |
+          aws s3 cp "$NAME.gpg" "s3://$BUCKET/daily/$NAME.gpg" \
+            --endpoint-url "https://$ACCOUNT_ID.r2.cloudflarestorage.com" --only-show-errors
+          echo "Saved daily/$NAME.gpg"
+
+      - name: Delete copies older than ${{ env.KEEP_DAYS }} days
+        run: |
+          cutoff=$(date -u -d "-$KEEP_DAYS days" +%Y-%m-%d)
+          aws s3 ls "s3://$BUCKET/daily/" --endpoint-url "https://$ACCOUNT_ID.r2.cloudflarestorage.com" | while read -r day _time _size file; do
+            if [ -n "$file" ] && [[ "$day" < "$cutoff" ]]; then
+              aws s3 rm "s3://$BUCKET/daily/$file" --endpoint-url "https://$ACCOUNT_ID.r2.cloudflarestorage.com" --only-show-errors
+              echo "Deleted old copy $file"
+            fi
+          done

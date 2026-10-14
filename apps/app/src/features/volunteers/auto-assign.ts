@@ -1,15 +1,17 @@
 import { revalidatePath } from "next/cache";
+import { snapshotCalendarDays } from "@/lib/delivery-speed";
 import type { RoleName } from "@prisma/client";
 import { db } from "@/lib/db";
 import { CACHE_TAGS, invalidateCacheTags } from "@/lib/cache-tags";
 import { computeSlaDueDate } from "@/lib/sla-calculator";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
-import { WORKING_STATUSES, rankVolunteers, specializationMatches } from "./rules";
+import { WORKING_STATUSES, kindOfRoles, rankByKind, specializationMatches } from "./rules";
 import type { StudyVolunteerItem } from "./schemas";
 
 // Server-only helpers (not server actions, so they can't be called from the browser).
 
-/** A study's volunteers, first offer first, with open-study counts, field matches and the suggestion. */
+/** A study's volunteers (analysts, then reviewers), first offer first, with open-study counts, field matches and
+ * each kind's suggestion. */
 export async function loadRankedVolunteers(projectId: string): Promise<StudyVolunteerItem[] | null> {
   const project = await db.project.findUnique({
     where: { id: projectId },
@@ -24,7 +26,13 @@ export async function loadRankedVolunteers(projectId: string): Promise<StudyVolu
               email: true,
               status: true,
               staffProfile: { select: { specializations: true } },
-              _count: { select: { statisticianAssignments: { where: { isActive: true, project: { masterStatus: { in: [...WORKING_STATUSES] } } } } } },
+              userRoles: { select: { role: { select: { name: true } } } },
+              _count: {
+                select: {
+                  statisticianAssignments: { where: { isActive: true, project: { masterStatus: { in: [...WORKING_STATUSES] } } } },
+                  qaAssignments: { where: { isActive: true, project: { masterStatus: { in: [...WORKING_STATUSES] } } } },
+                },
+              },
             },
           },
         },
@@ -32,11 +40,13 @@ export async function loadRankedVolunteers(projectId: string): Promise<StudyVolu
     },
   });
   if (!project) return null;
-  return rankVolunteers(
+  return rankByKind(
     project.volunteers.map((v, i) => {
       const specs = v.statistician.staffProfile?.specializations ?? [];
+      const kind = kindOfRoles(v.statistician.userRoles.map((r) => r.role.name));
       return {
         statisticianId: v.statisticianId,
+        kind,
         fullName: v.statistician.fullName,
         email: v.statistician.email,
         status: v.statistician.status,
@@ -45,7 +55,7 @@ export async function loadRankedVolunteers(projectId: string): Promise<StudyVolu
         note: v.note,
         volunteeredAt: v.createdAt.toISOString(),
         order: i + 1,
-        openStudies: v.statistician._count.statisticianAssignments,
+        openStudies: kind === "REVIEWER" ? v.statistician._count.qaAssignments : v.statistician._count.statisticianAssignments,
         picked: !!v.pickedAt,
       };
     })
@@ -58,7 +68,8 @@ export type AutoAssignOutcome =
 
 /**
  * When a study is paid (Needs a Team) and has no team: assigns the analyst the admin picked, or else the
- * best-ranked volunteer, with the least busy available reviewer. Does nothing otherwise, so it's safe to call
+ * best-ranked volunteer, with the reviewer the admin picked, else the first reviewer who offered, else the least
+ * busy available reviewer. Does nothing otherwise, so it's safe to call
  * more than once; two calls at the same moment can't both assign.
  */
 export async function autoAssignVolunteer(projectId: string, actor: { id: string; role?: string | null }): Promise<AutoAssignOutcome> {
@@ -70,19 +81,22 @@ export async function autoAssignVolunteer(projectId: string, actor: { id: string
       researchTitle: true,
       masterStatus: true,
       assignment: { select: { isActive: true } },
-      sows: { orderBy: { generatedAt: "desc" }, take: 1, select: { turnaroundDays: true } },
+      sows: { orderBy: { generatedAt: "desc" }, take: 1, select: { turnaroundDays: true, contentSnapshot: true } },
     },
   });
   if (!project || project.masterStatus !== "ACTIVE" || project.assignment?.isActive) return { assigned: false, reason: "NOT_READY" };
 
-  const volunteers = (await loadRankedVolunteers(project.id)) ?? [];
+  const everyone = (await loadRankedVolunteers(project.id)) ?? [];
+  const volunteers = everyone.filter((v) => v.kind === "ANALYST");
+  const reviewerOffers = everyone.filter((v) => v.kind === "REVIEWER");
   const picked = volunteers.find((v) => v.picked);
   const chosen = picked ?? volunteers.find((v) => v.suggested);
   if (!chosen) return { assigned: false, reason: "NO_VOLUNTEER" };
   if (chosen.status !== "ACTIVE") return { assigned: false, reason: "ANALYST_UNAVAILABLE" };
   const how = picked ? "picked" : "suggested";
 
-  // The available reviewer with the fewest studies on hand.
+  // The reviewer the admin picked, else the first reviewer who offered, else the available one with the fewest
+  // studies on hand.
   const reviewers = await db.user.findMany({
     where: { status: "ACTIVE", id: { not: chosen.statisticianId }, userRoles: { some: { role: { name: "SENIOR_QA_LEAD" } } } },
     select: {
@@ -91,12 +105,21 @@ export async function autoAssignVolunteer(projectId: string, actor: { id: string
       _count: { select: { qaAssignments: { where: { isActive: true, project: { masterStatus: { in: [...WORKING_STATUSES] } } } } } },
     },
   });
-  const reviewer = reviewers.sort((a, b) => a._count.qaAssignments - b._count.qaAssignments || a.fullName.localeCompare(b.fullName))[0];
+  const offered = (v?: { statisticianId: string; status: string }) =>
+    v && v.status === "ACTIVE" ? reviewers.find((r) => r.id === v.statisticianId) : undefined;
+  const reviewer =
+    offered(reviewerOffers.find((v) => v.picked)) ??
+    offered(reviewerOffers.find((v) => v.suggested)) ??
+    offered(reviewerOffers.find((v) => v.status === "ACTIVE" && v.statisticianId !== chosen.statisticianId)) ??
+    [...reviewers].sort((a, b) => a._count.qaAssignments - b._count.qaAssignments || a.fullName.localeCompare(b.fullName))[0];
+  const reviewerOffer = reviewerOffers.find((v) => v.statisticianId === reviewer?.id);
+  const reviewerHow = reviewerOffer ? (reviewerOffer.picked ? "admin's pick" : "offered to review") : "fewest studies on hand";
   if (!reviewer) return { assigned: false, reason: "NO_REVIEWER" };
 
   const now = new Date();
   const turnaround = project.sows[0]?.turnaroundDays || 5;
-  const slaDueAt = await computeSlaDueDate(now, turnaround);
+  const calendarDays = snapshotCalendarDays(project.sows[0]?.contentSnapshot);
+  const slaDueAt = await computeSlaDueDate(now, turnaround, undefined, calendarDays);
 
   const done = await db.$transaction(async (tx) => {
     const moved = await tx.project.updateMany({ where: { id: project.id, masterStatus: "ACTIVE" }, data: { masterStatus: "EXPERT_ASSIGNED" } });
@@ -123,7 +146,7 @@ export async function autoAssignVolunteer(projectId: string, actor: { id: string
         action: "AUTO_ASSIGNED_VOLUNTEER",
         oldValue: "ACTIVE",
         newValue: "EXPERT_ASSIGNED",
-        reason: `${how === "picked" ? "Admin's pick" : "First volunteer (suggested)"}: ${chosen.fullName}; reviewer ${reviewer.fullName} (fewest studies on hand).`,
+        reason: `${how === "picked" ? "Admin's pick" : "First volunteer (suggested)"}: ${chosen.fullName}; reviewer ${reviewer.fullName} (${reviewerHow}).`,
       },
     });
     return true;
@@ -142,7 +165,7 @@ export async function autoAssignVolunteer(projectId: string, actor: { id: string
       projectId: project.id,
       intakeId: project.intakeId,
       title: `${project.intakeId} is yours`,
-      message: `The deposit is in, so you're the analyst on "${project.researchTitle}". ${reviewer.fullName} reviews it. Due in ${turnaround} working days.`,
+      message: `The deposit is in, so you're the analyst on "${project.researchTitle}". ${reviewer.fullName} reviews it. Due in ${turnaround} ${calendarDays ? "days" : "working days"}.`,
       linkUrl: `/dashboard/statistician/projects/${project.id}/workbench`,
       targetUserIds: [chosen.statisticianId],
     });
@@ -165,6 +188,18 @@ export async function autoAssignVolunteer(projectId: string, actor: { id: string
       targetRoles: ["ADMIN", "CEO"],
       excludeUserId: actor.id,
     });
+    const otherReviewers = reviewerOffers.filter((v) => v.statisticianId !== reviewer.id).map((v) => v.statisticianId);
+    if (otherReviewers.length) {
+      await dispatchRealtimeNotification({
+        eventType: "ASSIGNMENT",
+        projectId: project.id,
+        intakeId: project.intakeId,
+        title: `${project.intakeId} went to another reviewer`,
+        message: `Thanks for offering. "${project.researchTitle}" is being reviewed by someone else this time.`,
+        linkUrl: "/dashboard/qa/open-studies",
+        targetUserIds: otherReviewers,
+      });
+    }
     const others = volunteers.filter((v) => v.statisticianId !== chosen.statisticianId).map((v) => v.statisticianId);
     if (others.length) {
       await dispatchRealtimeNotification({

@@ -29,6 +29,24 @@ export function shortDate(iso?: string | null) {
   return new Date(iso).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric" });
 }
 
+/** When the study was given to this team, with the time so same-day studies can be told apart: "Oct 12, 3:45 PM". */
+export function assignedText(iso?: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+/** Table cell: assigned date on top, time below. */
+export function AssignedCell({ iso }: { iso?: string | null }) {
+  if (!iso) return <span className="text-white/40">—</span>;
+  const d = new Date(iso);
+  return (
+    <>
+      <p className="text-white/75">{d.toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric" })}</p>
+      <p className="mt-0.5 text-[12px] text-white/45">{d.toLocaleTimeString("en-PH", { timeZone: "Asia/Manila", hour: "numeric", minute: "2-digit" })}</p>
+    </>
+  );
+}
+
 export const pauseRequested = (s: Study) => Boolean(s.slaPauseReason) && !s.slaPausedAt;
 
 const FILE_KIND: Record<string, string> = {
@@ -101,6 +119,7 @@ export function StudyDetailsModal({
     ["Stage", stage],
     ["Due", <DueText key="due" s={s} />],
     person,
+    ["Assigned", assignedText(s.assignedAt)],
     ["Package", clientPackageName(s.packageName) ?? "—"],
     ["Program", s.projectField || "—"],
   ];

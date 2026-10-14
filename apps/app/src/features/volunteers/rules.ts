@@ -44,6 +44,17 @@ export function rankVolunteers<T extends { order: number; openStudies: number; m
   return rows.map((r) => ({ ...r, suggested: !!best && r === best }));
 }
 
+/** Ranks analysts' and reviewers' offers separately (each kind has its own first offer and Suggested). */
+export function rankByKind<T extends { kind: string; order: number; openStudies: number; matches: string[]; status: string; volunteeredAt: string }>(rows: T[]) {
+  const ranked = (kind: string) => rankVolunteers(rows.filter((r) => r.kind === kind).map((r, i) => ({ ...r, order: i + 1 })));
+  return [...ranked("ANALYST"), ...ranked("REVIEWER")];
+}
+
+/** A staff member's offers count as reviewer offers when they're a reviewer (QA lead). */
+export function kindOfRoles(roles: string[]): "ANALYST" | "REVIEWER" {
+  return roles.includes("SENIOR_QA_LEAD") && !roles.includes("STATISTICIAN") ? "REVIEWER" : "ANALYST";
+}
+
 export function ordinal(n: number) {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;

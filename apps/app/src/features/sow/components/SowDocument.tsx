@@ -9,6 +9,7 @@ import type { SOWDetailItem } from "../schemas";
 import { ADDONS_CATALOG } from "@/lib/pricing-rules";
 import type { AddOnName } from "@prisma/client";
 import { clientPackageName } from "@/features/projects/client-packages";
+import { deliveryLabel } from "@/lib/delivery-speed";
 import { formatSignatureName, normalizePersonName } from "@/lib/formatters";
 
 // The agreement as a sheet of paper: dark ink on white, sized like A4, so what you see on screen is
@@ -89,7 +90,7 @@ export function SowDocument({ sow, className = "", showPrintAction = true }: Sow
   const terms4: Array<{ title: string; body?: string | null }> = [
     {
       title: "Delivery time",
-      body: `Your analysis will be delivered within ${delivery.turnaroundDays} working days. ${delivery.slaStartTrigger ?? ""}`.trim(),
+      body: `Your analysis will be delivered within ${deliveryLabel(delivery)}. ${delivery.slaStartTrigger ?? ""}`.trim(),
     },
     { title: "Changes after delivery", body: terms.revisionPolicy },
     { title: "Refunds and cancellation", body: terms.refundPolicy },

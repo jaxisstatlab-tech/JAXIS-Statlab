@@ -179,9 +179,9 @@ export async function GET(req: NextRequest) {
               projectFile.project.assignment?.qaLeadId === userId &&
               projectFile.project.assignment?.isActive !== false;
 
-            // Analysts deciding whether to offer to take a study read its request files while it has no team.
+            // Analysts and reviewers deciding whether to offer to take a study read its request files while it has no team.
             const openForAnalysts =
-              userRole === "STATISTICIAN" &&
+              (userRole === "STATISTICIAN" || userRole === "SENIOR_QA_LEAD") &&
               OPEN_FOR_VOLUNTEERS.includes(projectFile.project.masterStatus) &&
               !projectFile.project.assignment?.isActive &&
               ["RESEARCH_DOCUMENT", "DATASET", "QUESTIONNAIRE"].includes(projectFile.fileCategory);

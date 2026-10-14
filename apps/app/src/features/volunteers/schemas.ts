@@ -1,8 +1,13 @@
 import { z } from "zod";
 import type { ProjectStatus } from "@prisma/client";
 
-// "I'll take this study": analysts offer to take a study that has no team yet; the admin may pick one; when the
-// deposit clears the pick (or else the best-ranked volunteer) is assigned automatically (see auto-assign.ts).
+// "I'll take this study": analysts and reviewers offer to take a study that has no team yet; the admin may pick one
+// of each; when the deposit clears the picks (or else the best-ranked volunteers) are assigned automatically (see
+// auto-assign.ts). Reviewers' offers sit in the same table (study_volunteers.statisticianId holds any staff user's
+// id); the person's role says which kind of offer it is, so no database change was needed.
+
+/** Which part of the team an offer is for. */
+export type VolunteerKind = "ANALYST" | "REVIEWER";
 
 /** Stages where a study has no team yet, so analysts can see it and offer to take it. */
 export const OPEN_FOR_VOLUNTEERS: ProjectStatus[] = [
@@ -37,8 +42,9 @@ export const VolunteerSchema = z.object({
 
 export const PickVolunteerSchema = z.object({
   projectId: z.string().min(1),
-  /** null clears the pick (the best-ranked volunteer is then assigned). */
+  /** The analyst or reviewer picked; null clears the pick of `kind` (the best-ranked volunteer is then assigned). */
   statisticianId: z.string().min(1).nullable(),
+  kind: z.enum(["ANALYST", "REVIEWER"]).default("ANALYST"),
 });
 
 export interface OpenStudyItem {
@@ -58,15 +64,18 @@ export interface OpenStudyItem {
   clientNotes: string | null;
   hypotheses: string | null;
   files: Array<{ id: string; projectId: string; fileName: string; filePath: string; fileType: string; fileCategory: string; uploadedAt: string }>;
+  /** Offers of the viewer's kind (analysts see analysts' offers, reviewers see reviewers'). */
   volunteerCount: number;
-  /** This analyst's offer, if they made one. */
+  /** The viewer's offer, if they made one. */
   mine: { volunteeredAt: string; note: string | null; picked: boolean; place: number } | null;
-  /** The admin picked another analyst. */
+  /** The admin picked another person of the viewer's kind. */
   pickedSomeoneElse: boolean;
 }
 
 export interface StudyVolunteerItem {
+  /** The person's user id (analyst or reviewer). */
   statisticianId: string;
+  kind: VolunteerKind;
   fullName: string;
   email: string;
   status: string;
@@ -75,9 +84,9 @@ export interface StudyVolunteerItem {
   matches: string[];
   note: string | null;
   volunteeredAt: string;
-  /** 1 = first to offer. */
+  /** 1 = first of their kind to offer. */
   order: number;
-  /** Studies they're working on now. */
+  /** Studies they're working on (analysts) or reviewing (reviewers) now. */
   openStudies: number;
   /** Best ranked by the criteria (what's assigned if the admin doesn't pick). */
   suggested: boolean;

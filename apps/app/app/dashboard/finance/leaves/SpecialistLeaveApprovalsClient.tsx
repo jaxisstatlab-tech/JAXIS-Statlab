@@ -330,7 +330,7 @@ export function SpecialistLeaveApprovalsClient({ initialData }: SpecialistLeaveA
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {/* ── Page Header ── */}
       <PageHeader
-        title="Specialist Leave & HR Approvals"
+        title="Leave Requests"
         description="Formal human resources administration desk for reviewing absence submissions, authorizing leave windows, and governing specialist capacity across statistical pipelines."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },

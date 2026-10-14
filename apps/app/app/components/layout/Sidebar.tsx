@@ -10,6 +10,7 @@ import type { RoleName } from "@prisma/client";
 import { DutyClockWidget } from "@/features/attendance/components/DutyClockWidget";
 import type { ActiveShiftStatus } from "@/features/attendance/schemas";
 import { NotificationDrawer } from "../notifications/NotificationDrawer";
+import { WhatsNewLink } from "@/features/whats-new/WhatsNewLink";
 import {
   UserAvatar,
   DropdownMenuRoot,
@@ -55,9 +56,7 @@ import {
   Trash,
   Plus,
   SidebarSimple,
-  ArrowSquareOut,
 } from "@phosphor-icons/react";
-import { SITE_URL } from "@/lib/site";
 
 export interface NavItem {
   label: string;
@@ -168,7 +167,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
 
   STATISTICIAN: [
     {
-      groupTitle: "STUDIES & DATA",
+      groupTitle: "Studies",
       items: [
         {
           label: "My Studies",
@@ -188,7 +187,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
       ],
     },
     {
-      groupTitle: "MY WORKSPACE",
+      groupTitle: "Pay",
       items: [
         {
           label: "My Earnings",
@@ -201,12 +200,17 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
 
   SENIOR_QA_LEAD: [
     {
-      groupTitle: "QUALITY CHECKS",
+      groupTitle: "Reviews",
       items: [
         {
           label: "Review Desk",
           href: "/dashboard/qa",
           icon: Icons.ShieldCheck,
+        },
+        {
+          label: "Open Studies",
+          href: "/dashboard/qa/open-studies",
+          icon: Icons.Studies,
         },
         {
           label: "Messages",
@@ -216,7 +220,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
       ],
     },
     {
-      groupTitle: "MY WORKSPACE",
+      groupTitle: "Pay",
       items: [
         {
           label: "My Earnings",
@@ -229,7 +233,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
 
   FINANCE_OFFICER: [
     {
-      groupTitle: "PAYMENTS & ESCROW",
+      groupTitle: "Payments",
       items: [
         {
           label: "Finance Overview",
@@ -242,34 +246,34 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.CheckQueue,
         },
         {
-          label: "Milestone Payments",
+          label: "Study Pay",
           href: "/dashboard/finance/payouts",
           icon: Icons.Award,
         },
         {
-          label: "Refunds & Disputes",
+          label: "Refunds & Claims",
           href: "/dashboard/finance/disputes",
           icon: Icons.Claims,
         },
       ],
     },
     {
-      groupTitle: "RECORDS & AUDIT",
+      groupTitle: "Records",
       items: [
         {
-          label: "Financial Ledger",
+          label: "Money per Study",
           href: "/dashboard/finance/ledger",
           icon: Icons.Audit,
         },
         {
-          label: "Financial Reports",
+          label: "Finance Reports",
           href: "/dashboard/finance/reports",
           icon: Icons.Reports,
         },
       ],
     },
     {
-      groupTitle: "HR & PAYROLL",
+      groupTitle: "Staff & Pay",
       items: [
         {
           label: "Staff Timesheets",
@@ -282,7 +286,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.Receipt,
         },
         {
-          label: "Leave Approvals",
+          label: "Leave Requests",
           href: "/dashboard/finance/leaves",
           icon: Icons.LeaveDesk,
         },
@@ -293,10 +297,10 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
 
   CEO: [
     {
-      groupTitle: "EXECUTIVE OVERVIEW",
+      groupTitle: "Business",
       items: [
         {
-          label: "CEO Overview",
+          label: "Overview",
           href: "/dashboard/ceo",
           icon: Icons.Overview,
         },
@@ -318,10 +322,10 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
       ],
     },
     {
-      groupTitle: "OPERATIONS & GOVERNANCE",
+      groupTitle: "Team & Money",
       items: [
         {
-          label: "Finance & Payments",
+          label: "Finance Overview",
           href: "/dashboard/finance",
           icon: Icons.FinanceVault,
         },
@@ -348,30 +352,30 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
       ],
     },
     {
-      groupTitle: "AUDIT & SECURITY",
+      groupTitle: "Records",
       items: [
         {
-          label: "Intelligence Reports",
+          label: "Reports",
           href: "/dashboard/ceo/reports",
           icon: Icons.Reports,
         },
         {
-          label: "Dispute Rulings",
+          label: "Claims & Refunds",
           href: "/dashboard/ceo/disputes",
           icon: Icons.Gavel,
         },
         {
-          label: "Firewall Logs",
+          label: "Blocked Messages",
           href: "/dashboard/admin/messages",
           icon: Icons.Firewall,
         },
         {
-          label: "Storage & Purge Policy",
+          label: "File Storage",
           href: "/dashboard/ceo/retention",
           icon: Icons.Vault,
         },
         {
-          label: "Deleted Studies Ledger",
+          label: "Deleted Studies",
           href: "/dashboard/ceo/deleted-studies",
           icon: Icons.Trash,
         },
@@ -382,10 +386,10 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
 
   ADMIN: [
     {
-      groupTitle: "STUDIES & INTAKE",
+      groupTitle: "Studies",
       items: [
         {
-          label: "Admin Overview",
+          label: "Overview",
           href: "/dashboard/admin",
           icon: Icons.Terminal,
         },
@@ -400,24 +404,24 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.Invoice,
         },
         {
-          label: "Assign Experts",
+          label: "Assign Teams",
           href: "/dashboard/admin/assignments",
           icon: Icons.KeyRelease,
         },
         {
-          label: "Client Revisions",
+          label: "Change Requests",
           href: "/dashboard/admin/revisions",
           icon: Icons.Revisions,
         },
         {
-          label: "DefenseLab Schedule",
+          label: "DefenseLab",
           href: "/dashboard/admin/defenselab",
           icon: Icons.Schedule,
         },
       ],
     },
     {
-      groupTitle: "TEAM & OPERATIONS",
+      groupTitle: "Team",
       items: [
         {
           label: "Staff Directory",
@@ -437,7 +441,7 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
       ],
     },
     {
-      groupTitle: "SYSTEM & AUDIT LOGS",
+      groupTitle: "Records",
       items: [
         {
           label: "Activity Log",
@@ -445,27 +449,27 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           icon: Icons.Audit,
         },
         {
-          label: "Firewall Logs",
+          label: "Blocked Messages",
           href: "/dashboard/admin/messages",
           icon: Icons.Firewall,
         },
         {
-          label: "Email Delivery Logs",
+          label: "Sent Emails",
           href: "/dashboard/admin/notifications",
           icon: Icons.Emails,
         },
         {
-          label: "System Reports",
+          label: "Reports",
           href: "/dashboard/admin/reports",
           icon: Icons.Reports,
         },
         {
-          label: "Project Archive",
+          label: "Archived Studies",
           href: "/dashboard/admin/archive",
           icon: Icons.Archive,
         },
         {
-          label: "Deleted Studies Ledger",
+          label: "Deleted Studies",
           href: "/dashboard/ceo/deleted-studies",
           icon: Icons.Trash,
         },
@@ -975,7 +979,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
       </div>
 
-      {/* ── Footer: duty clock (staff), notifications, account ── */}
+      {/* ── Footer: duty clock (staff), what's new, notifications, account ── */}
       <div className="flex flex-col gap-1 shrink-0 border-t border-white/[0.08] p-3.5">
         {isInternal && (
           <div className="pb-2.5 mb-1.5 border-b border-white/[0.08]">
@@ -983,6 +987,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
+        <WhatsNewLink role={role} email={userEmail} isCollapsed={isCollapsed} />
         <NotificationDrawer triggerVariant="row" isSidebarCollapsed={isCollapsed} side="right" align="end" />
 
         {isCollapsed ? (
@@ -1018,12 +1023,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </Link>
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem asChild>
-                <a href={SITE_URL} className={MENU_ITEM}>
-                  <ArrowSquareOut size={16} weight="fill" className="text-white/50 shrink-0" />
-                  <span>JAXIS website</span>
-                </a>
-              </DropdownMenuItem>
               <DropdownMenuSeparator className="-mx-1.5 my-1.5 bg-white/[0.08]" />
               <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut} className={MENU_ITEM_DANGER}>
                 <SignOutIcon loading={isLoggingOut} />
@@ -1053,10 +1052,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <span>My HR & timeclock</span>
                     </Link>
                   )}
-                  <a href={SITE_URL} className={MENU_ITEM}>
-                    <ArrowSquareOut size={16} weight="fill" className="text-white/50 shrink-0" />
-                    <span>JAXIS website</span>
-                  </a>
                   <div className="-mx-1.5 my-1.5 h-px bg-white/[0.08]" />
                   <button
                     type="button"

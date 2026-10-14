@@ -1,5 +1,6 @@
 "use server";
 
+import { snapshotCalendarDays } from "@/lib/delivery-speed";
 import { revalidatePath, unstable_cache } from "next/cache";
 import { auth } from "@/lib/auth";
 import { db, withDbTimeout } from "@/lib/db";
@@ -70,9 +71,11 @@ export async function assignExperts(
     assertCanBeAssigned(project.masterStatus);
 
     // 2. Pre-compute SLA due date outside the transaction
-    const turnaround = customDays || project.sows[0]?.turnaroundDays || 5;
+    // The agreement's delivery: a speed add-on counts calendar days (Express = 48 hours), otherwise working days.
+    const sow = project.sows[0];
+    const turnaround = customDays || sow?.turnaroundDays || 5;
     const now = new Date();
-    const slaDueAt = await computeSlaDueDate(now, turnaround);
+    const slaDueAt = await computeSlaDueDate(now, turnaround, undefined, !customDays && snapshotCalendarDays(sow?.contentSnapshot));
 
     // 3. Fast atomic transaction with high timeout budget (30s)
     const result = await withDbTimeout(

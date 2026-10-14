@@ -4,7 +4,8 @@ import type { ProjectStatus } from "@prisma/client";
 import { getDevUserByEmail, getDevUsers } from "@/lib/mock-data/users.data";
 import { clientPackageName } from "@/features/projects/client-packages";
 import { OPEN_FOR_VOLUNTEERS, OPEN_STAGE_LABEL, type OpenStudyItem, type StudyVolunteerItem } from "./schemas";
-import { WORKING_STATUSES, rankVolunteers, specializationMatches } from "./rules";
+import { WORKING_STATUSES, kindOfRoles, rankByKind, specializationMatches } from "./rules";
+import type { VolunteerKind } from "./schemas";
 
 /**
  * Offline dev only (`npm run dev:offline`): volunteering on the sample studies in .dev-projects.json, kept in
@@ -49,12 +50,15 @@ const myId = (user: User) => (user.email ? getDevUserByEmail(user.email)?.id : u
 const staff = () => Object.values(getDevUsers());
 const assigned = (p: DevProject) => !!(p.assignment as { statisticianId?: string } | null)?.statisticianId;
 const isOpen = (p: DevProject) => OPEN_FOR_VOLUNTEERS.includes(p.masterStatus as ProjectStatus) && !assigned(p);
+const kindOf = (id: string): VolunteerKind => kindOfRoles([staff().find((u) => u.id === id)?.role ?? ""]);
+const myKind = (user: User): VolunteerKind => (user.role === "SENIOR_QA_LEAD" ? "REVIEWER" : "ANALYST");
 const working = (projects: DevProject[], id: string, key: "statisticianId" | "qaLeadId") =>
   projects.filter((p) => (p.assignment as Record<string, unknown> | null)?.[key] === id && (WORKING_STATUSES as readonly string[]).includes(p.masterStatus)).length;
 
 export function devOpenStudies(user: User): OpenStudyItem[] {
   const me = myId(user);
-  const vols = read<DevVolunteer>(FILES.volunteers);
+  const kind = myKind(user);
+  const vols = read<DevVolunteer>(FILES.volunteers).filter((v) => kindOf(v.statisticianId) === kind);
   return read<DevProject>(FILES.projects)
     .filter(isOpen)
     .map((p) => {
@@ -104,7 +108,8 @@ export function devVolunteer(projectId: string, user: User, note: string | null)
   if (vols.some((v) => v.projectId === projectId && v.statisticianId === me)) return { success: false, error: { code: "ALREADY", message: "You already offered to take this study." } };
   vols.push({ projectId, statisticianId: me, note, createdAt: new Date().toISOString(), pickedAt: null, pickedBy: null });
   write(FILES.volunteers, vols);
-  return { success: true, data: { count: vols.filter((v) => v.projectId === projectId).length } };
+  const kind = myKind(user);
+  return { success: true, data: { count: vols.filter((v) => v.projectId === projectId && kindOf(v.statisticianId) === kind).length } };
 }
 
 export function devWithdraw(projectId: string, user: User): Result<{ wasPicked: boolean }> {
@@ -120,16 +125,18 @@ export function devStudyVolunteers(projectId: string): StudyVolunteerItem[] {
   const projects = read<DevProject>(FILES.projects);
   const p = projects.find((x) => x.id === projectId);
   const people = staff();
-  return rankVolunteers(
+  return rankByKind(
     read<DevVolunteer>(FILES.volunteers)
       .filter((v) => v.projectId === projectId)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
       .map((v, i) => {
         const u = people.find((x) => x.id === v.statisticianId);
         const specs = u?.staffProfile?.specializations ?? [];
+        const kind = kindOf(v.statisticianId);
         return {
           statisticianId: v.statisticianId,
-          fullName: u?.fullName ?? "Analyst",
+          kind,
+          fullName: u?.fullName ?? (kind === "REVIEWER" ? "Reviewer" : "Analyst"),
           email: u?.email ?? "",
           status: u?.status ?? "ACTIVE",
           specializations: specs,
@@ -137,7 +144,7 @@ export function devStudyVolunteers(projectId: string): StudyVolunteerItem[] {
           note: v.note,
           volunteeredAt: v.createdAt,
           order: i + 1,
-          openStudies: working(projects, v.statisticianId, "statisticianId"),
+          openStudies: working(projects, v.statisticianId, kind === "REVIEWER" ? "qaLeadId" : "statisticianId"),
           picked: !!v.pickedAt,
         };
       })
@@ -145,16 +152,17 @@ export function devStudyVolunteers(projectId: string): StudyVolunteerItem[] {
 }
 
 /** Pick (or clear with null), then assign right away if the study is already paid. */
-export function devPick(projectId: string, statisticianId: string | null, user: User): Result<{ assigned: boolean }> {
+export function devPick(projectId: string, statisticianId: string | null, user: User, kind: VolunteerKind = "ANALYST"): Result<{ assigned: boolean }> {
   const p = read<DevProject>(FILES.projects).find((x) => x.id === projectId);
   if (!p || !isOpen(p)) return { success: false, error: { code: "CLOSED", message: "This study already has a team." } };
   const vols = read<DevVolunteer>(FILES.volunteers);
   if (statisticianId && !vols.some((v) => v.projectId === projectId && v.statisticianId === statisticianId)) {
-    return { success: false, error: { code: "NOT_FOUND", message: "That analyst didn't offer to take this study." } };
+    return { success: false, error: { code: "NOT_FOUND", message: "That person didn't offer to take this study." } };
   }
+  const pickKind = statisticianId ? kindOf(statisticianId) : kind;
   const now = new Date().toISOString();
   for (const v of vols) {
-    if (v.projectId !== projectId) continue;
+    if (v.projectId !== projectId || kindOf(v.statisticianId) !== pickKind) continue;
     const isPick = v.statisticianId === statisticianId;
     v.pickedAt = isPick ? now : null;
     v.pickedBy = isPick ? myId(user) : null;
@@ -168,13 +176,18 @@ export function devAutoAssign(projectId: string): boolean {
   const projects = read<DevProject>(FILES.projects);
   const p = projects.find((x) => x.id === projectId);
   if (!p || p.masterStatus !== "ACTIVE" || assigned(p)) return false;
-  const ranked = devStudyVolunteers(projectId);
+  const all = devStudyVolunteers(projectId);
+  const ranked = all.filter((v) => v.kind === "ANALYST");
+  const offers = all.filter((v) => v.kind === "REVIEWER" && v.status === "ACTIVE");
   const chosen = ranked.find((v) => v.picked) ?? ranked.find((v) => v.suggested);
   const people = staff();
   const analyst = chosen ? people.find((u) => u.id === chosen.statisticianId) : undefined;
-  const reviewer = people
-    .filter((u) => u.role === "SENIOR_QA_LEAD" && u.status === "ACTIVE")
-    .sort((a, b) => working(projects, a.id, "qaLeadId") - working(projects, b.id, "qaLeadId"))[0];
+  const offeredReviewer = offers.find((v) => v.picked) ?? offers.find((v) => v.suggested) ?? offers[0];
+  const reviewer =
+    (offeredReviewer ? people.find((u) => u.id === offeredReviewer.statisticianId) : undefined) ??
+    people
+      .filter((u) => u.role === "SENIOR_QA_LEAD" && u.status === "ACTIVE")
+      .sort((a, b) => working(projects, a.id, "qaLeadId") - working(projects, b.id, "qaLeadId"))[0];
   if (!analyst || analyst.status !== "ACTIVE" || !reviewer) return false;
   const now = new Date();
   p.assignment = {
@@ -200,7 +213,7 @@ export function devPickedStudies() {
   const projects = read<DevProject>(FILES.projects);
   const people = staff();
   return read<DevVolunteer>(FILES.volunteers)
-    .filter((v) => v.pickedAt)
+    .filter((v) => v.pickedAt && kindOf(v.statisticianId) === "ANALYST")
     .flatMap((v) => {
       const p = projects.find((x) => x.id === v.projectId);
       if (!p || !isOpen(p)) return [];

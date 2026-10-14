@@ -236,7 +236,7 @@ export function CeoDisputesClient({
           { label: "CEO DESK", href: "/dashboard/ceo" },
           { label: "DISPUTES & RULINGS" },
         ]}
-        title="CEO Dispute Rulings & Refunds"
+        title="Claims & Refunds"
         description="Review client claims, decide on refunds, and uphold study quality."
       />
 

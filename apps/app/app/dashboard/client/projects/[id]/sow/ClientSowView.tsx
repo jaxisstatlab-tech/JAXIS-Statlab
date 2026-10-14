@@ -14,6 +14,7 @@ import { getClientStage } from "@/features/projects/client-stage";
 import { Panel, PanelHeader } from "@/components/dashboard/Panel";
 import { SITE_TERMS_URL } from "@/lib/site";
 import type { SOWDetailItem } from "@/features/sow/schemas";
+import { deliveryLabel } from "@/lib/delivery-speed";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 
 // The Agreement tab: the agreement as a printable sheet, with a signing panel beside it
@@ -299,7 +300,7 @@ function Summary({ sow }: { sow: SOWDetailItem }) {
   const rows = [
     { label: "Total price", value: c.totalAmount, money: true, strong: true },
     { label: "Deposit to start", value: c.downpaymentRequired, money: true },
-    { label: "Delivery", value: `${sow.contentSnapshot.delivery.turnaroundDays} working days`, money: false },
+    { label: "Delivery", value: deliveryLabel(sow.contentSnapshot.delivery), money: false },
   ];
   return (
     <dl className="flex flex-col divide-y divide-white/[0.06] rounded-[2px] border border-white/[0.08] px-3.5">

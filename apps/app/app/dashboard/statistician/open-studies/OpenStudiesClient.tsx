@@ -10,12 +10,42 @@ import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import { analysisGoalsFor } from "@/features/projects/analysis-goals";
 import { volunteerForStudy, withdrawVolunteer } from "@/features/volunteers/actions";
 import { ordinal } from "@/features/volunteers/rules";
-import type { OpenStudyItem } from "@/features/volunteers/schemas";
+import type { OpenStudyItem, VolunteerKind } from "@/features/volunteers/schemas";
 import type { ProjectFileItem } from "@/features/projects/schemas";
 
-// Open Studies: every study without an analyst yet. Analysts read the request and the client's files and offer to
-// take the ones they want ("I'll Take This Study"). Admins choose; without a pick the first to offer gets it when
-// the deposit clears.
+// Open Studies: every study without a team yet. Analysts (and reviewers, on their own copy of this page) read the
+// request and the client's files and offer to take the ones they want ("I'll Take This Study"). Admins choose;
+// without a pick the first to offer gets it when the deposit clears. Reviewers can offer on as many as they like.
+
+const COPY: Record<
+  VolunteerKind,
+  { home: string; homeLabel: string; description: string; looking: string; decided: string; offer: string; offerNote: string; placeholder: string; pickedOther: string }
+> = {
+  ANALYST: {
+    home: "/dashboard/statistician",
+    homeLabel: "My Studies",
+    description: "Studies that don't have an analyst yet. Read the request and the client's files, then offer to take the ones you want.",
+    looking: "Looking for an analyst",
+    decided:
+      "An admin chooses who gets each study. If they don't pick anyone, it goes to whoever offered first when the client pays the deposit. If two offers come in at the same moment, an analyst with no current study goes first, then the better fit for the study.",
+    offer: "Offer to take this study",
+    offerNote: "Admins are told right away. If you're chosen, the study becomes yours when the client pays the deposit. You can take the offer back until then.",
+    placeholder: "For example: I've done three regression studies on student performance this year.",
+    pickedOther: "An analyst was already picked",
+  },
+  REVIEWER: {
+    home: "/dashboard/qa",
+    homeLabel: "Review Desk",
+    description: "Studies that don't have a team yet. Read the request and the client's files, then offer to review the ones you want. You can offer on as many as you like.",
+    looking: "Looking for a team",
+    decided:
+      "Every study needs a reviewer. An admin can pick one; if they don't, the first reviewer who offered gets it when the client pays the deposit. Without any offers, the reviewer with the fewest studies gets it.",
+    offer: "Offer to review this study",
+    offerNote: "Admins are told right away. If you're chosen, you review this study once the client pays the deposit. You can take the offer back until then.",
+    placeholder: "For example: I've reviewed several survey studies with Likert scales.",
+    pickedOther: "A reviewer was already picked",
+  },
+};
 
 const DocumentViewerLightbox = dynamic(
   () => import("@/features/projects/components/DocumentViewerLightbox").then((m) => m.DocumentViewerLightbox),
@@ -31,8 +61,9 @@ const date = (d?: string | null) =>
 
 type Show = "ALL" | "NOT_OFFERED" | "OFFERED";
 
-export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[]; failed?: string }) {
+export function OpenStudiesClient({ initial, failed, kind = "ANALYST" }: { initial: OpenStudyItem[]; failed?: string; kind?: VolunteerKind }) {
   const router = useRouter();
+  const copy = COPY[kind];
   const [show, setShow] = useState<Show>("ALL");
   const [sort, setSort] = useState<"newest" | "due">("newest");
   const [q, setQ] = useState("");
@@ -105,16 +136,16 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-24 font-sans animate-content-fade">
       <PageHeader
         title="Open Studies"
-        description="Studies that don't have an analyst yet. Read the request and the client's files, then offer to take the ones you want."
+        description={copy.description}
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },
-          { label: "My Studies", href: "/dashboard/statistician" },
+          { label: copy.homeLabel, href: copy.home },
           { label: "Open Studies" },
         ]}
       />
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-        <KpiCard label="Looking for an analyst" description="Studies without a team" icon={<Files size={18} weight="fill" />} value={counts.all} />
+        <KpiCard label={copy.looking} description="Studies without a team" icon={<Files size={18} weight="fill" />} value={counts.all} />
         <KpiCard label="You offered" description="Waiting for the admin" icon={<HandWaving size={18} weight="fill" />} value={counts.offered} />
         <KpiCard label="Picked for you" description="Yours once the deposit clears" icon={<Star size={18} weight="fill" />} value={counts.picked} />
       </div>
@@ -122,10 +153,7 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
       <Panel as="div">
         <PanelBody className="text-[13px] leading-relaxed text-white/60">
           <p className="text-sm font-medium text-white">How it&apos;s decided</p>
-          <p className="mt-1">
-            An admin chooses who gets each study. If they don&apos;t pick anyone, it goes to whoever offered first when the client pays the
-            deposit. If two offers come in at the same moment, an analyst with no current study goes first, then the better fit for the study.
-          </p>
+          <p className="mt-1">{copy.decided}</p>
         </PanelBody>
       </Panel>
 
@@ -201,7 +229,7 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-[2px] border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[11px] text-white/70">{s.stageLabel}</span>
-                      <MyStatus s={s} quiet />
+                      <MyStatus s={s} quiet pickedOther={copy.pickedOther} />
                     </div>
                     <button
                       type="button"
@@ -278,7 +306,7 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
           size="2xl"
           footer={
             <div className="flex w-full flex-wrap items-center justify-between gap-3">
-              <MyStatus s={details} />
+              <MyStatus s={details} pickedOther={copy.pickedOther} />
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setDetails(null)}>
                   Close
@@ -384,6 +412,9 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
 
       <OfferDialog
         study={offering}
+        title={copy.offer}
+        note={copy.offerNote}
+        placeholder={copy.placeholder}
         onClose={() => setOffering(null)}
         onDone={(s, count) => {
           setOffering(null);
@@ -401,7 +432,7 @@ export function OpenStudiesClient({ initial, failed }: { initial: OpenStudyItem[
   );
 }
 
-function MyStatus({ s, quiet = false }: { s: OpenStudyItem; quiet?: boolean }) {
+function MyStatus({ s, quiet = false, pickedOther }: { s: OpenStudyItem; quiet?: boolean; pickedOther: string }) {
   if (s.mine?.picked)
     return (
       <span className="inline-flex items-center gap-1 rounded-[2px] border border-[#CC6600]/50 px-1.5 py-0.5 text-[11px] text-white">
@@ -417,7 +448,7 @@ function MyStatus({ s, quiet = false }: { s: OpenStudyItem; quiet?: boolean }) {
         {s.pickedSomeoneElse ? " · someone else was picked" : ""}
       </span>
     );
-  if (s.pickedSomeoneElse) return <span className="text-[11px] text-white/45">An analyst was already picked</span>;
+  if (s.pickedSomeoneElse) return <span className="text-[11px] text-white/45">{pickedOther}</span>;
   if (quiet) return null;
   return <span className="text-[12px] text-white/45">{s.volunteerCount === 0 ? "No offers yet" : `${s.volunteerCount} ${s.volunteerCount === 1 ? "offer" : "offers"} so far`}</span>;
 }
@@ -440,7 +471,21 @@ function Block({ title, text }: { title: string; text?: string | null }) {
   );
 }
 
-function OfferDialog({ study, onClose, onDone }: { study: OpenStudyItem | null; onClose: () => void; onDone: (s: OpenStudyItem, count: number) => void }) {
+function OfferDialog({
+  study,
+  title,
+  note: intro,
+  placeholder,
+  onClose,
+  onDone,
+}: {
+  study: OpenStudyItem | null;
+  title: string;
+  note: string;
+  placeholder: string;
+  onClose: () => void;
+  onDone: (s: OpenStudyItem, count: number) => void;
+}) {
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, start] = useTransition();
@@ -461,7 +506,7 @@ function OfferDialog({ study, onClose, onDone }: { study: OpenStudyItem | null; 
     <Modal
       open
       onClose={() => (busy ? undefined : onClose())}
-      title="Offer to take this study"
+      title={title}
       description={`${study.intakeId} · ${study.researchTitle}`}
       size="md"
       footer={
@@ -476,10 +521,7 @@ function OfferDialog({ study, onClose, onDone }: { study: OpenStudyItem | null; 
       }
     >
       <div className="flex flex-col gap-3 font-sans text-[13px]">
-        <p className="leading-relaxed text-white/65">
-          Admins are told right away. If you&apos;re chosen, the study becomes yours when the client pays the deposit. You can take the offer back
-          until then.
-        </p>
+        <p className="leading-relaxed text-white/65">{intro}</p>
         <label className="flex flex-col gap-1.5 text-white/70">
           Why you&apos;re a good fit (optional)
           <textarea
@@ -487,7 +529,7 @@ function OfferDialog({ study, onClose, onDone }: { study: OpenStudyItem | null; 
             maxLength={500}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="For example: I've done three regression studies on student performance this year."
+            placeholder={placeholder}
             className={`${FIELD} resize-none p-3 leading-relaxed`}
           />
         </label>

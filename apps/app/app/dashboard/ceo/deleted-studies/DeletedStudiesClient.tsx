@@ -125,7 +125,7 @@ export function DeletedStudiesClient({ initialData }: DeletedStudiesClientProps)
     <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-24 w-full animate-content-fade">
       {/* ── Standard PageHeader ── */}
       <PageHeader
-        title="Deleted Studies Audit Ledger"
+        title="Deleted Studies"
         description="Immutable historical log of all permanently deleted research studies, audit reasons, and archived snapshots."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },

@@ -27,6 +27,8 @@ interface PaymentProofUploadModalProps {
   isDownpaymentCleared?: boolean;
   /** JAXIS accounts already loaded by the page; without them the window loads its own. */
   initialChannels?: PaymentChannelDetails[] | null;
+  /** The option to start on (the deposit or paying in full, as picked on the payment page). */
+  initialType?: PaymentType;
   onSuccess: (payment: PaymentItem) => void;
 }
 
@@ -45,6 +47,7 @@ export function PaymentProofUploadModal({
   remainingBalance,
   isDownpaymentCleared = false,
   initialChannels = null,
+  initialType,
   onSuccess,
 }: PaymentProofUploadModalProps) {
   const total = totalAmount && totalAmount > 0 ? totalAmount : remainingBalance;
@@ -65,7 +68,7 @@ export function PaymentProofUploadModal({
   const [method, setMethod] = useState<PaymentMethod>(
     initialChannels?.find((c) => c.isEnabled !== false)?.id ?? "GCASH"
   );
-  const [choice, setChoice] = useState<PaymentType>(options[0]!.type);
+  const [choice, setChoice] = useState<PaymentType>(options.find((o) => o.type === initialType)?.type ?? options[0]!.type);
   const [referenceNumber, setReferenceNumber] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);

@@ -113,7 +113,7 @@ export function FinanceReportsClient({ initialReport }: { initialReport: Preload
           { label: "FINANCE", href: "/dashboard/finance" },
           { label: "FINANCIAL REPORTS" },
         ]}
-        title="Treasury Ledger & Payout Reports"
+        title="Finance Reports"
         description="Filter financial ledgers, audit per-study gross revenue allocations, and export disbursement summaries."
         actions={
           <div className="flex flex-wrap items-center gap-2">

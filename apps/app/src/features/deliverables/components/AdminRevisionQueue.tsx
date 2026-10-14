@@ -117,7 +117,7 @@ export function AdminRevisionQueue({ revisions }: AdminRevisionQueueProps) {
           { label: "WORKSPACE", href: "/dashboard" },
           { label: "REVISIONS QUEUE" },
         ]}
-        title="Client Revision Triage Desk"
+        title="Change Requests"
         description="Audit, classify, and route post-delivery revision requests submitted by research clients."
       />
 

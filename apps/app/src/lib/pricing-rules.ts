@@ -59,7 +59,7 @@ export const PACKAGES_CATALOG: Record<PackageName, PackageDefinition> = {
       "Variable codebook & audit log",
     ],
     recommendedFor: "Undergraduate / Master's students with raw, unformatted survey or experimental data.",
-    usualWorkingDays: 7,
+    usualWorkingDays: 3,
   },
   JX_02_START: {
     code: "JX_02_START",
@@ -77,7 +77,7 @@ export const PACKAGES_CATALOG: Record<PackageName, PackageDefinition> = {
       "Narrative statistical write-up for Chapter 4",
     ],
     recommendedFor: "Descriptive research designs, institutional baseline assessments, and pilot feasibility studies.",
-    usualWorkingDays: 7,
+    usualWorkingDays: 3,
   },
   JX_03_CORE: {
     code: "JX_03_CORE",
@@ -95,7 +95,7 @@ export const PACKAGES_CATALOG: Record<PackageName, PackageDefinition> = {
       "Independent dual-analyst verification and quality audit",
     ],
     recommendedFor: "Undergraduate Theses, Master's Theses, and Correlational/Comparative Research.",
-    usualWorkingDays: 7,
+    usualWorkingDays: 5,
   },
   JX_04_ADVANCED: {
     code: "JX_04_ADVANCED",
@@ -113,7 +113,7 @@ export const PACKAGES_CATALOG: Record<PackageName, PackageDefinition> = {
       "Comprehensive model diagnostics and structural validity logs",
     ],
     recommendedFor: "Doctoral Dissertations, Scopus/WOS Journal Submissions, and Complex Multi-Tier Research.",
-    usualWorkingDays: 15,
+    usualWorkingDays: 7,
   },
 };
 

@@ -107,7 +107,7 @@ export function AdminAuditLogClient({ initialLogs }: { initialLogs: AuditLogDTO[
           { label: "OPERATIONS", href: "/dashboard/admin" },
           { label: "ACTIVITY LOG" },
         ]}
-        title="System Activity & Audit Log"
+        title="Activity Log"
         description="Immutable system-wide ledger of operational status changes, financial disbursements, and admin actions."
       />
 

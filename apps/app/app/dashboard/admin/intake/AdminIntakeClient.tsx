@@ -119,7 +119,7 @@ export function AdminIntakeClient({
   initialProjects = [],
   initialCatalog,
   offers = {},
-}: AdminIntakeClientProps & { offers?: Record<string, { count: number; picked: string | null }> }) {
+}: AdminIntakeClientProps & { offers?: Record<string, { count: number; picked: string | null; reviewers?: number }> }) {
   const [selectedStudyForQuote, setSelectedStudyForQuote] =
     useState<ProjectDetailItem | null>(null);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
@@ -230,7 +230,7 @@ export function AdminIntakeClient({
       } else if (selectedStatus === "IN_WORK") {
         if (REQUESTS.has(p.masterStatus) || isFinished(p)) return false;
       } else if (selectedStatus === "HAS_OFFERS") {
-        if (!offers[p.id]?.count) return false;
+        if (!offers[p.id]?.count && !offers[p.id]?.reviewers) return false;
       } else if (selectedStatus === "FINISHED") {
         if (!isFinished(p)) return false;
       } else if (selectedStatus !== "ALL") {
@@ -498,7 +498,7 @@ export function AdminIntakeClient({
                 { value: "UNDER_EVALUATION", label: `Ready to price (${kpis.underEvaluation})` },
                 { value: "QUOTE_SENT", label: `Quote sent (${kpis.quoteSent})` },
                 { value: "IN_WORK", label: `Signed and in the works (${kpis.inWork})` },
-                { value: "HAS_OFFERS", label: `Analysts offered (${Object.values(offers).filter((o) => o.count > 0).length})` },
+                { value: "HAS_OFFERS", label: `Has offers (${Object.values(offers).filter((o) => o.count > 0 || (o.reviewers ?? 0) > 0).length})` },
                 { value: "FINISHED", label: `Finished (${kpis.finished})` },
               ],
             },
@@ -636,7 +636,7 @@ export function AdminIntakeClient({
                               <span className="text-white/75">We asked:</span> {p.missingInfoReason}
                             </p>
                           ) : null}
-                          {offers[p.id]?.count && !finished ? (
+                          {(offers[p.id]?.count || offers[p.id]?.reviewers) && !finished ? (
                             <button
                               type="button"
                               onClick={() => openOffers(p)}
@@ -653,11 +653,18 @@ export function AdminIntakeClient({
                                 <>
                                   <HandWaving size={12} weight="fill" className="shrink-0 text-[#CC6600]" />
                                   <span className="text-white">
-                                    {offers[p.id]!.count} {offers[p.id]!.count === 1 ? "offer" : "offers"}
+                                    {offers[p.id]!.count
+                                      ? `${offers[p.id]!.count} ${offers[p.id]!.count === 1 ? "offer" : "offers"}`
+                                      : "No analyst yet"}
                                   </span>
                                   <span className="text-white/40">· choose</span>
                                 </>
                               )}
+                              {offers[p.id]!.reviewers ? (
+                                <span className="shrink-0 text-white/40">
+                                  · {offers[p.id]!.reviewers} {offers[p.id]!.reviewers === 1 ? "reviewer" : "reviewers"}
+                                </span>
+                              ) : null}
                             </button>
                           ) : null}
                         </div>
@@ -1089,7 +1096,7 @@ export function AdminIntakeClient({
         <Modal
           open
           onClose={() => setOffersOpen(null)}
-          title="Analysts who want this study"
+          title="Who wants this study"
           description={`${offersFor.intakeId} · ${offersFor.researchTitle}`}
           size="lg"
         >

@@ -150,6 +150,7 @@ Before shipping any new feature, updating existing modules, or refactoring code,
 ### JAXIS StatLab Implementation Standards:
 1. **Automated Backups & Point-in-Time Recovery**:
    - Supabase PostgreSQL automated daily snapshots and Point-in-Time Recovery (PITR) must be enabled for production databases.
+   - **Current setup (free Supabase plan, no built-in backups):** a nightly GitHub Actions job copies the database, proves the copy restores, encrypts it and keeps 30 days in a private R2 bucket; restores (test or live) are a manual job. See [backup-and-restore.md](./backup-and-restore.md).
 2. **Object Storage Redundancy**:
    - Research datasets, deliverables, and SOW contracts in Cloudflare R2 must leverage object versioning to protect against accidental deletion or corruption.
 3. **Atomic Database Transactions**:

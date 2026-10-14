@@ -205,7 +205,7 @@ function Header({ attentionCount }: { attentionCount: number | null }) {
       description={description}
       breadcrumbs={[
         { label: "WORKSPACE", href: "/dashboard" },
-        { label: "CEO Overview" },
+        { label: "Overview" },
       ]}
       actions={
         <div className="flex w-full flex-col items-stretch gap-2.5 sm:w-auto sm:flex-row sm:items-center">
@@ -270,7 +270,7 @@ function KpiRow({ overview }: { overview: CeoOverview }) {
         label="Still owed"
         description={
           overview.owedStudies > 0
-            ? `On ${overview.owedStudies} ${overview.owedStudies === 1 ? "study" : "studies"} underway`
+            ? `On ${overview.owedStudies} ${overview.owedStudies === 1 ? "study" : "studies"} · ${overview.clientsUnderway} ${overview.clientsUnderway === 1 ? "client" : "clients"}`
             : "Nothing owed on studies underway"
         }
         icon={<HandCoins size={18} weight="fill" />}
@@ -280,8 +280,17 @@ function KpiRow({ overview }: { overview: CeoOverview }) {
             {money(overview.owed)}
           </span>
         }
-        badge={`${overview.clientsUnderway} ${overview.clientsUnderway === 1 ? "client" : "clients"} with work underway`}
-        info="The accepted price minus what clients have paid, for studies between the signed agreement and delivery."
+        badge={
+          overview.awaitingSignature > 0
+            ? (
+                <>
+                  <Peso />
+                  {money(overview.awaitingSignature)} waiting for signature
+                </>
+              )
+            : undefined
+        }
+        info="Still owed: the accepted price minus what clients have paid, for studies between the signed agreement and delivery. Waiting for signature: prices clients accepted on studies whose agreement isn't signed yet (it moves into Still owed once signed). Studies without a price count as nothing."
       />
       <KpiCard
         label="New studies"

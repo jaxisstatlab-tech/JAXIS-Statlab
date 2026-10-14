@@ -176,4 +176,4 @@ npx tsx prisma/seed.ts
 # Result: Seeded draft deliverables and released study JAXIS-202608-0002 with revision request
 ```
 
-**Status:** Formally closed and verified. Ready to proceed to the next module in `apps/app/TASKS.md`.
+**Status:** Formally closed and verified. Ready to proceed to the next module in `apps/app/docs/tasks/01-master-tasks.md`.

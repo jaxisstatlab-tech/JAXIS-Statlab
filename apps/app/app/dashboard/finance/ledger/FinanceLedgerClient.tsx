@@ -92,7 +92,7 @@ export function FinanceLedgerClient({ initialData }: FinanceLedgerClientProps) {
           { label: "FINANCE", href: "/dashboard/finance" },
           { label: "FINANCIAL LEDGER" },
         ]}
-        title="Project Financial Ledger & Margin Analysis"
+        title="Money per Study"
         description="Per-project itemized revenue ledger tracking gross client receipts, specialist commission disbursements, and net platform margins."
       />
 

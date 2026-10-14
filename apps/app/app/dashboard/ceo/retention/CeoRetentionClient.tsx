@@ -572,7 +572,7 @@ export function CeoRetentionClient({
           { label: "CEO DESK", href: "/dashboard/ceo" },
           { label: "Storage & Retention" },
         ]}
-        title="Data Retention & Storage Management"
+        title="File Storage"
         description="Configure automated file retention periods, protect sensitive research files, and selectively purge data domains."
         actions={
           <div className="flex flex-wrap items-center gap-2">

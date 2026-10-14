@@ -1,0 +1,114 @@
+# Restore the database from a nightly backup (see db-backup.yml). Run by hand from the Actions tab.
+#   Target "test": restores into a throwaway database and reports what's in it (a safe restore drill).
+#   Target "live": first saves a safety copy of the live database to R2 (pre-restore/), then replaces the live
+#                  tables with the backup in one transaction (all or nothing). Requires typing RESTORE LIVE.
+# Steps: apps/app/docs/info/backup-and-restore.md. The log is public: it prints names and counts only.
+
+name: Restore database
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup:
+        description: 'Backup file name from R2 "daily/" (e.g. jaxis-db-2026-10-14T1800Z.dump.gpg), or "latest"'
+        required: true
+        default: latest
+      target:
+        description: "Where to restore"
+        required: true
+        type: choice
+        options: [test, live]
+        default: test
+      confirm:
+        description: 'For "live" only: type RESTORE LIVE'
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      verify:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: verify
+          POSTGRES_DB: verify
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+      PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      ACCOUNT_ID: ${{ secrets.R2_BACKUP_ACCOUNT_ID }}
+      BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+      BACKUP: ${{ inputs.backup }}
+      TARGET: ${{ inputs.target }}
+      CONFIRM: ${{ inputs.confirm }}
+    steps:
+      - name: Check the request
+        run: |
+          if [ "$TARGET" = "live" ] && [ "$CONFIRM" != "RESTORE LIVE" ]; then
+            echo "::error::To restore the live database, type RESTORE LIVE in the confirm box."; exit 1
+          fi
+          for v in DATABASE_URL PASSPHRASE AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY ACCOUNT_ID BUCKET; do
+            if [ -z "${!v}" ]; then echo "::error::Missing GitHub secret for $v"; exit 1; fi
+          done
+
+      - name: Install the PostgreSQL 17 tools
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17 > /dev/null
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Download and decrypt the backup
+        run: |
+          R2="https://$ACCOUNT_ID.r2.cloudflarestorage.com"
+          if [ "$BACKUP" = "latest" ]; then
+            BACKUP=$(aws s3 ls "s3://$BUCKET/daily/" --endpoint-url "$R2" | awk '{print $4}' | sort | tail -n 1)
+          fi
+          if [ -z "$BACKUP" ]; then echo "::error::No backup found"; exit 1; fi
+          echo "Using daily/$BACKUP"
+          aws s3 cp "s3://$BUCKET/daily/$BACKUP" backup.dump.gpg --endpoint-url "$R2" --only-show-errors
+          gpg --batch --yes --quiet --pinentry-mode loopback --passphrase "$PASSPHRASE" --decrypt --output backup.dump backup.dump.gpg
+          pg_restore --list backup.dump | grep -v "SCHEMA - public" > restore.list
+
+      - name: Test restore (throwaway database)
+        if: inputs.target == 'test'
+        env:
+          VERIFY_URL: postgresql://postgres:verify@localhost:5432/verify
+        run: |
+          pg_restore --use-list=restore.list --no-owner --no-privileges --exit-on-error --dbname="$VERIFY_URL" backup.dump
+          psql "$VERIFY_URL" -tAc "select 'tables: ' || count(*) from information_schema.tables where table_schema = 'public'"
+          psql "$VERIFY_URL" -tAc "select 'studies: ' || count(*) from projects" || true
+          echo "The backup restores correctly. Nothing live was changed."
+
+      - name: Save a safety copy of the live database first
+        if: inputs.target == 'live'
+        run: |
+          NAME="pre-restore-$(date -u +%Y-%m-%dT%H%MZ).dump"
+          pg_dump "$DATABASE_URL" --schema=public --no-owner --no-privileges --format=custom --file=current.dump
+          gpg --batch --yes --quiet --pinentry-mode loopback --passphrase "$PASSPHRASE" --symmetric --cipher-algo AES256 --output "$NAME.gpg" current.dump
+          aws s3 cp "$NAME.gpg" "s3://$BUCKET/pre-restore/$NAME.gpg" --endpoint-url "https://$ACCOUNT_ID.r2.cloudflarestorage.com" --only-show-errors
+          echo "Safety copy saved as pre-restore/$NAME.gpg"
+
+      - name: Restore the live database (all or nothing)
+        if: inputs.target == 'live'
+        run: |
+          pg_restore --use-list=restore.list --clean --if-exists --no-owner --no-privileges \
+            --single-transaction --exit-on-error --dbname="$DATABASE_URL" backup.dump
+          psql "$DATABASE_URL" -tAc "select 'tables: ' || count(*) from information_schema.tables where table_schema = 'public'"
+          echo "Live database restored from $BACKUP."

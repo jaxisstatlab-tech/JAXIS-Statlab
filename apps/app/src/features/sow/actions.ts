@@ -14,6 +14,9 @@ import {
   type SOWContentSnapshot,
 } from "@/lib/sow-rules";
 import { PACKAGES_CATALOG } from "@/lib/pricing-rules";
+import { agreementDelivery } from "@/lib/delivery-speed";
+import { getCommercialCatalog } from "@/features/quotations/actions";
+import { CLIENT_ADDONS } from "@/features/projects/intake-preferences";
 import {
   GenerateSOWSchema,
   SignSOWSchema,
@@ -83,6 +86,8 @@ async function createOrUpdateSOWInternal({
   generatedBy: string;
   customTerms?: string;
 }): Promise<ActionResponse<SOWDetailItem>> {
+  // Delivery days come from the CEO's price list (standard days per package, days per speed add-on).
+  const catalog = await getCommercialCatalog();
   try {
     const result = await withDbTimeout(
       db.$transaction(async (tx) => {
@@ -150,14 +155,10 @@ async function createOrUpdateSOWInternal({
           .filter((li) => li.itemType === "ADDON")
           .map((li) => li.itemName);
 
-        const packageTurnaround: Record<string, number> = {
-          JX_01_DATACHECK: 3,
-          JX_02_START: 3,
-          JX_03_CORE: 5,
-          JX_04_ADVANCED: 7,
-        };
         const packageDef = PACKAGES_CATALOG[quote.packageName as keyof typeof PACKAGES_CATALOG];
-        const turnaroundDays = packageTurnaround[quote.packageName] || 5;
+        // A speed add-on (Express, Rush, Emergency) sets the delivery; otherwise the package's standard days.
+        const delivery = agreementDelivery(quote.packageName, addOnsList, catalog);
+        const turnaroundDays = delivery.turnaroundDays;
 
         const snapshot: SOWContentSnapshot = buildSOWSnapshot({
           client: {
@@ -184,6 +185,8 @@ async function createOrUpdateSOWInternal({
           },
           delivery: {
             turnaroundDays,
+            calendarDays: delivery.calendarDays,
+            speedName: delivery.speed ? (CLIENT_ADDONS[delivery.speed as keyof typeof CLIENT_ADDONS]?.name ?? delivery.speed) : null,
           },
           customTerms,
         });
@@ -331,13 +334,8 @@ async function createOrUpdateSOWInternal({
 
       const packageKey = (quote?.packageName as keyof typeof PACKAGES_CATALOG) || "JX_03_CORE";
       const packageDef = PACKAGES_CATALOG[packageKey] || PACKAGES_CATALOG.JX_03_CORE;
-      const packageTurnaround: Record<string, number> = {
-        JX_01_DATACHECK: 3,
-        JX_02_START: 3,
-        JX_03_CORE: 5,
-        JX_04_ADVANCED: 7,
-      };
-      const turnaroundDays = packageTurnaround[quote?.packageName || "JX_03_CORE"] || 5;
+      const delivery = agreementDelivery(String(quote?.packageName || "JX_03_CORE"), addOnsList, catalog);
+      const turnaroundDays = delivery.turnaroundDays;
 
       const snapshot: SOWContentSnapshot = buildSOWSnapshot({
         client: {
@@ -364,6 +362,8 @@ async function createOrUpdateSOWInternal({
         },
         delivery: {
           turnaroundDays,
+          calendarDays: delivery.calendarDays,
+          speedName: delivery.speed ? (CLIENT_ADDONS[delivery.speed as keyof typeof CLIENT_ADDONS]?.name ?? delivery.speed) : null,
         },
         customTerms,
       });

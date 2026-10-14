@@ -24,7 +24,7 @@ import { getQaWorkload } from "@/features/assignments/actions";
 import { getStaffSelfProfile, returnFromLeave } from "@/features/staff/actions";
 import { clientPackageName } from "@/features/projects/client-packages";
 import { monthKey, monthWindow } from "@/lib/month-buckets";
-import { DueText, FIELD, LeaveDialog, LeaveNotice, StudyDetailsModal, type LeaveData } from "@/features/assignments/components/WorkloadParts";
+import { AssignedCell, assignedText, DueText, FIELD, LeaveDialog, LeaveNotice, StudyDetailsModal, type LeaveData } from "@/features/assignments/components/WorkloadParts";
 import type { AssignmentDetailItem } from "@/features/assignments/schemas";
 
 // "Review Desk": the reviewer's home. Studies sent to them to check, ones sent back to the analyst, deadlines,
@@ -671,7 +671,7 @@ function StudiesPanel({
                   <span className="text-[12px] text-white/55">{stageText(s)}</span>
                 </div>
                 <p className="text-sm text-white">{s.projectTitle}</p>
-                <p className="-mt-1 text-[13px] text-white/45">Analyst: {s.statistician.fullName}</p>
+                <p className="-mt-1 text-[13px] text-white/45">Analyst: {s.statistician.fullName} · Assigned {assignedText(s.assignedAt)}</p>
                 <p className="text-[13px]">
                   <DueText s={s} />
                 </p>
@@ -688,6 +688,7 @@ function StudiesPanel({
                 <tr className="border-b border-white/[0.06] text-[11px] uppercase tracking-wider text-white/40">
                   <th className="px-5 py-2.5 font-medium sm:px-6">Study</th>
                   <th className="px-3 py-2.5 font-medium">Stage</th>
+                  <th className="px-3 py-2.5 font-medium">Assigned</th>
                   <th className="px-3 py-2.5 font-medium">Due</th>
                   <th className="px-3 py-2.5 font-medium">Analyst</th>
                   <th className="px-5 py-2.5 sm:px-6" aria-label="Actions" />
@@ -711,6 +712,9 @@ function StudiesPanel({
                       {s.projectField ? <p className="mt-0.5 truncate text-[13px] text-white/45">{s.projectField}</p> : null}
                     </td>
                     <td className="whitespace-nowrap px-3 py-3.5 text-[13px] text-white/75">{stageText(s)}</td>
+                    <td className="whitespace-nowrap px-3 py-3.5 text-[13px]">
+                      <AssignedCell iso={s.assignedAt} />
+                    </td>
                     <td className="whitespace-nowrap px-3 py-3.5 text-[13px]">
                       <DueText s={s} />
                     </td>

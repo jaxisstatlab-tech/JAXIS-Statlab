@@ -16,6 +16,7 @@ import type { DeliverableDTO, QaCertificateDTO } from "@/features/deliverables/s
 import { AnalysisGoalsList } from "@/features/projects/components/AnalysisGoalsList";
 import { ClientPreferences } from "@/features/projects/components/ClientPreferences";
 import { clientPackageName } from "@/features/projects/client-packages";
+import { deliveryLabel } from "@/lib/delivery-speed";
 import { markIntakeComplete, requestMissingInfo, updateProjectStatus } from "@/features/projects/actions";
 import { QuotationBuilderModal } from "@/features/quotations/components/QuotationBuilderModal";
 import { AssignmentModal } from "@/features/assignments/components/AssignmentModal";
@@ -370,7 +371,7 @@ export function AdminStudyOverview({
                           ? "After the client accepts the quote"
                           : "None on file"}
                 </p>
-                {sow ? <p className="mt-0.5 text-white/45">{sow.turnaroundDays} working days to deliver</p> : null}
+                {sow ? <p className="mt-0.5 text-white/45">{deliveryLabel(sow.contentSnapshot?.delivery ?? { turnaroundDays: sow.turnaroundDays })} to deliver</p> : null}
               </div>
               <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-white/[0.06] pt-3">
                 {quotation ? (
@@ -527,6 +528,7 @@ export function AdminStudyOverview({
         projectTitle={project.researchTitle}
         projectMethod={project.packageName?.replace(/_/g, " ")}
         turnaroundDays={sow?.turnaroundDays}
+        calendarDays={Boolean(sow?.contentSnapshot?.delivery?.calendarDays)}
         existingAssignment={assignment}
         onSuccess={() => {
           setToast({

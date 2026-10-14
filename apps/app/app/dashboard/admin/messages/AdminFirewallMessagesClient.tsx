@@ -154,7 +154,7 @@ export function AdminFirewallMessagesClient({
           { label: "AUDIT & SECURITY" },
           { label: "FIREWALL LOGS" },
         ]}
-        title="Communication Firewall Audit Desk"
+        title="Blocked Messages"
         description="Review all off-platform contact attempts intercepted by the JAXIS communication firewall."
         actions={
           <Button

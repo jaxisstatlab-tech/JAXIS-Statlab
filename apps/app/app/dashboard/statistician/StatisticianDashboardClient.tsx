@@ -23,7 +23,7 @@ import { Meter, Panel, PanelBody, PanelFooterButton, PanelHeader } from "@/compo
 import { getStatisticianWorkload, requestSlaPause } from "@/features/assignments/actions";
 import { getStaffSelfProfile, returnFromLeave } from "@/features/staff/actions";
 import {
-  DueText,
+  AssignedCell, assignedText, DueText,
   FIELD,
   LeaveDialog,
   LeaveNotice,
@@ -696,7 +696,7 @@ function StudiesPanel({
                   <span className="text-[12px] text-white/55">{stageText(s)}</span>
                 </div>
                 <p className="text-sm text-white">{s.projectTitle}</p>
-                <p className="-mt-1 text-[13px] text-white/45">Reviewer: {s.qaLead.fullName}</p>
+                <p className="-mt-1 text-[13px] text-white/45">Reviewer: {s.qaLead.fullName} · Assigned {assignedText(s.assignedAt)}</p>
                 <p className="text-[13px]">
                   <DueText s={s} />
                   {pauseRequested(s) ? <span className="text-white/45"> · pause asked</span> : null}
@@ -714,6 +714,7 @@ function StudiesPanel({
                 <tr className="border-b border-white/[0.06] text-[11px] uppercase tracking-wider text-white/40">
                   <th className="px-5 py-2.5 font-medium sm:px-6">Study</th>
                   <th className="px-3 py-2.5 font-medium">Stage</th>
+                  <th className="px-3 py-2.5 font-medium">Assigned</th>
                   <th className="px-3 py-2.5 font-medium">Due</th>
                   <th className="px-3 py-2.5 font-medium">Reviewer</th>
                   <th className="px-5 py-2.5 sm:px-6" aria-label="Actions" />
@@ -739,6 +740,9 @@ function StudiesPanel({
                       {s.projectField ? <p className="mt-0.5 truncate text-[13px] text-white/45">{s.projectField}</p> : null}
                     </td>
                     <td className="whitespace-nowrap px-3 py-3.5 text-[13px] text-white/75">{stageText(s)}</td>
+                    <td className="whitespace-nowrap px-3 py-3.5 text-[13px]">
+                      <AssignedCell iso={s.assignedAt} />
+                    </td>
                     <td className="whitespace-nowrap px-3 py-3.5 text-[13px]">
                       <DueText s={s} />
                       {pauseRequested(s) ? <p className="mt-0.5 text-[12px] text-white/45">Pause asked</p> : null}

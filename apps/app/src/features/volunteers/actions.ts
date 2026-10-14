@@ -8,6 +8,7 @@ import { clientPackageName } from "@/features/projects/client-packages";
 import { devStudyDataEnabled } from "@/features/projects/dev-study-store";
 import { autoAssignVolunteer, loadRankedVolunteers } from "./auto-assign";
 import { devOpenStudies, devPick, devPickedStudies, devStudyVolunteers, devVolunteer, devVolunteerProjectIds, devWithdraw } from "./dev-volunteers";
+import { kindOfRoles } from "./rules";
 import {
   OPEN_FOR_VOLUNTEERS,
   OPEN_STAGE_LABEL,
@@ -15,31 +16,47 @@ import {
   VolunteerSchema,
   type OpenStudyItem,
   type StudyVolunteerItem,
+  type VolunteerKind,
   type VolunteerResult,
 } from "./schemas";
 
-// "I'll take this study". Analysts see studies without a team and offer to take them; admins and the CEO see the
-// offers ranked by the owner's criteria (rules.ts) and may pick one; when the deposit clears the pick, or else the
-// best-ranked volunteer, is assigned (auto-assign.ts).
+// "I'll take this study". Analysts and reviewers see studies without a team and offer to take them (as many as they
+// like: there are far fewer reviewers than analysts, and every study needs one); admins and the CEO see the offers
+// ranked by the owner's criteria (rules.ts) and may pick one of each; when the deposit clears the picks, or else the
+// best-ranked volunteers, are assigned (auto-assign.ts).
 
 const INTAKE_FILES = ["RESEARCH_DOCUMENT", "DATASET", "QUESTIONNAIRE"] as const;
 const fail = (code: string, message: string) => ({ success: false as const, error: { code, message } });
 
-async function analyst() {
+/** The signed-in analyst or reviewer, with which kind of offer they make. */
+async function volunteerUser() {
   const session = await auth();
   if (!session?.user?.id) return null;
-  return session.user.role === "STATISTICIAN" ? session.user : null;
+  const role = session.user.role;
+  if (role === "STATISTICIAN") return { ...session.user, kind: "ANALYST" as VolunteerKind };
+  if (role === "SENIOR_QA_LEAD") return { ...session.user, kind: "REVIEWER" as VolunteerKind };
+  return null;
 }
+const OPEN_STUDIES_PATH: Record<VolunteerKind, string> = {
+  ANALYST: "/dashboard/statistician/open-studies",
+  REVIEWER: "/dashboard/qa/open-studies",
+};
+const KIND_WORD: Record<VolunteerKind, string> = { ANALYST: "analyst", REVIEWER: "reviewer" };
+/** Prisma filter: offers made by people of one kind (by their role). */
+const byKind = (kind: VolunteerKind) =>
+  kind === "REVIEWER"
+    ? { statistician: { userRoles: { some: { role: { name: "SENIOR_QA_LEAD" as const } }, none: { role: { name: "STATISTICIAN" as const } } } } }
+    : { statistician: { NOT: { userRoles: { some: { role: { name: "SENIOR_QA_LEAD" as const } }, none: { role: { name: "STATISTICIAN" as const } } } } } };
 async function manager() {
   const session = await auth();
   if (!session?.user?.id) return null;
   return session.user.role === "ADMIN" || session.user.role === "CEO" ? session.user : null;
 }
 
-/** Studies without a team, newest first, with this analyst's offer. Analysts only. */
+/** Studies without a team, newest first, with the viewer's offer. Analysts and reviewers. */
 export async function getOpenStudies(): Promise<VolunteerResult<OpenStudyItem[]>> {
-  const me = await analyst();
-  if (!me) return fail("FORBIDDEN", "Only analysts can see studies looking for an analyst.");
+  const me = await volunteerUser();
+  if (!me) return fail("FORBIDDEN", "Only analysts and reviewers can see studies looking for a team.");
   try {
     const projects = await db.project.findMany({
       where: { masterStatus: { in: OPEN_FOR_VOLUNTEERS }, OR: [{ assignment: null }, { assignment: { isActive: false } }] },
@@ -65,7 +82,12 @@ export async function getOpenStudies(): Promise<VolunteerResult<OpenStudyItem[]>
           select: { id: true, projectId: true, fileName: true, filePath: true, fileType: true, fileCategory: true, uploadedAt: true },
           orderBy: { uploadedAt: "asc" },
         },
-        volunteers: { orderBy: { createdAt: "asc" }, select: { statisticianId: true, note: true, createdAt: true, pickedAt: true } },
+        // Only offers of the viewer's kind: an analyst's place in line is among analysts, a reviewer's among reviewers.
+        volunteers: {
+          where: byKind(me.kind),
+          orderBy: { createdAt: "asc" },
+          select: { statisticianId: true, note: true, createdAt: true, pickedAt: true },
+        },
       },
     });
     return {
@@ -103,10 +125,10 @@ export async function getOpenStudies(): Promise<VolunteerResult<OpenStudyItem[]>
   }
 }
 
-/** "I'll take this study". Once per analyst per study, only while it has no team; admins and the CEO are told. */
+/** "I'll take this study". Once per person per study, only while it has no team; admins and the CEO are told. */
 export async function volunteerForStudy(input: unknown): Promise<VolunteerResult<{ count: number }>> {
-  const me = await analyst();
-  if (!me) return fail("FORBIDDEN", "Only analysts can offer to take a study.");
+  const me = await volunteerUser();
+  if (!me) return fail("FORBIDDEN", "Only analysts and reviewers can offer to take a study.");
   const parsed = VolunteerSchema.safeParse(input);
   if (!parsed.success) return fail("VALIDATION_ERROR", parsed.error.issues[0]?.message || "Check your note.");
   const { projectId } = parsed.data;
@@ -125,17 +147,18 @@ export async function volunteerForStudy(input: unknown): Promise<VolunteerResult
       return fail("CLOSED", "This study already has a team.");
     }
     await db.studyVolunteer.create({ data: { projectId, statisticianId: me.id, note } });
-    const count = await db.studyVolunteer.count({ where: { projectId } });
+    const count = await db.studyVolunteer.count({ where: { projectId, ...byKind(me.kind) } });
+    const word = KIND_WORD[me.kind];
 
-    revalidatePath("/dashboard/statistician/open-studies");
+    revalidatePath(OPEN_STUDIES_PATH[me.kind]);
     revalidatePath(`/dashboard/admin/projects/${projectId}`);
     try {
       await dispatchRealtimeNotification({
         eventType: "ASSIGNMENT",
         projectId,
         intakeId: project.intakeId,
-        title: `${user.fullName} wants to take ${project.intakeId}`,
-        message: `${count === 1 ? "First offer" : `Offer ${count}`} for "${project.researchTitle}".${note ? ` Note: ${note}` : ""} See the volunteers on the study page.`,
+        title: me.kind === "REVIEWER" ? `${user.fullName} wants to review ${project.intakeId}` : `${user.fullName} wants to take ${project.intakeId}`,
+        message: `${count === 1 ? `First ${word} offer` : `${word[0]!.toUpperCase()}${word.slice(1)} offer ${count}`} for "${project.researchTitle}".${note ? ` Note: ${note}` : ""} See the volunteers on the study page.`,
         linkUrl: `/dashboard/admin/projects/${projectId}`,
         targetRoles: ["ADMIN", "CEO"],
       });
@@ -155,8 +178,8 @@ export async function volunteerForStudy(input: unknown): Promise<VolunteerResult
 
 /** Take back an offer. If the admin had picked you, they're told. */
 export async function withdrawVolunteer(projectId: string): Promise<VolunteerResult<{ wasPicked: boolean }>> {
-  const me = await analyst();
-  if (!me) return fail("FORBIDDEN", "Only analysts can do this.");
+  const me = await volunteerUser();
+  if (!me) return fail("FORBIDDEN", "Only analysts and reviewers can do this.");
   try {
     const row = await db.studyVolunteer.findUnique({
       where: { projectId_statisticianId: { projectId, statisticianId: me.id } },
@@ -164,7 +187,7 @@ export async function withdrawVolunteer(projectId: string): Promise<VolunteerRes
     });
     if (!row) return fail("NOT_FOUND", "You hadn't offered to take this study.");
     await db.studyVolunteer.delete({ where: { id: row.id } });
-    revalidatePath("/dashboard/statistician/open-studies");
+    revalidatePath(OPEN_STUDIES_PATH[me.kind]);
     revalidatePath(`/dashboard/admin/projects/${projectId}`);
     if (row.pickedAt) {
       try {
@@ -173,7 +196,7 @@ export async function withdrawVolunteer(projectId: string): Promise<VolunteerRes
           projectId,
           intakeId: row.project.intakeId,
           title: `${row.statistician.fullName} withdrew from ${row.project.intakeId}`,
-          message: "They were your pick. Pick another analyst on the study page, or the best-ranked volunteer is assigned when the deposit clears.",
+          message: `They were your pick. Pick another ${KIND_WORD[me.kind]} on the study page, or the best-ranked volunteer is assigned when the deposit clears.`,
           linkUrl: `/dashboard/admin/projects/${projectId}`,
           targetRoles: ["ADMIN", "CEO"],
         });
@@ -205,15 +228,17 @@ export async function getStudyVolunteers(projectId: string): Promise<VolunteerRe
 }
 
 /**
- * The admin picks the analyst (or clears the pick with null, so the best-ranked volunteer is used). If the
- * study is already paid and has no team, the analyst is assigned right away; otherwise when the deposit clears.
+ * The admin picks the analyst or the reviewer (or clears that pick with null, so the best-ranked volunteer is used).
+ * One pick of each kind per study. If the study is already paid and has no team, the team is assigned right away;
+ * otherwise when the deposit clears.
  */
 export async function pickVolunteer(input: unknown): Promise<VolunteerResult<{ assigned: boolean }>> {
   const me = await manager();
   if (!me) return fail("FORBIDDEN", "Only admins and the CEO can pick the analyst.");
   const parsed = PickVolunteerSchema.safeParse(input);
-  if (!parsed.success) return fail("VALIDATION_ERROR", "Choose an analyst.");
+  if (!parsed.success) return fail("VALIDATION_ERROR", "Choose an analyst or a reviewer.");
   const { projectId, statisticianId } = parsed.data;
+  let kind: VolunteerKind = parsed.data.kind;
 
   try {
     const project = await db.project.findUnique({
@@ -227,13 +252,14 @@ export async function pickVolunteer(input: unknown): Promise<VolunteerResult<{ a
       if (statisticianId) {
         const row = await tx.studyVolunteer.findUnique({
           where: { projectId_statisticianId: { projectId, statisticianId } },
-          include: { statistician: { select: { status: true } } },
+          include: { statistician: { select: { status: true, userRoles: { select: { role: { select: { name: true } } } } } } },
         });
         if (!row) return "NOT_FOUND";
         if (row.statistician.status !== "ACTIVE") return "UNAVAILABLE";
+        kind = kindOfRoles(row.statistician.userRoles.map((r) => r.role.name));
       }
-      // One pick per study.
-      await tx.studyVolunteer.updateMany({ where: { projectId }, data: { pickedAt: null, pickedBy: null } });
+      // One pick per study for each kind (an analyst and a reviewer).
+      await tx.studyVolunteer.updateMany({ where: { projectId, ...byKind(kind) }, data: { pickedAt: null, pickedBy: null } });
       if (statisticianId) {
         await tx.studyVolunteer.update({
           where: { projectId_statisticianId: { projectId, statisticianId } },
@@ -242,11 +268,11 @@ export async function pickVolunteer(input: unknown): Promise<VolunteerResult<{ a
       }
       return "OK";
     });
-    if (ok === "NOT_FOUND") return fail("NOT_FOUND", "That analyst didn't offer to take this study.");
-    if (ok === "UNAVAILABLE") return fail("UNAVAILABLE", "That analyst is on leave or not active right now.");
+    if (ok === "NOT_FOUND") return fail("NOT_FOUND", "That person didn't offer to take this study.");
+    if (ok === "UNAVAILABLE") return fail("UNAVAILABLE", "That person is on leave or not active right now.");
 
     revalidatePath(`/dashboard/admin/projects/${projectId}`);
-    revalidatePath("/dashboard/statistician/open-studies");
+    revalidatePath(OPEN_STUDIES_PATH[kind]);
 
     // Picking on a study that's already paid assigns right away; otherwise it waits for the deposit.
     const outcome = statisticianId ? await autoAssignVolunteer(projectId, { id: me.id, role: me.role }) : { assigned: false as const };
@@ -257,8 +283,11 @@ export async function pickVolunteer(input: unknown): Promise<VolunteerResult<{ a
           projectId,
           intakeId: project.intakeId,
           title: `You were picked for ${project.intakeId}`,
-          message: `"${project.researchTitle}" will be yours once the client pays the deposit. You'll be told when it starts.`,
-          linkUrl: "/dashboard/statistician/open-studies",
+          message:
+            kind === "REVIEWER"
+              ? `You'll review "${project.researchTitle}" once the client pays the deposit. You'll be told when it starts.`
+              : `"${project.researchTitle}" will be yours once the client pays the deposit. You'll be told when it starts.`,
+          linkUrl: OPEN_STUDIES_PATH[kind],
           targetUserIds: [statisticianId],
         });
       } catch (e) {
@@ -267,34 +296,45 @@ export async function pickVolunteer(input: unknown): Promise<VolunteerResult<{ a
     }
     return { success: true, data: { assigned: outcome.assigned } };
   } catch (err) {
-    if (devStudyDataEnabled()) return devPick(projectId, statisticianId, me);
+    if (devStudyDataEnabled()) return devPick(projectId, statisticianId, me, kind);
     console.error("[pickVolunteer] Error:", err);
     return fail("SERVER_ERROR", "The pick wasn't saved. Please try again.");
   }
 }
 
-/** For the Studies list: how many analysts offered on each study without a team, and who's picked. */
-export async function getVolunteerSummary(): Promise<VolunteerResult<Record<string, { count: number; picked: string | null }>>> {
+/** For the Studies list: per study without a team, how many analysts offered (and which one is picked) and how many
+ * reviewers offered. */
+export type VolunteerSummary = Record<string, { count: number; picked: string | null; reviewers?: number }>;
+export async function getVolunteerSummary(): Promise<VolunteerResult<VolunteerSummary>> {
   const me = await manager();
   if (!me) return fail("FORBIDDEN", "Only admins and the CEO can see offers.");
   try {
     const rows = await db.studyVolunteer.findMany({
       where: { project: { masterStatus: { in: OPEN_FOR_VOLUNTEERS } } },
-      select: { projectId: true, pickedAt: true, statistician: { select: { fullName: true } } },
+      select: {
+        projectId: true,
+        pickedAt: true,
+        statistician: { select: { fullName: true, userRoles: { select: { role: { select: { name: true } } } } } },
+      },
     });
-    const out: Record<string, { count: number; picked: string | null }> = {};
+    const out: VolunteerSummary = {};
     for (const r of rows) {
-      const o = (out[r.projectId] ??= { count: 0, picked: null });
+      const o = (out[r.projectId] ??= { count: 0, picked: null, reviewers: 0 });
+      if (kindOfRoles(r.statistician.userRoles.map((x) => x.role.name)) === "REVIEWER") {
+        o.reviewers = (o.reviewers ?? 0) + 1;
+        continue;
+      }
       o.count += 1;
       if (r.pickedAt) o.picked = r.statistician.fullName;
     }
     return { success: true, data: out };
   } catch (err) {
     if (devStudyDataEnabled()) {
-      const out: Record<string, { count: number; picked: string | null }> = {};
+      const out: VolunteerSummary = {};
       for (const id of devVolunteerProjectIds()) {
-        const v = devStudyVolunteers(id);
-        out[id] = { count: v.length, picked: v.find((x) => x.picked)?.fullName ?? null };
+        const all = devStudyVolunteers(id);
+        const v = all.filter((x) => x.kind === "ANALYST");
+        out[id] = { count: v.length, picked: v.find((x) => x.picked)?.fullName ?? null, reviewers: all.length - v.length };
       }
       return { success: true, data: out };
     }
@@ -319,7 +359,7 @@ export async function getPickedStudies(): Promise<VolunteerResult<PickedStudy[]>
   if (!me) return fail("FORBIDDEN", "Only admins and the CEO can see picks.");
   try {
     const rows = await db.studyVolunteer.findMany({
-      where: { pickedAt: { not: null }, project: { masterStatus: { in: OPEN_FOR_VOLUNTEERS } } },
+      where: { pickedAt: { not: null }, project: { masterStatus: { in: OPEN_FOR_VOLUNTEERS } }, ...byKind("ANALYST") },
       orderBy: { pickedAt: "asc" },
       select: {
         pickedAt: true,

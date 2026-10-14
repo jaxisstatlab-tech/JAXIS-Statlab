@@ -115,7 +115,7 @@ export function AssignmentsClient({
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-24 w-full animate-content-fade font-sans">
       {/* Page Header */}
       <PageHeader
-        title="Specialist Assignments &amp; Workload"
+        title="Assign Teams"
         description="Assign lead statistical analysts and QA leads to active studies and manage team capacity."
         breadcrumbs={[
           { label: "WORKSPACE", href: "/dashboard" },

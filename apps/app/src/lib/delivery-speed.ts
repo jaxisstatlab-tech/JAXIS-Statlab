@@ -1,13 +1,14 @@
-// Delivery times, set by the CEO in the price list (Money & Pay Rates): how many working days each package
-// usually takes, and how many days each faster delivery add-on (Rush, Express, Emergency) takes. The intake
-// form uses them to pre-pick a faster delivery when the client's date is sooner than the package's usual time.
-// Saved price lists from before these fields existed fall back to the defaults below.
+// Delivery times, set by the CEO in the price list (Money & Pay Rates): each package's standard delivery in
+// working days, and how many days each faster delivery add-on (Rush, Express, Emergency) takes. Used by the
+// intake form (to pre-pick a faster delivery), the agreement (its promised delivery) and the analyst's deadline.
+// Saved price lists from before these fields existed fall back to the defaults below, which are the days
+// agreements have always promised.
 
 export const DEFAULT_USUAL_WORKING_DAYS: Record<string, number> = {
-  JX_01_DATACHECK: 7,
-  JX_02_START: 7,
-  JX_03_CORE: 7,
-  JX_04_ADVANCED: 15,
+  JX_01_DATACHECK: 3,
+  JX_02_START: 3,
+  JX_03_CORE: 5,
+  JX_04_ADVANCED: 7,
 };
 
 export const DEFAULT_READY_IN_DAYS: Record<string, number> = {
@@ -67,6 +68,38 @@ export function deliveryConfigFrom(catalog: CatalogLike): DeliveryConfig {
     .sort((a, b) => b.readyInDays - a.readyInDays);
   const addOnPrices = Object.fromEntries(activeAddOns.map((code) => [code, Number(catalog.addOns[code]?.defaultPrice) || 0]));
   return { packages, packagePrices, addOnPrices, speeds, activeAddOns };
+}
+
+/** What an agreement promises: a speed add-on's days (calendar days, e.g. Express = 2), or else the
+ * package's standard working days. With more than one speed on a quote, the fastest wins. */
+export interface AgreementDelivery {
+  turnaroundDays: number;
+  /** true for a speed add-on (counted in calendar days: Express 48 hours = 2 days). */
+  calendarDays: boolean;
+  /** The speed add-on's code (RUSH, EXPRESS, EMERGENCY), or null for standard delivery. */
+  speed: string | null;
+}
+
+export function agreementDelivery(packageCode: string, addOnCodes: string[], catalog: CatalogLike): AgreementDelivery {
+  const speeds = addOnCodes
+    .map((code) => ({ code, days: readyInDaysOf(code, catalog.addOns[code]) }))
+    .filter((s): s is { code: string; days: number } => s.days !== null)
+    .sort((a, b) => a.days - b.days);
+  if (speeds[0]) return { turnaroundDays: speeds[0].days, calendarDays: true, speed: speeds[0].code };
+  return { turnaroundDays: usualWorkingDaysOf(packageCode, catalog.packages[packageCode]), calendarDays: false, speed: null };
+}
+
+/** Whether a saved agreement's delivery counts calendar days (a speed add-on); older agreements count working days. */
+export function snapshotCalendarDays(snapshot: unknown): boolean {
+  const delivery = (snapshot as { delivery?: { calendarDays?: unknown } } | null)?.delivery;
+  return delivery?.calendarDays === true;
+}
+
+/** "2 days (Express)" or "5 working days", for the agreement. */
+export function deliveryLabel(d: { turnaroundDays: number; calendarDays?: boolean; speedName?: string | null }): string {
+  const n = d.turnaroundDays;
+  if (d.calendarDays) return `${n} ${n === 1 ? "day" : "days"}${d.speedName ? ` (${d.speedName})` : ""}`;
+  return `${n} working ${n === 1 ? "day" : "days"}`;
 }
 
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());

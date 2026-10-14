@@ -18,8 +18,11 @@ function toDateKey(d: Date): string {
 export async function computeSlaDueDate(
   startAt: Date,
   turnaroundDays: number,
-  client?: Prisma.TransactionClient | typeof db
+  client?: Prisma.TransactionClient | typeof db,
+  /** Speed add-ons (Express = 48 hours) count calendar days, not working days. */
+  calendarDays = false
 ): Promise<Date> {
+  if (calendarDays) return new Date(startAt.getTime() + turnaroundDays * 86_400_000);
   const prismaClient = client || db;
   const holidays = await prismaClient.philippineHoliday.findMany({
     where: { date: { gte: startAt } },

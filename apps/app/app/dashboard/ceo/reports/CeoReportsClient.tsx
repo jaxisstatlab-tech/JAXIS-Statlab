@@ -214,7 +214,7 @@ export function CeoReportsClient({
           { label: "EXECUTIVE", href: "/dashboard/ceo" },
           { label: "INTELLIGENCE REPORTS" },
         ]}
-        title="Executive Intelligence & Reporting"
+        title="Reports"
         description="Comprehensive business analytics, platform margins, team productivity benchmarks, and financial ledgers."
         actions={
           <div className="flex flex-wrap items-center gap-2">

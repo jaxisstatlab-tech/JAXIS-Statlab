@@ -49,7 +49,7 @@ import {
   type ClientQuoteEntry,
 } from "./schemas";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
-import { type QuotationStatus, type LineItemType, type ProjectStatus, type AddOnName, PackageName, Prisma } from "@prisma/client";
+import { type QuotationStatus, type LineItemType, type ProjectStatus, PackageName, Prisma } from "@prisma/client";
 
 const DEV_QUOTATIONS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-quotations.json");
 const DEV_PROJECTS_FILE = path.join(/*turbopackIgnore: true*/ process.cwd(), ".dev-projects.json");
@@ -1181,7 +1181,9 @@ export async function respondQuotation(
     };
   }
 
-  const { quotationId, decision, declineReason, selectedAddOnCodes } = parsed.data;
+  // The client accepts the price exactly as sent: speed and extras are set by the admin, and once accepted
+  // the agreement is built from it. Any add-on list sent by an older page is ignored.
+  const { quotationId, decision, declineReason } = parsed.data;
 
   try {
     const updated = await withDbTimeout(
@@ -1221,51 +1223,6 @@ export async function respondQuotation(
             // Verify status transition from QUOTE_SENT -> CLIENT_APPROVED
             assertValidStatusTransition(quote.project.masterStatus, "CLIENT_APPROVED");
 
-            let finalTotal = quote.totalAmount;
-            let finalDownpayment = quote.downpaymentRequired;
-
-            // If client customized add-on selection, recalculate totals and update line items
-            if (selectedAddOnCodes !== undefined) {
-              const addOnsList = selectedAddOnCodes.map((code) => {
-                const def = ADDONS_CATALOG[code as AddOnName];
-                return {
-                  name: code as AddOnName,
-                  amount: def ? def.defaultPrice : 0,
-                  description: def ? def.tagline : undefined,
-                };
-              });
-
-              const breakdown = calculateQuotationTotals({
-                packageName: quote.packageName,
-                basePrice: Number(quote.basePrice),
-                addOns: addOnsList,
-              });
-
-              finalTotal = new Prisma.Decimal(breakdown.totalAmount);
-              finalDownpayment = new Prisma.Decimal(breakdown.downpaymentRequired);
-
-              // Delete prior ADDON line items
-              await tx.quotationLineItem.deleteMany({
-                where: {
-                  quotationId,
-                  itemType: "ADDON",
-                },
-              });
-
-              // Insert updated client-selected ADDON line items
-              if (addOnsList.length > 0) {
-                await tx.quotationLineItem.createMany({
-                  data: addOnsList.map((a) => ({
-                    quotationId,
-                    itemType: "ADDON" as LineItemType,
-                    itemName: a.name,
-                    description: a.description || ADDONS_CATALOG[a.name]?.name,
-                    amount: a.amount,
-                  })),
-                });
-              }
-            }
-
             // Update Project
             await tx.project.update({
               where: { id: quote.projectId },
@@ -1279,8 +1236,6 @@ export async function respondQuotation(
               where: { id: quotationId },
               data: {
                 status: "CLIENT_APPROVED" as QuotationStatus,
-                totalAmount: finalTotal,
-                downpaymentRequired: finalDownpayment,
                 respondedAt: now,
               },
               include: {
@@ -1431,38 +1386,6 @@ export async function respondQuotation(
       const now = new Date();
       const isAccept = decision === "ACCEPT";
 
-      let devTotal = existing.totalAmount;
-      let devDownpayment = existing.downpaymentRequired;
-      let devLineItems = existing.lineItems;
-
-      if (isAccept && selectedAddOnCodes !== undefined) {
-        const baseItems = existing.lineItems.filter((li) => li.itemType === "PACKAGE");
-        const addOnsList = selectedAddOnCodes.map((code) => {
-          const def = ADDONS_CATALOG[code as AddOnName];
-          return {
-            name: code as AddOnName,
-            amount: def ? def.defaultPrice : 0,
-            description: def ? def.tagline : undefined,
-          };
-        });
-        const breakdown = calculateQuotationTotals({
-          packageName: existing.packageName,
-          basePrice: existing.basePrice,
-          addOns: addOnsList,
-        });
-        devTotal = breakdown.totalAmount;
-        devDownpayment = breakdown.downpaymentRequired;
-        const newAddonLineItems = addOnsList.map((a, idx) => ({
-          id: `li-addon-${Date.now()}-${idx}`,
-          quotationId: existing.id,
-          itemType: "ADDON" as const,
-          itemName: a.name,
-          description: a.description || ADDONS_CATALOG[a.name]?.name,
-          amount: a.amount,
-        }));
-        devLineItems = [...baseItems, ...newAddonLineItems];
-      }
-
       const respondedQuote: QuotationDetailItem = {
         id: existing.id,
         projectId: existing.projectId,
@@ -1472,10 +1395,10 @@ export async function respondQuotation(
         clientEmail: existing.clientEmail,
         packageName: existing.packageName,
         basePrice: existing.basePrice,
-        totalAmount: devTotal,
-        downpaymentRequired: devDownpayment,
-        releaseBalance: Math.max(0, devTotal - devDownpayment),
-        downpaymentPercentage: devTotal > 0 ? Math.round((devDownpayment / devTotal) * 100) : 50,
+        totalAmount: existing.totalAmount,
+        downpaymentRequired: existing.downpaymentRequired,
+        releaseBalance: existing.releaseBalance,
+        downpaymentPercentage: existing.downpaymentPercentage,
         isUpfrontEnforced: existing.isUpfrontEnforced,
         expiresAt: existing.expiresAt,
         isExpired: existing.isExpired,
@@ -1487,7 +1410,7 @@ export async function respondQuotation(
         declineReason: !isAccept ? (declineReason || "Declined by researcher.") : null,
         createdAt: existing.createdAt,
         updatedAt: now.toISOString(),
-        lineItems: devLineItems,
+        lineItems: existing.lineItems,
       };
       const existingIdx = devQuotes.findIndex((q) => q.id === quotationId);
       devQuotes[existingIdx] = respondedQuote;

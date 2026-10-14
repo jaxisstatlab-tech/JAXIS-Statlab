@@ -48,6 +48,8 @@ export function ClientPaymentView({ projectId, initialProject, initialData, chan
   const [data, setData] = useState<ProjectPaymentsData | null>(initialData);
   const [isLoading, setIsLoading] = useState(!preloaded);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  // While the deposit is due the client can pay just the deposit or everything at once.
+  const [payPlan, setPayPlan] = useState<"DOWNPAYMENT" | "FULL">("DOWNPAYMENT");
   const [viewing, setViewing] = useState<PaymentItem | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
 
@@ -123,6 +125,8 @@ export function ClientPaymentView({ projectId, initialProject, initialData, chan
             messagesHref={`${base}/messages`}
             onUpload={() => setIsUploadOpen(true)}
             onCopied={(what) => setToast({ message: `${what} copied`, description: "Paste it in GCash or your bank app.", variant: "info" })}
+            payPlan={payPlan}
+            onPayPlan={setPayPlan}
           />
 
           <Panel aria-label="Your payments">
@@ -206,6 +210,7 @@ export function ClientPaymentView({ projectId, initialProject, initialData, chan
           remainingBalance={summary.remainingBalance}
           isDownpaymentCleared={summary.isDownpaymentCleared}
           initialChannels={channels}
+          initialType={summary.isDownpaymentCleared ? undefined : payPlan}
           onSuccess={handleUploaded}
         />
       ) : null}
@@ -225,6 +230,8 @@ function PayNowPanel({
   messagesHref,
   onUpload,
   onCopied,
+  payPlan,
+  onPayPlan,
 }: {
   project: ProjectDetailItem;
   data: ProjectPaymentsData;
@@ -233,6 +240,8 @@ function PayNowPanel({
   messagesHref: string;
   onUpload: () => void;
   onCopied: (what: string) => void;
+  payPlan: "DOWNPAYMENT" | "FULL";
+  onPayPlan: (plan: "DOWNPAYMENT" | "FULL") => void;
 }) {
   const s = data.summary;
   const delivered = project.masterStatus === "DELIVERED" || project.masterStatus === "REVISION_REQUESTED";
@@ -245,6 +254,10 @@ function PayNowPanel({
   let action: React.ReactNode = null;
   let yourTurn = false;
   let payAmount = 0;
+  let amountLabel = "";
+  // Deposit stage with a real choice (upfront packages have deposit = full price, so there's nothing to pick).
+  const fullLeft = s.remainingBalance;
+  const canChoose = !s.isDownpaymentCleared && depositDue > 0 && depositDue < fullLeft;
 
   const uploadButton = (label: string, primary: boolean) => (
     <Button variant={primary ? "primary" : "outline"} size="sm" onClick={onUpload} className="gap-1.5">
@@ -268,13 +281,17 @@ function PayNowPanel({
     );
   } else if (!s.isDownpaymentCleared) {
     yourTurn = true;
-    title = "Pay your deposit";
-    body = (
-      <>
-        Your analysis starts once we confirm it.
-      </>
-    );
-    payAmount = depositDue;
+    if (canChoose) {
+      title = "Pay to start your analysis";
+      body = <>Pay the deposit now and the rest when your files are ready, or pay the full amount now. We start once we confirm it.</>;
+      payAmount = payPlan === "FULL" ? fullLeft : depositDue;
+      amountLabel = payPlan === "FULL" ? "Full amount" : "Deposit";
+    } else {
+      title = "Pay for your study";
+      body = <>This package is paid in full before we start. We start once we confirm it.</>;
+      payAmount = Math.max(depositDue, fullLeft);
+      amountLabel = "Full amount";
+    }
     action = uploadButton("I've Paid", true);
   } else if (delivered) {
     yourTurn = true;
@@ -285,6 +302,7 @@ function PayNowPanel({
       </>
     );
     payAmount = s.remainingBalance;
+    amountLabel = "The rest";
     action = uploadButton("I've Paid", true);
   } else {
     eyebrow = "Deposit confirmed";
@@ -314,8 +332,55 @@ function PayNowPanel({
             <p className="mt-1 text-sm leading-relaxed text-white/85">{rejected.rejectionReason || "Please check the amount and reference number, then send it again."}</p>
           </div>
         ) : null}
+        {yourTurn && canChoose ? (
+          <div role="radiogroup" aria-label="How much will you pay now?" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {(
+              [
+                { plan: "DOWNPAYMENT", label: "Deposit", amount: depositDue, note: <>The rest, <Amount n={fullLeft - depositDue} />, when your files are ready</> },
+                { plan: "FULL", label: "Full amount", amount: fullLeft, note: <>Pay everything now. Nothing left to pay later</> },
+              ] as const
+            ).map((o) => {
+              const on = payPlan === o.plan;
+              return (
+                <button
+                  key={o.plan}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => onPayPlan(o.plan)}
+                  className={`flex items-start gap-3 rounded-[2px] border px-4 py-3 text-left transition-colors ${
+                    on ? "border-[#CC6600]/60 bg-[#CC6600]/[0.06]" : "border-white/[0.1] hover:border-white/25"
+                  }`}
+                >
+                  <span
+                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${on ? "border-[#CC6600]" : "border-white/30"}`}
+                    aria-hidden="true"
+                  >
+                    {on ? <span className="h-2 w-2 rounded-full bg-[#CC6600]" /> : null}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-baseline justify-between gap-3">
+                      <span className="text-sm font-medium text-white">{o.label}</span>
+                      <span className="text-sm font-semibold text-white">
+                        <Amount n={o.amount} />
+                      </span>
+                    </span>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-white/55">{o.note}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
         {yourTurn ? (
-          <SendTo amount={payAmount} intakeId={project.intakeId} channels={channels} messagesHref={messagesHref} onCopied={onCopied} />
+          <SendTo
+            amount={payAmount}
+            amountLabel={amountLabel}
+            intakeId={project.intakeId}
+            channels={channels}
+            messagesHref={messagesHref}
+            onCopied={onCopied}
+          />
         ) : null}
         {action ? (
           <div className="flex flex-col gap-3 border-t border-white/[0.06] pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -339,12 +404,15 @@ function PayNowPanel({
 /** Our accounts, right where the client decides to pay: the amount, where to send it, and what to write. */
 function SendTo({
   amount,
+  amountLabel = "",
   intakeId,
   channels,
   messagesHref,
   onCopied,
 }: {
   amount: number;
+  /** "Deposit", "Full amount" or "The rest", shown next to the amount. */
+  amountLabel?: string;
   intakeId: string;
   channels: PaymentChannelDetails[] | null;
   messagesHref: string;
@@ -365,7 +433,9 @@ function SendTo({
   return (
     <div className="flex flex-col gap-3">
       <p className="text-[13px] font-medium text-white">
-        Send <Amount n={amount} /> to {channels.length === 1 ? "this account" : "one of these accounts"}
+        Send <Amount n={amount} />
+        {amountLabel ? <span className="font-normal text-white/60"> ({amountLabel.toLowerCase()})</span> : null} to{" "}
+        {channels.length === 1 ? "this account" : "one of these accounts"}
       </p>
       <ul className={`grid grid-cols-1 gap-3 ${channels.length > 1 ? "md:grid-cols-2" : ""}`}>
         {channels.map((c) => {
@@ -418,7 +488,14 @@ function SendTo({
         <CopyButton value={intakeId} label="Copy ID" copiedLabel="Copied" variant="badge" onCopy={() => onCopied("Study ID")} className="shrink-0 self-start whitespace-nowrap sm:self-auto" />
       </div>
       {openAccount ? (
-        <PayAccountModal account={openAccount} amount={amount} intakeId={intakeId} onCopied={onCopied} onClose={() => setOpenAccount(null)} />
+        <PayAccountModal
+          account={openAccount}
+          amount={amount}
+          amountLabel={amountLabel}
+          intakeId={intakeId}
+          onCopied={onCopied}
+          onClose={() => setOpenAccount(null)}
+        />
       ) : null}
     </div>
   );
@@ -428,12 +505,14 @@ function SendTo({
 function PayAccountModal({
   account: c,
   amount,
+  amountLabel = "",
   intakeId,
   onCopied,
   onClose,
 }: {
   account: PaymentChannelDetails;
   amount: number;
+  amountLabel?: string;
   intakeId: string;
   onCopied: (what: string) => void;
   onClose: () => void;
@@ -496,7 +575,12 @@ function PayAccountModal({
           </div>
         ) : null}
         <div className="flex flex-col">
-          <Row label="Amount to send" value={<Amount n={amount} />} copy={String(Math.round(amount * 100) / 100)} copyLabel="Amount" />
+          <Row
+            label={amountLabel ? `Amount to send · ${amountLabel}` : "Amount to send"}
+            value={<Amount n={amount} />}
+            copy={String(Math.round(amount * 100) / 100)}
+            copyLabel="Amount"
+          />
           <Row label={gcash ? "GCash number" : "Account number"} value={c.accountNumber} copy={c.accountNumber.replace(/[\s-]/g, "")} copyLabel={gcash ? "GCash number" : "Account number"} mono />
           <Row label={gcash ? "Name shown in GCash" : "Account name"} value={c.accountName} />
           {!gcash ? <Row label="Bank" value={`${c.institution || "Bank"}${c.branchOrProvider ? ` · ${c.branchOrProvider}` : ""}`} /> : null}

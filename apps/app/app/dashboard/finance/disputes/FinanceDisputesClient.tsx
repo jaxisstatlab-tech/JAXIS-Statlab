@@ -264,7 +264,7 @@ export function FinanceDisputesClient({
           { label: "FINANCE", href: "/dashboard/finance" },
           { label: "REFUNDS & DISPUTES" },
         ]}
-        title="Refunds & Study Disputes"
+        title="Refunds & Claims"
         description="Check client refund claims, monitor locked milestone payouts, and review chargeback halts."
       />
 

@@ -5,7 +5,6 @@ import React, {
   useEffect,
   useCallback,
   useTransition,
-  useMemo,
   useRef,
   useSyncExternalStore,
 } from "react";
@@ -27,8 +26,9 @@ import {
   Check,
   CheckCircle,
   Clock,
-  GraduationCap,
+  Lightning,
   PencilSimple,
+  Plus,
   Warning,
 } from "@phosphor-icons/react";
 import { getProjectById } from "@/features/projects/actions";
@@ -36,11 +36,7 @@ import {
   getQuotationByProject,
   respondQuotation,
 } from "@/features/quotations/actions";
-import {
-  PACKAGES_CATALOG,
-  ADDONS_CATALOG,
-  calculateQuotationTotals,
-} from "@/lib/pricing-rules";
+import { PACKAGES_CATALOG, ADDONS_CATALOG } from "@/lib/pricing-rules";
 import type { ProjectDetailItem } from "@/features/projects/schemas";
 import type { QuotationDetailItem } from "@/features/quotations/schemas";
 import type { AddOnName } from "@prisma/client";
@@ -48,8 +44,9 @@ import { clientPackage, clientPackageName, clientStandardTime } from "@/features
 import { Panel, PanelBody, PanelHeader } from "@/components/dashboard/Panel";
 import { StudySection } from "@/features/projects/components/StudySection";
 
-// Client "Your price" page, laid out like a checkout: choices on the left, the price summary and
-// the accept button on the right. Pricing is recalculated with the same rules the server uses.
+// Client "Your price" page: what's included on the left, the price summary and the accept button on the
+// right. The price is fixed as the admin sent it (package, delivery speed and extras); to change anything
+// the client asks for changes, because the agreement is built from the accepted price.
 
 export interface ClientQuoteViewProps {
   projectId: string;
@@ -109,9 +106,6 @@ interface AddOnOption {
 export function ClientQuoteView({ projectId, initialProject, initialQuotation, initialError = null }: ClientQuoteViewProps) {
   const [project, setProject] = useState<ProjectDetailItem | null>(initialProject);
   const [quotation, setQuotation] = useState<QuotationDetailItem | null>(initialQuotation);
-  const [selectedAddOnCodes, setSelectedAddOnCodes] = useState<string[]>(() =>
-    (initialQuotation?.lineItems ?? []).filter((li) => li.itemType === "ADDON").map((li) => li.itemName),
-  );
   const [isLoading, setIsLoading] = useState(!initialProject && !initialError);
   const [error, setError] = useState<string | null>(initialError);
   // The server already loaded the first data; only fetch here when it didn't.
@@ -149,13 +143,6 @@ export function ClientQuoteView({ projectId, initialProject, initialQuotation, i
       }
 
       setQuotation(quoteRes);
-      if (quoteRes) {
-        setSelectedAddOnCodes(
-          quoteRes.lineItems
-            .filter((li) => li.itemType === "ADDON")
-            .map((li) => li.itemName),
-        );
-      }
     } catch {
       setError("We couldn't load your price. Please try again in a moment.");
     } finally {
@@ -180,7 +167,6 @@ export function ClientQuoteView({ projectId, initialProject, initialQuotation, i
         const res = await respondQuotation({
           quotationId: quotation.id,
           decision: "ACCEPT",
-          selectedAddOnCodes,
         });
         if (res.success) {
           setToastMessage({
@@ -247,110 +233,24 @@ export function ClientQuoteView({ projectId, initialProject, initialQuotation, i
     });
   };
 
-  // Options the client can see: once accepted, only what they agreed to; while open, the full catalog
-  // with any prices the quote set for specific add-ons.
-  const availableAddOns = useMemo<AddOnOption[]>(() => {
-    if (!quotation) return [];
-    const toOption = (
-      code: string,
-      amount: number,
-      fallbackName: string,
-    ): AddOnOption => ({
-      code,
-      name: CLIENT_ADDON_COPY[code]?.name ?? fallbackName,
-      detail:
-        CLIENT_ADDON_COPY[code]?.detail ??
-        ADDONS_CATALOG[code as AddOnName]?.tagline ??
-        "",
-      amount,
-      isSpeed: SPEED_CODES.includes(code),
-    });
-
-    const quoted = quotation.lineItems.filter((li) => li.itemType === "ADDON");
-    if (quotation.status === "CLIENT_APPROVED") {
-      return quoted.map((li) =>
-        toOption(li.itemName, Number(li.amount), li.description || li.itemName),
-      );
-    }
-
-    const map = new Map<string, AddOnOption>();
-    (Object.keys(ADDONS_CATALOG) as AddOnName[]).forEach((key) => {
-      const def = ADDONS_CATALOG[key];
-      map.set(key, toOption(key, def.defaultPrice, def.name));
-    });
-    quoted.forEach((li) =>
-      map.set(
-        li.itemName,
-        toOption(li.itemName, Number(li.amount), li.description || li.itemName),
-      ),
-    );
-    return Array.from(map.values());
-  }, [quotation]);
-
-  const extras = useMemo(
-    () => availableAddOns.filter((a) => !a.isSpeed),
-    [availableAddOns],
-  );
-  const speeds = useMemo(
-    () => availableAddOns.filter((a) => a.isSpeed),
-    [availableAddOns],
-  );
-  const selectedSpeed =
-    speeds.find((s) => selectedAddOnCodes.includes(s.code))?.code ?? null;
-
-  const toggleExtra = (code: string) => {
-    if (!isOpen) return;
-    setSelectedAddOnCodes((prev) =>
-      prev.includes(code) ? prev.filter((k) => k !== code) : [...prev, code],
-    );
+  // Add-ons on this price, as the admin quoted them (read-only).
+  const quotedAddOns: AddOnOption[] = (quotation?.lineItems ?? [])
+    .filter((li) => li.itemType === "ADDON")
+    .map((li) => ({
+      code: li.itemName,
+      name: CLIENT_ADDON_COPY[li.itemName]?.name ?? li.description ?? li.itemName,
+      detail: CLIENT_ADDON_COPY[li.itemName]?.detail ?? ADDONS_CATALOG[li.itemName as AddOnName]?.tagline ?? "",
+      amount: Number(li.amount),
+      isSpeed: SPEED_CODES.includes(li.itemName),
+    }));
+  const chosenSpeed = quotedAddOns.find((a) => a.isSpeed) ?? null;
+  const chosenExtras = quotedAddOns.filter((a) => !a.isSpeed);
+  const currentPricing = {
+    totalAmount: quotation?.totalAmount ?? 0,
+    downpaymentRequired: quotation?.downpaymentRequired ?? 0,
+    releaseBalance: quotation?.releaseBalance ?? 0,
+    downpaymentPercentage: quotation?.downpaymentPercentage ?? 50,
   };
-
-  // A study can only have one delivery speed; null means Standard.
-  const chooseSpeed = (code: string | null) => {
-    if (!isOpen) return;
-    setSelectedAddOnCodes((prev) => [
-      ...prev.filter((k) => !SPEED_CODES.includes(k)),
-      ...(code ? [code] : []),
-    ]);
-  };
-
-  const currentPricing = useMemo(() => {
-    if (!quotation)
-      return {
-        totalAmount: 0,
-        downpaymentRequired: 0,
-        releaseBalance: 0,
-        downpaymentPercentage: 50,
-      };
-    const fromQuote = {
-      totalAmount: quotation.totalAmount,
-      downpaymentRequired: quotation.downpaymentRequired,
-      releaseBalance: quotation.releaseBalance,
-      downpaymentPercentage: quotation.downpaymentPercentage,
-    };
-    if (!isOpen) return fromQuote;
-    try {
-      const breakdown = calculateQuotationTotals({
-        packageName: quotation.packageName,
-        basePrice: quotation.basePrice,
-        addOns: availableAddOns
-          .filter((a) => selectedAddOnCodes.includes(a.code))
-          .map((a) => ({
-            name: a.code as AddOnName,
-            amount: a.amount,
-            description: a.name,
-          })),
-      });
-      return {
-        totalAmount: breakdown.totalAmount,
-        downpaymentRequired: breakdown.downpaymentRequired,
-        releaseBalance: breakdown.releaseBalance,
-        downpaymentPercentage: breakdown.downpaymentPercentage,
-      };
-    } catch {
-      return fromQuote;
-    }
-  }, [quotation, isOpen, availableAddOns, selectedAddOnCodes]);
 
   const copyId = (id: string) =>
     setToastMessage({
@@ -432,10 +332,6 @@ export function ClientQuoteView({ projectId, initialProject, initialQuotation, i
   const pkgFeatures = sitePkg?.features ?? staffPkg?.deliverables ?? [];
   const pkgBestFor = sitePkg?.bestFor ?? staffPkg?.recommendedFor ?? null;
   const standardDetail = `Our usual timeline: ${clientStandardTime(quotation.packageName)} after your deposit is confirmed.`;
-  const chosenExtras = extras.filter((a) =>
-    selectedAddOnCodes.includes(a.code),
-  );
-  const chosenSpeed = speeds.find((s) => s.code === selectedSpeed) ?? null;
   const upfront = quotation.isUpfrontEnforced;
 
   return (
@@ -445,7 +341,7 @@ export function ClientQuoteView({ projectId, initialProject, initialQuotation, i
     >
       <StudySection
           title="Your price"
-          description="Check what's included, pick extras, then accept or ask for changes."
+          description="Check what's included, then accept or ask for changes."
         />
 
       <StatusBanner
@@ -512,86 +408,33 @@ export function ClientQuoteView({ projectId, initialProject, initialQuotation, i
             </PanelBody>
           </Panel>
 
-          {speeds.length > 0 && (isOpen || chosenSpeed) ? (
-            <Panel aria-label="Delivery speed">
-              <PanelHeader
-                title="Delivery speed"
-                subtitle={
-                  isOpen ? "Need it sooner? Pick one." : "The speed you chose."
-                }
+          <Panel aria-label="Delivery and extras">
+            <PanelHeader
+              title="Delivery and extras"
+              subtitle={
+                isOpen
+                  ? "Set by our team for your study. Need something different? Ask for changes."
+                  : quotation.status === "CLIENT_APPROVED"
+                    ? "Part of the price you accepted."
+                    : "Part of this price."
+              }
+            />
+            <PanelBody className="flex flex-col gap-2">
+              <IncludedRow
+                icon={<Lightning size={16} weight="fill" />}
+                title={chosenSpeed ? `${chosenSpeed.name} delivery` : "Standard delivery"}
+                detail={chosenSpeed ? chosenSpeed.detail : standardDetail}
               />
-              <PanelBody>
-                <div
-                  role="radiogroup"
-                  aria-label="Delivery speed"
-                  className="flex flex-col gap-2"
-                >
-                  {isOpen ? (
-                    <OptionRow
-                      kind="radio"
-                      selected={selectedSpeed === null}
-                      onSelect={() => chooseSpeed(null)}
-                      title="Standard"
-                      detail={standardDetail}
-                      price={null}
-                    />
-                  ) : null}
-                  {speeds
-                    .filter((s) => isOpen || s.code === selectedSpeed)
-                    .map((s) => (
-                      <OptionRow
-                        key={s.code}
-                        kind="radio"
-                        selected={selectedSpeed === s.code}
-                        onSelect={() => chooseSpeed(s.code)}
-                        title={s.name}
-                        detail={s.detail}
-                        price={s.amount}
-                        disabled={!isOpen}
-                      />
-                    ))}
-                </div>
-              </PanelBody>
-            </Panel>
-          ) : null}
-
-          {extras.length > 0 && (isOpen || chosenExtras.length > 0) ? (
-            <Panel aria-label="Extras">
-              <PanelHeader
-                title="Extras"
-                subtitle={
-                  isOpen
-                    ? "Optional. Add them now or later."
-                    : "Extras you chose."
-                }
-              />
-              <PanelBody>
-                <div className="flex flex-col gap-2">
-                  {extras
-                    .filter(
-                      (a) => isOpen || selectedAddOnCodes.includes(a.code),
-                    )
-                    .map((a) => (
-                      <OptionRow
-                        key={a.code}
-                        kind="checkbox"
-                        selected={selectedAddOnCodes.includes(a.code)}
-                        onSelect={() => toggleExtra(a.code)}
-                        title={a.name}
-                        detail={a.detail}
-                        price={a.amount}
-                        icon={
-                          a.code === "DEFENSELAB" ? (
-                            <GraduationCap size={16} weight="fill" />
-                          ) : undefined
-                        }
-                        disabled={!isOpen}
-                      />
-                    ))}
-                </div>
-              </PanelBody>
-            </Panel>
-          ) : null}
+              {chosenExtras.map((a) => (
+                <IncludedRow
+                  key={a.code}
+                  icon={<Plus size={16} weight="bold" />}
+                  title={a.name}
+                  detail={a.detail}
+                />
+              ))}
+            </PanelBody>
+          </Panel>
 
           {quotation.notes ? (
             <Panel aria-label="A note from our team">
@@ -861,7 +704,7 @@ export function ClientQuoteView({ projectId, initialProject, initialQuotation, i
             <textarea
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
-              placeholder="For example: I only need the descriptive tables, or my deadline is a week later."
+              placeholder="For example: I need it sooner, I'd like a DefenseLab practice session, or I only need the descriptive tables."
               rows={4}
               className="w-full resize-none rounded-[2px] border border-white/15 bg-[#050513] p-4 text-sm leading-relaxed text-white placeholder:text-white/30 transition-colors focus:border-[#CC6600] focus:outline-none"
             />
@@ -920,7 +763,7 @@ function StatusBanner({
   if (quotation.status === "QUOTE_SENT" && !quotation.isExpired) {
     tone = "action";
     title = "Your price is ready";
-    body = `Choose any extras, then accept by ${longDate(quotation.expiresAt)}. You won't pay anything until you've signed your agreement.`;
+    body = `Accept it by ${longDate(quotation.expiresAt)}, or ask for changes if something should be different. You won't pay anything until you've signed your agreement.`;
   } else if (quotation.status === "CLIENT_APPROVED") {
     const agreementReady = project.masterStatus !== "CLIENT_APPROVED";
     title = "You accepted this price";
@@ -982,75 +825,28 @@ function StatusBanner({
   );
 }
 
-/** Selectable row used for delivery speeds (radio) and extras (checkbox). */
-function OptionRow({
-  kind,
-  selected,
-  onSelect,
+/** One thing included in the price (delivery speed or an extra); not editable. */
+function IncludedRow({
+  icon,
   title,
   detail,
-  price,
-  icon,
-  disabled = false,
 }: {
-  kind: "radio" | "checkbox";
-  selected: boolean;
-  onSelect: () => void;
+  icon: React.ReactNode;
   title: string;
   detail: string;
-  price: number | null;
-  icon?: React.ReactNode;
-  disabled?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      role={kind}
-      aria-checked={selected}
-      onClick={onSelect}
-      disabled={disabled}
-      className={`flex w-full items-start gap-3.5 rounded-[2px] border px-4 py-3.5 text-left transition-colors ${
-        selected
-          ? "border-white/25 bg-white/[0.05]"
-          : "border-white/[0.07] hover:border-white/[0.16] hover:bg-white/[0.02]"
-      } ${disabled ? "cursor-default" : "cursor-pointer"}`}
-    >
-      <span
-        aria-hidden="true"
-        className={`mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center border transition-colors ${
-          kind === "radio" ? "rounded-full" : "rounded-[2px]"
-        } ${selected ? "border-[#CC6600] bg-[#CC6600] text-white" : "border-white/30"}`}
-      >
-        {selected ? (
-          kind === "radio" ? (
-            <span className="h-1.5 w-1.5 rounded-full bg-white" />
-          ) : (
-            <Check size={11} weight="bold" />
-          )
-        ) : null}
+    <div className="flex items-start gap-3.5 rounded-[2px] border border-white/[0.07] px-4 py-3.5">
+      <span aria-hidden="true" className="mt-0.5 shrink-0 text-white/45">
+        {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-2 text-sm font-medium text-white">
-          {icon ? <span className="text-white/45">{icon}</span> : null}
-          {title}
-        </span>
-        <span className="mt-0.5 block text-[13px] leading-relaxed text-white/55">
-          {detail}
-        </span>
+        <span className="block text-sm font-medium text-white">{title}</span>
+        {detail ? (
+          <span className="mt-0.5 block text-[13px] leading-relaxed text-white/55">{detail}</span>
+        ) : null}
       </span>
-      <span
-        className={`shrink-0 font-mono text-sm ${selected ? "text-white" : "text-white/55"}`}
-      >
-        {price === null ? (
-          "Included"
-        ) : (
-          <>
-            +<Peso />
-            {money(price)}
-          </>
-        )}
-      </span>
-    </button>
+    </div>
   );
 }
 

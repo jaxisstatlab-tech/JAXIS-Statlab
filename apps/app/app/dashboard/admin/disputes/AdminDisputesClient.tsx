@@ -253,7 +253,7 @@ export function AdminDisputesClient({
           { label: "OPERATIONS", href: "/dashboard/admin" },
           { label: "STUDY CLAIMS" },
         ]}
-        title="Study Claims & Disputes Queue"
+        title="Study Claims"
         description="Review client claims, check attached files against SOW scope, and mark claims for CEO decision."
       />
 

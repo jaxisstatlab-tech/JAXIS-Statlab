@@ -31,6 +31,10 @@ export type SOWContentSnapshot = {
   delivery: {
     turnaroundDays: number;
     slaStartTrigger: string;
+    /** true when a speed add-on sets the delivery (calendar days); missing on older agreements = working days. */
+    calendarDays?: boolean;
+    /** Client-facing name of the speed add-on, e.g. "Express". */
+    speedName?: string | null;
   };
   terms: {
     revisionPolicy: string;
@@ -109,6 +113,8 @@ export function buildSOWSnapshot(params: {
   delivery: {
     turnaroundDays: number;
     slaStartTrigger?: string;
+    calendarDays?: boolean;
+    speedName?: string | null;
   };
   customTerms?: string | null;
 }): SOWContentSnapshot {
@@ -143,6 +149,8 @@ export function buildSOWSnapshot(params: {
     },
     delivery: {
       turnaroundDays: delivery.turnaroundDays,
+      calendarDays: delivery.calendarDays ?? false,
+      speedName: delivery.speedName ?? null,
       slaStartTrigger:
         delivery.slaStartTrigger ||
         "SLA timeline commences immediately upon Lead Statistical Analyst assignment and verified downpayment receipt.",

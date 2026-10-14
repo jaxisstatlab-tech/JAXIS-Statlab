@@ -54,6 +54,8 @@ const OWING_STATUSES = (Object.keys(STAGE_OF) as ProjectStatus[]).filter((s) =>
   ["deposit", "analysis", "check"].includes(STAGE_OF[s])
 );
 const PAID_STATUSES = ["VERIFIED", "FULLY_PAID"] as const;
+/** The client accepted the price but hasn't signed the agreement yet: money on the way, not owed yet. */
+const AWAITING_SIGNATURE: ProjectStatus[] = ["CLIENT_APPROVED", "SOW_PENDING"];
 
 const DAY = 86_400_000;
 function median(values: number[]): number | null {
@@ -61,6 +63,15 @@ function median(values: number[]): number | null {
   const s = [...values].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);
   return s.length % 2 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2;
+}
+
+/** Total and count of accepted prices still waiting for the agreement to be signed (studies without a price add nothing). */
+function awaitingTotals(prices: number[]): { awaitingSignature: number; awaitingSignatureStudies: number } {
+  const priced = prices.filter((x) => x > 0);
+  return {
+    awaitingSignature: Math.round(priced.reduce((a, b) => a + b, 0) * 100) / 100,
+    awaitingSignatureStudies: priced.length,
+  };
 }
 
 function emptyStages(): Record<StageKey, number> {
@@ -94,6 +105,7 @@ async function liveOverview(now: Date, keys: string[], labels: string[], windowS
     payments,
     newStudies,
     owing,
+    awaiting,
     delivered,
     latest,
     paymentsToCheck,
@@ -116,6 +128,12 @@ async function liveOverview(now: Date, keys: string[], labels: string[], windowS
           clientId: true,
           quotations: { where: { status: "CLIENT_APPROVED" }, select: { totalAmount: true }, orderBy: { createdAt: "desc" }, take: 1 },
           payments: { where: { paymentStatus: { in: [...PAID_STATUSES] } }, select: { amountSubmitted: true } },
+        },
+      }),
+      db.project.findMany({
+        where: { masterStatus: { in: AWAITING_SIGNATURE } },
+        select: {
+          quotations: { where: { status: "CLIENT_APPROVED" }, select: { totalAmount: true }, orderBy: { createdAt: "desc" }, take: 1 },
         },
       }),
       db.project.findMany({
@@ -211,6 +229,7 @@ async function liveOverview(now: Date, keys: string[], labels: string[], windowS
     newStudiesByMonth: bucket(keys, newStudies.map((p) => ({ at: p.createdAt, value: 1 }))),
     owed: Math.round(owed * 100) / 100,
     owedStudies,
+    ...awaitingTotals(awaiting.map((p) => (p.quotations[0] ? Number(p.quotations[0].totalAmount) : 0))),
     stageCounts,
     totalStudies,
     delivered90: deliveryStats(
@@ -272,6 +291,7 @@ async function offlineOverview(now: Date, keys: string[], labels: string[]): Pro
     newStudiesByMonth: bucket(keys, studies.map((s) => ({ at: new Date(s.createdAt), value: 1 }))),
     owed: 0,
     owedStudies: 0,
+    ...awaitingTotals(rows.filter((p) => AWAITING_SIGNATURE.includes(p.masterStatus)).map((p) => p.financialSummary?.totalAmount ?? 0)),
     stageCounts,
     totalStudies: studies.length,
     delivered90: deliveryStats(

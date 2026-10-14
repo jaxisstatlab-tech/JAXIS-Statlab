@@ -46,6 +46,9 @@ export interface CeoOverview {
   newStudiesByMonth: number[];
   owed: number;
   owedStudies: number;
+  /** Accepted prices on studies whose agreement isn't signed yet (money on the way, not owed yet). */
+  awaitingSignature: number;
+  awaitingSignatureStudies: number;
   stageCounts: Record<StageKey, number>;
   totalStudies: number;
   delivered90: { count: number; withDue: number; onTime: number; medianDays: number | null };

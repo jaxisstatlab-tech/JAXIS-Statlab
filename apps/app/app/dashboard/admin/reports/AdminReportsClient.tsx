@@ -130,7 +130,7 @@ export function AdminReportsClient({ initialReport }: { initialReport: Preloaded
           { label: "OPERATIONS", href: "/dashboard/admin" },
           { label: "SYSTEM REPORTS" },
         ]}
-        title="Operational & Financial Reports"
+        title="Reports"
         description="Select from 8 standardized analytical reports, configure date intervals, and export audited summaries."
         actions={
           <div className="flex flex-wrap items-center gap-2">
