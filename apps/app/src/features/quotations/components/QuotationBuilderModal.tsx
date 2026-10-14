@@ -22,7 +22,8 @@ import type { PackageName, AddOnName } from "@prisma/client";
 
 // The quote window: pick the package and its price, add-ons, a note and how long the quote is valid, with the
 // total, deposit and balance worked out on the right; save a draft or send it to the client. Quotes already sent,
-// accepted or replaced open read-only (a sent quote changes by moving the study back to pricing).
+// accepted or replaced open read-only. A declined quote shows the client's reason and "Make a New Quote", which starts
+// a new quote from it (the study is already back in pricing after a decline).
 
 interface QuotationBuilderModalProps {
   isOpen: boolean;
@@ -91,7 +92,14 @@ export function QuotationBuilderModal({
 }: QuotationBuilderModalProps) {
   const packagesCatalog: Record<string, PackageDefinition> = customCatalog?.packages || PACKAGES_CATALOG;
   const addOnsCatalog: Record<string, AddOnDefinition> = customCatalog?.addOns || ADDONS_CATALOG;
-  const readOnly = !!existingQuotation && existingQuotation.status !== "DRAFT";
+  const declined = existingQuotation?.status === "QUOTE_DECLINED";
+  // A new quote started from the declined one (saved as a new quote, not over the old one).
+  const [revising, setRevising] = useState(false);
+  const readOnly = !!existingQuotation && existingQuotation.status !== "DRAFT" && !revising;
+  const reason =
+    existingQuotation?.declineReason?.trim() && existingQuotation.declineReason !== "Declined by researcher."
+      ? existingQuotation.declineReason.trim()
+      : null;
 
   const [selectedPackage, setSelectedPackage] = useState<PackageName>("JX_03_CORE");
   const [basePrice, setBasePrice] = useState<number>(2500);
@@ -103,6 +111,11 @@ export function QuotationBuilderModal({
   const [isIssuing, setIsIssuing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; description?: string; variant: "success" | "danger" | "warning" } | null>(null);
+
+  // Each time the window opens it starts on the quote as it is (not mid-way through a new one).
+  useEffect(() => {
+    if (isOpen) setRevising(false);
+  }, [isOpen]);
 
   // Start from the existing quote, or the default package.
   useEffect(() => {
@@ -281,10 +294,26 @@ export function QuotationBuilderModal({
       >
         <div className="grid grid-cols-1 gap-6 font-sans lg:grid-cols-12">
           <div className="flex flex-col gap-6 lg:col-span-7">
-            {readOnly ? (
+            {declined ? (
+              <div className="flex flex-col gap-3 rounded-[2px] border border-white/10 bg-white/[0.03] px-3.5 py-3 text-[13px] sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="font-medium text-white">{revising ? "New quote, started from the declined one" : "The client asked for changes"}</p>
+                  <p className="mt-1 whitespace-pre-line leading-relaxed text-white/70">
+                    {reason ? `“${reason}”` : "They didn't say why."}
+                  </p>
+                  {revising ? (
+                    <p className="mt-1.5 text-white/50">Change what they asked for, then save it or send it. The declined quote stays as it was.</p>
+                  ) : null}
+                </div>
+                {!revising ? (
+                  <Button variant="primary" size="sm" onClick={() => setRevising(true)} className="shrink-0 active:scale-[0.97]">
+                    Make a New Quote
+                  </Button>
+                ) : null}
+              </div>
+            ) : readOnly ? (
               <p className="rounded-[2px] border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-[13px] text-white/65">
-                This quote was already sent, so it can&apos;t be edited. To change it, move the study back to pricing (Change status on the study page) and
-                build a new quote.
+                This quote was already sent, so it can&apos;t be edited.
               </p>
             ) : null}
 

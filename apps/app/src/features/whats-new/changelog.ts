@@ -37,6 +37,42 @@ const STAFF_STUDY: Audience[] = ["STATISTICIAN", "SENIOR_QA_LEAD"];
 
 export const RELEASES: Release[] = [
   {
+    id: "2026-10-15",
+    version: "1.6",
+    date: "October 15, 2026",
+    title: "Declined quotes and staff workload",
+    items: [
+      {
+        kind: "new",
+        where: ["Studies", "a study", "Overview", "Price and agreement"],
+        title: "See why a client declined the quote",
+        text: "When a client asks for changes, their reason now shows under the quote, in their own words. It's also at the top of the quote window.",
+        roles: ["ADMIN"],
+      },
+      {
+        kind: "fixed",
+        where: ["Studies", "a study", "Make a New Quote"],
+        title: "Make a new quote after a decline",
+        text: "A declined quote used to open locked, with no way forward. Now the quote window shows the client's reason and a Make a New Quote button. It starts from the declined quote, so you only change what they asked for, then save it or send it. The declined quote stays as it was.",
+        roles: ["ADMIN"],
+      },
+      {
+        kind: "fixed",
+        where: ["Assign Teams"],
+        title: "Delivered studies no longer count as current work",
+        text: "A study that was already delivered still showed under a person's active studies, counted toward their load, and could show as overdue. Now only studies still being worked on count.",
+        roles: ["ADMIN"],
+      },
+      {
+        kind: "fixed",
+        where: ["Staff Directory"],
+        title: "Correct study counts for each person",
+        text: "Each analyst's and reviewer's count now includes only the studies they're working on now, not ones already delivered.",
+        roles: ["ADMIN"],
+      },
+    ],
+  },
+  {
     id: "2026-10-14",
     version: "1.5",
     date: "October 14, 2026",

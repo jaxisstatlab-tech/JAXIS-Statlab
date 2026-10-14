@@ -1,5 +1,6 @@
 "use server";
 
+import { WORKING_STATUSES } from "@/features/volunteers/rules";
 import { snapshotCalendarDays } from "@/lib/delivery-speed";
 import { revalidatePath, unstable_cache } from "next/cache";
 import { auth } from "@/lib/auth";
@@ -668,6 +669,11 @@ export async function resumeSla(
 // The staff fields the assignment desk reads. This result is stored in the data cache, so it must never hold
 // whole user rows (password hashes included), which a plain include used to put there.
 const ASSIGNED_PROJECT = { select: { id: true, intakeId: true, researchTitle: true, masterStatus: true } } as const;
+// A study counts as current work only while it's being worked on (assigned through review and changes). An assignment
+// stays "active" after delivery, so filtering on isActive alone kept delivered studies on people's workload, counted
+// them toward capacity, and showed them as overdue.
+const CURRENT_WORK = { isActive: true, project: { masterStatus: { in: [...WORKING_STATUSES] } } } satisfies Prisma.AssignmentWhereInput;
+
 const STAFF_CAPACITY_SELECT = {
   id: true,
   fullName: true,
@@ -678,11 +684,11 @@ const STAFF_CAPACITY_SELECT = {
   staffProfile: { select: { specializations: true } },
   userRoles: { select: { role: { select: { name: true } } } },
   statisticianAssignments: {
-    where: { isActive: true },
+    where: CURRENT_WORK,
     select: { slaDueAt: true, slaPausedAt: true, project: ASSIGNED_PROJECT },
   },
   qaAssignments: {
-    where: { isActive: true },
+    where: CURRENT_WORK,
     select: { slaDueAt: true, slaPausedAt: true, project: ASSIGNED_PROJECT },
   },
 } satisfies Prisma.UserSelect;
@@ -706,7 +712,7 @@ const fetchCachedStaffUsers = unstable_cache(
       10000
     );
   },
-  ["staff-capacity-users-v2"],
+  ["staff-capacity-users-v3"],
   { tags: [CACHE_TAGS.STAFF_CAPACITY], revalidate: 30 }
 );
 

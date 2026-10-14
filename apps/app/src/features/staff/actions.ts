@@ -1,5 +1,6 @@
 "use server";
 
+import { WORKING_STATUSES } from "@/features/volunteers/rules";
 import { SIGNATURE_REQUIRED_ROLES } from "@/lib/signature-rules";
 
 import { revalidatePath, unstable_cache } from "next/cache";
@@ -1409,12 +1410,13 @@ export async function getSpecialistLeaveOverview(): Promise<StaffActionResult<Sp
             joinedAt: true,
           },
         },
+        // Current work only: delivered studies keep an "active" assignment but aren't on anyone's plate.
         statisticianAssignments: {
-          where: { isActive: true },
+          where: { isActive: true, project: { masterStatus: { in: [...WORKING_STATUSES] } } },
           select: { id: true },
         },
         qaAssignments: {
-          where: { isActive: true },
+          where: { isActive: true, project: { masterStatus: { in: [...WORKING_STATUSES] } } },
           select: { id: true },
         },
       },

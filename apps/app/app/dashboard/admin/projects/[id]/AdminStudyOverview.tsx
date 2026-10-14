@@ -115,7 +115,13 @@ export function AdminStudyOverview({
   const quoteButton = (primary: boolean) => (
     <Button variant={primary ? "primary" : "outline"} size="sm" onClick={() => setQuoteOpen(true)} className="gap-1.5 active:scale-[0.97]">
       <Calculator size={14} weight="fill" />
-      {quotation ? (quotation.status === "DRAFT" ? "Edit Quote" : "View Quote") : "Build Quote"}
+      {quotation
+        ? quotation.status === "DRAFT"
+          ? "Edit Quote"
+          : quotation.status === "QUOTE_DECLINED"
+            ? "Make a New Quote"
+            : "View Quote"
+        : "Build Quote"}
     </Button>
   );
   const linkButton = (href: string, label: string, primary = false) => (
@@ -357,6 +363,15 @@ export function AdminStudyOverview({
                 ) : (
                   <p className="mt-0.5 text-white/45">Not built yet</p>
                 )}
+                {/* Why the client declined, in their words (they write it when they ask for changes). */}
+                {quotation?.status === "QUOTE_DECLINED" ? (
+                  <p className="mt-1.5 whitespace-pre-line text-[13px] leading-relaxed text-white/70">
+                    <span className="text-white/45">Their reason: </span>
+                    {quotation.declineReason?.trim() && quotation.declineReason !== "Declined by researcher."
+                      ? `“${quotation.declineReason.trim()}”`
+                      : "They didn't say."}
+                  </p>
+                ) : null}
               </div>
               <div>
                 <p className="text-[12px] text-white/45">Agreement</p>
