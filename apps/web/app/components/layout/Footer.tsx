@@ -16,6 +16,8 @@ const COLUMNS = [
       { label: "Data cleaning", href: "/#services" },
       { label: "Advanced models", href: "/#services" },
       { label: "DefenseLab", href: "/#services" },
+      { label: "Thesis statistics", href: "/statistical-analysis-for-thesis" },
+      { label: "Statistician in Bukidnon", href: "/statistician-bukidnon" },
     ],
   },
   {

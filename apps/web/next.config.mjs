@@ -2,6 +2,8 @@
 const nextConfig = {
   reactStrictMode: false,
   transpilePackages: ["@repo/ui"],
+  // Photos are sent as AVIF (or WebP for older browsers) at the size each screen needs, and kept for a month.
+  images: { formats: ["image/avif", "image/webp"], minimumCacheTTL: 2678400 },
   // Old pages that moved: the FAQ is on /contact, services are on /about.
   async redirects() {
     return [

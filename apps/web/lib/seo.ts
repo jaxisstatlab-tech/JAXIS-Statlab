@@ -137,3 +137,36 @@ export function siteJsonLd() {
     ],
   };
 }
+
+/** A search landing page: the service it describes (with where it's offered) and its place in the site. */
+export function landingJsonLd({ path, name, description, areaServed }: { path: string; name: string; description: string; areaServed: string[] }) {
+  const url = `${SITE_URL}${path}`;
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Service",
+        "@id": `${url}#service`,
+        name,
+        description,
+        url,
+        serviceType: "Statistical analysis for theses and research",
+        provider: { "@id": `${SITE_URL}/#organization` },
+        areaServed: areaServed.map((a) => ({ "@type": "Place", name: a })),
+        offers: {
+          "@type": "AggregateOffer",
+          priceCurrency: "PHP",
+          lowPrice: Math.min(...PLANS.map((p) => p.min)),
+          url: `${SITE_URL}/pricing`,
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+          { "@type": "ListItem", position: 2, name, item: url },
+        ],
+      },
+    ],
+  };
+}

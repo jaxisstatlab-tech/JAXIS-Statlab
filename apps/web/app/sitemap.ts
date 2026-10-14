@@ -6,6 +6,8 @@ const PAGES: { path: string; priority: number }[] = [
   { path: "", priority: 1 },
   { path: "/about", priority: 0.8 },
   { path: "/pricing", priority: 0.9 },
+  { path: "/statistical-analysis-for-thesis", priority: 0.9 },
+  { path: "/statistician-bukidnon", priority: 0.9 },
   { path: "/contact", priority: 0.5 },
   { path: "/privacy", priority: 0.3 },
   { path: "/terms", priority: 0.3 },
