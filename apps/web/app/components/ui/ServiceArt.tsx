@@ -4,7 +4,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckCircle, Database, FileText, Scales, SealCheck, SquaresFour, TrendUp, UsersThree } from "@phosphor-icons/react";
 
 // Plays a short sequence once when the art scrolls into view, then rests on its last frame.
-// Hovering the card replays it. Reduced motion shows the last frame straight away.
+// Resting on a card (mouse only) replays just its final highlight, never a reset to the start. It waits until the
+// cursor has stopped on the card for 350ms (every movement restarts the wait), so sweeping across the grid never sets
+// cards off, and each card rests 4s between replays.
+// Reduced motion shows the last frame straight away.
 function usePlayOnce<T extends HTMLElement>(steps: number, ms: number) {
   const ref = useRef<T>(null);
   const [step, setStep] = useState(0);
@@ -20,26 +23,41 @@ function usePlayOnce<T extends HTMLElement>(steps: number, ms: number) {
 
     let timer = 0;
     let running = false;
-    const play = () => {
+    let played = false;
+    let restUntil = 0;
+    let dwell = 0;
+    const play = (from = 0) => {
       if (running) return;
       running = true;
-      let s = 0;
-      setStep(0);
+      let s = from;
+      setStep(from);
       timer = window.setInterval(() => {
         s += 1;
         setStep(s);
         if (s >= steps - 1) {
           window.clearInterval(timer);
           running = false;
+          played = true;
+          restUntil = performance.now() + 4000;
         }
       }, ms);
     };
+    // Replay only the last step (e.g. the flag, the pick, the match), so nothing already drawn disappears.
+    const replay = () => {
+      if (!played || running || performance.now() < restUntil || steps < 3) return;
+      play(steps - 2);
+    };
+    const enter = () => {
+      window.clearTimeout(dwell);
+      dwell = window.setTimeout(replay, 350);
+    };
+    const leave = () => window.clearTimeout(dwell);
 
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
           io.disconnect();
-          play();
+          play(0);
         }
       },
       { threshold: 0.45 },
@@ -48,12 +66,19 @@ function usePlayOnce<T extends HTMLElement>(steps: number, ms: number) {
 
     const card = el.closest("article, [data-art-card]");
     const hover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    if (card && hover) card.addEventListener("pointerenter", play);
+    if (card && hover) {
+      card.addEventListener("pointerenter", enter);
+      card.addEventListener("pointermove", enter);
+      card.addEventListener("pointerleave", leave);
+    }
 
     return () => {
       io.disconnect();
       window.clearInterval(timer);
-      card?.removeEventListener("pointerenter", play);
+      window.clearTimeout(dwell);
+      card?.removeEventListener("pointerenter", enter);
+      card?.removeEventListener("pointermove", enter);
+      card?.removeEventListener("pointerleave", leave);
     };
   }, [steps, ms]);
 
@@ -74,7 +99,7 @@ function Status({ left, right, hot }: { left: string; right: string; hot?: boole
   return (
     <div className="absolute inset-x-7 top-0 z-10 flex justify-between gap-4 sm:inset-x-8">
       <span className={artLabel}>{left}</span>
-      <span className={`font-mono text-[10px] uppercase tracking-wider transition-colors duration-300 ${hot ? "text-[#FFA040]" : "text-white/45"}`}>
+      <span className={`font-mono text-[10px] uppercase tracking-wider transition-colors duration-300 ${hot ? "text-white/80" : "text-white/45"}`}>
         {right}
       </span>
     </div>
@@ -128,7 +153,7 @@ export function CleaningArt() {
           </div>
           <span
             aria-hidden="true"
-            className={`absolute inset-y-0 left-0 w-px bg-[#FFB066] shadow-[0_0_12px_rgba(255,176,102,0.9)] transition-[transform,opacity] duration-1000 ease-linear ${
+            className={`absolute inset-y-0 left-0 w-px bg-[#FF8A1F] shadow-[0_0_12px_rgba(255,138,31,0.8)] transition-[transform,opacity] duration-1000 ease-linear ${
               step === 1 ? "opacity-100" : "opacity-0"
             }`}
             style={{ transform: `translateX(${step >= 1 ? 250 : 0}px)` }}
@@ -226,7 +251,12 @@ export function FindingsArt() {
   const noted = step > TABLE_ROWS.length;
 
   return (
-    <div ref={ref} className="relative mt-6 h-60 w-full overflow-hidden">
+    <div
+      ref={ref}
+      role="img"
+      aria-label="An APA table of predictors of grades, with a plain-English note: students with better study habits tended to have higher grades"
+      className="relative mt-6 h-60 w-full overflow-hidden"
+    >
       <div aria-hidden="true" className={`absolute left-1/2 top-9 h-72 w-[58%] -translate-x-1/2 -rotate-[8deg] ${panel}`} />
       <div aria-hidden="true" className={`absolute left-1/2 top-9 h-72 w-[58%] -translate-x-1/2 rotate-[7deg] ${panel}`} />
       <div className={`absolute left-1/2 top-3 h-72 w-[82%] -translate-x-1/2 p-4 ${solidPanel}`}>
@@ -266,7 +296,7 @@ export function FindingsArt() {
           </tbody>
         </table>
         <p
-          className={`mt-3 border-l-2 border-l-[#CC6600] pl-3 font-sans text-[12px] leading-relaxed text-white/70 transition-opacity duration-500 ${
+          className={`mt-3 border-l border-l-white/25 pl-3 font-sans text-[12px] leading-relaxed text-white/70 transition-opacity duration-500 ${
             noted ? "opacity-100" : "opacity-40"
           }`}
         >
@@ -368,7 +398,7 @@ export function ModelsArt() {
       />
       <div className="relative flex justify-between">
         <span className={artLabel}>Path model</span>
-        <span className={`font-mono text-[10px] uppercase tracking-wider transition-colors duration-300 ${estimated ? "text-[#FFA040]" : "text-white/45"}`}>
+        <span className={`font-mono text-[10px] uppercase tracking-wider transition-colors duration-300 ${estimated ? "text-white/80" : "text-white/45"}`}>
           {estimated ? "Explains 44%" : "Estimating"}
         </span>
       </div>
@@ -383,12 +413,6 @@ export function ModelsArt() {
             <stop offset="0" stopColor="#fff" stopOpacity="0.09" />
             <stop offset="1" stopColor="#fff" stopOpacity="0.02" />
           </linearGradient>
-          <marker id="svc-arrow" viewBox="0 0 8 8" refX="7.5" refY="4" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto">
-            <path d="M0 0.5 L8 4 L0 7.5 Z" fill="rgba(255,255,255,0.55)" />
-          </marker>
-          <marker id="svc-arrow-hot" viewBox="0 0 8 8" refX="7.5" refY="4" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto">
-            <path d="M0 0.5 L8 4 L0 7.5 Z" fill="#FF8A1F" />
-          </marker>
         </defs>
 
         {MODEL_NODES.map(({ y, label }, i) => {
@@ -421,11 +445,26 @@ export function ModelsArt() {
               fill="none"
               stroke={hot ? "#FF8A1F" : "rgba(255,255,255,0.3)"}
               strokeWidth={hot ? 1.5 : 1}
-              markerEnd={drawn ? (hot ? "url(#svc-arrow-hot)" : "url(#svc-arrow)") : undefined}
               pathLength={1}
               strokeDasharray="1"
               strokeDashoffset={drawn ? 0 : 1}
               className={`transition-[stroke-dashoffset,stroke] duration-700 ${ease}`}
+            />
+          );
+        })}
+        {/* Arrowheads: fade in as each line reaches the outcome (they used to pop in before the line arrived). */}
+        {MODEL_PATHS.map((p) => {
+          const hot = estimated && p.strongest;
+          const end = p.d.split(" ").slice(-2).map(Number);
+          const [x, y] = [end[0] ?? 0, end[1] ?? 0];
+          const s = hot ? 3.5 : 3;
+          return (
+            <path
+              key={`${p.label}-head`}
+              d={`M${x - 2 * s} ${y - s} L${x} ${y} L${x - 2 * s} ${y + s} Z`}
+              fill={hot ? "#FF8A1F" : "rgba(255,255,255,0.55)"}
+              className="transition-[opacity,fill] ease-out"
+              style={{ opacity: drawn ? 1 : 0, transitionDuration: drawn ? "200ms" : "120ms", transitionDelay: drawn ? "450ms" : "0ms" }}
             />
           );
         })}
@@ -442,7 +481,7 @@ export function ModelsArt() {
                 fill="#0A0A18"
                 stroke={hot ? "rgba(255,138,31,0.6)" : "rgba(255,255,255,0.14)"}
               />
-              <text x={p.x} y={p.y + 3.5} textAnchor="middle" className={`font-mono text-[10px] ${hot ? "fill-[#FFA040]" : "fill-white/75"}`}>
+              <text x={p.x} y={p.y + 3.5} textAnchor="middle" className={`font-mono text-[10px] ${hot ? "fill-[#FF8A1F]" : "fill-white/75"}`}>
                 {p.label}
               </text>
             </g>
@@ -462,7 +501,8 @@ export function ModelsArt() {
   );
 }
 
-/* Two-analyst check: two run windows, one behind the other; the second run lands on the same number and they match. */
+/* Two-analyst check: a first run and a second, separate run; the second lands on the same number and they match.
+   Both windows stay inside the card, and the seal sits with the status label instead of over a window. */
 
 function RunWindow({ title, shown, className }: { title: string; shown: boolean; className: string }) {
   return (
@@ -499,20 +539,27 @@ export function CheckArt() {
     <div
       ref={ref}
       role="img"
-      aria-label="Analysis run verified by an independent audit run, confirming F(2, 217) = 8.14"
+      aria-label="A first analyst's run and a second, separate run both give F(2, 217) = 8.14, so the results match"
       className="relative mt-6 h-[17rem] w-full overflow-hidden"
     >
-      <Status left="Analysis & audit run" right={matched ? "Results match" : "Auditing"} hot={matched} />
-      <RunWindow title="Analysis run · Analyst" shown className="left-7 top-7 w-[62%] sm:left-8" />
-      <RunWindow title="Audit run · Review Editor" shown={step >= 1} className="left-[30%] top-[8.5rem] w-[80%]" />
-      <span
-        aria-hidden="true"
-        className={`absolute right-5 top-[7.4rem] z-10 flex h-9 w-9 items-center justify-center rounded-full border transition-[border-color,background-color,transform] duration-300 ${ease} ${
-          matched ? "scale-100 border-[#FF8A1F] bg-[#21150F]" : "scale-75 border-white/15 bg-[#0E0E21]"
-        }`}
-      >
-        <SealCheck size={18} weight="fill" className={matched ? "text-[#FF8A1F]" : "text-white/30"} />
-      </span>
+      <div className="absolute inset-x-7 top-0 z-10 flex items-center justify-between gap-4 sm:inset-x-8">
+        <span className={artLabel}>Two separate runs</span>
+        <span
+          className={`flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors duration-300 ${
+            matched ? "text-white/80" : "text-white/45"
+          }`}
+        >
+          <SealCheck
+            size={14}
+            weight="fill"
+            aria-hidden="true"
+            className={`transition-[color,transform,opacity] duration-300 ${ease} ${matched ? "scale-100 text-[#FF8A1F] opacity-100" : "scale-75 text-white/30 opacity-60"}`}
+          />
+          {matched ? "Results match" : "Checking"}
+        </span>
+      </div>
+      <RunWindow title="First run" shown className="left-7 top-8 w-[58%] sm:left-8" />
+      <RunWindow title="Second run" shown={step >= 1} className="left-[34%] top-[8.75rem] w-[58%]" />
     </div>
   );
 }
@@ -528,7 +575,12 @@ export function DefenseArt() {
   const open = step >= 2;
 
   return (
-    <div ref={ref} className="relative mt-6 h-60 w-full overflow-hidden">
+    <div
+      ref={ref}
+      role="img"
+      aria-label="A defense guide opens the panel question 'What does p < .05 mean?' to its plain-English answer, with live DefenseLab practice at 250 pesos an hour"
+      className="relative mt-6 h-60 w-full overflow-hidden"
+    >
       <div className={`absolute inset-x-9 top-0 p-3 sm:inset-x-10 ${solidPanel}`}>
         <div className="flex justify-between px-1">
           <span className={artLabel}>Defense guide</span>
@@ -538,7 +590,7 @@ export function DefenseArt() {
           {PANEL_QS.map((q, i) => {
             const on = picked && i === OPEN_Q;
             return (
-              <li key={q} className={`border-l-2 py-2 pl-2 transition-colors duration-300 ${on ? "border-l-[#CC6600]" : "border-l-transparent"}`}>
+              <li key={q} className={`border-l py-2 pl-2 transition-colors duration-300 ${on ? "border-l-white/40" : "border-l-transparent"}`}>
                 <span className={`block font-sans text-[12.5px] transition-colors duration-300 ${on ? "text-white" : "text-white/60"}`}>{q}</span>
                 {i === OPEN_Q ? (
                   <span className={`grid transition-[grid-template-rows,opacity] duration-500 ${ease} ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
@@ -554,10 +606,10 @@ export function DefenseArt() {
           })}
         </ul>
       </div>
-      <div className="absolute inset-x-5 -bottom-6 h-20 rounded-[6px] border border-white/[0.1] bg-[linear-gradient(180deg,#1A1A36,#0E0E21)] shadow-[0_-18px_40px_-12px_rgba(0,0,0,0.95)]">
+      <div className="absolute inset-x-5 -bottom-5 h-20 rounded-[6px] border border-white/[0.1] bg-[linear-gradient(180deg,#1A1A36,#0E0E21)] shadow-[0_-18px_40px_-12px_rgba(0,0,0,0.95)]">
         <span aria-hidden="true" className="absolute -top-3 left-5 h-3 w-24 rounded-t-[4px] border border-b-0 border-white/[0.1] bg-[#1A1A36]" />
-        <div className="flex items-center justify-between gap-3 px-5 pt-4 font-mono text-[11px]">
-          <span className="text-white/60">DefenseLab practice</span>
+        <div className="flex items-center justify-between gap-2 px-4 pt-4 font-mono text-[10.5px] sm:gap-3 sm:px-5 sm:text-[11px]">
+          <span className="min-w-0 truncate text-white/60">DefenseLab practice</span>
           <span className="whitespace-nowrap font-bold text-white">
             <span className="mr-0.5 inline-block select-none font-sans font-normal opacity-85">₱</span>250
             <span className="font-normal text-white/50"> / hour</span>

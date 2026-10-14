@@ -1,87 +1,88 @@
 import Link from "next/link";
-import { ArrowRight, ClipboardText, CreditCard, ShieldCheck } from "@phosphor-icons/react/ssr";
+import { ArrowRight, Check } from "@phosphor-icons/react/ssr";
 import { SEND_STUDY_URL } from "@/lib/config";
 import HeroGrid from "../ui/HeroGrid";
 import { btnGhost, btnPrimary, container } from "../ui/styles";
 
-const PROOF = [
-  { icon: ClipboardText, lines: ["Clear deliverables", "before we start"] },
-  { icon: ShieldCheck, lines: ["Fixed pricing", "confirmed upfront"] },
-  { icon: CreditCard, lines: ["Pay via GCash", "or bank transfer"] },
-];
+const PROOF = ["Fixed price in 24 hours", "Checked by two analysts", "GCash or bank transfer"];
 
 export default function Hero() {
   return (
     <section data-hero className="relative overflow-hidden">
       <HeroGrid />
-      {/* Soft wash behind the copy so the grid stays texture, not noise */}
+      {/* A wash behind the copy so the grid stays texture, not noise */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_50%_42%_at_50%_50%,rgba(1,1,20,0.82)_0%,rgba(1,1,20,0.5)_50%,transparent_78%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_48%_38%_at_50%_52%,rgba(1,1,20,0.72)_0%,rgba(1,1,20,0.35)_55%,transparent_80%)]"
       />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-[#010114] to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-[#010114] to-transparent" />
 
-      <div data-hero-content className={`${container} relative z-10 flex min-h-svh flex-col items-center justify-center pb-20 pt-32 text-center`}>
+      <div data-hero-content className={`${container} relative z-10 flex min-h-svh flex-col items-center justify-center pb-16 pt-28 text-center sm:pb-20 sm:pt-32`}>
         <div
-          className="hero-in inline-flex items-center gap-2.5 rounded-full border border-white/[0.12] bg-[#010114]/60 px-4 py-2 font-sans text-[12.5px] text-white/80 backdrop-blur-sm sm:text-sm"
-          style={{ ["--d" as string]: "40ms" }}
+          className="hx-up inline-flex items-center gap-2.5 rounded-[2px] border border-white/10 bg-[#010114]/70 px-3.5 py-1.5 font-sans text-[12.5px] text-white/70 sm:text-[13px]"
+          style={{ ["--d" as string]: "0ms" }}
         >
-          <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-[1px] bg-[#FF8A1F] shadow-[0_0_8px_rgba(255,138,31,0.8)]" />
+          <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-[1px] bg-[#FF8A1F]" />
           <span className="whitespace-nowrap sm:hidden">Statistical analysis for researchers</span>
           <span className="hidden sm:inline">Statistical analysis for students and researchers in the Philippines</span>
         </div>
 
+        {/* The authored moment: line one rises through a mask, then "properly analyzed." is revealed and swept with
+            light (see .hx-line / .hx-sweep in globals.css). */}
         <h1
-          className="hero-in mt-8 font-sans text-[2.6rem] font-bold leading-[1.02] tracking-[-0.045em] text-white min-[380px]:text-[2.9rem] sm:text-7xl lg:text-[5.5rem]"
-          style={{ ["--d" as string]: "100ms" }}
+          className="mt-7 font-sans text-[2.05rem] font-medium leading-[1.06] tracking-[-0.04em] text-white min-[380px]:text-[2.2rem] sm:mt-8 sm:text-7xl sm:leading-[1.03] sm:tracking-[-0.045em] lg:text-[5.25rem]"
         >
-          Your research data,
-          <br />
-          <span className="bg-[linear-gradient(180deg,#FFA040_0%,#F07A12_100%)] bg-clip-text pb-[0.08em] text-transparent">
-            properly analyzed.
+          <span className="hx-line">
+            <span style={{ ["--d" as string]: "60ms" }}>Your research data,</span>
+          </span>
+          <span className="block">
+            <span className="hx-sweep" style={{ ["--d" as string]: "180ms" }}>
+              <span>properly analyzed.</span>
+            </span>
           </span>
         </h1>
 
         <p
-          className="hero-in mx-auto mt-7 max-w-2xl text-balance font-sans text-base leading-relaxed text-white/70 sm:text-lg lg:text-xl"
-          style={{ ["--d" as string]: "180ms" }}
+          className="hx-up mx-auto mt-5 max-w-xl text-balance font-sans text-[15px] leading-relaxed text-white/65 sm:mt-7 sm:text-lg"
+          style={{ ["--d" as string]: "420ms" }}
         >
-          We help students and researchers analyze their data using the right statistical methods. Get clear results,
-          organized tables, and explanations that make sense for your study.
+          Send us your data. We run the right tests, a second analyst checks every number, and you get clear tables and
+          plain-English explanations you can defend.
         </p>
 
         <div
-          className="hero-in mt-10 flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4"
-          style={{ ["--d" as string]: "240ms" }}
+          className="hx-up mt-8 flex w-full max-w-sm flex-col items-stretch gap-3 sm:mt-10 sm:w-auto sm:max-w-none sm:flex-row sm:items-center"
+          style={{ ["--d" as string]: "470ms" }}
         >
-          <a href={SEND_STUDY_URL} data-cta="hero-send" className={`${btnPrimary} group h-13 px-8 text-base`}>
-            Submit Your Study
-            <ArrowRight size={16} weight="bold" className="transition-transform duration-200 group-hover:translate-x-0.5" />
+          <a href={SEND_STUDY_URL} data-cta="hero-send" className={`${btnPrimary} group h-12 px-7 text-[15px]`}>
+            Send Your Study
+            <ArrowRight
+              size={16}
+              weight="bold"
+              className="transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-active:translate-x-1"
+            />
           </a>
-          <Link href="/pricing" className={`${btnGhost} h-13 bg-[#010114]/60 px-8 text-base backdrop-blur-sm`}>
+          <Link href="/pricing" className={`${btnGhost} h-12 bg-[#010114]/70 px-7 text-[15px]`}>
             See Pricing
           </Link>
         </div>
 
         <ul
-          className="hero-in mt-12 grid w-full max-w-xs grid-cols-1 gap-4 text-left sm:flex sm:max-w-none sm:w-auto sm:gap-0"
-          style={{ ["--d" as string]: "300ms" }}
+          className="hx-up mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-mono text-[11px] text-white/60 sm:mt-10 sm:gap-x-6 sm:text-xs"
+          style={{ ["--d" as string]: "520ms" }}
         >
-          {PROOF.map(({ icon: Icon, lines }, i) => (
-            <li
-              key={lines[0]}
-              className={`flex items-center gap-3 sm:px-8 ${i > 0 ? "sm:border-l sm:border-white/10" : "sm:pl-0"} ${i === PROOF.length - 1 ? "sm:pr-0" : ""}`}
-            >
-              <Icon size={24} weight="fill" className="shrink-0 text-white/55" />
-              <span className="font-sans text-[13px] leading-snug text-white/60 sm:text-sm">
-                {lines[0]}
-                <br className="hidden sm:block" />
-                <span className="sm:hidden"> </span>
-                {lines[1]}
+          {PROOF.map((item, i) => (
+            <li key={item} className="flex items-center gap-1.5">
+              <span className="hx-tick" style={{ ["--d" as string]: `${600 + i * 40}ms` }}>
+                <Check size={12} weight="bold" className="text-[#CC6600]" />
               </span>
+              {item}
             </li>
           ))}
         </ul>
+        <p className="hx-up mt-8 font-sans text-[13px] text-white/45 sm:mt-14" style={{ ["--d" as string]: "640ms" }}>
+          Trusted by thesis groups at <span className="text-white/65">Central Mindanao University</span>
+        </p>
       </div>
     </section>
   );

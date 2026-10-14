@@ -1,102 +1,177 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ChartBar, DownloadSimple, Receipt, UploadSimple, Wallet, type Icon } from "@phosphor-icons/react";
+import { getLenis } from "@/lib/smoothScroll";
 import type { HowStep as Step } from "../../content/site";
 import StageArt from "./StageArt";
 
 export type { Step };
 
 const ease = "ease-[cubic-bezier(0.23,1,0.32,1)]";
-const num = (i: number) => String(i + 1).padStart(2, "0");
+const ICONS: Icon[] = [UploadSimple, Receipt, Wallet, ChartBar, DownloadSimple];
+/** Scroll per step while the section is held, as a share of the screen height. */
+const SCROLL_PER_STEP = 0.5;
 
-// How it works. Wide screens: a hairline list of the five steps beside one showcase panel; ScrollFx pins the block
-// and scrolling moves through the steps, forwards and backwards (it sends "step-scroll" with the step index and sets
-// --step-p, the progress through that step). Picking a step sends "step-jump" so the page scrolls to it; without the
-// pin (reduced motion) steps open on tap. Phones and tablets: the steps are stacked and scroll normally, each scene
-// playing once it comes into view (pinning there held the screen and made scrolling feel stuck).
+gsap.registerPlugin(ScrollTrigger);
+
+// How it works as a compact step list beside one scene, about a screen tall.
+// The steps are an accordion: each has a small icon tile and a dashed line down to the next; only the open step shows
+// its description, and the scene for the open step sits on the right.
+// Wide screens with a mouse or trackpad: scrolling drives it. When the section reaches the screen it holds in place
+// (ScrollTrigger pin), and scrolling moves through the steps, forwards and backwards; the dashed line under the open
+// step fills as you scroll through that step, and after the last step the page carries on. Clicking a step scrolls to
+// it. Phones, touch screens and reduced motion: nothing is held; the steps open on tap (phones show each scene inside
+// its step).
 export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const baseId = useId();
   const [active, setActive] = useState(0);
   const [artOn, setArtOn] = useState(false);
-  const last = steps.length - 1;
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const onStep = (e: Event) => setActive((e as CustomEvent<number>).detail);
-    el.addEventListener("step-scroll", onStep);
-    return () => el.removeEventListener("step-scroll", onStep);
-  }, []);
+  // True while the scroll-driven (held) version is on.
+  const [scrolly, setScrolly] = useState(false);
+  const progress = useRef<HTMLSpanElement>(null);
+  const stepP = useRef(0);
+  const trigger = useRef<ScrollTrigger | null>(null);
 
   // Each time a step opens, its scene starts in its "before" state and then plays to "done".
   useEffect(() => {
     const reset = requestAnimationFrame(() => setArtOn(false));
-    const play = window.setTimeout(() => setArtOn(true), 350);
+    const play = window.setTimeout(() => setArtOn(true), 250);
     return () => {
       cancelAnimationFrame(reset);
       window.clearTimeout(play);
     };
   }, [active]);
 
+  // Wide screens with a mouse or trackpad: hold the section and let scrolling move through the steps.
+  useEffect(() => {
+    const el = root.current;
+    const section = el?.closest("section");
+    if (!el || !section) return;
+    const count = steps.length;
+    const mm = gsap.matchMedia();
+    mm.add("(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)", () => {
+      setScrolly(true);
+      let current = -1;
+      const st = ScrollTrigger.create({
+        trigger: section,
+        // Hold it centred in the space below the navbar (64px).
+        start: () => `top ${Math.round(Math.max(64, 64 + (window.innerHeight - 64 - section.offsetHeight) / 2))}px`,
+        end: () => `+=${Math.round(window.innerHeight * SCROLL_PER_STEP * count)}`,
+        pin: true,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          const x = self.progress * count;
+          const index = Math.min(count - 1, Math.floor(x));
+          stepP.current = index === count - 1 && self.progress >= 1 ? 1 : Math.min(1, x - index);
+          if (progress.current) progress.current.style.transform = `scaleY(${stepP.current})`;
+          if (index !== current) {
+            current = index;
+            setActive(index);
+          }
+        },
+      });
+      trigger.current = st;
+      ScrollTrigger.sort();
+      ScrollTrigger.refresh();
+      return () => {
+        st.kill();
+        trigger.current = null;
+        setScrolly(false);
+      };
+    });
+    return () => mm.revert();
+  }, [steps.length]);
+
+  // When the open step changes, its new line picks up the current progress straight away.
+  useEffect(() => {
+    if (progress.current) progress.current.style.transform = `scaleY(${stepP.current})`;
+  }, [active]);
+
   const choose = (i: number) => {
-    const el = ref.current;
-    if (el?.hasAttribute("data-pinned")) el.dispatchEvent(new CustomEvent("step-jump", { detail: i }));
-    else setActive(i);
+    const st = trigger.current;
+    if (!st) {
+      setActive(i);
+      return;
+    }
+    // Held version: scroll to just inside that step's stretch of the hold.
+    const top = st.start + ((i + 0.08) / steps.length) * (st.end - st.start);
+    const smooth = getLenis();
+    if (smooth) smooth.scrollTo(top);
+    else window.scrollTo({ top, behavior: "smooth" });
   };
 
   return (
-    <div
-      ref={ref}
-      data-tab-pin={steps.length}
-      className="group/tabs mt-10 grid grid-cols-1 content-start gap-5 bg-[#010114] lg:mt-12 lg:grid-cols-12 lg:gap-12"
-    >
-      <ol className="hidden border-t border-white/10 lg:col-span-5 lg:block">
+    <div ref={root} className="mt-10 grid grid-cols-1 gap-6 lg:mt-14 lg:grid-cols-12 lg:items-center lg:gap-16">
+      <ol className="lg:col-span-5" aria-label="How it works, step by step">
         {steps.map((s, i) => {
-          const on = i === active;
+          const open = i === active;
+          const StepIcon = ICONS[i] ?? UploadSimple;
+          const last = i === steps.length - 1;
+          const panelId = `${baseId}-step-${i}`;
           return (
-            <li
-              key={s.tag}
-              className={`relative border-b border-white/10 transition-[background-color] duration-500 ${on ? "bg-[linear-gradient(90deg,rgba(204,102,0,0.07),transparent_70%)]" : ""}`}
-            >
-              {/* The open step's rail; while pinned it fills top to bottom as you scroll through the step */}
-              <span
-                aria-hidden="true"
-                className={`absolute left-0 top-0 h-full w-[2px] bg-white/[0.08] transition-opacity duration-300 ${on ? "opacity-100" : "opacity-0"}`}
-              >
+            <li key={s.tag} className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-4">
+              {/* Icon tile and the dashed line down to the next step */}
+              <div className="flex flex-col items-center">
                 <span
-                  className="block h-full w-full origin-top bg-[#FF8A1F] shadow-[0_0_10px_rgba(255,138,31,0.6)]"
-                  style={{ transform: on ? "scaleY(var(--step-p, 1))" : "scaleY(0)" }}
-                />
-              </span>
-              <button
-                type="button"
-                onClick={() => choose(i)}
-                aria-current={on ? "step" : undefined}
-                className="group flex w-full items-baseline gap-4 py-3.5 pl-4 text-left lg:py-[1.375rem] lg:pl-6"
-              >
-                <span className={`font-mono text-xs tabular-nums transition-colors duration-300 ${on ? "text-[#FFA040]" : "text-white/40"}`}>
-                  {num(i)}
-                </span>
-                <span
-                  className={`flex-1 font-sans text-base font-medium tracking-[-0.02em] transition-colors duration-300 lg:text-lg ${
-                    on ? "text-white" : "text-white/55 group-hover:text-white/85"
+                  aria-hidden="true"
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border transition-[background-color,border-color,color] duration-300 ${ease} ${
+                    open ? "border-white/20 bg-white/[0.08] text-white" : "border-white/[0.09] bg-white/[0.02] text-white/45"
                   }`}
                 >
-                  {s.title}
+                  <StepIcon size={16} weight="fill" />
                 </span>
-                <span className={`font-mono text-[11px] transition-colors duration-300 ${on ? "text-white/70" : "text-white/40"}`}>
-                  {s.time}
-                </span>
-              </button>
+                {!last || open ? (
+                  <span aria-hidden="true" className="relative my-2 w-px flex-1 border-l border-dashed border-white/15">
+                    {open && scrolly ? (
+                      <span
+                        ref={progress}
+                        className="absolute -left-px top-0 h-full w-px origin-top bg-[#CC6600]"
+                        style={{ transform: `scaleY(${stepP.current})` }}
+                      />
+                    ) : null}
+                  </span>
+                ) : null}
+              </div>
 
-              {/* Wide screens: the open step's sentence under its row */}
-              <div
-                className={`hidden transition-[grid-template-rows,opacity] duration-500 lg:grid ${ease} ${
-                  on ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-                }`}
-              >
-                <div className="overflow-hidden">
-                  <p className="max-w-md pb-6 pl-[3.5rem] pr-4 font-sans text-[15px] leading-relaxed text-white/65">{s.body}</p>
+              <div className={last ? "" : "pb-5"}>
+                <button
+                  type="button"
+                  onClick={() => choose(i)}
+                  aria-expanded={open}
+                  aria-controls={panelId}
+                  className="group block w-full rounded-[2px] text-left"
+                >
+                  <span
+                    className={`block font-mono text-[11px] uppercase tracking-[0.14em] transition-colors duration-300 ${
+                      open ? "text-[#E67300]" : "text-white/40 group-hover:text-white/60"
+                    }`}
+                  >
+                    Step {i + 1}
+                  </span>
+                  <span
+                    className={`mt-1 block font-sans text-lg font-medium tracking-[-0.02em] transition-colors duration-300 lg:text-xl ${
+                      open ? "text-white" : "text-white/55 group-hover:text-white/80"
+                    }`}
+                  >
+                    {s.title}
+                  </span>
+                </button>
+                <div
+                  id={panelId}
+                  className={`grid transition-[grid-template-rows,opacity] duration-500 ${ease} ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                >
+                  <div className="overflow-hidden">
+                    <p className="max-w-md pt-2 font-sans text-[15px] leading-relaxed text-white/60">{s.body}</p>
+                    <p className="pt-2 font-sans text-xs text-white/40">Usually {s.time.charAt(0).toLowerCase() + s.time.slice(1)}</p>
+                    {/* Phones: the step's scene opens inside it */}
+                    <div className="mt-4 overflow-hidden rounded-[2px] border border-white/[0.09] bg-[#0B0B1E] lg:hidden">
+                      <StageArt index={i} on={open && artOn} label={`${s.title}: ${s.body}`} compact />
+                    </div>
+                  </div>
                 </div>
               </div>
             </li>
@@ -104,79 +179,24 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
         })}
       </ol>
 
-      {/* Wide screens: one showcase panel; the five scenes share it and cross-fade */}
-      <div className="relative hidden overflow-hidden rounded-[2px] border border-white/[0.08] bg-[#0A0A18] lg:col-span-7 lg:flex lg:flex-col lg:justify-center">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:14px_14px] [mask-image:radial-gradient(ellipse_at_50%_55%,black,transparent_70%)]"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-3/4 bg-[radial-gradient(ellipse_at_50%_100%,rgba(204,102,0,0.13),transparent_65%)]"
-        />
-        <div className="relative grid">
-          {steps.map((s, i) => (
-            <div
-              key={s.tag}
-              aria-hidden={i !== active}
-              className={`col-start-1 row-start-1 transition-[opacity,translate] duration-500 ${ease} ${
-                i === active ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
-              }`}
-            >
-              <StageArt index={i} on={i === active && artOn} label={`${s.title}: ${s.body}`} />
-            </div>
-          ))}
+      {/* Wide screens: the open step's scene */}
+      <div className="hidden lg:col-span-7 lg:block">
+        <div className="overflow-hidden rounded-[2px] border border-white/[0.09] bg-[#0B0B1E]">
+          <div className="relative grid">
+            {steps.map((s, i) => (
+              <div
+                key={s.tag}
+                aria-hidden={i !== active}
+                className={`col-start-1 row-start-1 transition-opacity duration-500 ${ease} ${
+                  i === active ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
+              >
+                <StageArt index={i} on={i === active && artOn} label={`${s.title}: ${s.body}`} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-
-      {/* Phones and tablets: every step stacked, scrolling normally */}
-      <ol className="flex flex-col gap-12 lg:hidden">
-        {steps.map((s, i) => (
-          <StackedStep key={s.tag} step={s} index={i} last={last} />
-        ))}
-      </ol>
     </div>
-  );
-}
-
-/** One step on phones and tablets; its scene plays the first time it scrolls into view. */
-function StackedStep({ step: s, index: i, last }: { step: Step; index: number; last: number }) {
-  const ref = useRef<HTMLLIElement>(null);
-  const [on, setOn] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return;
-        setOn(true);
-        io.disconnect();
-      },
-      { rootMargin: "0px 0px -30% 0px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  return (
-    <li ref={ref}>
-      <div className="flex items-baseline gap-3 font-mono text-[11px] uppercase tracking-wider">
-        <span className="text-white/45">
-          <span className="text-white">{num(i)}</span> / {num(last)}
-        </span>
-        <span className="text-[#FFA040]">{s.tag}</span>
-        <span className="ml-auto normal-case tracking-normal text-white/45">{s.time}</span>
-      </div>
-      <h3 className="mt-2 font-sans text-xl font-medium tracking-[-0.03em] text-white sm:text-2xl">{s.title}</h3>
-      <p className="mt-2 max-w-xl font-sans text-[15px] leading-relaxed text-white/65">{s.body}</p>
-      <div className="relative -mx-6 mt-3 sm:mx-0">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-3/4 bg-[radial-gradient(ellipse_at_50%_100%,rgba(204,102,0,0.14),transparent_70%)]"
-        />
-        <StageArt index={i} on={on} label={`${s.title}: ${s.body}`} zoom={1.45} />
-      </div>
-    </li>
   );
 }

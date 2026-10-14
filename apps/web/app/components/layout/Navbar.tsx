@@ -65,16 +65,10 @@ export default function Navbar() {
         <Link
           href="/"
           aria-label="JAXIS StatLab home"
-          className="flex shrink-0 items-center gap-2.5 justify-self-start"
+          className="nav-brand flex shrink-0 items-center gap-2.5 justify-self-start"
         >
-          <Image
-            src="/jaxislogo.png"
-            alt=""
-            width={22}
-            height={22}
-            priority
-            className="h-[22px] w-[22px]"
-          />
+          {/* A 2.6 KB file made for this size (sharp up to 3x screens), served as is: no resize round trip. */}
+          <Image src="/logo-66.webp" alt="" width={22} height={22} priority unoptimized className="h-[22px] w-[22px]" />
           <span className="font-sans text-[15px] font-semibold tracking-[-0.01em] text-white">
             JAXIS <span className="font-normal text-white/60">StatLab</span>
           </span>

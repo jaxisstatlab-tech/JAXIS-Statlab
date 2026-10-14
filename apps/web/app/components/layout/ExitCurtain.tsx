@@ -42,7 +42,7 @@ export default function ExitCurtain() {
   return (
     <div aria-hidden="true" className="exit-curtain">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/jaxislogo.png" alt="" width={48} height={48} className="h-12 w-12" />
+      <img src="/logo-132.webp" alt="" width={48} height={48} className="h-12 w-12" />
     </div>
   );
 }

@@ -11,11 +11,13 @@ function rand(i: number) {
 export const PIXEL_CELLS = Array.from({ length: COLS * ROWS }, (_, i) => {
   const col = i % COLS;
   const row = Math.floor(i / COLS);
-  const behindText = col > 9 && col < 26 && row > 5 && row < 17;
+  // No accents behind the headline or under the navbar.
+  const behindText = (col > 9 && col < 26 && row > 5 && row < 17) || row < 2;
   return {
     x: col * CELL,
     y: row * CELL,
-    opacity: 0.02 + rand(i) * 0.07,
+    // Rounded: Math.sin's last digits differ between the server and the browser, which broke hydration.
+    opacity: Number((0.02 + rand(i) * 0.07).toFixed(3)),
     lit: !behindText && rand(i + 1000) > 0.988,
     delay: (rand(i + 2000) * 8).toFixed(2),
   };

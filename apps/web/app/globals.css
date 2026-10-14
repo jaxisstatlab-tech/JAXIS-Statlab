@@ -162,7 +162,123 @@ html.lenis body {
 }
 /* On a first visit the hero starts rising while the intro dissolves over it */
 html:not([data-intro="skip"]) .hero-in {
-  animation-delay: calc(var(--d, 0ms) + 900ms);
+  animation-delay: calc(var(--d, 0ms) + 1080ms);
+}
+
+/* Home hero entrance: "the analysis settles". One authored moment: the headline's first line rises through a mask,
+   then "properly analyzed." is revealed left to right with a light sweeping across it. Everything else arrives
+   quickly and quietly.
+   Every delay is measured from --hero-t0: 0 normally, or while the first-visit intro's logo is still gliding. */
+:root {
+  --hero-t0: 0ms;
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-focal: cubic-bezier(0.16, 1, 0.3, 1);
+}
+html:not([data-intro="skip"]) {
+  --hero-t0: 850ms;
+}
+@keyframes hx-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.hx-up {
+  animation: hx-up 320ms var(--ease-out) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 0ms));
+}
+/* A line that rises from behind an invisible edge (the mask leaves room for descenders). */
+.hx-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.1em;
+  margin-bottom: -0.1em;
+}
+.hx-line > span {
+  display: inline-block;
+  animation: hx-rise 760ms var(--ease-focal) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 0ms));
+}
+@keyframes hx-rise {
+  from {
+    transform: translateY(105%);
+  }
+}
+/* "properly analyzed.": revealed left to right, then a bright band sweeps over the orange.
+   The reveal uses transforms only, so it runs on the graphics card and stays smooth while the page is still loading
+   (a clip-path reveal froze and jumped during load): the outer window slides right while the text inside slides left
+   by the same amount, so the text stays still and is uncovered from the left. */
+.hx-sweep {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  /* Room for the descenders ("p", "y") inside the window, without changing the line's height. */
+  padding: 0 0.04em 0.14em 0;
+  margin-bottom: -0.14em;
+  animation: hx-wipe 900ms var(--ease-in-out-strong) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 0ms));
+}
+.hx-sweep > span {
+  display: inline-block;
+  background-image:
+    linear-gradient(100deg, transparent 42%, rgba(255, 226, 190, 0.95) 50%, transparent 58%),
+    linear-gradient(180deg, #ffa040 0%, #e8730f 100%);
+  background-size:
+    320% 100%,
+    100% 100%;
+  background-repeat: no-repeat;
+  background-position:
+    110% 0,
+    0 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation:
+    hx-wipe-counter 900ms var(--ease-in-out-strong) both,
+    hx-shine 1100ms var(--ease-in-out-strong) both;
+  /* The shine follows once the reveal has finished. */
+  animation-delay:
+    calc(var(--hero-t0) + var(--d, 0ms)),
+    calc(var(--hero-t0) + var(--d, 0ms) + 700ms);
+}
+@keyframes hx-wipe {
+  from {
+    transform: translateX(-101%);
+  }
+}
+@keyframes hx-wipe-counter {
+  from {
+    transform: translateX(101%);
+  }
+}
+@keyframes hx-shine {
+  from {
+    background-position:
+      110% 0,
+      0 0;
+  }
+  to {
+    background-position:
+      -10% 0,
+      0 0;
+  }
+}
+/* Proof checks tick on one after another: a small "verified" beat. */
+.hx-tick {
+  display: inline-flex;
+  animation: hx-tick 260ms var(--ease-out) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 0ms));
+}
+@keyframes hx-tick {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@keyframes hx-fade {
+  from {
+    opacity: 0;
+  }
 }
 
 /* Exit curtain: drops over the page when clicking through to the app */
@@ -189,11 +305,12 @@ html[data-leaving] .exit-curtain {
     visibility 0s;
 }
 
-/* First-visit intro (about 1.35s): on a clean dark screen the logo rises into view, the wordmark settles in over a
-   thin hairline, then the logo glides into the navbar logo while the cover lifts off the hero underneath. */
+/* First-visit intro (about 1.5s): the JAXIS bars grow up, the wordmark slides out from behind them, a hairline fills
+   like a progress bar, then the whole lockup glides onto the navbar logo while the cover fades off the hero. The
+   lockup is drawn at 2x the navbar brand (44px logo, 20px gap, 30px text) and lands at half size, so it matches. */
 .intro {
-  /* Where the navbar logo sits: its container is 90rem wide, centred, with a 1.5rem (2rem on lg) gutter. */
-  --logo-x: calc(max(0px, (100% - 90rem) / 2) + 1.5rem + 11px);
+  /* Where the navbar brand starts: its container is 90rem wide, centred, with a 1.5rem (2rem on lg) gutter. */
+  --brand-x: calc(max(0px, (100% - 90rem) / 2) + 1.5rem);
   --intro-ease: cubic-bezier(0.23, 1, 0.32, 1);
   position: fixed;
   inset: 0;
@@ -202,12 +319,12 @@ html[data-leaving] .exit-curtain {
   background: #010114;
   pointer-events: none;
   animation:
-    intro-cover 360ms ease 900ms forwards,
-    intro-end 1ms linear 1380ms forwards;
+    intro-cover 420ms ease 1080ms forwards,
+    intro-end 1ms linear 1620ms forwards;
 }
 @media (min-width: 1024px) {
   .intro {
-    --logo-x: calc(max(0px, (100% - 90rem) / 2) + 2rem + 11px);
+    --brand-x: calc(max(0px, (100% - 90rem) / 2) + 2rem);
   }
 }
 html[data-intro="skip"] .intro,
@@ -224,94 +341,77 @@ html[data-intro="done"] .intro {
     visibility: hidden;
   }
 }
-.intro-glow {
+.intro-brand {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 420px;
-  height: 320px;
-  translate: -50% -58%;
-  background: radial-gradient(closest-side, rgba(204, 102, 0, 0.13), transparent);
-  opacity: 0;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  translate: -50% -50%;
+  transform-origin: left center;
   animation:
-    intro-in 700ms ease 150ms forwards,
-    intro-out 300ms ease 900ms forwards;
+    intro-glide 520ms cubic-bezier(0.76, 0, 0.24, 1) 1040ms forwards,
+    intro-out 160ms ease 1500ms forwards;
+}
+@keyframes intro-glide {
+  to {
+    left: var(--brand-x);
+    top: 32px;
+    translate: 0 -50%;
+    scale: 0.5;
+  }
 }
 .intro-mark {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 92px;
-  height: 92px;
-  translate: -50% -50%;
+  width: 44px;
+  height: 44px;
   clip-path: inset(100% 0 0 0);
-  filter: blur(8px);
-  scale: 0.96;
-  animation:
-    intro-rise 620ms var(--intro-ease) 120ms forwards,
-    intro-fly 420ms cubic-bezier(0.65, 0, 0.35, 1) 900ms forwards,
-    intro-out 140ms ease 1260ms forwards;
+  animation: intro-grow 700ms var(--intro-ease) 80ms forwards;
 }
-@keyframes intro-rise {
+@keyframes intro-grow {
   to {
     clip-path: inset(0 0 0 0);
-    filter: blur(0);
-    scale: 1;
-  }
-}
-@keyframes intro-fly {
-  from {
-    clip-path: inset(0 0 0 0);
-    filter: blur(0);
-    scale: 1;
-  }
-  to {
-    clip-path: inset(0 0 0 0);
-    filter: blur(0);
-    left: var(--logo-x);
-    top: 32px;
-    scale: 0.239;
   }
 }
 .intro-word {
-  position: absolute;
-  left: 50%;
-  top: calc(50% + 66px);
-  translate: -50% 0;
-  white-space: nowrap;
-  letter-spacing: 0.12em;
+  /* Opens from zero width so the logo starts centred and slides left as the name appears beside it. */
+  overflow: hidden;
+  max-width: 0;
+  margin-left: 0;
   opacity: 0;
-  animation:
-    intro-word 700ms var(--intro-ease) 360ms forwards,
-    intro-out 220ms ease 860ms forwards;
+  translate: -12px 0;
+  animation: intro-slide 760ms var(--intro-ease) 380ms forwards;
 }
-@keyframes intro-word {
+@keyframes intro-slide {
   to {
-    letter-spacing: -0.01em;
+    max-width: 240px;
+    margin-left: 20px;
     opacity: 1;
+    translate: 0 0;
   }
 }
-.intro-line {
+.intro-bar {
   position: absolute;
   left: 50%;
-  top: calc(50% + 100px);
-  width: 72px;
+  top: calc(50% + 48px);
+  width: 120px;
   height: 1px;
   translate: -50% 0;
-  background: linear-gradient(90deg, transparent, #ff8a1f, transparent);
-  scale: 0 1;
-  animation:
-    intro-draw 600ms var(--intro-ease) 460ms forwards,
-    intro-out 220ms ease 860ms forwards;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  animation: intro-out 200ms ease 980ms forwards;
 }
-@keyframes intro-draw {
+.intro-bar > span {
+  display: block;
+  height: 100%;
+  background: #cc6600;
+  transform-origin: left;
+  scale: 0 1;
+  animation: intro-fill 820ms cubic-bezier(0.65, 0, 0.35, 1) 160ms forwards;
+}
+@keyframes intro-fill {
   to {
     scale: 1 1;
-  }
-}
-@keyframes intro-in {
-  to {
-    opacity: 1;
   }
 }
 @keyframes intro-out {
@@ -322,8 +422,21 @@ html[data-intro="done"] .intro {
     opacity: 0;
   }
 }
+/* The real navbar brand stays hidden while the lockup flies in, then takes over as it lands. */
+@keyframes brand-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+html:not([data-intro="skip"]):not([data-intro="done"]) .nav-brand {
+  animation: brand-in 160ms ease 1500ms both;
+}
 
 .pixel-field {
+  opacity: 0.45;
   mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, black 25%, transparent 85%);
 }
 @keyframes pixel-blink {
@@ -638,12 +751,18 @@ html[data-intro="done"] .intro {
 .spotlight-frame[data-spot] {
   --spot-o: 1;
 }
-@media (hover: hover) and (pointer: fine) {
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .bento-tile {
-    transition: background-color 200ms ease;
+    transition: background-color 200ms var(--ease-out);
   }
   .bento-tile:hover {
-    background-color: #0D0D1B;
+    background-color: #0f0f21;
+  }
+  .bento-art {
+    transition: transform 220ms var(--ease-out);
+  }
+  .bento-tile:hover .bento-art {
+    transform: translateY(-3px);
   }
 }
 
@@ -703,6 +822,26 @@ html.reveal-ready .price-rows:not([data-shown]) .price-bar {
   .pixel-lit {
     animation: none;
     opacity: 0.3;
+  }
+  /* Home hero: no movement, just a short fade so the page still arrives gently. */
+  .hx-up,
+  .hx-line > span,
+  .hx-tick {
+    transform: none;
+    animation: hx-fade 200ms ease both;
+    animation-delay: 0ms;
+  }
+  .hx-sweep {
+    transform: none;
+    animation: hx-fade 200ms ease both;
+    animation-delay: 0ms;
+  }
+  .hx-sweep > span {
+    transform: none;
+    background-position:
+      -10% 0,
+      0 0;
+    animation: none;
   }
   .count {
     transition: none;

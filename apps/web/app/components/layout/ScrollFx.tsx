@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import Lenis from "lenis";
-import { getLenis, setLenis } from "@/lib/smoothScroll";
+import { setLenis } from "@/lib/smoothScroll";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 // Phones resize the viewport as the address bar shows and hides; recalculating then makes the page jump.
@@ -16,10 +16,7 @@ ScrollTrigger.config({ ignoreMobileResize: true });
 // pinned sections, so a swipe always moves the page (taking over the fling made phone scrolling feel heavy, and
 // pins held the screen while the page moved sideways). Swipe rows ([data-h-scroll]) are plain CSS snap rows there.
 //   Lenis                 smooths mouse wheel and trackpad scrolling (mouse and trackpad only)
-//   [data-hero]           hero copy drifts up and fades as you scroll away; its pixel field lags behind for depth
-//   [data-tab-pin="5"]    wide screens: a step list pins under the navbar and scrolling moves through its steps,
-//                         both ways (it gets "step-scroll" with the step index and --step-p for progress through
-//                         the step, and can send "step-jump" to scroll to a step). Narrower screens stack the steps.
+//   [data-hero]           hero copy drifts up and fades as you scroll away
 //   [data-split]          heading lines slide up out of a mask when scrolled into view
 //   [data-parallax="0.3"] element drifts against the scroll (value = strength; mouse and trackpad only)
 export default function ScrollFx() {
@@ -29,11 +26,10 @@ export default function ScrollFx() {
     const conditions = {
       motion: "(prefers-reduced-motion: no-preference)",
       pointer: "(hover: hover) and (pointer: fine)",
-      wide: "(min-width: 1024px)",
     };
 
     mm.add(conditions, (context) => {
-      const { motion, pointer, wide } = context.conditions ?? {};
+      const { motion, pointer } = context.conditions ?? {};
       const cleanups: (() => void)[] = [];
       if (!motion) return;
 
@@ -56,50 +52,11 @@ export default function ScrollFx() {
           scrollTrigger: { trigger: hero, start: "top top", end: "bottom top", scrub: true },
         });
         const content = hero.querySelector("[data-hero-content]");
-        const field = hero.querySelector(".pixel-field");
         if (content) handoff.to(content, { y: -90, opacity: 0, ease: "power1.in" }, 0);
-        if (field) handoff.to(field, { y: 140, ease: "none" }, 0);
+        // (The background no longer moves with scroll: the GPU canvas reacts to scroll itself, and shifting it would
+        // cut its top glow off with a hard edge.)
       }
 
-      gsap.utils.toArray<HTMLElement>("[data-tab-pin]").forEach((block) => {
-        if (!wide) return; // narrower screens show the steps stacked, scrolling normally
-        const count = Math.max(1, Number(block.dataset.tabPin) || 1);
-        let current = -1;
-        block.setAttribute("data-pinned", "");
-        const pinned = block;
-        const trigger = ScrollTrigger.create({
-          trigger: pinned,
-          // Centred in the visible space below the navbar (64px).
-          start: () => `top ${Math.round(Math.max(84, 64 + (window.innerHeight - 64 - pinned.offsetHeight) / 2))}px`,
-          end: () => `+=${Math.round(window.innerHeight * 0.55 * count)}`,
-          pin: pinned,
-          invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            const x = self.progress * count;
-            const index = Math.min(count - 1, Math.floor(x));
-            block.style.setProperty("--step-p", String(Math.min(1, x - index)));
-            if (index === current) return;
-            current = index;
-            block.dispatchEvent(new CustomEvent("step-scroll", { detail: index }));
-          },
-        });
-        const jump = (e: Event) => {
-          const index = (e as CustomEvent<number>).detail;
-          const top = trigger.start + ((index + 0.35) / count) * (trigger.end - trigger.start);
-          const smooth = getLenis();
-          if (smooth) smooth.scrollTo(top);
-          else window.scrollTo({ top, behavior: "smooth" });
-        };
-        block.addEventListener("step-jump", jump);
-        cleanups.push(() => {
-          block.removeEventListener("step-jump", jump);
-          block.removeAttribute("data-pinned");
-          block.style.removeProperty("--step-p");
-        });
-      });
-
-      // Pins were created per feature, not in page order; sort so each accounts for the pins above it.
-      ScrollTrigger.sort();
       ScrollTrigger.refresh();
 
       const splits = gsap.utils.toArray<HTMLElement>("[data-split]").map((heading) =>

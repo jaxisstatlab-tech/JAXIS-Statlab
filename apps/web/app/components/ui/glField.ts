@@ -2,7 +2,8 @@
 // The page only sends a few numbers per frame; the per-pixel work runs on the GPU instead of the CPU.
 // Returns null where WebGL2 isn't available, so callers can keep their CPU drawing as a fallback.
 
-export type Uniforms = Record<string, number | readonly number[]>;
+/** A number, a vec2/3/4 as a short array, or a vec3 array (e.g. trail points) as a Float32Array of x, y, z triples. */
+export type Uniforms = Record<string, number | readonly number[] | Float32Array>;
 
 export interface GlField {
   gl: WebGL2RenderingContext;
@@ -87,6 +88,7 @@ export function createGlField(canvas: HTMLCanvasElement, fragment: string): GlFi
         const l = loc(name);
         if (!l) continue;
         if (typeof value === "number") g.uniform1f(l, value);
+        else if (value instanceof Float32Array) g.uniform3fv(l, value);
         else if (value.length === 2) g.uniform2f(l, value[0]!, value[1]!);
         else if (value.length === 3) g.uniform3f(l, value[0]!, value[1]!, value[2]!);
         else if (value.length === 4) g.uniform4f(l, value[0]!, value[1]!, value[2]!, value[3]!);

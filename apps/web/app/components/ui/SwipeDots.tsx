@@ -69,7 +69,7 @@ export default function SwipeDots({ target, label = "Swipe for more" }: { target
             className="flex h-10 w-6 items-center justify-center"
           >
             <span
-              className={`block h-1.5 rounded-full transition-all duration-300 ${i === index ? "w-4 bg-[#FF8A1F]" : "w-1.5 bg-white/25"}`}
+              className={`block h-1.5 rounded-full transition-[width,background-color] duration-300 ease-out ${i === index ? "w-4 bg-[#FF8A1F]" : "w-1.5 bg-white/25"}`}
             />
           </button>
         ))}

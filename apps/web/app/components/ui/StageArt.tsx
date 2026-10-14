@@ -4,14 +4,14 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { CheckCircle, DownloadSimple, SealCheck } from "@phosphor-icons/react";
 import { DELIVERABLES } from "../../content/site";
 
-// Scenes for the How it works showcase, one per step. They share one system so the five read as a set: a single
-// straight card (the thing the client actually sees at that step) resting on two sheets behind it, one orange
-// accent per scene, and motion that tells the step's story when `on` flips from "before" to "done". Every scene is
-// drawn on a fixed 640 x 360 canvas and scaled to fit, so it looks identical at any width, and the card stays inside
-// the middle 490px so phones (which zoom in and crop the sides) still show all of it.
+// Scenes for the How it works showcase, one per step. They share one system so the five read as a set: the screen
+// the client actually sees at that step, filling its panel edge to edge (header, content, footer), one orange accent
+// per scene, and motion that tells the step's story when `on` flips from "before" to "done". Each scene is drawn on a
+// fixed canvas and scaled to fit, so it looks identical at any width: 640 x 360 on wide screens, and a narrower
+// 400 x 340 canvas on phones so the text stays readable.
 
-const W = 640;
-const H = 360;
+const WIDE = { w: 640, h: 360 };
+const COMPACT = { w: 400, h: 340 };
 const ease = "ease-[cubic-bezier(0.23,1,0.32,1)]";
 const curve = "cubic-bezier(0.23,1,0.32,1)";
 
@@ -64,26 +64,17 @@ function Tick({ on, delay }: { on: boolean; delay: number }) {
   );
 }
 
-// The card every scene is built on, centred, with two sheets stacked behind it for depth.
+// The screen every scene is built on: it fills the whole canvas (no card floating in a frame, no stacked sheets),
+// with a header, the content centred in the middle, and a footer.
 function Sheet({ title, meta, footer, children }: { title: string; meta: ReactNode; footer: ReactNode; children: ReactNode }) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center pt-5">
-      <div className="relative w-[400px]">
-        <div aria-hidden="true" className="absolute inset-x-10 -top-5 h-full rounded-[4px] border border-white/[0.05] bg-[#0B0B1D]" />
-        <div aria-hidden="true" className="absolute inset-x-5 -top-2.5 h-full rounded-[4px] border border-white/[0.07] bg-[#0F0F24]" />
-        <div className="relative overflow-hidden rounded-[4px] border border-white/[0.1] bg-[linear-gradient(180deg,#17172F,#0E0E22)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_40px_80px_-30px_rgba(0,0,0,0.95)]">
-          <span
-            aria-hidden="true"
-            className="absolute inset-x-12 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,160,64,0.6),transparent)]"
-          />
-          <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3.5">
-            <span className="font-sans text-[13px] font-medium text-white">{title}</span>
-            {meta}
-          </div>
-          {children}
-          <div className="flex items-center justify-between border-t border-white/[0.06] bg-white/[0.015] px-5 py-3">{footer}</div>
-        </div>
+    <div className="absolute inset-0 flex flex-col bg-[linear-gradient(180deg,#141430,#0B0B1E)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <div className="flex items-center justify-between border-b border-white/[0.07] bg-white/[0.02] px-6 py-3.5">
+        <span className="font-sans text-[13px] font-medium text-white">{title}</span>
+        {meta}
       </div>
+      <div className="flex min-h-0 flex-1 flex-col justify-center px-1">{children}</div>
+      <div className="flex items-center justify-between border-t border-white/[0.07] bg-white/[0.02] px-6 py-3">{footer}</div>
     </div>
   );
 }
@@ -380,8 +371,9 @@ function DeliveryScene({ on }: { on: boolean }) {
 
 const SCENES = [UploadScene, QuoteScene, DepositScene, AnalysisScene, DeliveryScene];
 
-// Scales the fixed 640 x 360 canvas to the container's width. `zoom` above 1 enlarges it and crops the sides evenly.
-function Fit({ children, zoom = 1 }: { children: ReactNode; zoom?: number }) {
+// Scales the fixed canvas to the container's width.
+function Fit({ children, canvas }: { children: ReactNode; canvas: { w: number; h: number } }) {
+  const { w: W, h: H } = canvas;
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(W);
   useEffect(() => {
@@ -390,29 +382,24 @@ function Fit({ children, zoom = 1 }: { children: ReactNode; zoom?: number }) {
     const ro = new ResizeObserver(([entry]) => setWidth(entry?.contentRect.width ?? W));
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
-  const scale = (width / W) * zoom;
-  const left = (width - W * scale) / 2;
+  }, [W]);
+  const scale = width / W;
   return (
-    // Height comes from the aspect ratio, not the measured width, so it is right from the very first layout
-    // (ScrollFx measures pinned blocks before the width is known).
-    <div ref={ref} className="relative w-full overflow-hidden" style={{ aspectRatio: `${W} / ${H * zoom}` }}>
-      <div
-        className="absolute top-0 origin-top-left"
-        style={{ left, width: W, height: H, transform: `scale(${scale})` }}
-      >
+    // Height comes from the aspect ratio, not the measured width, so it is right from the very first layout.
+    <div ref={ref} className="relative w-full overflow-hidden" style={{ aspectRatio: `${W} / ${H}` }}>
+      <div className="absolute left-0 top-0 origin-top-left" style={{ width: W, height: H, transform: `scale(${scale})` }}>
         {children}
       </div>
     </div>
   );
 }
 
-export default function StageArt({ index, on, label, zoom }: { index: number; on: boolean; label: string; zoom?: number }) {
+export default function StageArt({ index, on, label, compact = false }: { index: number; on: boolean; label: string; compact?: boolean }) {
   const Scene = SCENES[index];
   if (!Scene) return null;
   return (
     <div role="img" aria-label={label}>
-      <Fit zoom={zoom}>
+      <Fit canvas={compact ? COMPACT : WIDE}>
         <Scene on={on} />
       </Fit>
     </div>

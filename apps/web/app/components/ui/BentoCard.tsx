@@ -30,9 +30,9 @@ export default function BentoCard({
             <h3 className={`${cardTitle} mb-1.5 lg:text-xl`}>{title}</h3>
             <p className={`${cardDesc} max-w-[44ch] text-pretty`}>{desc}</p>
           </div>
-          <span className="pt-1 font-mono text-[11px] tabular-nums text-white/30">{index}</span>
+          <span className="pt-1 font-mono text-[11px] tabular-nums text-white/50">{index}</span>
         </div>
-        <div className={`relative flex flex-1 ${align === "end" ? "items-end" : "items-center"}`}>{children}</div>
+        <div className={`bento-art relative flex flex-1 ${align === "end" ? "items-end" : "items-center"}`}>{children}</div>
       </div>
     </article>
   );

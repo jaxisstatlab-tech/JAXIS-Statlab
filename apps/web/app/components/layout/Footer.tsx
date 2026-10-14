@@ -59,7 +59,7 @@ export default function Footer() {
           {/* Brand, socials, contact */}
           <div className="lg:col-span-5">
             <Link href="/" className="inline-flex items-center gap-2.5" aria-label="JAXIS StatLab home">
-              <Image src="/jaxislogo.png" alt="" width={24} height={24} className="h-6 w-6" />
+              <Image src="/logo-66.webp" alt="" width={24} height={24} unoptimized className="h-6 w-6" />
               <span className="font-sans text-base font-semibold text-white">
                 JAXIS <span className="font-normal text-white/60">StatLab</span>
               </span>

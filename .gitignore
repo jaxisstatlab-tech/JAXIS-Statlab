@@ -36,3 +36,8 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+# Playwright CLI output (may contain credentials)
+.playwright-cli/
+# Claude Code: personal settings, and Impeccable's downloaded checker program (re-downloaded on first use)
+.claude/settings.local.json
+.claude/skills/impeccable/scripts/bin/
