@@ -138,9 +138,30 @@ export default function HeroHorizon() {
     const sunWrap = sunWrapRef.current;
     const section = layer?.parentElement;
     if (!canvas || !sunEl || !layer || !sunWrap || !section) return;
+    // Set up the GPU field only after the entrance's main beats (compiling the shader can stall a frame), then fade it
+    // in (data-ready). Everything below runs from start().
+    let stop: (() => void) | null = null;
+    let cancelled = false;
+    const begin = () => {
+      if (cancelled) return;
+      stop = start();
+    };
+    const startTimer = window.setTimeout(() => {
+      const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+      if (idle) idle(begin, { timeout: 600 });
+      else begin();
+    }, 700);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(startTimer);
+      stop?.();
+    };
+
+    function start(): (() => void) | null {
+    if (!canvas || !sunEl || !layer || !sunWrap || !section) return null;
     const field = createGlField(canvas, FRAG);
     const ctx = field ? null : canvas.getContext("2d");
-    if (!field && !ctx) return;
+    if (!field && !ctx) return null;
 
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const pointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -276,6 +297,7 @@ export default function HeroHorizon() {
     resize.observe(section);
     measure();
     draw(performance.now());
+    canvas.dataset.ready = "";
 
     const io = new IntersectionObserver(([entry]) => {
       visible = Boolean(entry?.isIntersecting);
@@ -297,6 +319,7 @@ export default function HeroHorizon() {
       section.removeEventListener("pointerleave", onLeave);
       field?.destroy();
     };
+    }
   }, []);
 
   return (

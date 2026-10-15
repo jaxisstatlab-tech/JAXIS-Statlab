@@ -469,7 +469,7 @@ html.lenis body {
     inset 0 16px 60px 0 rgba(204, 102, 0, 0.35),
     inset 0 60px 180px 0 rgba(140, 55, 0, 0.22);
   animation: hero-sun-in 1600ms var(--ease-out) both;
-  animation-delay: calc(var(--hero-t0) + 250ms);
+  animation-delay: calc(var(--hero-t0) + 150ms);
 }
 .hero-sun::after {
   content: "";
@@ -534,9 +534,22 @@ html.lenis body {
     transform: none;
   }
 }
+/* The dot field fades in once HeroHorizon has drawn its first frame (data-ready), which it starts after the entrance's
+   main beats so setting up the GPU doesn't stutter them. */
 .hero-field {
-  animation: hx-fade 1200ms var(--ease-out) both;
-  animation-delay: calc(var(--hero-t0) + 350ms);
+  opacity: 0;
+  transition: opacity 1400ms var(--ease-out);
+}
+.hero-field[data-ready] {
+  opacity: 1;
+}
+
+/* The entrance waits for the fonts (at most 0.8s, see HERO_GATE in layout.tsx), so it never plays in the fallback font
+   and then jumps. Only while scripts run: without them nothing is held. */
+html.hero-wait [data-hero] *,
+html.hero-wait [data-hero] *::before,
+html.hero-wait [data-hero] *::after {
+  animation-play-state: paused !important;
 }
 
 /* The hero holds while the next section slides over it. Sticky, so nothing in the page is moved. ScrollFx sets
@@ -1047,8 +1060,7 @@ html.reveal-ready .price-rows:not([data-shown]) .price-bar {
   .hx-tick,
   .hx-footer,
   .hx-card,
-  .hx-bar,
-  .hero-field {
+  .hx-bar {
     transform: none !important;
     filter: none !important;
     animation: hx-fade 200ms ease both !important;
