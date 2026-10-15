@@ -1,5 +1,6 @@
 import { Quotes, SealCheck } from "@phosphor-icons/react/ssr";
-import { TESTIMONIALS, type Testimonial } from "../../content/site";
+import { type Testimonial } from "../../content/site";
+import { getTestimonials } from "@/lib/testimonials";
 import Reveal from "../ui/Reveal";
 import SwipeDots from "../ui/SwipeDots";
 import { container, heading, kicker, subtitle } from "../ui/styles";
@@ -8,9 +9,14 @@ function Attribution({ t }: { t: Testimonial }) {
   return (
     <figcaption className="mt-6 flex items-end justify-between gap-4 border-t border-white/[0.08] pt-4">
       <div className="min-w-0">
-        <div className="font-sans text-[13px] font-medium leading-snug text-white/85">{t.name || "Anonymous thesis group"}</div>
+        <div className="font-sans text-[13px] font-medium leading-snug text-white/85">{t.name || (t.school ? "Thesis group" : "Anonymous thesis group")}</div>
         <div className="mt-1 font-mono text-[11px] text-white/55">
-          {t.name ? [t.program, t.school].filter(Boolean).join(" · ") : "Name withheld"}
+          {(t.name
+            ? [t.program, t.school]
+            : [t.program === "Thesis group" ? "" : t.program, t.school]
+          )
+            .filter(Boolean)
+            .join(" · ") || "Name withheld"}
         </div>
       </div>
       {t.defended ? (
@@ -35,10 +41,11 @@ function Translation({ text }: { text?: string }) {
 
 const card = "flex flex-col rounded-[2px] border border-white/[0.08] bg-[#0A0A18] p-6 sm:p-7";
 
-export default function Testimonials() {
-  if (TESTIMONIALS.length === 0) return null;
+export default async function Testimonials() {
+  const testimonials = await getTestimonials();
+  if (testimonials.length === 0) return null;
 
-  const [featured, ...rest] = TESTIMONIALS;
+  const [featured, ...rest] = testimonials;
   const side = rest.slice(0, 2);
   const more = rest.slice(2);
 

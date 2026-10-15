@@ -85,6 +85,7 @@ model User {
   analysisFiles            AnalysisFile[]                @relation("StatisticianAnalysisFiles")
   flaggedScopeCreep        ScopeCreepLog[]               @relation("FlaggedScopeCreep")
   studyVolunteers          StudyVolunteer[]              @relation("StudyVolunteers")
+  studyFeedback            StudyFeedback[]               @relation("ClientFeedback")
   resolvedScopeCreep       ScopeCreepLog[]               @relation("ResolvedScopeCreep")
   qaReviews                QAReview[]                    @relation("QAOfficerReviews")
   qaRejections             QARejectionCount[]            @relation("StatisticianQARejections")
@@ -307,6 +308,8 @@ model Project {
   analysisFiles      AnalysisFile[]
   scopeCreepLogs     ScopeCreepLog[]
   volunteers         StudyVolunteer[]
+  feedback           StudyFeedback?
+  feedbackRequest    FeedbackRequest?
   qaReviews          QAReview[]
   qaRejectionCounts  QARejectionCount[]
   deliverables       Deliverable[]
@@ -849,6 +852,48 @@ model StudyVolunteer {
   @@unique([projectId, statisticianId])
   @@index([statisticianId])
   @@map("study_volunteers")
+}
+
+/// What a client thought of a finished study (one per study). Asked once the study is finished: closed, or delivered
+/// with the free-changes window over and the final files released. The client can edit it for 7 days; staff can't
+/// change it. With the client's permission (showOnWebsite) and an admin's approval (approvedAt) it can appear on the
+/// website as a testimonial, named the way the client chose (nameStyle).
+model StudyFeedback {
+  id            String    @id @default(cuid())
+  projectId     String    @unique
+  clientId      String
+  /// 1 (unhappy) to 5 (very happy)
+  rating        Int
+  wentWell      String?
+  couldImprove  String?
+  showOnWebsite Boolean   @default(false)
+  /// NAMES (the names they typed), PROGRAM (program and school only) or HIDDEN (not on the website)
+  nameStyle     String    @default("HIDDEN")
+  /// The names as they want them shown, e.g. "Ana Cruz, Ben Reyes"
+  displayNames  String?
+  approvedAt    DateTime?
+  approvedBy    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client  User    @relation("ClientFeedback", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([approvedAt])
+  @@map("study_feedback")
+}
+
+/// When a finished study's client was asked for feedback, and reminded (once).
+model FeedbackRequest {
+  id         String    @id @default(cuid())
+  projectId  String    @unique
+  askedAt    DateTime  @default(now())
+  remindedAt DateTime?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("feedback_requests")
 }
 
 model ScopeCreepLog {

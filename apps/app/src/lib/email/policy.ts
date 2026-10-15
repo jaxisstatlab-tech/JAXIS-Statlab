@@ -11,9 +11,9 @@ export const EMAIL_POLICY = {
   /** Always sent, even near the limit, so nobody gets locked out of their account. */
   critical: ["PasswordReset"] as EmailTemplateName[],
   /** Sent to the team inbox. */
-  team: ["NewIntake", "QuoteAccepted", "ClaimFiled"] as EmailTemplateName[],
+  team: ["NewIntake", "QuoteAccepted", "ClaimFiled", "LowRating"] as EmailTemplateName[],
   /** Sent to the client. */
-  client: ["QuoteReady", "InfoRequested", "SOWReady", "PaymentRejected", "ProjectDelivered"] as EmailTemplateName[],
+  client: ["QuoteReady", "InfoRequested", "SOWReady", "PaymentRejected", "ProjectDelivered", "FeedbackRequest", "FeedbackReminder"] as EmailTemplateName[],
   /** Above these (rolling 24 hours / 30 days), everything but `critical` is held back. Leaves room under 100/3,000. */
   dailyLimit: 90,
   monthlyLimit: 2850,

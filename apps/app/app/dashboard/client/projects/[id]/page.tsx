@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { getStudyOnce } from "@/features/projects/study-cache";
+import { getClientStudyFeedback } from "@/features/feedback/actions";
 import { ClientProjectDetailClient } from "./ClientProjectDetailClient";
 import { LoadingState } from "@repo/ui";
 
@@ -31,9 +32,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ClientProjectDetailPage({ params }: PageProps) {
   const resolvedParams = await params;
   const projectId = resolvedParams.id;
-  const res = await getStudyOnce(projectId);
+  const [res, feedbackRes] = await Promise.all([getStudyOnce(projectId), getClientStudyFeedback(projectId).catch(() => null)]);
 
   const initialProject = res.success ? res.data : null;
+  // Asked once the study is finished; loaded here so the card shows with the page.
+  const initialFeedback = feedbackRes && feedbackRes.success ? feedbackRes.data : null;
   const initialError = !res.success ? res.error.message : null;
 
   return (
@@ -48,6 +51,7 @@ export default async function ClientProjectDetailPage({ params }: PageProps) {
         projectId={projectId}
         initialProject={initialProject}
         initialError={initialError}
+        initialFeedback={initialFeedback}
       />
     </Suspense>
   );

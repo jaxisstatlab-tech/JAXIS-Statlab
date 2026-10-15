@@ -29,6 +29,8 @@ import type { QuotationDetailItem } from "@/features/quotations/schemas";
 import type { SOWDetailItem } from "@/features/sow/schemas";
 import type { AssignmentDetailItem } from "@/features/assignments/schemas";
 import type { ProjectStatus } from "@prisma/client";
+import type { FeedbackItem } from "@/features/feedback/schemas";
+import { StudyFeedbackSummary } from "@/features/feedback/components/FeedbackDesk";
 
 // Admin study overview: what happens next (one orange button), the client's request and files, price and
 // agreement, the team, and the client. Data comes from the server page; router.refresh() reloads it after a change.
@@ -56,8 +58,12 @@ export function AdminStudyOverview({
   finalFiles = [],
   certificate = null,
   contact = null,
+  feedback = null,
+  feedbackHref = "/dashboard/admin/feedback",
   loadError,
 }: {
+  feedback?: FeedbackItem | null;
+  feedbackHref?: string;
   contact?: { facebookUrl: string | null; instagramUrl: string | null } | null;
   project?: ProjectDetailItem;
   finalFiles?: DeliverableDTO[];
@@ -421,6 +427,23 @@ export function AdminStudyOverview({
               </PanelBody>
             </Panel>
           )}
+
+          {feedback ? (
+            <Panel>
+              <PanelHeader
+                title="Client feedback"
+                subtitle={feedback.showOnWebsite ? (feedback.approvedAt ? "Shown on the website" : "The client allows it on the website") : "Not for the website"}
+                aside={
+                  <Link href={feedbackHref} className={QUIET_LINK}>
+                    All Feedback
+                  </Link>
+                }
+              />
+              <PanelBody>
+                <StudyFeedbackSummary feedback={feedback} />
+              </PanelBody>
+            </Panel>
+          ) : null}
 
           <Panel>
             <PanelHeader title="Client" />

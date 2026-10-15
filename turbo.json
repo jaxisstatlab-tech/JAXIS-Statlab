@@ -22,6 +22,7 @@
     "AUTH_URL",
     "EMAIL_SEND_IN_DEV",
     "TRIGGER_API_KEY",
+    "CRON_SECRET",
     "TRIGGER_API_URL",
     "AUTH_TRUST_HOST",
     "NEXT_PHASE",

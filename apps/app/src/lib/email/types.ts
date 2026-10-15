@@ -4,12 +4,15 @@ export type EmailTemplateName =
   | "NewIntake"
   | "QuoteAccepted"
   | "ClaimFiled"
+  | "LowRating"
   // Clients
   | "QuoteReady"
   | "InfoRequested"
   | "SOWReady"
   | "PaymentRejected"
   | "ProjectDelivered"
+  | "FeedbackRequest"
+  | "FeedbackReminder"
   // Designed but not sent (kept so old log rows still render; see EMAIL_POLICY in ./policy)
   | "SOWSigned"
   | "ProofReceived"
@@ -46,11 +49,14 @@ export const EMAIL_SUBJECTS: Record<EmailTemplateName, (data: Data) => string> =
       ? `${String(d.speedLabel).toUpperCase()}: price accepted for ${id(d)}`
       : `Price accepted: ${id(d)}`,
   ClaimFiled: (d) => `Claim filed: ${id(d)}`,
+  LowRating: (d) => `Low rating (${String(d.rating ?? "?")}/5): ${id(d)}`,
   QuoteReady: (d) => `Your price is ready (${id(d)})`,
   InfoRequested: (d) => `We need a bit more information (${id(d)})`,
   SOWReady: (d) => `Your agreement is ready to sign (${id(d)})`,
   PaymentRejected: (d) => `We couldn't accept your receipt (${id(d)})`,
   ProjectDelivered: (d) => `Your files are ready (${id(d)})`,
+  FeedbackRequest: (d) => `How did we do? (${id(d)})`,
+  FeedbackReminder: (d) => `A minute to tell us how we did? (${id(d)})`,
   SOWSigned: (d) => `Agreement signed (${id(d)})`,
   ProofReceived: (d) => `We got your receipt (${id(d)})`,
   PaymentVerified: (d) => `Payment confirmed (${id(d)})`,

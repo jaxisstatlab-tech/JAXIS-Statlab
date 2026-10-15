@@ -45,6 +45,9 @@ import {
   deleteAccount,
   type AccountSummary,
 } from "@/features/accounts/actions";
+import { RATING_LABEL, type FeedbackItem, type FeedbackSummary } from "@/features/feedback/schemas";
+
+type FeedbackOverview = { summary: FeedbackSummary; latest: FeedbackItem | null } | null;
 
 type ToastState = {
   message: string;
@@ -83,8 +86,10 @@ function changeLine(current: number, previous: number, prevLabel: string) {
 
 export function CEODashboardClient({
   overview,
+  feedback = null,
 }: {
   overview: CeoOverview | null;
+  feedback?: FeedbackOverview;
 }) {
   const router = useRouter();
   const [toast, setToast] = useState<ToastState>(null);
@@ -162,6 +167,7 @@ export function CEODashboardClient({
           router.refresh();
         }}
       />
+      <HappinessPanel feedback={feedback} />
       <AccountsPanel
         onDeleted={(name, email) => {
           setToast({
@@ -493,6 +499,85 @@ function StagesPanel({ overview }: { overview: CeoOverview }) {
             );
           })}
         </ul>
+      </PanelBody>
+    </Panel>
+  );
+}
+
+/** How happy clients are: the average rating, how the ratings spread, and the latest comment. */
+function HappinessPanel({ feedback }: { feedback: FeedbackOverview }) {
+  if (!feedback) return null;
+  const { summary: s, latest } = feedback;
+  const max = Math.max(1, ...s.spread);
+  return (
+    <Panel>
+      <PanelHeader
+        title="Client happiness"
+        subtitle={
+          s.count
+            ? `${s.count} ${s.count === 1 ? "answer" : "answers"}${s.awaiting ? `, ${s.awaiting} waiting` : ""}`
+            : "Clients are asked once their study is finished"
+        }
+        aside={
+          <Link
+            href="/dashboard/ceo/feedback"
+            className="text-[13px] text-white/70 underline-offset-2 transition-colors hover:text-white hover:underline"
+          >
+            See All
+          </Link>
+        }
+      />
+      <PanelBody>
+        {s.count === 0 ? (
+          <p className="text-[13px] text-white/50">No answers yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <div className="flex flex-col gap-1 lg:col-span-3">
+              <div className="flex items-baseline gap-2">
+                <span className="font-sans text-3xl font-semibold tabular-nums text-white">
+                  {s.average?.toFixed(1)}
+                </span>
+                <span className="text-[13px] text-white/50">out of 5</span>
+              </div>
+              <p className="text-[13px] text-white/50">
+                {s.recentCount} in the last 30 days
+              </p>
+              {s.recentLow > 0 ? (
+                <p className="text-[13px] font-medium text-red-300">
+                  {s.recentLow} low {s.recentLow === 1 ? "rating" : "ratings"} this month
+                </p>
+              ) : null}
+            </div>
+            <ul className="flex flex-col gap-2 lg:col-span-4">
+              {[5, 4, 3, 2, 1].map((n) => {
+                const count = s.spread[n - 1]!;
+                return (
+                  <li key={n} className="grid grid-cols-[1.25rem_minmax(0,1fr)_1.75rem] items-center gap-3 text-[13px]">
+                    <span className="font-mono tabular-nums text-white/55">{n}</span>
+                    <Meter value={count} max={max} label={`${RATING_LABEL[n]}: ${count}`} />
+                    <span className={`text-right font-mono tabular-nums ${count > 0 ? "text-white" : "text-white/30"}`}>
+                      {count}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="border-t border-white/[0.07] pt-4 lg:col-span-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+              {latest ? (
+                <>
+                  <p className="text-[12px] text-white/45">
+                    Latest, {latest.intakeId} · {RATING_LABEL[latest.rating]}
+                  </p>
+                  <p className="mt-1 line-clamp-4 text-[13px] leading-relaxed text-white/80">
+                    &ldquo;{latest.wentWell || latest.couldImprove}&rdquo;
+                  </p>
+                </>
+              ) : (
+                <p className="text-[13px] text-white/45">No comments yet, only ratings.</p>
+              )}
+            </div>
+          </div>
+        )}
       </PanelBody>
     </Panel>
   );

@@ -40,8 +40,36 @@ export const RELEASES: Release[] = [
     id: "2026-10-15",
     version: "1.6",
     date: "October 15, 2026",
-    title: "Declined quotes and staff workload",
+    title: "Client feedback, declined quotes and staff workload",
     items: [
+      {
+        kind: "new",
+        where: ["My studies", "a finished study", "How did we do?"],
+        title: "Tell us how your study went",
+        text: "Once your study is finished, its page asks for a rating from 1 to 5 and two short, optional questions. You choose whether your words can appear on our website, and whether it's with your names or anonymous (just your program and school). You can change your answer for 7 days. We also send one email to ask, and one reminder.",
+        roles: ["CLIENT"],
+      },
+      {
+        kind: "new",
+        where: ["My Studies", "a delivered study", "View Details"],
+        title: "See what the client said",
+        text: "When a client rates a study you worked on, you get a notification, and the study's details show their rating and comments.",
+        roles: STAFF_STUDY,
+      },
+      {
+        kind: "new",
+        where: ["Client Feedback"],
+        title: "Every client's feedback in one place",
+        text: "The new Client Feedback page shows the average rating, every answer, and who is still to reply. A rating of 1 or 2 sends you a notification and an email so you can follow up the same day. Answers the client allowed on the website have a Show on Website button; nothing goes on the website until you press it.",
+        roles: ["ADMIN"],
+      },
+      {
+        kind: "new",
+        where: ["Overview", "Client happiness"],
+        title: "Client happiness on your overview",
+        text: "Your overview shows the average client rating, how the ratings spread from 1 to 5, and the latest comment, with a link to every answer.",
+        roles: ["CEO"],
+      },
       {
         kind: "improved",
         where: ["Log in"],

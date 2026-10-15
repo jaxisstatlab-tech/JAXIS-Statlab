@@ -56,6 +56,7 @@ import {
   Trash,
   Plus,
   SidebarSimple,
+  Star,
 } from "@phosphor-icons/react";
 
 export interface NavItem {
@@ -121,6 +122,7 @@ const Icons = {
   Emails: <PaperPlaneRight size={16} weight="fill" className="flex-shrink-0" />,
   Gavel: <Gavel size={16} weight="fill" className="flex-shrink-0" />,
   Trash: <Trash size={16} weight="fill" className="flex-shrink-0" />,
+  ClientFeedback: <Star size={16} weight="fill" className="flex-shrink-0" />,
 };
 
 // ─── Role-Specific Navigation Definitions ─────────────────────────────────────
@@ -319,6 +321,11 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           href: "/dashboard/ceo/finance",
           icon: Icons.FinanceVault,
         },
+        {
+          label: "Client Feedback",
+          href: "/dashboard/ceo/feedback",
+          icon: Icons.ClientFeedback,
+        },
       ],
     },
     {
@@ -417,6 +424,11 @@ const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
           label: "DefenseLab",
           href: "/dashboard/admin/defenselab",
           icon: Icons.Schedule,
+        },
+        {
+          label: "Client Feedback",
+          href: "/dashboard/admin/feedback",
+          icon: Icons.ClientFeedback,
         },
       ],
     },

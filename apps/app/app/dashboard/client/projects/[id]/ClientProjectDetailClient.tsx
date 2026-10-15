@@ -29,6 +29,8 @@ import { CODE_EXTENSIONS, DATA_EXTENSIONS, REPORT_AND_FIGURE_EXTENSIONS, STUDY_F
 import type { FileCategory } from "@prisma/client";
 import { Meter, Panel, PanelHeader } from "@/components/dashboard/Panel";
 import { preferredAddOnsLabel, preferredPackageLabel } from "@/features/projects/intake-preferences";
+import { ClientFeedbackCard } from "@/features/feedback/components/ClientFeedbackCard";
+import type { ClientFeedbackState } from "@/features/feedback/schemas";
 
 // The study's Overview tab, written for students: what's happening and the one thing to do next,
 // then what they sent us (questions and files), with dates, payment and help on the side.
@@ -121,10 +123,12 @@ type ToastState = { message: string; description?: string; variant: "success" | 
 export interface ClientProjectDetailClientProps {
   projectId: string;
   initialProject: ProjectDetailItem | null;
+  /** The "How did we do?" card's state (shown once the study is finished). */
+  initialFeedback?: ClientFeedbackState | null;
   initialError?: string | null;
 }
 
-export function ClientProjectDetailClient({ projectId, initialProject, initialError = null }: ClientProjectDetailClientProps) {
+export function ClientProjectDetailClient({ projectId, initialProject, initialError = null, initialFeedback = null }: ClientProjectDetailClientProps) {
   const [project, setProject] = useState<ProjectDetailItem | null>(initialProject);
   const [isLoading, setIsLoading] = useState(!initialProject && !initialError);
   const [loadError, setLoadError] = useState<string | null>(initialError);
@@ -228,6 +232,9 @@ export function ClientProjectDetailClient({ projectId, initialProject, initialEr
           onResolve={handleResolve}
           onAddFile={() => setIsUploadOpen(true)}
         />
+        {initialFeedback && (initialFeedback.eligible || initialFeedback.feedback) ? (
+          <ClientFeedbackCard projectId={project.id} initial={initialFeedback} />
+        ) : null}
         <QuestionsPanel project={project} />
         <FilesPanel
           project={project}

@@ -232,6 +232,24 @@ export function renderEmailTemplate(template: EmailTemplateName, data: Record<st
       };
       break;
 
+    case "LowRating":
+      layout = {
+        preview: `${clientName} rated their study ${esc(data.rating)}/5. Please contact them today.`,
+        eyebrow: "Follow up today",
+        title: "A client isn't happy",
+        greeting: "Hi team,",
+        paragraphs: [
+          `${clientName} rated ${strong(title)} ${strong(`${esc(data.rating)}/5`)} (${esc(data.ratingLabel || "")}).`,
+          "Please message them today to find out what went wrong and how we can make it right.",
+        ],
+        highlight: data.couldImprove ? `<strong>What could be better:</strong> ${esc(data.couldImprove)}` : undefined,
+        facts: [studyFact, { label: "Rating", value: `${esc(data.rating)} out of 5` }],
+        ctaText: "Open the Study",
+        ctaUrl: data.projectId ? `${appUrl}/dashboard/admin/projects/${encodeURIComponent(String(data.projectId))}` : `${appUrl}/dashboard/admin/feedback`,
+        footer: teamFooter,
+      };
+      break;
+
     // ── Clients ─────────────────────────────────────────────────────────────────
     case "QuoteReady":
       layout = {
@@ -308,6 +326,29 @@ export function renderEmailTemplate(template: EmailTemplateName, data: Record<st
         footer: clientFooter,
       };
       break;
+
+    case "FeedbackRequest":
+    case "FeedbackReminder": {
+      const reminder = template === "FeedbackReminder";
+      layout = {
+        preview: reminder ? "One minute, one rating. It helps us a lot." : `Your study ${title} is finished. How did we do?`,
+        eyebrow: reminder ? "Quick reminder" : "Your feedback",
+        title: "How did we do?",
+        greeting: `Hi ${first},`,
+        paragraphs: reminder
+          ? [`A few days ago we asked how your study ${strong(title)} went. If you have a minute, we'd really like to know.`, "It's one rating and two short, optional questions."]
+          : [
+              `Your study ${strong(title)} is finished. Thank you for working with us.`,
+              "Would you tell us how it went? It takes about a minute: one rating and two short, optional questions. It helps us do better for the next students.",
+            ],
+        facts: [studyFact],
+        ctaText: "Share Your Feedback",
+        ctaUrl: `${study}#feedback`,
+        note: reminder ? "This is the only reminder we'll send." : "You can change your answer for 7 days after you send it.",
+        footer: clientFooter,
+      };
+      break;
+    }
 
     // ── Not sent (kept so old log rows still render) ────────────────────────────
     default:

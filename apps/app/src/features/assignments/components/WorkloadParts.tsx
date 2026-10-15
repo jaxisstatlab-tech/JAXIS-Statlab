@@ -7,6 +7,9 @@ import { requestLeave } from "@/features/staff/actions";
 import { clientPackageName } from "@/features/projects/client-packages";
 import { Panel, PanelBody } from "@/components/dashboard/Panel";
 import type { AssignmentDetailItem } from "../schemas";
+import { getStudyFeedbackForStaff } from "@/features/feedback/actions";
+import { StudyFeedbackSummary } from "@/features/feedback/components/FeedbackDesk";
+import type { FeedbackItem } from "@/features/feedback/schemas";
 
 // Pieces shared by the analyst's "My Studies" and the reviewer's "Review Desk": due dates in plain words, the
 // study details window, and asking for leave.
@@ -106,6 +109,7 @@ export function StudyDetailsModal({
   footer: React.ReactNode;
   onClose: () => void;
 }) {
+  const feedback = useStudyFeedback(s);
   if (!s) return null;
   const section = (title: string, text?: string | null) => (
     <div>
@@ -153,9 +157,37 @@ export function StudyDetailsModal({
             <p className="mt-1 text-[13px] text-white/35">No files yet. Open the study to see everything.</p>
           )}
         </div>
+        {feedback ? (
+          <div>
+            <p className="mb-1.5 text-[12px] font-medium text-white/45">What the client said</p>
+            <div className="rounded-[2px] border border-white/[0.08] bg-white/[0.02] px-4 py-3.5">
+              <StudyFeedbackSummary feedback={feedback} />
+            </div>
+          </div>
+        ) : null}
       </div>
     </Modal>
   );
+}
+
+/** The client's feedback on a delivered or closed study, loaded when its details open (null until then, or if none). */
+function useStudyFeedback(s: Study | null) {
+  const [feedback, setFeedback] = useState<FeedbackItem | null>(null);
+  const projectId = s && DONE_STATUSES.includes(s.masterStatus) ? s.projectId : null;
+  useEffect(() => {
+    setFeedback(null);
+    if (!projectId) return;
+    let live = true;
+    getStudyFeedbackForStaff(projectId)
+      .then((res) => {
+        if (live && res.success) setFeedback(res.data);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [projectId]);
+  return feedback;
 }
 
 /** "Waiting for approval" (Cancel Request) or "You're on leave" (I'm Back). */

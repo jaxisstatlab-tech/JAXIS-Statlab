@@ -20,6 +20,7 @@ export type NotificationEventType =
   | "ATTENDANCE_UPDATE"
   | "DEFENSELAB_UPDATE"
   | "MESSAGE_ALERT"
+  | "CLIENT_FEEDBACK"
   | "SECURITY_ALERT"
   | "SLA_ALERT"
   | "SYSTEM_ALERT";
