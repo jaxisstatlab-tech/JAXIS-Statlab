@@ -37,6 +37,35 @@ const STAFF_STUDY: Audience[] = ["STATISTICIAN", "SENIOR_QA_LEAD"];
 
 export const RELEASES: Release[] = [
   {
+    id: "2026-10-16",
+    version: "1.7",
+    date: "October 16, 2026",
+    title: "Client feedback on the website",
+    items: [
+      {
+        kind: "new",
+        where: ["Client Feedback", "Show on Website"],
+        title: "Approved feedback has its own page on the website",
+        text: "Answers you show on the website now appear on the new Testimonials page (in the website menu), together with our hand-picked messages. The home page shows only the 6 newest, with a link to the rest, so it doesn't get longer as more clients answer. Once 5 clients have answered, the website also shows the average rating from every answer, not only the ones on the website.",
+        roles: ["ADMIN"],
+      },
+      {
+        kind: "improved",
+        where: ["Notifications", "Client feedback"],
+        title: "Feedback alerts open the study",
+        text: "A notification about a client's rating now opens that study's page, where the Client feedback panel shows their answer.",
+        roles: ["ADMIN"],
+      },
+      {
+        kind: "improved",
+        where: ["My studies", "a finished study", "How did we do?"],
+        title: "Choose to stay anonymous",
+        text: "If you let us show your feedback on our website, you can choose to use your names or stay anonymous. Anonymous answers show only your program and school.",
+        roles: ["CLIENT"],
+      },
+    ],
+  },
+  {
     id: "2026-10-15",
     version: "1.6",
     date: "October 15, 2026",

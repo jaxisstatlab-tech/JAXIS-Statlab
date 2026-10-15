@@ -51,6 +51,15 @@ const write = (f: string, rows: unknown[]) => fs.writeFileSync(f, JSON.stringify
 const finished = (p?: DevProject) => !!p && (p.masterStatus === "DELIVERED" || p.masterStatus === "CLOSED");
 const userId = (u: { id?: string | null; email?: string | null }) => (u.email ? getDevUserByEmail(u.email)?.id : undefined) ?? u.id ?? "";
 
+/** The client's finished sample studies that have no feedback yet. */
+export function devPendingFeedbackIds(user: { id?: string | null; email?: string | null }): string[] {
+  const me = userId(user);
+  const answered = new Set(read<DevFeedback>(FILES.feedback).map((f) => f.projectId));
+  return read<DevProject>(FILES.projects)
+    .filter((p) => finished(p) && !answered.has(p.id) && (p.clientId === me || (!!user.email && p.client?.email === user.email)))
+    .map((p) => p.id);
+}
+
 export function devClientFeedback(projectId: string): ClientFeedbackState {
   const p = read<DevProject>(FILES.projects).find((x) => x.id === projectId);
   const f = read<DevFeedback>(FILES.feedback).find((x) => x.projectId === projectId);
@@ -60,6 +69,7 @@ export function devClientFeedback(projectId: string): ClientFeedbackState {
       ? { rating: f.rating, wentWell: f.wentWell, couldImprove: f.couldImprove, nameStyle: asNameStyle(f.nameStyle), displayNames: f.displayNames, createdAt: f.createdAt }
       : null,
     editableUntil: f ? editableUntil(f.createdAt) : null,
+    clientName: "",
   };
 }
 

@@ -26,6 +26,7 @@ const COLUMNS = [
       { label: "About", href: "/about" },
       { label: "How it works", href: "/#how-it-works" },
       { label: "Quality checks", href: "/about#quality" },
+      { label: "Testimonials", href: "/testimonials" },
       { label: "Pricing", href: "/pricing" },
       { label: "Contact", href: "/contact" },
       { label: "FAQ", href: "/contact#faq" },
@@ -68,7 +69,9 @@ export default function Footer() {
               Statistical consulting for students and researchers. Checked twice, explained simply.
             </p>
 
-            <div className="mt-6 flex items-center gap-2">
+            {/* Bare outline logos (the filled Instagram logo is itself a square). The 36px hit area stays for easy tapping,
+                pulled left so the first logo lines up with the text. */}
+            <div className="-ml-2 mt-6 flex items-center">
               {SOCIALS.map(({ name, href, Icon, cta }) => (
                 <a
                   key={name}
@@ -78,12 +81,12 @@ export default function Footer() {
                   data-cta={cta}
                   aria-label={`${name}: @${SOCIAL_HANDLE}`}
                   title={`${name} · @${SOCIAL_HANDLE}`}
-                  className="flex h-10 w-10 items-center justify-center rounded-[2px] border border-white/10 bg-white/[0.03] text-white/65 transition-[color,border-color,background-color,transform] duration-150 hover:border-white/25 hover:bg-white/[0.06] hover:text-white active:scale-[0.96]"
+                  className="flex h-9 w-9 items-center justify-center rounded-[2px] text-white/60 transition-[color,transform] duration-150 hover:text-white active:scale-[0.94]"
                 >
-                  <Icon size={18} weight="fill" />
+                  <Icon size={20} weight="regular" />
                 </a>
               ))}
-              <span className="ml-1.5 font-mono text-[11px] text-white/45">@{SOCIAL_HANDLE}</span>
+              <span className="ml-1.5 font-mono text-[11px] text-white/50">@{SOCIAL_HANDLE}</span>
             </div>
 
             <div className="mt-5 flex flex-col font-mono text-xs text-white/55 sm:gap-2">

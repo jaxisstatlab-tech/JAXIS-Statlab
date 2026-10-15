@@ -3,7 +3,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ChartBar, DownloadSimple, Receipt, UploadSimple, Wallet, type Icon } from "@phosphor-icons/react";
 import { getLenis } from "@/lib/smoothScroll";
 import type { HowStep as Step } from "../../content/site";
 import StageArt from "./StageArt";
@@ -11,18 +10,17 @@ import StageArt from "./StageArt";
 export type { Step };
 
 const ease = "ease-[cubic-bezier(0.23,1,0.32,1)]";
-const ICONS: Icon[] = [UploadSimple, Receipt, Wallet, ChartBar, DownloadSimple];
 /** Scroll per step while the section is held, as a share of the screen height. */
 const SCROLL_PER_STEP = 0.5;
 
 gsap.registerPlugin(ScrollTrigger);
 
 // How it works as a compact step list beside one scene, about a screen tall.
-// The steps are an accordion: each has a small icon tile and a dashed line down to the next; only the open step shows
-// its description, and the scene for the open step sits on the right.
+// The steps are an accordion of hairline rows (number, title, usual time); only the open step shows its description
+// and what it covers, and the scene for the open step sits on the right.
 // Wide screens with a mouse or trackpad: scrolling drives it. When the section reaches the screen it holds in place
-// (ScrollTrigger pin), and scrolling moves through the steps, forwards and backwards; the dashed line under the open
-// step fills as you scroll through that step, and after the last step the page carries on. Clicking a step scrolls to
+// (ScrollTrigger pin), and scrolling moves through the steps, forwards and backwards; the open step's top line fills
+// as you scroll through that step, and after the last step the page carries on. Clicking a step scrolls to
 // it. Phones, touch screens and reduced motion: nothing is held; the steps open on tap (phones show each scene inside
 // its step).
 export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
@@ -67,7 +65,7 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
           const x = self.progress * count;
           const index = Math.min(count - 1, Math.floor(x));
           stepP.current = index === count - 1 && self.progress >= 1 ? 1 : Math.min(1, x - index);
-          if (progress.current) progress.current.style.transform = `scaleY(${stepP.current})`;
+          if (progress.current) progress.current.style.transform = `scaleX(${stepP.current})`;
           if (index !== current) {
             current = index;
             setActive(index);
@@ -88,7 +86,7 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
 
   // When the open step changes, its new line picks up the current progress straight away.
   useEffect(() => {
-    if (progress.current) progress.current.style.transform = `scaleY(${stepP.current})`;
+    if (progress.current) progress.current.style.transform = `scaleX(${stepP.current})`;
   }, [active]);
 
   const choose = (i: number) => {
@@ -106,71 +104,60 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
 
   return (
     <div ref={root} className="mt-10 grid grid-cols-1 gap-6 lg:mt-14 lg:grid-cols-12 lg:items-center lg:gap-16">
-      <ol className="lg:col-span-5" aria-label="How it works, step by step">
+      <ol className="border-b border-white/[0.08] lg:col-span-5" aria-label="How it works, step by step">
         {steps.map((s, i) => {
           const open = i === active;
-          const StepIcon = ICONS[i] ?? UploadSimple;
-          const last = i === steps.length - 1;
           const panelId = `${baseId}-step-${i}`;
           return (
-            <li key={s.tag} className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-4">
-              {/* Icon tile and the dashed line down to the next step */}
-              <div className="flex flex-col items-center">
+            <li key={s.tag} className="relative border-t border-white/[0.08]">
+              {/* The open step's top line: orange, filling as you scroll through it (held version), else a brighter line */}
+              {open ? (
+                scrolly ? (
+                  <span
+                    ref={progress}
+                    aria-hidden="true"
+                    className="absolute inset-x-0 -top-px h-px origin-left bg-[#CC6600]"
+                    style={{ transform: `scaleX(${stepP.current})` }}
+                  />
+                ) : (
+                  <span aria-hidden="true" className="absolute inset-x-0 -top-px h-px bg-white/30" />
+                )
+              ) : null}
+              <button
+                type="button"
+                onClick={() => choose(i)}
+                aria-expanded={open}
+                aria-controls={panelId}
+                className="group grid w-full grid-cols-[2.25rem_minmax(0,1fr)_auto] items-baseline gap-x-3 py-4 text-left sm:py-5"
+              >
                 <span
-                  aria-hidden="true"
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border transition-[background-color,border-color,color] duration-300 ${ease} ${
-                    open ? "border-white/20 bg-white/[0.08] text-white" : "border-white/[0.09] bg-white/[0.02] text-white/45"
+                  className={`font-mono text-xs tabular-nums transition-colors duration-300 ${open ? "text-[#E67300]" : "text-white/35 group-hover:text-white/55"}`}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span
+                  className={`font-sans font-medium tracking-[-0.02em] transition-[color,font-size] duration-300 ${ease} ${
+                    open ? "text-lg text-white lg:text-xl" : "text-base text-white/60 group-hover:text-white/85"
                   }`}
                 >
-                  <StepIcon size={16} weight="fill" />
+                  {s.title}
                 </span>
-                {!last || open ? (
-                  <span aria-hidden="true" className="relative my-2 w-px flex-1 border-l border-dashed border-white/15">
-                    {open && scrolly ? (
-                      <span
-                        ref={progress}
-                        className="absolute -left-px top-0 h-full w-px origin-top bg-[#CC6600]"
-                        style={{ transform: `scaleY(${stepP.current})` }}
-                      />
-                    ) : null}
-                  </span>
-                ) : null}
-              </div>
-
-              <div className={last ? "" : "pb-5"}>
-                <button
-                  type="button"
-                  onClick={() => choose(i)}
-                  aria-expanded={open}
-                  aria-controls={panelId}
-                  className="group block w-full rounded-[2px] text-left"
+                <span
+                  className={`font-mono text-[11px] transition-colors duration-300 ${open ? "text-white/60" : "text-white/35 group-hover:text-white/50"}`}
                 >
-                  <span
-                    className={`block font-mono text-[11px] uppercase tracking-[0.14em] transition-colors duration-300 ${
-                      open ? "text-[#E67300]" : "text-white/40 group-hover:text-white/60"
-                    }`}
-                  >
-                    Step {i + 1}
-                  </span>
-                  <span
-                    className={`mt-1 block font-sans text-lg font-medium tracking-[-0.02em] transition-colors duration-300 lg:text-xl ${
-                      open ? "text-white" : "text-white/55 group-hover:text-white/80"
-                    }`}
-                  >
-                    {s.title}
-                  </span>
-                </button>
-                <div
-                  id={panelId}
-                  className={`grid transition-[grid-template-rows,opacity] duration-500 ${ease} ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
-                >
-                  <div className="overflow-hidden">
-                    <p className="max-w-md pt-2 font-sans text-[15px] leading-relaxed text-white/60">{s.body}</p>
-                    <p className="pt-2 font-sans text-xs text-white/40">Usually {s.time.charAt(0).toLowerCase() + s.time.slice(1)}</p>
-                    {/* Phones: the step's scene opens inside it */}
-                    <div className="mt-4 overflow-hidden rounded-[2px] border border-white/[0.09] bg-[#0B0B1E] lg:hidden">
-                      <StageArt index={i} on={open && artOn} label={`${s.title}: ${s.body}`} compact />
-                    </div>
+                  {s.time}
+                </span>
+              </button>
+              <div
+                id={panelId}
+                className={`grid transition-[grid-template-rows,opacity] duration-500 ${ease} ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+              >
+                <div className="overflow-hidden pl-[3rem]">
+                  <p className="max-w-md font-sans text-[15px] leading-relaxed text-white/65">{s.body}</p>
+                  <p className="pb-5 pt-3 font-mono text-[11px] text-white/45">{s.chips.join(" · ")}</p>
+                  {/* Phones: the step's scene opens inside it */}
+                  <div className="mb-5 overflow-hidden rounded-[2px] border border-white/[0.09] bg-[#0B0B1E] lg:hidden">
+                    <StageArt index={i} on={open && artOn} label={`${s.title}: ${s.body}`} compact />
                   </div>
                 </div>
               </div>

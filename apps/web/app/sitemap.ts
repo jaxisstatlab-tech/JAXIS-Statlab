@@ -5,6 +5,7 @@ const BASE = "https://jaxis-statlab.com";
 const PAGES: { path: string; priority: number }[] = [
   { path: "", priority: 1 },
   { path: "/about", priority: 0.8 },
+  { path: "/testimonials", priority: 0.7 },
   { path: "/pricing", priority: 0.9 },
   { path: "/statistical-analysis-for-thesis", priority: 0.9 },
   { path: "/statistician-bukidnon", priority: 0.9 },

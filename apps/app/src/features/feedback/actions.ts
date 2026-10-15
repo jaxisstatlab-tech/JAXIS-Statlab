@@ -6,7 +6,7 @@ import { db, withDbTimeout } from "@/lib/db";
 import { emailTeam } from "@/lib/email/notify";
 import { dispatchRealtimeNotification } from "@/features/notifications/dispatcher";
 import { devStudyDataEnabled } from "@/features/projects/dev-study-store";
-import { devClientFeedback, devFeedbackForStudy, devListFeedback, devSetApproval, devSubmitFeedback } from "./dev-feedback";
+import { devClientFeedback, devFeedbackForStudy, devListFeedback, devPendingFeedbackIds, devSetApproval, devSubmitFeedback } from "./dev-feedback";
 import { asNameStyle, editableUntil, isLowRating, isStudyFinished } from "./rules";
 import {
   RATING_LABEL,
@@ -129,12 +129,38 @@ export async function getClientStudyFeedback(projectId: string): Promise<Feedbac
           ? { rating: f.rating, wentWell: f.wentWell, couldImprove: f.couldImprove, nameStyle: asNameStyle(f.nameStyle), displayNames: f.displayNames, createdAt: f.createdAt.toISOString() }
           : null,
         editableUntil: f ? editableUntil(f.createdAt) : null,
+        clientName: session.user.fullName ?? "",
       },
     };
   } catch (err) {
-    if (devStudyDataEnabled()) return { success: true, data: devClientFeedback(projectId) };
+    if (devStudyDataEnabled()) return { success: true, data: { ...devClientFeedback(projectId), clientName: session.user.fullName ?? "" } };
     console.error("[getClientStudyFeedback]", err);
     return fail("SERVER_ERROR", "We couldn't load this. Please try again.");
+  }
+}
+
+/** For the client's study list: their finished studies still waiting for a rating (one query for the whole list). */
+export async function getPendingFeedbackIds(): Promise<string[]> {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "CLIENT") return [];
+  try {
+    const rows = await withDbTimeout(
+      db.project.findMany({
+        where: {
+          clientId: session.user.id,
+          feedback: { is: null },
+          deliverables: { some: { isFinalReleased: true } },
+          OR: [{ masterStatus: "CLOSED" }, { masterStatus: "DELIVERED", revisionWindowExpiresAt: { lt: new Date() } }],
+        },
+        select: { id: true },
+        take: 50,
+      }),
+    );
+    return rows.map((r) => r.id);
+  } catch (err) {
+    if (devStudyDataEnabled()) return devPendingFeedbackIds(session.user);
+    console.error("[getPendingFeedbackIds]", err);
+    return [];
   }
 }
 
@@ -145,6 +171,8 @@ export async function submitStudyFeedback(input: unknown): Promise<FeedbackResul
   const parsed = SubmitFeedbackSchema.safeParse(input);
   if (!parsed.success) return fail("VALIDATION_ERROR", parsed.error.issues[0]?.message || "Check your answers.");
   const d = parsed.data;
+  // Named on the website but no names typed: use their profile name.
+  if (d.nameStyle === "NAMES" && !d.displayNames?.trim()) d.displayNames = session.user.fullName ?? undefined;
   const data = {
     rating: d.rating,
     wentWell: d.wentWell?.trim() || null,

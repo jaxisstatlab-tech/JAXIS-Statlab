@@ -32,11 +32,8 @@ export const SubmitFeedbackSchema = z
     wentWell: z.string().trim().max(1500, "Keep it under 1,500 characters.").optional(),
     couldImprove: z.string().trim().max(1500, "Keep it under 1,500 characters.").optional(),
     nameStyle: z.enum(NAME_STYLES).default("HIDDEN"),
+    // With nameStyle NAMES and no names typed, the client's profile name is used.
     displayNames: z.string().trim().max(300, "Keep the names under 300 characters.").optional(),
-  })
-  .refine((d) => d.nameStyle !== "NAMES" || Boolean(d.displayNames?.trim()), {
-    message: "Type the names you want shown, or pick another option.",
-    path: ["displayNames"],
   });
 export type SubmitFeedbackInput = z.infer<typeof SubmitFeedbackSchema>;
 
@@ -76,6 +73,8 @@ export interface ClientFeedbackState {
   } | null;
   /** Until when they can still change it (ISO), or null when it can't be changed any more. */
   editableUntil: string | null;
+  /** The client's profile name, filled in when they choose to be named on the website. */
+  clientName: string;
 }
 
 export interface FeedbackSummary {

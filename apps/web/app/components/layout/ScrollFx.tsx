@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import Lenis from "lenis";
 import { setLenis } from "@/lib/smoothScroll";
+import { HERO_HOLD_QUERY } from "@/lib/heroHold";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 // Phones resize the viewport as the address bar shows and hides; recalculating then makes the page jump.
@@ -16,7 +17,9 @@ ScrollTrigger.config({ ignoreMobileResize: true });
 // pinned sections, so a swipe always moves the page (taking over the fling made phone scrolling feel heavy, and
 // pins held the screen while the page moved sideways). Swipe rows ([data-h-scroll]) are plain CSS snap rows there.
 //   Lenis                 smooths mouse wheel and trackpad scrolling (mouse and trackpad only)
-//   [data-hero]           hero copy drifts up and fades as you scroll away
+//   [data-hero]           the hero holds while the next section slides over it (mouse and trackpad), receding and
+//                         dimming; its copy and card drift up at different speeds and fade
+//   [data-sheet-feather]  the soft top edge of the section that slides over the held hero fades in as it arrives
 //   [data-split]          heading lines slide up out of a mask when scrolled into view
 //   [data-parallax="0.3"] element drifts against the scroll (value = strength; mouse and trackpad only)
 export default function ScrollFx() {
@@ -48,13 +51,43 @@ export default function ScrollFx() {
 
       const hero = document.querySelector<HTMLElement>("[data-hero]");
       if (hero) {
+        // Measured from the hero's wrapper: while the hero holds (sticky) its own position reads as the top of the
+        // screen, which would throw the start off if the page is re-measured mid-scroll.
         const handoff = gsap.timeline({
-          scrollTrigger: { trigger: hero, start: "top top", end: "bottom top", scrub: true },
+          scrollTrigger: {
+            trigger: hero.parentElement ?? hero,
+            start: "top top",
+            end: () => `+=${hero.offsetHeight}`,
+            invalidateOnRefresh: true,
+            scrub: true,
+          },
         });
-        const content = hero.querySelector("[data-hero-content]");
-        if (content) handoff.to(content, { y: -90, opacity: 0, ease: "power1.in" }, 0);
-        // (The background no longer moves with scroll: the GPU canvas reacts to scroll itself, and shifting it would
-        // cut its top glow off with a hard edge.)
+        // Parallax hand-off: the copy leaves fastest, the results card a little slower, and the background (moved by
+        // HeroHorizon itself, which also raises the sun) slowest, so the next section slides up over the hero.
+        const copy = hero.querySelector("[data-hero-copy]");
+        const card = hero.querySelector("[data-hero-card]");
+        if (copy && card) {
+          handoff.to(copy, { y: -140, opacity: 0, ease: "power1.in" }, 0);
+          handoff.to(card, { y: -60, scale: 0.97, opacity: 0, ease: "power1.in" }, 0);
+        } else {
+          const content = hero.querySelector("[data-hero-content]");
+          if (content) handoff.to(content, { y: -90, opacity: 0, ease: "power1.in" }, 0);
+        }
+        const dim = hero.querySelector("[data-hero-dim]");
+        if (dim) handoff.to(dim, { opacity: 0.5, ease: "power1.in" }, 0);
+
+        // Wide screens with a mouse or trackpad: the hero holds (CSS sticky, .hero-hold) while the next section slides
+        // up over it like a sheet, and it recedes (scales down a little) underneath.
+        const stage = hero.querySelector("[data-hero-stage]");
+        if (stage && window.matchMedia(HERO_HOLD_QUERY).matches) {
+          handoff.to(stage, { scale: 0.92, ease: "power1.in" }, 0);
+          // The covering section's top edge is feathered (a tall fade into the page colour), so the hero dissolves
+          // into it with no visible edge; the feather appears as soon as scrolling starts.
+          const feather = document.querySelector("[data-sheet-feather]");
+          // (On the hero's own timeline: the other tweens there last 0.5, so 0.06 is the first 12% of the scroll.)
+          if (feather) handoff.fromTo(feather, { opacity: 0 }, { opacity: 1, duration: 0.06, ease: "none" }, 0);
+          if (dim) handoff.to(dim, { opacity: 0.65, ease: "power1.in" }, 0);
+        }
       }
 
       ScrollTrigger.refresh();

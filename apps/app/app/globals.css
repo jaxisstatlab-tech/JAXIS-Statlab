@@ -1080,3 +1080,9 @@ input::-ms-clear {
     gap: 0.5rem;
   }
 }
+
+/* Sideways-scrolling strips (tab bars, wide tables) never scroll up and down. Without this the browser also allows
+   vertical scrolling there, and a 1px underline or focus ring poking out showed a stray vertical scrollbar. */
+.overflow-x-auto:not(.overflow-y-auto) {
+  overflow-y: hidden;
+}

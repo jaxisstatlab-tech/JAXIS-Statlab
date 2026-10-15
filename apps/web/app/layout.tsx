@@ -4,7 +4,6 @@ import "./globals.css";
 import CtaTracker from "./components/layout/CtaTracker";
 import ConsentBanner from "./components/layout/ConsentBanner";
 import ConsentedAnalytics from "./components/layout/ConsentedAnalytics";
-import Intro from "./components/layout/Intro";
 import ExitCurtain from "./components/layout/ExitCurtain";
 import AnchorScroll from "./components/layout/AnchorScroll";
 import { APP_URL } from "@/lib/config";
@@ -88,14 +87,14 @@ export const metadata: Metadata = {
   },
 };
 
-// Play the intro once per session; skip it on repeat loads or when reduced motion is requested.
-const INTRO_GATE = `(function(){var h=document.documentElement;try{if(sessionStorage.getItem("jx-intro")||matchMedia("(prefers-reduced-motion: reduce)").matches){h.dataset.intro="skip";}else{sessionStorage.setItem("jx-intro","1");window.addEventListener("load",function(){setTimeout(function(){h.dataset.intro="done";},2200);});}}catch(e){h.dataset.intro="skip";}})();`;
 
 // If page scripts are slow or fail, reveal content anyway instead of leaving it invisible.
 const REVEAL_FALLBACK = `window.addEventListener("load",function(){setTimeout(function(){var h=document.documentElement;if(!h.classList.contains("reveal-ready"))h.classList.add("reveal-fallback");},1500);});`;
 
 // Only for a refresh: take over scroll position long enough to start at the top, then hand scroll
-// memory back to the browser so Back and Forward return to where you were.
+// memory back to the browser so Back and Forward return to where you were. The browser can still restore the old
+// position while the page loads (which flashed the hero's scroll transition half-way), so any scroll before load is
+// undone at once, until the visitor scrolls themselves.
 const SCROLL_TO_TOP_ON_RELOAD = `(function(){try{
 var n=performance.getEntriesByType("navigation")[0];
 if(!n||n.type!=="reload")return;
@@ -104,8 +103,13 @@ if(can)hs.scrollRestoration="manual";
 if(location.hash)hs.replaceState(null,"",location.pathname+location.search);
 var top=function(){var h=document.documentElement,b=h.style.scrollBehavior;h.style.scrollBehavior="auto";window.scrollTo(0,0);h.style.scrollBehavior=b;};
 top();
+var guard=function(){if(window.scrollY!==0)top();};
+var inputs=["wheel","touchstart","keydown","pointerdown"];
+var release=function(){window.removeEventListener("scroll",guard);inputs.forEach(function(t){window.removeEventListener(t,release);});};
+window.addEventListener("scroll",guard,{passive:true});
+inputs.forEach(function(t){window.addEventListener(t,release,{passive:true,once:true});});
 document.addEventListener("DOMContentLoaded",top,{once:true});
-window.addEventListener("load",function(){top();requestAnimationFrame(function(){top();if(can)hs.scrollRestoration="auto";});},{once:true});
+window.addEventListener("load",function(){top();requestAnimationFrame(function(){top();release();if(can)hs.scrollRestoration="auto";});},{once:true});
 }catch(e){}})();`;
 
 export default function RootLayout({
@@ -132,7 +136,6 @@ export default function RootLayout({
         <link rel="alternate" type="text/markdown" href="/llms-full.txt" title="Full LLM knowledge base" />
         <link rel="preconnect" href={new URL(APP_URL).origin} />
         <link rel="dns-prefetch" href={new URL(APP_URL).origin} />
-        <script dangerouslySetInnerHTML={{ __html: INTRO_GATE }} />
         <script dangerouslySetInnerHTML={{ __html: SCROLL_TO_TOP_ON_RELOAD }} />
         <script dangerouslySetInnerHTML={{ __html: REVEAL_FALLBACK }} />
         <noscript>
@@ -142,7 +145,6 @@ export default function RootLayout({
       {/* The dark background comes from <html> (inline, so there's no flash) and globals.css; an inline style here
           was rewritten by the browser whenever a script touched body.style, which broke hydration. */}
       <body className="font-sans antialiased">
-        <Intro />
         <ExitCurtain />
         {children}
         <AnchorScroll />

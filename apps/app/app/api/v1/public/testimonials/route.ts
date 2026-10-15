@@ -7,7 +7,8 @@ import { devListFeedback } from "@/features/feedback/dev-feedback";
 /**
  * Testimonials for the website (apps/web): only client feedback the client allowed on the website AND an admin
  * approved, named the way the client chose (their typed names, or program and school only). Public, read-only,
- * cached for an hour.
+ * cached for an hour. `rating` is the average over every answer (not only the ones on the website), so the
+ * website's "out of 5" is honest; the website shows it only once there are enough answers.
  */
 export const dynamic = "force-dynamic";
 
@@ -16,23 +17,28 @@ const HEADERS = {
   "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
 };
 
+const average = (sum: number, count: number) => (count ? Math.round((sum / count) * 10) / 10 : null);
+
 export async function GET() {
   try {
-    const rows = await withDbTimeout(
-      db.studyFeedback.findMany({
-        where: { showOnWebsite: true, approvedAt: { not: null }, wentWell: { not: null } },
-        orderBy: { approvedAt: "desc" },
-        take: 24,
-        select: {
-          rating: true,
-          wentWell: true,
-          nameStyle: true,
-          displayNames: true,
-          project: { select: { client: { select: { clientProfile: { select: { institutionSchool: true, academicProgram: true } } } } } },
-        },
-      }),
-      5000,
-    );
+    const [rows, all] = await Promise.all([
+      withDbTimeout(
+        db.studyFeedback.findMany({
+          where: { showOnWebsite: true, approvedAt: { not: null }, wentWell: { not: null } },
+          orderBy: { approvedAt: "desc" },
+          take: 100,
+          select: {
+            rating: true,
+            wentWell: true,
+            nameStyle: true,
+            displayNames: true,
+            project: { select: { client: { select: { clientProfile: { select: { institutionSchool: true, academicProgram: true } } } } } },
+          },
+        }),
+        5000,
+      ),
+      withDbTimeout(db.studyFeedback.aggregate({ _sum: { rating: true }, _count: { _all: true } }), 5000),
+    ]);
     const testimonials: PublicTestimonial[] = rows
       .filter((r) => r.wentWell?.trim())
       .map((r) => ({
@@ -42,10 +48,13 @@ export async function GET() {
         school: r.project.client.clientProfile?.institutionSchool ?? "",
         rating: r.rating,
       }));
-    return NextResponse.json({ testimonials }, { headers: HEADERS });
+    const rating = { count: all._count._all, average: average(all._sum.rating ?? 0, all._count._all) };
+    return NextResponse.json({ testimonials, rating }, { headers: HEADERS });
   } catch (err) {
     if (devStudyDataEnabled()) {
-      const testimonials: PublicTestimonial[] = devListFeedback()
+      const items = devListFeedback();
+      const rating = { count: items.length, average: average(items.reduce((n, f) => n + f.rating, 0), items.length) };
+      const testimonials: PublicTestimonial[] = items
         .filter((f) => f.showOnWebsite && f.approvedAt && f.wentWell?.trim())
         .map((f) => ({
           quote: f.wentWell!.trim(),
@@ -54,10 +63,10 @@ export async function GET() {
           school: f.school ?? "",
           rating: f.rating,
         }));
-      return NextResponse.json({ testimonials }, { headers: HEADERS });
+      return NextResponse.json({ testimonials, rating }, { headers: HEADERS });
     }
     console.error("[api/public/testimonials]", err);
     // The website falls back to its own list when this is empty.
-    return NextResponse.json({ testimonials: [] }, { headers: HEADERS, status: 200 });
+    return NextResponse.json({ testimonials: [], rating: null }, { headers: HEADERS, status: 200 });
   }
 }

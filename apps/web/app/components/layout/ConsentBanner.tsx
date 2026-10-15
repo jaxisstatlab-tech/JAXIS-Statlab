@@ -16,9 +16,7 @@ export default function ConsentBanner() {
   useEffect(() => {
     let timer = 0;
     if (getConsent() === null) {
-      // Wait for the first-visit intro to finish before sliding in.
-      const introPlays = document.documentElement.dataset.intro !== "skip";
-      timer = window.setTimeout(() => setOpen(true), introPlays ? 2000 : 1000);
+      timer = window.setTimeout(() => setOpen(true), 1000);
     }
     const reopen = () => {
       setCurrent(getConsent());

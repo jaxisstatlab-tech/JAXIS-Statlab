@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Button } from "@repo/ui";
 import { WarningCircle } from "@phosphor-icons/react/dist/ssr";
 import { getClientDeliverables } from "@/features/deliverables/actions";
+import { getClientStudyFeedback } from "@/features/feedback/actions";
+import { ClientFeedbackCard } from "@/features/feedback/components/ClientFeedbackCard";
 import { ClientDeliverablesDesk } from "@/features/deliverables/components/ClientDeliverablesDesk";
 import { Panel } from "@/components/dashboard/Panel";
 import type { ClientDeliverablesDTO } from "@/features/deliverables/schemas";
@@ -16,14 +18,24 @@ export default async function ClientDeliverablesPage({ params }: ClientDeliverab
 
   let data: ClientDeliverablesDTO | null = null;
   let message = "";
+  // "How did we do?" (a modal) once the study is finished: the Files tab is where clients end up.
+  const feedbackLoad = getClientStudyFeedback(id).catch(() => null);
   try {
     data = await getClientDeliverables(id);
   } catch (err: unknown) {
     console.error("Failed to load client deliverables desk:", err);
     message = err instanceof Error ? err.message : "";
   }
+  const feedback = await feedbackLoad;
+  const showFeedback = feedback?.success && (feedback.data.eligible || feedback.data.feedback);
 
-  if (data) return <ClientDeliverablesDesk data={data} />;
+  if (data)
+    return (
+      <>
+        <ClientDeliverablesDesk data={data} />
+        {showFeedback ? <ClientFeedbackCard projectId={id} initial={feedback.data} /> : null}
+      </>
+    );
 
   // A plain message instead of "Page not found" when the files can't be loaded.
   return (

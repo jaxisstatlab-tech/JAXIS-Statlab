@@ -8,22 +8,26 @@ import { btnGhost, container, heading, kicker, subtitle } from "../ui/styles";
 
 export default function Services() {
   return (
-    <section id="services" className="relative scroll-mt-16 py-16 lg:py-24">
+    <section id="services" className="relative z-10 scroll-mt-16 bg-[#010114] py-16 lg:py-24">
+      <div data-sheet-feather aria-hidden="true" className="sheet-feather" />
       <div className={container}>
-        <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+        <Reveal className="reveal-quiet flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="stagger">
             <div className={kicker}>Services</div>
             <h2 className={heading}>Every test your study needs</h2>
             <p className={subtitle}>From a quick data check to full structural models. Checked twice, explained simply.</p>
           </div>
           {/* The navbar (and the phone bar) already carry the orange "Send your study"; one orange action per view. */}
-          <Link href="/pricing" data-cta="services-pricing" className={`${btnGhost} shrink-0`}>
-            See Prices
-          </Link>
+          <div className="stagger shrink-0">
+            <Link href="/pricing" data-cta="services-pricing" className={btnGhost} style={{ transitionDelay: "270ms" }}>
+              See Prices
+            </Link>
+          </div>
         </Reveal>
 
+        <Reveal className="reveal-quiet">
         <SpotlightGrid className="mt-10">
-            <div id="services-row" data-h-scroll role="region" aria-label="Services" className="no-scrollbar flex snap-x snap-mandatory gap-px overflow-x-auto overscroll-x-contain rounded-[1px] sm:grid sm:grid-cols-2 sm:overflow-hidden lg:grid-cols-4">
+            <div id="services-row" data-h-scroll role="region" aria-label="Services" className="stagger no-scrollbar flex snap-x snap-mandatory gap-px overflow-x-auto overscroll-x-contain rounded-[1px] sm:grid sm:grid-cols-2 sm:overflow-hidden lg:grid-cols-4">
             <BentoCard
               slide
               index="01"
@@ -89,6 +93,7 @@ export default function Services() {
             </BentoCard>
           </div>
         </SpotlightGrid>
+        </Reveal>
         <SwipeDots target="services-row" />
         <p className="mt-2 font-mono text-[11px] text-white/55 sm:mt-4 sm:text-right">Numbers shown are examples.</p>
       </div>

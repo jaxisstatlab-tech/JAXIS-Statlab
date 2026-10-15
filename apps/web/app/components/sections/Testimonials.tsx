@@ -1,51 +1,19 @@
-import { Quotes, SealCheck } from "@phosphor-icons/react/ssr";
-import { type Testimonial } from "../../content/site";
-import { getTestimonials } from "@/lib/testimonials";
+import Link from "next/link";
+import { ArrowRight, Quotes } from "@phosphor-icons/react/ssr";
+import { HOME_LIMIT, getTestimonials } from "@/lib/testimonials";
 import Reveal from "../ui/Reveal";
 import SwipeDots from "../ui/SwipeDots";
-import { container, heading, kicker, subtitle } from "../ui/styles";
+import { container, heading, kicker, linkArrow, subtitle } from "../ui/styles";
+import { Attribution, RatingLine, Translation, card, quoteText } from "./TestimonialParts";
 
-function Attribution({ t }: { t: Testimonial }) {
-  return (
-    <figcaption className="mt-6 flex items-end justify-between gap-4 border-t border-white/[0.08] pt-4">
-      <div className="min-w-0">
-        <div className="font-sans text-[13px] font-medium leading-snug text-white/85">{t.name || (t.school ? "Thesis group" : "Anonymous thesis group")}</div>
-        <div className="mt-1 font-mono text-[11px] text-white/55">
-          {(t.name
-            ? [t.program, t.school]
-            : [t.program === "Thesis group" ? "" : t.program, t.school]
-          )
-            .filter(Boolean)
-            .join(" · ") || "Name withheld"}
-        </div>
-      </div>
-      {t.defended ? (
-        <span className="flex shrink-0 items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-wider text-white/70">
-          <SealCheck size={13} weight="fill" className="text-[#FF8A1F]" />
-          Defended
-        </span>
-      ) : null}
-    </figcaption>
-  );
-}
-
-function Translation({ text }: { text?: string }) {
-  if (!text) return null;
-  return (
-    <p className="mt-3 border-l border-white/15 pl-3 font-sans text-[13px] leading-relaxed text-white/55">
-      <span className="mr-1.5 font-mono text-[10px] uppercase tracking-wider text-white/40">In English</span>
-      {text}
-    </p>
-  );
-}
-
-const card = "flex flex-col rounded-[2px] border border-white/[0.08] bg-[#0A0A18] p-6 sm:p-7";
+// Home page testimonials: at most HOME_LIMIT (the featured message, then the newest), with a link to all of them on
+// /testimonials so the home page doesn't grow as more clients share feedback.
 
 export default async function Testimonials() {
-  const testimonials = await getTestimonials();
-  if (testimonials.length === 0) return null;
+  const { items: all, rating } = await getTestimonials();
+  if (all.length === 0) return null;
 
-  const [featured, ...rest] = testimonials;
+  const [featured, ...rest] = all.slice(0, HOME_LIMIT);
   const side = rest.slice(0, 2);
   const more = rest.slice(2);
 
@@ -55,10 +23,9 @@ export default async function Testimonials() {
         <Reveal>
           <div>
             <div className={kicker}>From students</div>
-            <h2 className={heading}>
-              In their own words
-            </h2>
+            <h2 className={heading}>In their own words</h2>
             <p className={subtitle}>Messages from thesis groups we&apos;ve worked with, kept as they sent them.</p>
+            <RatingLine rating={rating} className="mt-4" />
           </div>
         </Reveal>
 
@@ -80,7 +47,7 @@ export default async function Testimonials() {
             <div className="hidden flex-col gap-4 sm:flex lg:col-span-5">
               {side.map((t, i) => (
                 <Reveal as="figure" key={t.quote} delay={(i + 1) * 80} className={`${card} flex-1`}>
-                  <blockquote className="flex-1 text-pretty font-sans text-[15px] leading-relaxed text-white/80">{t.quote}</blockquote>
+                  <blockquote className={`flex-1 ${quoteText}`}>{t.quote}</blockquote>
                   <Translation text={t.translation} />
                   <Attribution t={t} />
                 </Reveal>
@@ -94,7 +61,7 @@ export default async function Testimonials() {
             <div id="stories-row" data-h-scroll className="no-scrollbar -mx-6 mt-4 flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto overscroll-x-contain px-6">
               {rest.map((t) => (
                 <figure key={t.quote} className={`${card} w-[85%] shrink-0 snap-start`}>
-                  <blockquote className="flex-1 text-pretty font-sans text-[15px] leading-relaxed text-white/80">{t.quote}</blockquote>
+                  <blockquote className={`flex-1 ${quoteText}`}>{t.quote}</blockquote>
                   <Translation text={t.translation} />
                   <Attribution t={t} />
                 </figure>
@@ -108,13 +75,20 @@ export default async function Testimonials() {
           <div className="mt-4 hidden gap-4 sm:block sm:columns-2 lg:columns-3">
             {more.map((t, i) => (
               <Reveal as="figure" key={t.quote} delay={(i % 3) * 80} className={`${card} mb-4 break-inside-avoid`}>
-                <blockquote className="text-pretty font-sans text-[15px] leading-relaxed text-white/80">{t.quote}</blockquote>
+                <blockquote className={quoteText}>{t.quote}</blockquote>
                 <Translation text={t.translation} />
                 <Attribution t={t} />
               </Reveal>
             ))}
           </div>
         ) : null}
+
+        <div className="mt-6 sm:mt-4">
+          <Link href="/testimonials" className={`${linkArrow} group`} data-cta="home-all-testimonials">
+            Read all {all.length} testimonials
+            <ArrowRight size={14} weight="bold" className="transition-transform duration-150 group-hover:translate-x-0.5" />
+          </Link>
+        </div>
       </div>
     </section>
   );

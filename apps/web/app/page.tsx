@@ -24,8 +24,11 @@ export default function Home() {
   return (
     <SiteShell>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(HOME_FAQS, "")) }} />
-      <Hero />
-      <Services />
+      {/* The hero holds (sticky) inside this wrapper while Services slides up over it */}
+      <div className="relative">
+        <Hero />
+        <Services />
+      </div>
       <HowItWorks />
       <PipelineBand />
       <SampleOutput />

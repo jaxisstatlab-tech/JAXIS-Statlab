@@ -8,6 +8,7 @@ import {
   ArrowRight,
   CaretDown,
   ChatCenteredText,
+  Star,
   DownloadSimple,
   Eye,
   FolderDashed,
@@ -33,6 +34,8 @@ import { Panel } from "@/components/dashboard/Panel";
 export interface ClientProjectsListClientProps {
   initialProjects: ProjectDetailItem[];
   initialProfileComplete: boolean;
+  /** Finished studies still waiting for the client's rating; their cards show "Rate Your Study". */
+  feedbackDue?: string[];
 }
 
 type StageFilter = "ALL" | ClientStageTone;
@@ -65,6 +68,7 @@ function formatDate(value: string | Date | null | undefined) {
 export function ClientProjectsListClient({
   initialProjects,
   initialProfileComplete,
+  feedbackDue = [],
 }: ClientProjectsListClientProps) {
   const [projects, setProjects] = useState<ProjectDetailItem[]>(initialProjects);
   const [stageFilter, setStageFilter] = useState<StageFilter>("ALL");
@@ -309,6 +313,7 @@ export function ClientProjectsListClient({
                     project={p}
                     stage={stageOf(p)}
                     onInspect={() => setSelectedStudyForInspect(p)}
+                    rateDue={feedbackDue.includes(p.id)}
                     onCopy={copyToast}
                     onRequestDeletion={() =>
                       setStudyToRequestDeletion({ id: p.id, intakeId: p.intakeId, title: p.researchTitle })
@@ -439,12 +444,14 @@ function StudyOrderCard({
   project: p,
   stage,
   onInspect,
+  rateDue = false,
   onCopy,
   onRequestDeletion,
 }: {
   project: ProjectDetailItem;
   stage: ClientStage;
   onInspect: () => void;
+  rateDue?: boolean;
   onCopy: (id: string) => void;
   onRequestDeletion: () => void;
 }) {
@@ -523,6 +530,15 @@ function StudyOrderCard({
             <ChatCenteredText size={14} weight="fill" className="text-white/40" />
             Message
           </Link>
+          {rateDue ? (
+            <Link
+              href={`/dashboard/client/projects/${p.id}#feedback`}
+              className="inline-flex items-center gap-1.5 font-medium text-white/85 transition-colors hover:text-white"
+            >
+              <Star size={14} weight="fill" className="text-[#CC6600]" />
+              Rate Your Study
+            </Link>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-1">

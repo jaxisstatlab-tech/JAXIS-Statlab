@@ -160,68 +160,102 @@ html.lenis body {
   animation: hero-in 0.9s var(--ease-out) both;
   animation-delay: var(--d, 0ms);
 }
-/* On a first visit the hero starts rising while the intro dissolves over it */
-html:not([data-intro="skip"]) .hero-in {
-  animation-delay: calc(var(--d, 0ms) + 1080ms);
-}
 
 /* Home hero entrance: "the analysis settles". One authored moment: the headline's first line rises through a mask,
    then "properly analyzed." is revealed left to right with a light sweeping across it. Everything else arrives
    quickly and quietly.
-   Every delay is measured from --hero-t0: 0 normally, or while the first-visit intro's logo is still gliding. */
+   Every delay is measured from --hero-t0 (kept as a single place to shift the whole entrance). */
 :root {
   --hero-t0: 0ms;
   --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-focal: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.15);
 }
-html:not([data-intro="skip"]) {
-  --hero-t0: 850ms;
-}
+
+/* Fallback/standard upward glide */
 @keyframes hx-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(14px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
   }
 }
 .hx-up {
-  animation: hx-up 320ms var(--ease-out) both;
+  animation: hx-up 640ms var(--ease-focal) both;
   animation-delay: calc(var(--hero-t0) + var(--d, 0ms));
+  will-change: transform, opacity, filter;
 }
-/* A line that rises from behind an invisible edge (the mask leaves room for descenders). */
+
+/* Category kicker badge: gentle upward drift with optical focus */
+@keyframes hx-badge-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+.hx-badge {
+  animation: hx-badge-in 700ms var(--ease-focal) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 0ms));
+  will-change: transform, opacity, filter;
+}
+
+/* A line that rises from behind an invisible edge with subtle optical blur clearing */
 .hx-line {
   display: block;
   overflow: hidden;
-  padding-bottom: 0.1em;
-  margin-bottom: -0.1em;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
 }
 .hx-line > span {
   display: inline-block;
-  animation: hx-rise 760ms var(--ease-focal) both;
+  animation: hx-rise 860ms var(--ease-focal) both;
   animation-delay: calc(var(--hero-t0) + var(--d, 0ms));
+  will-change: transform, opacity, filter;
 }
 @keyframes hx-rise {
   from {
-    transform: translateY(105%);
+    opacity: 0;
+    transform: translateY(112%);
+    filter: blur(3px);
+  }
+  65% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
   }
 }
-/* "properly analyzed.": revealed left to right, then a bright band sweeps over the orange.
-   The reveal uses transforms only, so it runs on the graphics card and stays smooth while the page is still loading
-   (a clip-path reveal froze and jumped during load): the outer window slides right while the text inside slides left
-   by the same amount, so the text stays still and is uncovered from the left. */
+
+/* "properly analyzed.": revealed left to right, followed by a warm light sweep over the enterprise orange */
 .hx-sweep {
   display: inline-block;
   overflow: hidden;
   vertical-align: top;
-  /* Room for the descenders ("p", "y") inside the window, without changing the line's height. */
-  padding: 0 0.04em 0.14em 0;
+  /* Room for descenders ("p", "y") inside the window, without changing the line's height */
+  padding: 0 0.05em 0.14em 0;
   margin-bottom: -0.14em;
-  animation: hx-wipe 900ms var(--ease-in-out-strong) both;
+  animation: hx-wipe 980ms var(--ease-in-out-strong) both;
   animation-delay: calc(var(--hero-t0) + var(--d, 0ms));
+  will-change: transform;
 }
 .hx-sweep > span {
   display: inline-block;
   background-image:
-    linear-gradient(100deg, transparent 42%, rgba(255, 226, 190, 0.95) 50%, transparent 58%),
+    linear-gradient(105deg, transparent 40%, rgba(255, 235, 210, 0.95) 50%, transparent 60%),
     linear-gradient(180deg, #ffa040 0%, #e8730f 100%);
   background-size:
     320% 100%,
@@ -234,12 +268,13 @@ html:not([data-intro="skip"]) {
   background-clip: text;
   color: transparent;
   animation:
-    hx-wipe-counter 900ms var(--ease-in-out-strong) both,
-    hx-shine 1100ms var(--ease-in-out-strong) both;
-  /* The shine follows once the reveal has finished. */
+    hx-wipe-counter 980ms var(--ease-in-out-strong) both,
+    hx-shine 1250ms var(--ease-in-out-strong) both;
+  /* The shine follows right as the wipe concludes */
   animation-delay:
     calc(var(--hero-t0) + var(--d, 0ms)),
-    calc(var(--hero-t0) + var(--d, 0ms) + 700ms);
+    calc(var(--hero-t0) + var(--d, 0ms) + 780ms);
+  will-change: transform, background-position;
 }
 @keyframes hx-wipe {
   from {
@@ -259,22 +294,330 @@ html:not([data-intro="skip"]) {
   }
   to {
     background-position:
-      -10% 0,
+      -15% 0,
       0 0;
   }
 }
-/* Proof checks tick on one after another: a small "verified" beat. */
-.hx-tick {
-  display: inline-flex;
-  animation: hx-tick 260ms var(--ease-out) both;
-  animation-delay: calc(var(--hero-t0) + var(--d, 0ms));
-}
-@keyframes hx-tick {
+
+/* Subtitle paragraph: silky focus pull and upward glide */
+@keyframes hx-sub-in {
   from {
     opacity: 0;
-    transform: scale(0.6);
+    transform: translateY(18px);
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
   }
 }
+.hx-subtitle {
+  animation: hx-sub-in 760ms var(--ease-focal) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 420ms));
+  will-change: transform, opacity, filter;
+}
+
+/* Primary CTA Button: grounded rise with subtle tactile scale */
+@keyframes hx-btn-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+.hx-btn-primary {
+  animation: hx-btn-in 720ms var(--ease-focal) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 540ms));
+  will-change: transform, opacity, filter;
+}
+
+/* Ghost CTA Button: coordinated entry with subtle stagger */
+.hx-btn-ghost {
+  animation: hx-btn-in 720ms var(--ease-focal) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 600ms));
+  will-change: transform, opacity, filter;
+}
+
+/* Specular light sweep across primary CTA button upon landing */
+.hx-btn-sheen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+.hx-btn-sheen::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  bottom: -50%;
+  left: 0;
+  width: 55px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.42) 50%,
+    transparent 100%
+  );
+  transform: translateX(-160%) skewX(-20deg);
+  animation: hx-sheen-sweep 1200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 540ms) + 680ms);
+  will-change: transform, opacity;
+}
+@keyframes hx-sheen-sweep {
+  0% {
+    transform: translateX(-160%) skewX(-20deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(450%) skewX(-20deg);
+    opacity: 0;
+  }
+}
+
+/* Proof items: staggered arrival */
+@keyframes hx-proof-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.hx-proof-item {
+  animation: hx-proof-in 560ms var(--ease-focal) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 680ms));
+  will-change: transform, opacity, filter;
+}
+
+/* Proof checks tick on with tactile elastic settling */
+.hx-tick {
+  display: inline-flex;
+  animation: hx-tick 340ms var(--ease-spring) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 0ms));
+  will-change: transform, opacity;
+}
+@keyframes hx-tick {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Social proof footer quote */
+@keyframes hx-foot-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.hx-footer {
+  animation: hx-foot-in 620ms var(--ease-focal) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 880ms));
+  will-change: transform, opacity, filter;
+}
+
+/* Hero background: a sunrise in the bottom-right corner, behind the results card (HeroHorizon draws the scatter).
+   Positioned by its center: right/bottom = center offset minus the radius. */
+.hero-sun {
+  width: 900px;
+  height: 900px;
+  right: calc(40px - 450px);
+  bottom: calc(-330px - 450px);
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      ellipse 70% 38% at 50% 0%,
+      rgba(230, 115, 0, 0.36) 0%,
+      rgba(180, 80, 0, 0.2) 22%,
+      rgba(90, 35, 4, 0.1) 45%,
+      rgba(15, 6, 2, 0.04) 70%,
+      #010114 92%
+    ),
+    #010114;
+  box-shadow:
+    0 -1px 0 0 rgba(255, 176, 102, 0.9),
+    inset 0 2px 12px 0 rgba(255, 190, 120, 0.45),
+    inset 0 16px 60px 0 rgba(204, 102, 0, 0.35),
+    inset 0 60px 180px 0 rgba(140, 55, 0, 0.22);
+  animation: hero-sun-in 1600ms var(--ease-out) both;
+  animation-delay: calc(var(--hero-t0) + 250ms);
+}
+.hero-sun::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow:
+    0 -8px 40px 0 rgba(230, 115, 0, 0.5),
+    0 -60px 180px 20px rgba(204, 102, 0, 0.3);
+  animation: hero-sun-breathe 6s ease-in-out infinite alternate;
+}
+/* A bright glint that drifts along the visible part of the rim (from the top, leftward). */
+.hero-sun::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  padding: 2px;
+  background: conic-gradient(from 351deg, transparent 0deg, #ffd2a1 9deg, transparent 18deg, transparent 360deg);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  filter: blur(1px);
+  animation: hero-sun-glint 8s ease-in-out infinite alternate;
+}
+@media (min-width: 1024px) {
+  .hero-sun {
+    width: 1500px;
+    height: 1500px;
+    right: calc(120px - 750px);
+    bottom: calc(-590px - 750px);
+  }
+}
+@keyframes hero-sun-glint {
+  from {
+    transform: rotate(-40deg);
+  }
+  to {
+    transform: rotate(2deg);
+  }
+}
+@keyframes hero-sun-breathe {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* The sun rises into place as the page arrives. */
+@keyframes hero-sun-in {
+  from {
+    opacity: 0;
+    transform: translateY(140px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero-field {
+  animation: hx-fade 1200ms var(--ease-out) both;
+  animation-delay: calc(var(--hero-t0) + 350ms);
+}
+
+/* The hero holds while the next section slides over it (same query as lib/heroHold.ts). Sticky, so nothing in the page
+   is moved; it stays put until its wrapper (hero + Services) scrolls past. */
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .hero-hold {
+    position: sticky;
+    top: 0;
+  }
+}
+
+/* The soft top edge of the section that slides over the held hero (Services): a tall fade into the page colour, so
+   there's no visible edge between them. Hidden until scrolling starts (ScrollFx), so it never dims the sunrise. */
+.sheet-feather {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: 240px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(1, 1, 20, 0) 0%, rgba(1, 1, 20, 0.55) 45%, rgba(1, 1, 20, 0.9) 78%, #010114 100%);
+  opacity: 0;
+}
+
+/* Section intro: inside a Reveal, the children of .stagger rise, fade and come into focus one after another. */
+.reveal.reveal-quiet {
+  opacity: 1;
+  transform: none;
+}
+.stagger > * {
+  opacity: 0;
+  transform: translateY(26px);
+  filter: blur(5px);
+  transition:
+    opacity 0.9s var(--ease-out),
+    transform 1s var(--ease-out),
+    filter 0.9s var(--ease-out);
+}
+.stagger > :nth-child(2) { transition-delay: 90ms; }
+.stagger > :nth-child(3) { transition-delay: 180ms; }
+.stagger > :nth-child(4) { transition-delay: 270ms; }
+.stagger > :nth-child(5) { transition-delay: 360ms; }
+.stagger > :nth-child(6) { transition-delay: 450ms; }
+.stagger > :nth-child(7) { transition-delay: 540ms; }
+.stagger > :nth-child(n + 8) { transition-delay: 630ms; }
+.reveal[data-shown] .stagger > *,
+.reveal[data-shown].stagger > *,
+.reveal-fallback .stagger > * {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* The results card rises in after the buttons, then its bars grow. */
+@keyframes hx-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hx-card {
+  animation: hx-card-in 900ms var(--ease-out) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 520ms));
+}
+@keyframes hx-bar-in {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+.hx-bar {
+  transform-origin: bottom;
+  animation: hx-bar-in 900ms var(--ease-out) both;
+  animation-delay: calc(var(--hero-t0) + var(--d, 700ms));
+}
+
 @keyframes hx-fade {
   from {
     opacity: 0;
@@ -303,136 +646,6 @@ html[data-leaving] .exit-curtain {
   transition:
     transform 300ms cubic-bezier(0.77, 0, 0.175, 1),
     visibility 0s;
-}
-
-/* First-visit intro (about 1.5s): the JAXIS bars grow up, the wordmark slides out from behind them, a hairline fills
-   like a progress bar, then the whole lockup glides onto the navbar logo while the cover fades off the hero. The
-   lockup is drawn at 2x the navbar brand (44px logo, 20px gap, 30px text) and lands at half size, so it matches. */
-.intro {
-  /* Where the navbar brand starts: its container is 90rem wide, centred, with a 1.5rem (2rem on lg) gutter. */
-  --brand-x: calc(max(0px, (100% - 90rem) / 2) + 1.5rem);
-  --intro-ease: cubic-bezier(0.23, 1, 0.32, 1);
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  overflow: hidden;
-  background: #010114;
-  pointer-events: none;
-  animation:
-    intro-cover 420ms ease 1080ms forwards,
-    intro-end 1ms linear 1620ms forwards;
-}
-@media (min-width: 1024px) {
-  .intro {
-    --brand-x: calc(max(0px, (100% - 90rem) / 2) + 2rem);
-  }
-}
-html[data-intro="skip"] .intro,
-html[data-intro="done"] .intro {
-  display: none;
-}
-@keyframes intro-cover {
-  to {
-    background-color: transparent;
-  }
-}
-@keyframes intro-end {
-  to {
-    visibility: hidden;
-  }
-}
-.intro-brand {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  translate: -50% -50%;
-  transform-origin: left center;
-  animation:
-    intro-glide 520ms cubic-bezier(0.76, 0, 0.24, 1) 1040ms forwards,
-    intro-out 160ms ease 1500ms forwards;
-}
-@keyframes intro-glide {
-  to {
-    left: var(--brand-x);
-    top: 32px;
-    translate: 0 -50%;
-    scale: 0.5;
-  }
-}
-.intro-mark {
-  width: 44px;
-  height: 44px;
-  clip-path: inset(100% 0 0 0);
-  animation: intro-grow 700ms var(--intro-ease) 80ms forwards;
-}
-@keyframes intro-grow {
-  to {
-    clip-path: inset(0 0 0 0);
-  }
-}
-.intro-word {
-  /* Opens from zero width so the logo starts centred and slides left as the name appears beside it. */
-  overflow: hidden;
-  max-width: 0;
-  margin-left: 0;
-  opacity: 0;
-  translate: -12px 0;
-  animation: intro-slide 760ms var(--intro-ease) 380ms forwards;
-}
-@keyframes intro-slide {
-  to {
-    max-width: 240px;
-    margin-left: 20px;
-    opacity: 1;
-    translate: 0 0;
-  }
-}
-.intro-bar {
-  position: absolute;
-  left: 50%;
-  top: calc(50% + 48px);
-  width: 120px;
-  height: 1px;
-  translate: -50% 0;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-  animation: intro-out 200ms ease 980ms forwards;
-}
-.intro-bar > span {
-  display: block;
-  height: 100%;
-  background: #cc6600;
-  transform-origin: left;
-  scale: 0 1;
-  animation: intro-fill 820ms cubic-bezier(0.65, 0, 0.35, 1) 160ms forwards;
-}
-@keyframes intro-fill {
-  to {
-    scale: 1 1;
-  }
-}
-@keyframes intro-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-/* The real navbar brand stays hidden while the lockup flies in, then takes over as it lands. */
-@keyframes brand-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-html:not([data-intro="skip"]):not([data-intro="done"]) .nav-brand {
-  animation: brand-in 160ms ease 1500ms both;
 }
 
 .pixel-field {
@@ -812,7 +1025,8 @@ html.reveal-ready .price-rows:not([data-shown]) .price-bar {
   }
   .reveal,
   .hero-in,
-  .iso-rise {
+  .iso-rise,
+  .stagger > * {
     opacity: 1;
     transform: none;
     filter: none;
@@ -824,24 +1038,45 @@ html.reveal-ready .price-rows:not([data-shown]) .price-bar {
     opacity: 0.3;
   }
   /* Home hero: no movement, just a short fade so the page still arrives gently. */
+  .hx-badge,
   .hx-up,
   .hx-line > span,
-  .hx-tick {
-    transform: none;
-    animation: hx-fade 200ms ease both;
-    animation-delay: 0ms;
+  .hx-subtitle,
+  .hx-btn-primary,
+  .hx-btn-ghost,
+  .hx-proof-item,
+  .hx-tick,
+  .hx-footer,
+  .hx-card,
+  .hx-bar,
+  .hero-field {
+    transform: none !important;
+    filter: none !important;
+    animation: hx-fade 200ms ease both !important;
+    animation-delay: 0ms !important;
+  }
+  .hero-sun {
+    transform: none !important;
+    animation: hx-fade 200ms ease both !important;
+  }
+  .hero-sun::before,
+  .hero-sun::after {
+    animation: none !important;
   }
   .hx-sweep {
-    transform: none;
-    animation: hx-fade 200ms ease both;
-    animation-delay: 0ms;
+    transform: none !important;
+    animation: hx-fade 200ms ease both !important;
+    animation-delay: 0ms !important;
   }
   .hx-sweep > span {
-    transform: none;
+    transform: none !important;
     background-position:
       -10% 0,
-      0 0;
-    animation: none;
+      0 0 !important;
+    animation: none !important;
+  }
+  .hx-btn-sheen::after {
+    display: none !important;
   }
   .count {
     transition: none;

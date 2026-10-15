@@ -26,6 +26,7 @@ const PAGES = [
   ["Statistical analysis for thesis", "/statistical-analysis-for-thesis", "What we run for a thesis (t-tests, ANOVA, regression, SEM), the steps, files, and prices"],
   ["Thesis statistician in Bukidnon", "/statistician-bukidnon", "Our Maramag, Bukidnon base, the towns and schools we help (including Central Mindanao University), and local FAQs"],
   ["About", "/about", "Mission, values, quality checks, and the team"],
+  ["Testimonials", "/testimonials", "Every message from thesis groups we have worked with, including feedback clients chose to share from their account"],
   ["Contact and FAQ", "/contact", "Ways to reach the team and the full list of frequently asked questions"],
   ["Privacy Policy", "/privacy", "How study data is protected and kept under the Philippine Data Privacy Act"],
   ["Terms of Service", "/terms", "Pricing, payment, delivery, revisions, refunds, and DefenseLab sessions"],

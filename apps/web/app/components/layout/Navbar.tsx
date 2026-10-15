@@ -12,6 +12,7 @@ const LINKS = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Testimonials", href: "/testimonials" },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -80,13 +81,18 @@ export default function Navbar() {
               <Link
                 href={l.href}
                 aria-current={isActive(l.href) ? "page" : undefined}
-                className={`block rounded-[2px] px-3.5 py-1.5 font-sans text-[13px] transition-[background-color,color] duration-150 ease-out ${
-                  isActive(l.href)
-                    ? "bg-white/[0.08] font-medium text-white"
-                    : "text-white/60 hover:text-white"
+                className={`relative block px-3.5 py-1.5 font-sans text-[13px] transition-colors duration-150 ease-out ${
+                  isActive(l.href) ? "text-white" : "text-white/60 hover:text-white"
                 }`}
               >
                 {l.label}
+                {/* Current page: a short orange line under the label, no box */}
+                <span
+                  aria-hidden="true"
+                  className={`absolute inset-x-3.5 -bottom-0.5 h-px origin-center bg-[#CC6600] transition-[transform,opacity] duration-200 ease-out ${
+                    isActive(l.href) ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0"
+                  }`}
+                />
               </Link>
             </li>
           ))}
