@@ -46,6 +46,16 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Which error is showing, so the alert can offer the right next step (reset link, Google button).
+  const [errorKind, setErrorKind] = useState<"credentials" | "throttled" | "network" | "server" | "other" | null>(null);
+  // Messages under each field, checked before anything is sent.
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  // Typing helpers: Caps Lock on, and spaces at the start or end of the password (common reasons a typed password
+  // fails while a saved one works).
+  const [capsLock, setCapsLock] = useState(false);
+  // Wrong tries in a row on this page; after a few, warn about the 15-minute pause (5 wrong tries pause logins).
+  const [failures, setFailures] = useState(0);
   const [isPending, startTransition] = useTransition();
 
   // Clean URL search parameters (e.g. ?error=Configuration, ?reason=idle_timeout) on mount
@@ -69,12 +79,30 @@ function LoginForm() {
     }
   }, []);
 
+  const showError = (kind: NonNullable<typeof errorKind>, message: string) => {
+    setErrorKind(kind);
+    setErrorMessage(message);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setErrorKind(null);
 
-    if (!email || !password) {
-      setErrorMessage("Enter your email and password.");
+    // Check the fields first, with the message under the field that needs fixing.
+    const trimmedEmail = email.trim();
+    const nextEmailError = !trimmedEmail
+      ? "Enter your email."
+      : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)
+        ? "That doesn't look like an email address. Check for a typo, like a missing @ or dot."
+        : null;
+    const nextPasswordError = !password ? "Enter your password." : null;
+    setEmailError(nextEmailError);
+    setPasswordError(nextPasswordError);
+    if (nextEmailError || nextPasswordError) return;
+
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      showError("network", "You're offline. Check your internet connection and try again.");
       return;
     }
 
@@ -99,15 +127,29 @@ function LoginForm() {
         });
 
         if (res?.error) {
-          // Auth.js passes the reason as `code` (see LoginError in src/lib/auth.ts).
+          // Auth.js passes the reason as `code` (see LoginError in src/lib/auth.ts). "Configuration" means the
+          // server itself failed, not the details typed in.
           if (res.code === "too_many_attempts") {
-            setErrorMessage("Too many tries. Wait 15 minutes and try again, or reset your password.");
+            showError(
+              "throttled",
+              "Too many wrong tries, so logging in to this account is paused for 15 minutes. Wait and try again, or reset your password to get in now.",
+            );
           } else if (res.code === "account_suspended") {
-            setErrorMessage("Your account is suspended. Email us and we'll help you sort it out.");
+            showError("other", "Your account is suspended. Email us and we'll help you sort it out.");
           } else if (res.code === "account_terminated") {
-            setErrorMessage("This account has been closed.");
+            showError("other", "This account has been closed. Email us if you think this is a mistake.");
+          } else if (res.error === "Configuration") {
+            showError("server", "Something went wrong on our side, not with what you typed. Please try again in a minute.");
           } else {
-            setErrorMessage("That email and password don't match. Try again, or reset your password.");
+            // Same message whether the email or the password is wrong, so it never reveals who has an account.
+            const tries = failures + 1;
+            setFailures(tries);
+            showError(
+              "credentials",
+              tries >= 3
+                ? "That email and password still don't match. After a few more wrong tries, logging in pauses for 15 minutes, so you may want to reset your password now."
+                : "That email and password don't match. Check for typos and that Caps Lock is off. If you signed up with Google, use Continue with Google instead.",
+            );
           }
           return;
         }
@@ -115,7 +157,13 @@ function LoginForm() {
         window.location.href = callbackUrl;
       } catch (err) {
         console.error("Login submission error:", err);
-        setErrorMessage("Something went wrong on our side. Please try again.");
+        // A failed request usually means the connection dropped.
+        showError(
+          typeof navigator !== "undefined" && navigator.onLine === false ? "network" : "server",
+          typeof navigator !== "undefined" && navigator.onLine === false
+            ? "You're offline. Check your internet connection and try again."
+            : "We couldn't reach JAXIS. Check your internet connection and try again.",
+        );
       }
     });
   };
@@ -183,8 +231,26 @@ function LoginForm() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
         {errorMessage && (
-          <Alert variant="danger" title="Couldn't log you in">
-            {errorMessage}
+          <Alert
+            variant={errorKind === "network" || errorKind === "server" ? "warning" : "danger"}
+            title={
+              errorKind === "credentials"
+                ? "Wrong email or password"
+                : errorKind === "throttled"
+                  ? "Logging in is paused"
+                  : errorKind === "network"
+                    ? "No connection"
+                    : errorKind === "server"
+                      ? "Something went wrong"
+                      : "Couldn't log you in"
+            }
+          >
+            <span role="alert">{errorMessage}</span>
+            {errorKind === "credentials" || errorKind === "throttled" ? (
+              <Link href="/forgot-password" className={`${authTextLink} mt-2 inline-flex`}>
+                Reset your password
+              </Link>
+            ) : null}
           </Alert>
         )}
 
@@ -198,9 +264,11 @@ function LoginForm() {
           leftIcon={<Envelope size={16} weight="fill" />}
           placeholder="you@example.com"
           value={email}
-          isInvalid={Boolean(errorMessage)}
+          error={emailError ?? undefined}
+          isInvalid={Boolean(emailError) || errorKind === "credentials"}
           onChange={(e) => {
             setEmail(e.target.value);
+            if (emailError) setEmailError(null);
             if (errorMessage) setErrorMessage(null);
           }}
           disabled={isPending}
@@ -222,9 +290,23 @@ function LoginForm() {
           leftIcon={<LockKey size={16} weight="fill" />}
           placeholder="Your password"
           value={password}
-          isInvalid={Boolean(errorMessage)}
+          error={passwordError ?? undefined}
+          isInvalid={Boolean(passwordError) || errorKind === "credentials"}
+          helper={
+            passwordError
+              ? undefined
+              : capsLock
+                ? "Caps Lock is on."
+                : password && password !== password.trim()
+                  ? "Your password starts or ends with a space. Check it's meant to be there."
+                  : undefined
+          }
+          onKeyDown={(e) => setCapsLock(e.getModifierState?.("CapsLock") ?? false)}
+          onKeyUp={(e) => setCapsLock(e.getModifierState?.("CapsLock") ?? false)}
+          onBlur={() => setCapsLock(false)}
           onChange={(e) => {
             setPassword(e.target.value);
+            if (passwordError) setPasswordError(null);
             if (errorMessage) setErrorMessage(null);
           }}
           disabled={isPending}

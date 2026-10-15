@@ -43,6 +43,13 @@ export const RELEASES: Release[] = [
     title: "Declined quotes and staff workload",
     items: [
       {
+        kind: "improved",
+        where: ["Log in"],
+        title: "Clearer messages when logging in doesn't work",
+        text: "The login page now tells you what to fix: an empty or mistyped email, Caps Lock being on, or a space at the start or end of your password. After a few wrong tries it warns you before logging in pauses for 15 minutes, and links straight to resetting your password. Phones also no longer capitalise or autocorrect what you type.",
+        roles: ["ALL"],
+      },
+      {
         kind: "new",
         where: ["Studies", "a study", "Overview", "Price and agreement"],
         title: "See why a client declined the quote",
