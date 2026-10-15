@@ -40,8 +40,9 @@ export default function Hero() {
             <span className="hidden sm:inline">Statistical analysis for students and researchers in the Philippines</span>
           </div>
 
-          {/* Line one rises through a masked edge, then "properly analyzed." is revealed and swept with light. */}
-          <h1 className="mt-7 font-sans text-[2.3rem] font-medium leading-[1.04] tracking-[-0.04em] text-white min-[380px]:text-[2.5rem] sm:mt-8 sm:text-6xl sm:tracking-[-0.045em] xl:text-[4.6rem]">
+          {/* Line one rises through a masked edge, then "properly analyzed." is revealed and swept with light. On phones the
+              size follows the screen width so each line stays on one line ("Your research data," is ~8.9em wide). */}
+          <h1 className="mt-7 font-sans text-[min(2.5rem,calc((100vw-3rem)/9.3))] font-medium leading-[1.06] tracking-[-0.04em] text-white sm:mt-8 sm:text-6xl sm:tracking-[-0.045em] xl:text-[4.6rem]">
             <span className="hx-line">
               <span style={{ ["--d" as string]: "140ms" }}>Your research data,</span>
             </span>

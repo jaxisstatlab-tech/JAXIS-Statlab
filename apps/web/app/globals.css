@@ -12,7 +12,7 @@
 @theme {
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --font-sans: var(--font-sans-custom), "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: var(--font-sans-custom), "Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-mono-custom), "IBM Plex Mono", ui-monospace, monospace;
   --font-apa: "Times New Roman", Times, "Liberation Serif", serif;
 }
@@ -539,13 +539,12 @@ html.lenis body {
   animation-delay: calc(var(--hero-t0) + 350ms);
 }
 
-/* The hero holds while the next section slides over it (same query as lib/heroHold.ts). Sticky, so nothing in the page
-   is moved; it stays put until its wrapper (hero + Services) scrolls past. */
-@media (min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .hero-hold {
-    position: sticky;
-    top: 0;
-  }
+/* The hero holds while the next section slides over it. Sticky, so nothing in the page is moved. ScrollFx sets
+   data-stick (only when motion is allowed) and --hero-stick: 0 on desktop, or minus the part of a tall phone hero
+   below the screen, so it holds once its bottom is in view. Held until its wrapper (hero + Services) scrolls past. */
+.hero-hold[data-stick] {
+  position: sticky;
+  top: var(--hero-stick, 0px);
 }
 
 /* The soft top edge of the section that slides over the held hero (Services): a tall fade into the page colour, so

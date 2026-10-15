@@ -37,7 +37,7 @@ export default function HeroResults() {
 
   return (
     <figure
-      className="hx-card relative w-full rounded-[2px] border border-white/10 bg-[#0A0A18]/85 p-5 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.85)] backdrop-blur-xl sm:p-7"
+      className="hx-card relative w-full rounded-[2px] border border-white/10 bg-[#0A0A18] p-5 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.85)] sm:p-7"
       style={{ ["--d" as string]: "520ms" }}
     >
       <figcaption className="sr-only">

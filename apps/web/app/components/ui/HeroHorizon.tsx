@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { createGlField } from "./glField";
-import { HERO_HOLD_QUERY } from "@/lib/heroHold";
 
 const GAP = 26;
 const BAND = 170; // half-width of the glow around the trend line
@@ -144,8 +143,6 @@ export default function HeroHorizon() {
     if (!field && !ctx) return;
 
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // While the hero holds in place (CSS sticky) it doesn't move, so the background doesn't lag behind the scroll.
-    const holds = window.matchMedia(HERO_HOLD_QUERY);
     const pointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
     let w = 0;
@@ -215,10 +212,14 @@ export default function HeroHorizon() {
     const draw = (now: number) => {
       if (!field) return drawStill2d();
       const t = (now - start) / 1000;
-      // The hero sits at the top of the page, so how far it has scrolled away is the page's scroll. While it holds in
-      // place it doesn't move, so the background doesn't lag; the sun still rises.
-      const scrolled = Math.min(1, Math.max(0, window.scrollY / Math.max(1, h)));
-      const held = holds.matches;
+      // The hero sits at the top of the page, so its progress comes from the page's scroll. While it holds in place it
+      // doesn't move, so the background doesn't lag; the sun still rises.
+      // When ScrollFx holds the hero (data-stick), progress runs over the one screen of scrolling during the hold,
+      // which starts once the hero's bottom is on screen (later on phones, where the hero is taller than the screen).
+      const held = section.closest<HTMLElement>("[data-hero]")?.dataset.stick !== undefined;
+      const vh = window.innerHeight;
+      const lead = Math.max(0, h - vh);
+      const scrolled = Math.min(1, Math.max(0, held ? (window.scrollY - lead) / Math.max(1, vh) : window.scrollY / Math.max(1, h)));
       const nextShift = held ? 0 : scrolled * h * PARALLAX;
       const nextRise = scrolled * SUN_RISE;
       if (Math.abs(nextShift - shift) > 0.1 || Math.abs(nextRise - rise) > 0.1) {

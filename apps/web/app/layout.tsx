@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Montserrat, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import CtaTracker from "./components/layout/CtaTracker";
 import ConsentBanner from "./components/layout/ConsentBanner";
@@ -9,7 +9,8 @@ import AnchorScroll from "./components/layout/AnchorScroll";
 import { APP_URL } from "@/lib/config";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL, siteJsonLd } from "@/lib/seo";
 
-const ibmPlexSans = IBM_Plex_Sans({
+// Montserrat is the main (sans) font; IBM Plex Mono stays for labels, IDs and numbers.
+const montserrat = Montserrat({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-sans-custom",
@@ -124,7 +125,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
+      className={`${montserrat.variable} ${ibmPlexMono.variable}`}
       style={{ backgroundColor: "#010114" }}
     >
       <head>
