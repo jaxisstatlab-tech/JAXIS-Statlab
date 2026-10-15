@@ -205,6 +205,10 @@ function LoginForm() {
           }}
           disabled={isPending}
           autoComplete="email"
+          // Phones must not capitalise or autocorrect what's typed (a saved login worked, a typed one didn't).
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           className={authField}
         />
 
@@ -225,6 +229,11 @@ function LoginForm() {
           }}
           disabled={isPending}
           autoComplete="current-password"
+          // With "Show password" the field becomes plain text, and phones then capitalise the first letter, autocorrect
+          // and add a space, so the typed password no longer matches. Keep the keyboard out of it.
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           rightIcon={
             <button
               type="button"
