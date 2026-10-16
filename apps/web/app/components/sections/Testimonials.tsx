@@ -20,8 +20,8 @@ export default async function Testimonials() {
   return (
     <section id="testimonials" className="relative scroll-mt-16 py-16 lg:py-24">
       <div className={container}>
-        <Reveal>
-          <div>
+        <Reveal className="reveal-quiet">
+          <div className="stagger">
             <div className={kicker}>From students</div>
             <h2 className={heading}>In their own words</h2>
             <p className={subtitle}>Messages from thesis groups we&apos;ve worked with, kept as they sent them.</p>
@@ -29,9 +29,11 @@ export default async function Testimonials() {
           </div>
         </Reveal>
 
+        {/* Cards intro (.card-intro in globals.css): each card appears empty, then its quote and attribution rise in. */}
+        <Reveal className="reveal-quiet card-intro">
         {featured ? (
           <div className="mt-10 grid grid-cols-1 gap-4 lg:grid-cols-12">
-            <Reveal as="figure" className={`${card} relative overflow-hidden lg:col-span-7 lg:p-10`}>
+            <figure className={`ci-card ${card} relative overflow-hidden lg:col-span-7 lg:p-10`} style={{ ["--i" as string]: 0 }}>
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 bg-[radial-gradient(closest-side,rgba(204,102,0,0.14),transparent)]"
@@ -42,15 +44,15 @@ export default async function Testimonials() {
               </blockquote>
               <Translation text={featured.translation} />
               <Attribution t={featured} />
-            </Reveal>
+            </figure>
 
             <div className="hidden flex-col gap-4 sm:flex lg:col-span-5">
               {side.map((t, i) => (
-                <Reveal as="figure" key={t.quote} delay={(i + 1) * 80} className={`${card} flex-1`}>
+                <figure key={t.quote} className={`ci-card ${card} flex-1`} style={{ ["--i" as string]: i + 1 }}>
                   <blockquote className={`flex-1 ${quoteText}`}>{t.quote}</blockquote>
                   <Translation text={t.translation} />
                   <Attribution t={t} />
-                </Reveal>
+                </figure>
               ))}
             </div>
           </div>
@@ -59,8 +61,8 @@ export default async function Testimonials() {
         {rest.length ? (
           <div className="sm:hidden">
             <div id="stories-row" data-h-scroll className="no-scrollbar -mx-6 mt-4 flex snap-x snap-mandatory scroll-px-6 gap-3 overflow-x-auto overscroll-x-contain px-6">
-              {rest.map((t) => (
-                <figure key={t.quote} className={`${card} w-[85%] shrink-0 snap-start`}>
+              {rest.map((t, i) => (
+                <figure key={t.quote} className={`ci-card ${card} w-[85%] shrink-0 snap-start`} style={{ ["--i" as string]: i + 1 }}>
                   <blockquote className={`flex-1 ${quoteText}`}>{t.quote}</blockquote>
                   <Translation text={t.translation} />
                   <Attribution t={t} />
@@ -74,14 +76,16 @@ export default async function Testimonials() {
         {more.length ? (
           <div className="mt-4 hidden gap-4 sm:block sm:columns-2 lg:columns-3">
             {more.map((t, i) => (
-              <Reveal as="figure" key={t.quote} delay={(i % 3) * 80} className={`${card} mb-4 break-inside-avoid`}>
+              <figure key={t.quote} className={`ci-card ${card} mb-4 break-inside-avoid`} style={{ ["--i" as string]: i + 3 }}>
                 <blockquote className={quoteText}>{t.quote}</blockquote>
                 <Translation text={t.translation} />
                 <Attribution t={t} />
-              </Reveal>
+              </figure>
             ))}
           </div>
         ) : null}
+
+        </Reveal>
 
         <div className="mt-6 sm:mt-4">
           <Link href="/testimonials" className={`${linkArrow} group`} data-cta="home-all-testimonials">

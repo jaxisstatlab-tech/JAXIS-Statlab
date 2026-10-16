@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
 import { CONTACT_EMAIL } from "@/lib/config";
 import { FAQS, type Faq } from "../../content/site";
+import Reveal from "../ui/Reveal";
 import { btnGhost, container, heading, kicker, subtitle } from "../ui/styles";
 
 function highlight(text: string, query: string): ReactNode {
@@ -36,9 +37,9 @@ type FaqProps = {
 
 type Row = Faq & { i: number };
 
-function Item({ f, open, onToggle, query }: { f: Row; open: boolean; onToggle: () => void; query: string }) {
+function Item({ f, open, onToggle, query, order = 0 }: { f: Row; open: boolean; onToggle: () => void; query: string; order?: number }) {
   return (
-    <li id={`faq-${f.i + 1}`} className="scroll-mt-24 border-b border-white/10">
+    <li id={`faq-${f.i + 1}`} className="faq-row relative scroll-mt-24 border-b border-white/10" style={{ ["--i" as string]: order }}>
       <button
         type="button"
         onClick={onToggle}
@@ -138,11 +139,10 @@ export default function FAQ({
     return (
       <section id="faq" className="relative scroll-mt-16 py-16 lg:py-24">
         <div className={`${container} grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-16`}>
-          <div className="self-start lg:sticky lg:top-28 lg:col-span-5">
+          {/* Intro: the left column rises in piece by piece (.stagger); the questions draw in row by row (.faq-intro). */}
+          <Reveal className="reveal-quiet stagger self-start lg:sticky lg:top-28 lg:col-span-5">
             <div className={kicker}>FAQ</div>
-            <h2 data-split className={heading}>
-              {title}
-            </h2>
+            <h2 className={heading}>{title}</h2>
             <p className={subtitle}>{description}</p>
             <div className="mt-6 flex flex-col items-start gap-3">
               {moreHref ? (
@@ -156,12 +156,12 @@ export default function FAQ({
               ) : null}
               {emailLink}
             </div>
-          </div>
-          <ul className="border-t border-white/10 lg:col-span-7">
-            {matches.map((f) => (
-              <Item key={f.q} f={f} query={q} open={open === f.i} onToggle={() => setOpen(open === f.i ? null : f.i)} />
+          </Reveal>
+          <Reveal as="ul" className="reveal-quiet faq-intro relative border-t border-white/10 lg:col-span-7">
+            {matches.map((f, n) => (
+              <Item key={f.q} f={f} order={n} query={q} open={open === f.i} onToggle={() => setOpen(open === f.i ? null : f.i)} />
             ))}
-          </ul>
+          </Reveal>
         </div>
       </section>
     );

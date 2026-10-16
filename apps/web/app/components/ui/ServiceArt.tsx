@@ -53,11 +53,29 @@ function usePlayOnce<T extends HTMLElement>(steps: number, ms: number) {
     };
     const leave = () => window.clearTimeout(dwell);
 
+    // In the Services grid intro the art fades in after its tile (globals.css, .bento-intro): start playing once it has
+    // actually appeared, so none of it runs while hidden.
+    const startWhenShown = () => {
+      const art = el.closest<HTMLElement>(".bento-intro .bento-art");
+      if (!art || parseFloat(getComputedStyle(art).opacity) > 0.98) return play(0);
+      let started = false;
+      const go = () => {
+        if (started) return;
+        started = true;
+        art.removeEventListener("transitionend", onEnd);
+        play(0);
+      };
+      const onEnd = (e: TransitionEvent) => {
+        if (e.target === art && e.propertyName === "opacity") go();
+      };
+      art.addEventListener("transitionend", onEnd);
+      window.setTimeout(go, 3500);
+    };
     const io = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
           io.disconnect();
-          play(0);
+          startWhenShown();
         }
       },
       { threshold: 0.45 },

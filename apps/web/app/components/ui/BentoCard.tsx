@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { cardDesc, cardTitle } from "./styles";
 
 // One cell of a joined hairline grid (Services, Your account): title, short description, index, then its art.
+// Inside a .bento-intro (globals.css) the pieces marked .bento-in arrive one after another (--j) once the tile is in.
 export default function BentoCard({
   index,
   title,
@@ -27,12 +28,23 @@ export default function BentoCard({
       <div className="flex flex-1 flex-col">
         <div className="flex items-start justify-between gap-4 px-7 pt-7 sm:px-8 sm:pt-8">
           <div>
-            <h3 className={`${cardTitle} mb-1.5 lg:text-xl`}>{title}</h3>
-            <p className={`${cardDesc} max-w-[44ch] text-pretty`}>{desc}</p>
+            <h3 className={`bento-in ${cardTitle} mb-1.5 lg:text-xl`} style={{ ["--j" as string]: 0 }}>
+              {title}
+            </h3>
+            <p className={`bento-in ${cardDesc} max-w-[44ch] text-pretty`} style={{ ["--j" as string]: 1 }}>
+              {desc}
+            </p>
           </div>
-          <span className="pt-1 font-mono text-[11px] tabular-nums text-white/50">{index}</span>
+          <span className="bento-in pt-1 font-mono text-[11px] tabular-nums text-white/50" style={{ ["--j" as string]: 1 }}>
+            {index}
+          </span>
         </div>
-        <div className={`bento-art relative flex flex-1 ${align === "end" ? "items-end" : "items-center"}`}>{children}</div>
+        <div
+          className={`bento-art bento-in relative flex flex-1 ${align === "end" ? "items-end" : "items-center"}`}
+          style={{ ["--j" as string]: 2 }}
+        >
+          {children}
+        </div>
       </div>
     </article>
   );

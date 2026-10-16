@@ -6,24 +6,28 @@ import SpotlightGrid from "../ui/SpotlightGrid";
 import TrackerFeed from "../ui/TrackerFeed";
 import { btnPrimary, container, heading, kicker, subtitle } from "../ui/styles";
 
-// What the client account looks like, drawn in the same joined grid as Services.
+// What the client account looks like, drawn in the same joined grid as Services, with the same intro.
 export default function PipelineBand() {
   return (
     <section id="account" className="relative scroll-mt-16 py-16 lg:py-24">
       <div className={container}>
-        <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+        <Reveal className="reveal-quiet flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="stagger">
             <div className={kicker}>Your account</div>
             <h2 className={heading}>
               Always know where your study is
             </h2>
             <p className={subtitle}>Every message, check, payment, and file shows up the moment it happens.</p>
           </div>
-          <a href={SEND_STUDY_URL} data-cta="band-signup" className={`${btnPrimary} shrink-0`}>
-            Send your study
-          </a>
+          <div className="stagger shrink-0">
+            <a href={SEND_STUDY_URL} data-cta="band-signup" className={btnPrimary} style={{ transitionDelay: "270ms" }}>
+              Send your study
+            </a>
+          </div>
         </Reveal>
 
+        {/* Same intro as Services (.bento-intro): empty tiles, then the hairlines, then each tile's content. */}
+        <Reveal className="reveal-quiet bento-intro">
         <SpotlightGrid className="mt-10">
           <div className="grid grid-cols-1 gap-px overflow-hidden rounded-[1px] lg:grid-cols-12">
             <BentoCard
@@ -61,6 +65,7 @@ export default function PipelineBand() {
             </BentoCard>
           </div>
         </SpotlightGrid>
+        </Reveal>
       </div>
     </section>
   );

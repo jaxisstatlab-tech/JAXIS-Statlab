@@ -447,6 +447,245 @@ html.hero-wait [data-hero] *::after {
   filter: none;
 }
 
+/* Bento grid intro (Services): when the grid scrolls into view (Reveal sets data-shown), the tiles appear one by one
+   with nothing in them, the hairlines between them draw in, then each tile's content arrives: title, then description
+   and number, then the art (--j), the tiles' contents following each other (--i). Opacity, transform and a light blur.
+   The frame behind the tiles is page-dark while they fade in, so its light hairline background never shows through a
+   half-faded tile (that looked like each tile flashing). */
+.bento-intro .spotlight-frame {
+  --line-o: 0;
+  background-color: #010114;
+  transition:
+    --line-o 700ms var(--ease-hero) 700ms,
+    --spot-o 240ms cubic-bezier(0.23, 1, 0.32, 1),
+    --spot-x 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    --spot-y 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.bento-intro .bento-tile {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0) scale(0.985);
+  transition:
+    opacity 700ms var(--ease-hero),
+    transform 1000ms var(--ease-hero),
+    background-color 200ms var(--ease-out);
+  transition-delay: calc(150ms + var(--i, 0) * 80ms), calc(150ms + var(--i, 0) * 80ms), 0ms;
+}
+.bento-intro .bento-in {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  filter: blur(4px);
+  transition:
+    opacity 800ms var(--ease-hero),
+    transform 1000ms var(--ease-hero),
+    filter 600ms var(--ease-hero);
+  transition-delay: calc(750ms + var(--i, 0) * 140ms + var(--j, 0) * 110ms);
+}
+.bento-intro .bento-tile:nth-child(2) { --i: 1; }
+.bento-intro .bento-tile:nth-child(3) { --i: 2; }
+.bento-intro .bento-tile:nth-child(4) { --i: 3; }
+.bento-intro .bento-tile:nth-child(5) { --i: 4; }
+.bento-intro .bento-tile:nth-child(6) { --i: 5; }
+.bento-intro .bento-tile:nth-child(7) { --i: 6; }
+.bento-intro .bento-tile:nth-child(n + 8) { --i: 7; }
+.reveal[data-shown].bento-intro .spotlight-frame,
+.reveal-fallback .bento-intro .spotlight-frame {
+  --line-o: 1;
+}
+.reveal[data-shown].bento-intro .bento-tile,
+.reveal[data-shown].bento-intro .bento-in,
+.reveal-fallback .bento-intro .bento-tile,
+.reveal-fallback .bento-intro .bento-in {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+/* Once shown, the art keeps its own hover lift timing (the delay above is only for the intro). */
+.reveal[data-shown].bento-intro .bento-art {
+  transition:
+    opacity 800ms var(--ease-hero) calc(750ms + var(--i, 0) * 140ms + 220ms),
+    transform 220ms var(--ease-out),
+    filter 600ms var(--ease-hero) calc(750ms + var(--i, 0) * 140ms + 220ms);
+}
+
+/* How it works intro (HowItWorksFlow sets data-shown when it scrolls into view): each step row's hairline draws across
+   from the left, then the row's number, title and time rise out of a light blur, row after row (--i); the scene panel
+   rises in beside them and its scene starts once it has appeared. Opacity, transform and a light blur only. */
+.how-row::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: -1px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+.how-intro .how-row::before {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 900ms var(--ease-hero);
+  transition-delay: calc(var(--i, 0) * 110ms);
+}
+.how-intro .how-row > * {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  filter: blur(4px);
+  transition:
+    opacity 800ms var(--ease-hero),
+    transform 1000ms var(--ease-hero),
+    filter 600ms var(--ease-hero);
+  transition-delay: calc(250ms + var(--i, 0) * 110ms);
+}
+.how-intro > ol {
+  border-bottom-color: transparent;
+  transition: border-color 600ms var(--ease-hero) 800ms;
+}
+.how-intro .how-scene {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0) scale(0.985);
+  filter: blur(6px);
+  transition:
+    opacity 900ms var(--ease-hero) 300ms,
+    transform 1200ms var(--ease-hero) 300ms,
+    filter 700ms var(--ease-hero) 300ms;
+}
+.how-intro[data-shown] .how-row::before {
+  transform: none;
+}
+.how-intro[data-shown] .how-row > *,
+.how-intro[data-shown] .how-scene {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+.how-intro[data-shown] > ol {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+/* In the What you get grid the page stack steps apart only after it has faded in (hover still answers at once). */
+.bento-intro .paper {
+  transition-delay: 1300ms;
+}
+
+/* Card intro (testimonials): when the cards scroll into view, each card appears empty, then its pieces (icon, quote,
+   translation, attribution, in order) rise out of a light blur; cards follow each other (--i). */
+.card-intro .ci-card {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0) scale(0.985);
+  transition:
+    opacity 700ms var(--ease-hero),
+    transform 1000ms var(--ease-hero);
+  transition-delay: calc(100ms + var(--i, 0) * 110ms);
+}
+.card-intro .ci-card > * {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  filter: blur(4px);
+  transition:
+    opacity 800ms var(--ease-hero),
+    transform 1000ms var(--ease-hero),
+    filter 600ms var(--ease-hero);
+  transition-delay: calc(550ms + var(--i, 0) * 150ms + var(--j, 0) * 110ms);
+}
+.card-intro .ci-card > :nth-child(2) { --j: 1; }
+.card-intro .ci-card > :nth-child(3) { --j: 2; }
+.card-intro .ci-card > :nth-child(4) { --j: 3; }
+.card-intro .ci-card > :nth-child(n + 5) { --j: 4; }
+.reveal[data-shown].card-intro .ci-card,
+.reveal[data-shown].card-intro .ci-card > *,
+.reveal-fallback .card-intro .ci-card,
+.reveal-fallback .card-intro .ci-card > * {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* Pricing panel intro (home): when it scrolls into view the empty panel appears, the price scale's labels fade in left
+   to right (--k), then each package row arrives (--i): name, then its range (the bar draws after, see the bar's own
+   delay), then the time (--j); the add-ons row last, its chips one by one. */
+.price-intro .pi-panel {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0) scale(0.99);
+  transition:
+    opacity 700ms var(--ease-hero) 100ms,
+    transform 1000ms var(--ease-hero) 100ms;
+}
+.price-intro .pi-fade {
+  opacity: 0;
+  transition: opacity 700ms var(--ease-hero);
+  transition-delay: calc(400ms + var(--k, 0) * 60ms);
+}
+.price-intro .pi-in {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+  filter: blur(4px);
+  transition:
+    opacity 800ms var(--ease-hero),
+    transform 1000ms var(--ease-hero),
+    filter 600ms var(--ease-hero);
+  transition-delay: calc(560ms + var(--i, 0) * 130ms + var(--j, 0) * 90ms);
+}
+.reveal[data-shown].price-intro .pi-panel,
+.reveal[data-shown].price-intro .pi-fade,
+.reveal[data-shown].price-intro .pi-in,
+.reveal-fallback .price-intro .pi-panel,
+.reveal-fallback .price-intro .pi-fade,
+.reveal-fallback .price-intro .pi-in {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* FAQ intro (home, split layout): the list's top line and each question's bottom line draw across from the left,
+   row after row (--i), then the question and its + rise out of a light blur. The real borders are hidden meanwhile and
+   drawn as pseudo-lines that end where the borders are. */
+.faq-intro {
+  border-top-color: transparent !important;
+}
+.faq-intro::before,
+.faq-intro .faq-row::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 900ms var(--ease-hero);
+  pointer-events: none;
+}
+.faq-intro::before {
+  top: -1px;
+}
+.faq-intro .faq-row {
+  border-bottom-color: transparent;
+}
+.faq-intro .faq-row::after {
+  bottom: -1px;
+  transition-delay: calc(120ms + var(--i, 0) * 110ms);
+}
+.faq-intro .faq-row > * {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+  filter: blur(4px);
+  transition:
+    opacity 800ms var(--ease-hero),
+    transform 1000ms var(--ease-hero),
+    filter 600ms var(--ease-hero);
+  transition-delay: calc(300ms + var(--i, 0) * 110ms);
+}
+.reveal[data-shown].faq-intro::before,
+.reveal[data-shown].faq-intro .faq-row::after,
+.reveal-fallback .faq-intro::before,
+.reveal-fallback .faq-intro .faq-row::after {
+  transform: none;
+}
+.reveal[data-shown].faq-intro .faq-row > *,
+.reveal-fallback .faq-intro .faq-row > * {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
 /* The results card rises in after the buttons, then its bars grow. */
 @keyframes hx-card-in {
   from {
@@ -804,6 +1043,12 @@ html[data-leaving] .exit-curtain {
   inherits: false;
   initial-value: 0px;
 }
+/* How visible the grid's hairlines are (0..1); the Services intro draws them in after the tiles. */
+@property --line-o {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
 @property --spot-o {
   syntax: "<number>";
   inherits: false;
@@ -817,8 +1062,8 @@ html[data-leaving] .exit-curtain {
       rgba(230, 115, 0, calc(0.75 * var(--spot-o))),
       transparent 70%
     ),
-    /* The hairlines */
-    linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1));
+    /* The hairlines (shown only in the 1px gaps between tiles) */
+    linear-gradient(rgba(255, 255, 255, calc(0.1 * var(--line-o))), rgba(255, 255, 255, calc(0.1 * var(--line-o))));
   transition:
     --spot-o 240ms cubic-bezier(0.23, 1, 0.32, 1),
     --spot-x 180ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -837,7 +1082,8 @@ html[data-leaving] .exit-curtain {
   .bento-art {
     transition: transform 220ms var(--ease-out);
   }
-  .bento-tile:hover .bento-art {
+  .bento-tile:hover .bento-art,
+  .reveal[data-shown].bento-intro .bento-tile:hover .bento-art {
     transform: translateY(-3px);
   }
 }
@@ -886,10 +1132,52 @@ html.reveal-ready .price-rows:not([data-shown]) .price-bar {
   .paper {
     transition: none;
   }
+  .bento-intro .spotlight-frame {
+    --line-o: 1;
+  }
+  .how-intro .how-row::before,
+  .how-intro .how-row > *,
+  .how-intro .how-scene {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+  .how-intro > ol {
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  }
+  .card-intro .ci-card,
+  .card-intro .ci-card > * {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+  .price-intro .pi-panel,
+  .price-intro .pi-fade,
+  .price-intro .pi-in {
+    opacity: 1 !important;
+    filter: none !important;
+    transition: none !important;
+  }
+  .price-intro .pi-panel,
+  .price-intro .pi-in {
+    transform: none !important;
+  }
+  .faq-intro::before,
+  .faq-intro .faq-row::after,
+  .faq-intro .faq-row > * {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
   .reveal,
   .hero-in,
   .iso-rise,
-  .stagger > * {
+  .stagger > *,
+  .bento-intro .bento-tile,
+  .bento-intro .bento-in {
     opacity: 1;
     transform: none;
     filter: none;

@@ -25,9 +25,9 @@ export default function Services() {
           </div>
         </Reveal>
 
-        <Reveal className="reveal-quiet">
+        <Reveal className="reveal-quiet bento-intro">
         <SpotlightGrid className="mt-10">
-            <div id="services-row" data-h-scroll role="region" aria-label="Services" className="stagger no-scrollbar flex snap-x snap-mandatory gap-px overflow-x-auto overscroll-x-contain rounded-[1px] sm:grid sm:grid-cols-2 sm:overflow-hidden lg:grid-cols-4">
+            <div id="services-row" data-h-scroll role="region" aria-label="Services" className="no-scrollbar flex snap-x snap-mandatory gap-px overflow-x-auto overscroll-x-contain rounded-[1px] sm:grid sm:grid-cols-2 sm:overflow-hidden lg:grid-cols-4">
             <BentoCard
               slide
               index="01"

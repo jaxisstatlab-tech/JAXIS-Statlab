@@ -50,8 +50,8 @@ export default function SampleOutput() {
   return (
     <section id="sample" className="relative scroll-mt-16 py-16 lg:py-24">
       <div className={container}>
-        <Reveal className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+        <Reveal className="reveal-quiet flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="stagger">
             <div className={kicker}>What you get</div>
             <h2 className={heading}>
               Files your adviser can open and check
@@ -59,21 +59,25 @@ export default function SampleOutput() {
             <p className={subtitle}>Five files with every study, and the people who stand behind them.</p>
           </div>
           {SAMPLE_OUTPUT_URL ? (
-            <a href={SAMPLE_OUTPUT_URL} data-cta="sample-download" className={`${btnGhost} shrink-0`}>
-              Download a full sample
-            </a>
+            <div className="stagger shrink-0">
+              <a href={SAMPLE_OUTPUT_URL} data-cta="sample-download" className={btnGhost} style={{ transitionDelay: "270ms" }}>
+                Download a full sample
+              </a>
+            </div>
           ) : null}
         </Reveal>
 
+        {/* Same intro as Services (.bento-intro): empty tiles, then the hairlines, then each tile's content. */}
+        <Reveal className="reveal-quiet bento-intro">
         <SpotlightGrid className="mt-10">
           <div className="grid grid-cols-1 gap-px overflow-hidden rounded-[1px] lg:grid-cols-12">
             {/* A page from the findings summary, with the table and defense guide pages stacked behind it */}
-            <div data-art-card className="relative flex flex-col overflow-hidden bg-[#0A0A18] lg:col-span-7">
+            <div data-art-card className="bento-tile relative flex flex-col overflow-hidden bg-[#0A0A18] lg:col-span-7">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-[radial-gradient(ellipse_55%_60%_at_50%_100%,rgba(204,102,0,0.1),transparent)]"
               />
-              <div className="relative flex items-start justify-between gap-4 px-7 pt-7 sm:px-8 sm:pt-8">
+              <div className="bento-in relative flex items-start justify-between gap-4 px-7 pt-7 sm:px-8 sm:pt-8" style={{ ["--j" as string]: 0 }}>
                 <div>
                   <h3 className={`${cardTitle} mb-1.5 lg:text-xl`}>Findings summary</h3>
                   <p className={`${cardDesc} max-w-[44ch]`}>A page from what you receive: the result, then what it means.</p>
@@ -81,6 +85,7 @@ export default function SampleOutput() {
                 <span className="pt-1 font-mono text-[11px] uppercase tracking-wider text-white/40">Example</span>
               </div>
 
+              <div className="bento-in" style={{ ["--j" as string]: 1.2 }}>
               <Reveal className="paper-stage relative mx-auto mt-4 h-[23rem] w-full max-w-[32rem] px-7 pt-10 sm:h-[24rem] sm:px-10">
                 <div className="relative h-full">
                   <div aria-hidden="true" className={`paper paper-c ${page} h-[17rem] border-white/[0.06] bg-[#0B0B1C] p-6`}>
@@ -102,15 +107,16 @@ export default function SampleOutput() {
                   </figure>
                 </div>
               </Reveal>
+              </div>
             </div>
 
             {/* What arrives */}
-            <div className="bg-[#0A0A18] lg:col-span-5">
+            <div className="bento-tile bg-[#0A0A18] lg:col-span-5">
               <ul className="divide-y divide-white/[0.07]">
                 {DELIVERABLES.map(({ name, format, body }, i) => {
                   const FileIcon = FILE_ICONS[i] ?? Table;
                   return (
-                  <li key={name} className="flex gap-4 px-6 py-5 sm:px-8 lg:py-[1.4rem]">
+                  <li key={name} className="bento-in flex gap-4 px-6 py-5 sm:px-8 lg:py-[1.4rem]" style={{ ["--j" as string]: i * 0.6 }}>
                     <FileIcon size={18} weight="fill" className="mt-0.5 shrink-0 text-white/55" aria-hidden="true" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-3">
@@ -126,17 +132,17 @@ export default function SampleOutput() {
             </div>
 
             {/* Who checks it */}
-            <div className="bg-[#0A0A18] lg:col-span-12">
+            <div className="bento-tile bg-[#0A0A18] lg:col-span-12">
               <div className="grid grid-cols-1 gap-8 px-6 py-7 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] lg:items-center lg:gap-10">
-                <div>
+                <div className="bento-in" style={{ ["--j" as string]: 0 }}>
                   <div className="font-mono text-[11px] uppercase tracking-wider text-white/55">Who checks your numbers</div>
                   <p className="mt-2 max-w-xs font-sans text-[14px] leading-relaxed text-white/70">
                     Mathematicians and statisticians. Statistical Analysts run your tests, and Statistical Review Editors audit the methods and findings.
                   </p>
                 </div>
 
-                {FEATURED.map((m) => (
-                  <div key={m.name} className="flex items-center gap-4">
+                {FEATURED.map((m, i) => (
+                  <div key={m.name} className="bento-in flex items-center gap-4" style={{ ["--j" as string]: 1 + i * 0.6 }}>
                     <Headshot member={m} size={60} />
                     <div className="min-w-0">
                       <div className="font-sans text-[15px] font-medium leading-snug text-white">{m.name}</div>
@@ -146,7 +152,7 @@ export default function SampleOutput() {
                   </div>
                 ))}
 
-                <Link href="/about" className="group flex items-center gap-3 lg:justify-self-end">
+                <Link href="/about" className="bento-in group flex items-center gap-3 lg:justify-self-end" style={{ ["--j" as string]: 2.4 }}>
                   <span className="flex -space-x-2">
                     {EXPERT_TEAM.map((m) => (
                       <span key={m.name} className="rounded-[2px] ring-2 ring-[#0A0A18]">
@@ -163,6 +169,7 @@ export default function SampleOutput() {
             </div>
           </div>
         </SpotlightGrid>
+        </Reveal>
       </div>
     </section>
   );

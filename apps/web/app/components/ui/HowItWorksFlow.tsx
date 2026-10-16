@@ -34,15 +34,37 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
   const stepP = useRef(0);
   const trigger = useRef<ScrollTrigger | null>(null);
 
-  // Each time a step opens, its scene starts in its "before" state and then plays to "done".
+  // True once the section has scrolled into view (its intro plays then, see .how-intro in globals.css).
+  const [seen, setSeen] = useState(false);
+  const firstPlay = useRef(true);
   useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setSeen(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -8% 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // Each time a step opens, its scene starts in its "before" state and then plays to "done". The first time, it waits
+  // for the scene panel's intro to finish, so nothing plays while it's still hidden.
+  useEffect(() => {
+    if (!seen) return;
     const reset = requestAnimationFrame(() => setArtOn(false));
-    const play = window.setTimeout(() => setArtOn(true), 250);
+    const play = window.setTimeout(() => setArtOn(true), firstPlay.current ? 1300 : 250);
+    firstPlay.current = false;
     return () => {
       cancelAnimationFrame(reset);
       window.clearTimeout(play);
     };
-  }, [active]);
+  }, [active, seen]);
 
   // Wide screens with a mouse or trackpad: hold the section and let scrolling move through the steps.
   useEffect(() => {
@@ -103,13 +125,17 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
   };
 
   return (
-    <div ref={root} className="mt-10 grid grid-cols-1 gap-6 lg:mt-14 lg:grid-cols-12 lg:items-center lg:gap-16">
+    <div
+      ref={root}
+      data-shown={seen ? "" : undefined}
+      className="how-intro mt-10 grid grid-cols-1 gap-6 lg:mt-14 lg:grid-cols-12 lg:items-center lg:gap-16"
+    >
       <ol className="border-b border-white/[0.08] lg:col-span-5" aria-label="How it works, step by step">
         {steps.map((s, i) => {
           const open = i === active;
           const panelId = `${baseId}-step-${i}`;
           return (
-            <li key={s.tag} className="relative border-t border-white/[0.08]">
+            <li key={s.tag} className="how-row relative" style={{ ["--i" as string]: i }}>
               {/* The open step's top line: orange, filling as you scroll through it (held version), else a brighter line */}
               {open ? (
                 scrolly ? (
@@ -167,7 +193,7 @@ export default function HowItWorksFlow({ steps }: { steps: Step[] }) {
       </ol>
 
       {/* Wide screens: the open step's scene */}
-      <div className="hidden lg:col-span-7 lg:block">
+      <div className="how-scene hidden lg:col-span-7 lg:block">
         <div className="overflow-hidden rounded-[2px] border border-white/[0.09] bg-[#0B0B1E]">
           <div className="relative grid">
             {steps.map((s, i) => (

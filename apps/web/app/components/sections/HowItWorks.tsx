@@ -7,10 +7,12 @@ export default function HowItWorks() {
   return (
     <section id="how-it-works" className="relative scroll-mt-16 py-16 lg:py-24">
       <div className={container}>
-        <Reveal className="text-center">
-          <div className={kicker}>How it works</div>
-          <h2 className={heading}>From request to defense-ready</h2>
-          <p className={`${subtitle} mx-auto`}>Five clear steps. You always know what happens next.</p>
+        <Reveal className="reveal-quiet text-center">
+          <div className="stagger">
+            <div className={kicker}>How it works</div>
+            <h2 className={heading}>From request to defense-ready</h2>
+            <p className={`${subtitle} mx-auto`}>Five clear steps. You always know what happens next.</p>
+          </div>
         </Reveal>
         <HowItWorksFlow steps={HOW_STEPS} />
       </div>
