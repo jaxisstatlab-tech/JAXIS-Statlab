@@ -20,7 +20,7 @@ export type Role = RoleName;
  * error thrown from authorize() reaches the page as a generic failure.
  */
 class LoginError extends CredentialsSignin {
-  constructor(code: "too_many_attempts" | "account_suspended" | "account_terminated") {
+  constructor(code: "too_many_attempts" | "account_suspended" | "account_terminated" | "server_unavailable") {
     super();
     this.code = code;
   }
@@ -98,6 +98,8 @@ export const authConfig: NextAuthConfig = {
         }
 
         let accountExists = false;
+        // The database didn't answer (timeout or outage): we can't tell whether the password is right.
+        let dbFailed = false;
 
         // 1. Attempt DB Lookup with fast timeout fallback
         try {
@@ -183,6 +185,7 @@ export const authConfig: NextAuthConfig = {
             throw dbError;
           }
           // If DB is offline/unreachable, fallback to dev user store
+          dbFailed = true;
           console.warn("[Auth] Live DB unreachable or offline. Checking dev user fallback.", dbError);
         }
 
@@ -206,6 +209,13 @@ export const authConfig: NextAuthConfig = {
               rememberMe: isRemembered,
             };
           }
+        }
+
+        // The database couldn't be reached, so the password was never checked: say so, instead of "wrong email or
+        // password" (which sent people to reset passwords that were fine). Offline dev mode has no database on purpose.
+        if (dbFailed && process.env.JAXIS_OFFLINE !== "1") {
+          console.error("[Auth] Login could not be checked: database unreachable for", normalizedEmail);
+          throw new LoginError("server_unavailable");
         }
 
         // An unknown email counts like a wrong password, so the pause can't reveal which emails have accounts.

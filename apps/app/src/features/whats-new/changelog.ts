@@ -43,6 +43,13 @@ export const RELEASES: Release[] = [
     title: "Client feedback on the website",
     items: [
       {
+        kind: "fixed",
+        where: ["Log in"],
+        title: "No more \"wrong password\" when our server is slow",
+        text: "If our server couldn't be reached while you logged in, the login page used to say your email or password was wrong, even when they were right. Now it says the server couldn't be reached and asks you to try again in a moment, so there's no need to reset a password that was fine.",
+        roles: ["ALL"],
+      },
+      {
         kind: "new",
         where: ["Client Feedback", "Show on Website"],
         title: "Approved feedback has its own page on the website",

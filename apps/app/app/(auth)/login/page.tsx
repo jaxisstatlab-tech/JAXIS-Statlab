@@ -138,6 +138,8 @@ function LoginForm() {
             showError("other", "Your account is suspended. Email us and we'll help you sort it out.");
           } else if (res.code === "account_terminated") {
             showError("other", "This account has been closed. Email us if you think this is a mistake.");
+          } else if (res.code === "server_unavailable") {
+            showError("server", "We couldn't reach our server, so your password wasn't checked. Please try again in a moment.");
           } else if (res.error === "Configuration") {
             showError("server", "Something went wrong on our side, not with what you typed. Please try again in a minute.");
           } else {
