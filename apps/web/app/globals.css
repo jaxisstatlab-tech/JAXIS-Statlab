@@ -174,12 +174,17 @@ html.lenis body {
   --ease-hero: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* The shared entrance: a soft rise with a slight focus pull. */
+/* The shared entrance: a soft rise and fade with a light focus pull. Kept light so it stays smooth: a small blur that
+   clears in the first part of the move, and each piece on its own GPU layer (will-change, see .hx-live below) so the
+   browser animates opacity, transform and blur off the main thread. */
 @keyframes hx-in {
   from {
     opacity: 0;
-    transform: translateY(18px);
-    filter: blur(6px);
+    transform: translate3d(0, 20px, 0);
+    filter: blur(5px);
+  }
+  55% {
+    filter: blur(0);
   }
   to {
     opacity: 1;
@@ -216,10 +221,12 @@ html.lenis body {
 @keyframes hx-rise {
   from {
     opacity: 0;
-    transform: translateY(105%);
+    transform: translate3d(0, 105%, 0);
+    filter: blur(4px);
   }
   40% {
     opacity: 1;
+    filter: blur(0);
   }
   to {
     opacity: 1;
@@ -260,6 +267,20 @@ html.lenis body {
       -15% 0,
       0 0;
   }
+}
+
+/* While the intro plays, each animated piece gets its own GPU layer so its blur, fade and rise run off the main thread.
+   HERO_GATE (layout.tsx) removes .hx-live from <html> once the intro is over, releasing those layers. */
+html.hx-live .hx-badge,
+html.hx-live .hx-subtitle,
+html.hx-live .hx-btn-primary,
+html.hx-live .hx-btn-ghost,
+html.hx-live .hx-proof-item,
+html.hx-live .hx-footer,
+html.hx-live .hx-line > span,
+html.hx-live .hx-sweep > span,
+html.hx-live .hx-card {
+  will-change: transform, opacity, filter;
 }
 
 /* No extra flourishes on the buttons or ticks: they arrive with their row. */
@@ -430,12 +451,16 @@ html.hero-wait [data-hero] *::after {
 @keyframes hx-card-in {
   from {
     opacity: 0;
-    transform: translateY(32px) scale(0.98);
-    filter: blur(8px);
+    transform: translate3d(0, 32px, 0) scale(0.98);
+    filter: blur(6px);
+  }
+  50% {
+    filter: blur(0);
   }
   to {
     opacity: 1;
     transform: none;
+    filter: blur(0);
   }
 }
 .hx-card {

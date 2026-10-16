@@ -30,7 +30,8 @@ export default function ScrollFx() {
       pointer: "(hover: hover) and (pointer: fine)",
     };
 
-    mm.add(conditions, (context) => {
+    // Set up once the page is idle, so this work doesn't land on the hero intro's first moments (it stalled them).
+    const setup = () => mm.add(conditions, (context) => {
       const { motion, pointer } = context.conditions ?? {};
       const cleanups: (() => void)[] = [];
       if (!motion) return;
@@ -144,8 +145,16 @@ export default function ScrollFx() {
         }
       };
     });
+    // Safari has no requestIdleCallback: a short timeout instead.
+    const hasIdle = typeof window.requestIdleCallback === "function";
+    const idleId = hasIdle ? window.requestIdleCallback(() => setup(), { timeout: 1200 }) : 0;
+    const timer = hasIdle ? 0 : window.setTimeout(setup, 400);
 
-    return () => mm.revert();
+    return () => {
+      if (idleId) window.cancelIdleCallback(idleId);
+      window.clearTimeout(timer);
+      mm.revert();
+    };
   }, []);
 
   return null;

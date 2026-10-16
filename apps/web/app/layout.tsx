@@ -96,8 +96,9 @@ const REVEAL_FALLBACK = `window.addEventListener("load",function(){setTimeout(fu
 // memory back to the browser so Back and Forward return to where you were. The browser can still restore the old
 // position while the page loads (which flashed the hero's scroll transition half-way), so any scroll before load is
 // undone at once, until the visitor scrolls themselves.
-// Hold the hero's entrance until the fonts are ready (at most 0.8s), so it plays once, in the right font.
-const HERO_GATE = `(function(){var h=document.documentElement;h.classList.add("hero-wait");var go=function(){h.classList.remove("hero-wait");};try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(go);else go();}catch(e){go();}setTimeout(go,800);})();`;
+// Hold the hero's entrance until the fonts are ready (at most 0.8s), so it plays once, in the right font. While it
+// plays, .hx-live puts the animated pieces on their own GPU layers; it's removed once the intro is over.
+const HERO_GATE = `(function(){var h=document.documentElement;h.classList.add("hero-wait","hx-live");var done=false;var go=function(){if(done)return;done=true;h.classList.remove("hero-wait");setTimeout(function(){h.classList.remove("hx-live");},4500);};try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(go);else go();}catch(e){go();}setTimeout(go,800);})();`;
 
 const SCROLL_TO_TOP_ON_RELOAD = `(function(){try{
 var n=performance.getEntriesByType("navigation")[0];
