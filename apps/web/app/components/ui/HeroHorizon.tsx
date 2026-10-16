@@ -150,7 +150,7 @@ export default function HeroHorizon() {
       const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
       if (idle) idle(begin, { timeout: 600 });
       else begin();
-    }, 700);
+    }, 2300);
     return () => {
       cancelled = true;
       window.clearTimeout(startTimer);

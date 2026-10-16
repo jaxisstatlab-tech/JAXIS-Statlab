@@ -29,8 +29,8 @@ export default function Hero() {
       >
         <div data-hero-copy className="flex flex-col items-start text-left lg:col-span-7">
           <div
-            className="hx-badge inline-flex items-center gap-2.5 rounded-[2px] border border-white/10 bg-[#010114]/80 px-3.5 py-1.5 font-sans text-[12.5px] text-white/75 backdrop-blur-md transition-colors hover:border-white/20 sm:text-[13px]"
-            style={{ ["--d" as string]: "0ms" }}
+            className="hx-badge inline-flex items-center gap-2.5 rounded-[2px] border border-white/10 bg-[#05051a] px-3.5 py-1.5 font-sans text-[12.5px] text-white/75 transition-colors hover:border-white/20 sm:text-[13px]"
+            style={{ ["--d" as string]: "250ms" }}
           >
             <span aria-hidden="true" className="relative flex h-2 w-2 shrink-0 items-center justify-center">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FF8A1F] opacity-65" />
@@ -44,10 +44,10 @@ export default function Hero() {
               size follows the screen width so each line stays on one line ("Your research data," is ~8.9em wide). */}
           <h1 className="mt-7 font-sans text-[min(2.5rem,calc((100vw-3rem)/9.3))] font-medium leading-[1.06] tracking-[-0.04em] text-white sm:mt-8 sm:text-6xl sm:tracking-[-0.045em] xl:text-[4.6rem]">
             <span className="hx-line">
-              <span style={{ ["--d" as string]: "90ms" }}>Your research data,</span>
+              <span style={{ ["--d" as string]: "450ms" }}>Your research data,</span>
             </span>
             <span className="block">
-              <span className="hx-sweep" style={{ ["--d" as string]: "200ms" }}>
+              <span className="hx-sweep" style={{ ["--d" as string]: "700ms" }}>
                 <span>properly analyzed.</span>
               </span>
             </span>
@@ -55,7 +55,7 @@ export default function Hero() {
 
           <p
             className="hx-subtitle mt-5 max-w-xl text-pretty font-sans text-[15px] leading-relaxed text-white/65 sm:mt-7 sm:text-lg"
-            style={{ ["--d" as string]: "440ms" }}
+            style={{ ["--d" as string]: "1150ms" }}
           >
             Send us your data. We run the right tests, a second analyst checks every number, and you get clear tables and
             plain-English explanations you can defend.
@@ -66,7 +66,7 @@ export default function Hero() {
               href={SEND_STUDY_URL}
               data-cta="hero-send"
               className={`${btnPrimary} hx-btn-primary group relative h-12 overflow-hidden px-7 text-[15px] font-medium`}
-              style={{ ["--d" as string]: "560ms" }}
+              style={{ ["--d" as string]: "1350ms" }}
             >
               <span className="hx-btn-sheen" aria-hidden="true" />
               <span className="relative z-10 inline-flex items-center gap-2">
@@ -80,8 +80,8 @@ export default function Hero() {
             </a>
             <Link
               href="/pricing"
-              className={`${btnGhost} hx-btn-ghost h-12 bg-[#010114]/70 px-7 text-[15px] backdrop-blur-sm`}
-              style={{ ["--d" as string]: "620ms" }}
+              className={`${btnGhost} hx-btn-ghost h-12 bg-[#05051a] px-7 text-[15px]`}
+              style={{ ["--d" as string]: "1500ms" }}
             >
               See Pricing
             </Link>
@@ -89,8 +89,8 @@ export default function Hero() {
 
           <ul className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[11px] text-white/60 sm:mt-10 sm:gap-x-6 sm:text-xs">
             {PROOF.map((item, i) => (
-              <li key={item} className="hx-proof-item flex items-center gap-1.5" style={{ ["--d" as string]: `${700 + i * 60}ms` }}>
-                <span className="hx-tick" style={{ ["--d" as string]: `${780 + i * 60}ms` }}>
+              <li key={item} className="hx-proof-item flex items-center gap-1.5" style={{ ["--d" as string]: `${1650 + i * 150}ms` }}>
+                <span className="hx-tick" style={{ ["--d" as string]: `${1650 + i * 150}ms` }}>
                   <Check size={12} weight="bold" className="text-[#CC6600]" />
                 </span>
                 {item}
@@ -100,7 +100,7 @@ export default function Hero() {
 
           <p
             className="hx-footer mt-10 border-t border-white/[0.08] pt-5 font-sans text-[13px] text-white/45 sm:mt-14"
-            style={{ ["--d" as string]: "900ms" }}
+            style={{ ["--d" as string]: "2100ms" }}
           >
             Trusted by thesis groups at <span className="text-white/70">Central Mindanao University</span>
           </p>

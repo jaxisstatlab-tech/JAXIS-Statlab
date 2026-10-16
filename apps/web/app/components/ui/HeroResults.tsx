@@ -38,7 +38,7 @@ export default function HeroResults() {
   return (
     <figure
       className="hx-card relative w-full rounded-[2px] border border-white/10 bg-[#0A0A18] p-5 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.85)] sm:p-7"
-      style={{ ["--d" as string]: "320ms" }}
+      style={{ ["--d" as string]: "950ms" }}
     >
       <figcaption className="sr-only">
         Example findings summary: STEM students averaged a GWA of 88.4 and non-STEM students 86.1, a difference unlikely to be
@@ -94,8 +94,8 @@ export default function HeroResults() {
                       on ? "border-white/15 bg-white/[0.03]" : "border-transparent"
                     }`}
                   >
-                    <Bar value={p.stem} cap="bg-[#FF8A1F]" delay={760 + i * 80} />
-                    <Bar value={p.other} cap="bg-white/50" delay={800 + i * 80} />
+                    <Bar value={p.stem} cap="bg-[#FF8A1F]" delay={1575 + i * 300} />
+                    <Bar value={p.other} cap="bg-white/50" delay={1725 + i * 300} />
                     {on ? (
                       <div className="absolute left-1/2 top-1.5 z-10 -translate-x-1/2 whitespace-nowrap rounded-[2px] border border-white/10 bg-[#010114]/90 px-2 py-1 font-mono text-[10.5px] leading-tight text-white/85 shadow-lg">
                         <span className="flex items-center gap-1.5">
